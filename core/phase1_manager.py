@@ -331,22 +331,17 @@ Study these examples to understand how each principle works in practice.
         )
         
         return f"""
-ROUND {round_num}: Choose a Justice Principle
+ROUND {round_num}
 
 {distributions_table}
 
-Choose ONE of the four justice principles to apply to these distributions:
-(a) maximizing the floor
-(b) maximizing the average  
-(c) maximizing the average with a floor constraint
-(d) maximizing the average with a range constraint
+You are to make a choice from among the four principles of justice which are mentioned above:
+(a) maximizing the floor,
+(b) maximizing the average,
+(c) maximizing the average with a floor constraint, and
+(d) maximizing the average with a range constraint.
 
-**IMPORTANT**: If you choose (c) or (d), you MUST specify the constraint amount in dollars.
-
-Examples of valid choices:
-- "I choose (a) maximizing the floor"
-- "I choose (c) maximizing the average with a floor constraint of $15,000"
-- "I choose (d) maximizing the average with a range constraint of $18,000"
+If you choose (c) or (d), you will have to tell us what that floor or range constraint is before you can be said to have made a well-defined choice.
 
 Your chosen principle will determine which distribution is selected. You'll then be randomly assigned to an income class and earn $1 for every $10,000 of income.
 

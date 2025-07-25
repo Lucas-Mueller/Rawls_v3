@@ -1,0 +1,374 @@
+{
+  "experiment_metadata": {
+    "experiment_id": "be020777-d376-45e3-9766-c6bd9a460d2b",
+    "timestamp": "2025-07-25T14:21:09.723741",
+    "total_runtime_seconds": 200.76931309700012,
+    "configuration": {
+      "num_participants": 3,
+      "phase1_completed": true,
+      "phase2_completed": true
+    }
+  },
+  "phase1_results": {
+    "Alice": {
+      "initial_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_floor",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_average",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "sure"
+      },
+      "final_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_floor",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "very_sure"
+      },
+      "application_rounds": [
+        {
+          "round_number": 1,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "low",
+          "earnings": 2.3745,
+          "alternative_earnings": {
+            "distribution_1": 3.7993,
+            "distribution_2": 3.1661,
+            "distribution_3": 2.2162,
+            "distribution_4": 2.5329
+          }
+        },
+        {
+          "round_number": 2,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "low",
+          "earnings": 1.3104,
+          "alternative_earnings": {
+            "distribution_1": 1.0483,
+            "distribution_2": 2.446,
+            "distribution_3": 1.8345,
+            "distribution_4": 1.6598
+          }
+        },
+        {
+          "round_number": 3,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "medium_low",
+          "earnings": 3.1173,
+          "alternative_earnings": {
+            "distribution_1": 2.3379,
+            "distribution_2": 3.8966,
+            "distribution_3": 6.0397,
+            "distribution_4": 3.7017
+          }
+        },
+        {
+          "round_number": 4,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "low",
+          "earnings": 1.3225,
+          "alternative_earnings": {
+            "distribution_1": 2.3805,
+            "distribution_2": 1.4988,
+            "distribution_3": 2.7332,
+            "distribution_4": 1.6752
+          }
+        }
+      ],
+      "total_earnings": 8.1247,
+      "memory_final_length": 1391
+    },
+    "Bob": {
+      "initial_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_average",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_floor",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "sure"
+      },
+      "final_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_floor",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "sure"
+      },
+      "application_rounds": [
+        {
+          "round_number": 1,
+          "principle_chosen": "maximizing_average",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "high",
+          "earnings": 6.3748,
+          "alternative_earnings": {
+            "distribution_1": 4.7811,
+            "distribution_2": 5.5779,
+            "distribution_3": 6.1756,
+            "distribution_4": 3.9842
+          }
+        },
+        {
+          "round_number": 2,
+          "principle_chosen": "maximizing_average",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "low",
+          "earnings": 1.3452,
+          "alternative_earnings": {
+            "distribution_1": 1.4573,
+            "distribution_2": 1.9057,
+            "distribution_3": 3.4752,
+            "distribution_4": 1.6815
+          }
+        },
+        {
+          "round_number": 3,
+          "principle_chosen": "maximizing_average",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "low",
+          "earnings": 1.4233,
+          "alternative_earnings": {
+            "distribution_1": 1.5419,
+            "distribution_2": 2.6093,
+            "distribution_3": 1.8977,
+            "distribution_4": 2.2535
+          }
+        },
+        {
+          "round_number": 4,
+          "principle_chosen": "maximizing_average_range_constraint",
+          "constraint_amount": 10000,
+          "certainty": "sure",
+          "assigned_income_class": "medium_low",
+          "earnings": 1.9979,
+          "alternative_earnings": {
+            "distribution_1": 1.4984,
+            "distribution_2": 2.4974,
+            "distribution_3": 2.9969,
+            "distribution_4": 1.9979
+          }
+        }
+      ],
+      "total_earnings": 11.1412,
+      "memory_final_length": 2146
+    },
+    "Carol": {
+      "initial_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_floor",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_average",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "sure"
+      },
+      "final_ranking": {
+        "rankings": [
+          {
+            "principle": "maximizing_floor",
+            "rank": 1
+          },
+          {
+            "principle": "maximizing_average",
+            "rank": 2
+          },
+          {
+            "principle": "maximizing_average_floor_constraint",
+            "rank": 3
+          },
+          {
+            "principle": "maximizing_average_range_constraint",
+            "rank": 4
+          }
+        ],
+        "overall_certainty": "sure"
+      },
+      "application_rounds": [
+        {
+          "round_number": 1,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "medium",
+          "earnings": 2.3142,
+          "alternative_earnings": {
+            "distribution_1": 2.9232,
+            "distribution_2": 3.4104,
+            "distribution_3": 1.7052,
+            "distribution_4": 2.5578
+          }
+        },
+        {
+          "round_number": 2,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "medium",
+          "earnings": 2.9582,
+          "alternative_earnings": {
+            "distribution_1": 4.9823,
+            "distribution_2": 4.3595,
+            "distribution_3": 3.2696,
+            "distribution_4": 2.3354
+          }
+        },
+        {
+          "round_number": 3,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "medium_low",
+          "earnings": 2.1087,
+          "alternative_earnings": {
+            "distribution_1": 3.5584,
+            "distribution_2": 2.2404,
+            "distribution_3": 2.1087,
+            "distribution_4": 2.6358
+          }
+        },
+        {
+          "round_number": 4,
+          "principle_chosen": "maximizing_floor",
+          "constraint_amount": null,
+          "certainty": "sure",
+          "assigned_income_class": "high",
+          "earnings": 3.1636,
+          "alternative_earnings": {
+            "distribution_1": 1.8078,
+            "distribution_2": 3.013,
+            "distribution_3": 3.1636,
+            "distribution_4": 2.4104
+          }
+        }
+      ],
+      "total_earnings": 10.5447,
+      "memory_final_length": 1743
+    }
+  },
+  "phase2_results": {
+    "completed": true,
+    "consensus_reached": false,
+    "agreed_principle": null,
+    "constraint_amount": null,
+    "final_round": 5,
+    "num_votes_conducted": 0,
+    "discussion_length": 4613,
+    "payoffs": {
+      "Alice": 2.4886,
+      "Bob": 4.2115,
+      "Carol": 3.2543
+    },
+    "vote_history": []
+  },
+  "agent_interactions": {
+    "total_phase1_interactions": 18,
+    "phase2_interactions": 5,
+    "summary": "Detailed interaction logs would require instrumentation during execution"
+  },
+  "final_summary": {
+    "experiment_completed": true,
+    "participants": [
+      "Alice",
+      "Bob",
+      "Carol"
+    ],
+    "phase1_summary": {
+      "all_participants_completed": true,
+      "total_earnings_phase1": 29.8106,
+      "avg_earnings_phase1": 9.936866666666667
+    },
+    "phase2_summary": {
+      "consensus_reached": false,
+      "total_discussion_rounds": 5,
+      "total_earnings_phase2": 9.9544,
+      "avg_earnings_phase2": 3.3181333333333334
+    },
+    "total_earnings": {
+      "Alice": 10.6133,
+      "Bob": 15.352699999999999,
+      "Carol": 13.799000000000001
+    },
+    "winner": [
+      "Bob",
+      15.352699999999999
+    ]
+  }
+}

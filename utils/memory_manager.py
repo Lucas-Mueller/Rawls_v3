@@ -117,10 +117,10 @@ class MemoryManager:
         Returns:
             Formatted prompt for memory update
         """
-        return f"""Current Memory:
+        return f"""Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions.
+
+Current Memory:
 {current_memory if current_memory.strip() else "(Empty)"}
 
 Recent Activity:
-{round_content}
-
-Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions."""
+{round_content}"""
