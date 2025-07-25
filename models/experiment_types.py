@@ -79,10 +79,10 @@ class ParticipantContext(BaseModel):
     name: str
     role_description: str
     bank_balance: float
-    memory: str = Field(..., description="Continuous across Phase 1 and Phase 2")
+    memory: str = Field(..., description="Agent-managed memory continuous across Phase 1 and Phase 2")
     round_number: int
     phase: ExperimentPhase
-    max_memory_length: int = 5000
+    memory_character_limit: int = 50000
 
 
 class DiscussionStatement(BaseModel):

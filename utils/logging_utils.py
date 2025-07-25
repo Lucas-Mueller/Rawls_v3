@@ -112,16 +112,18 @@ class ExperimentLogger:
             ]
         }
     
-    def _format_principle_ranking(self, ranking) -> List[Dict[str, Any]]:
+    def _format_principle_ranking(self, ranking) -> Dict[str, Any]:
         """Format principle ranking for logging."""
-        return [
-            {
-                "principle": ranked_principle.principle.value,
-                "rank": ranked_principle.rank,
-                "certainty": ranked_principle.certainty.value
-            }
-            for ranked_principle in ranking.rankings
-        ]
+        return {
+            "rankings": [
+                {
+                    "principle": ranked_principle.principle.value,
+                    "rank": ranked_principle.rank
+                }
+                for ranked_principle in ranking.rankings
+            ],
+            "overall_certainty": ranking.certainty.value
+        }
     
     def _extract_agent_interactions(self, results: ExperimentResults) -> Dict[str, Any]:
         """Extract chronological agent interactions."""

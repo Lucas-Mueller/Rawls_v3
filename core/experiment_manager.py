@@ -10,7 +10,7 @@ from agents import Agent, trace
 
 from models import ExperimentResults, ParticipantContext
 from config import ExperimentConfiguration
-from experiment_agents import create_participant_agent, UtilityAgent
+from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
 from core import Phase1Manager, Phase2Manager
 from utils.logging_utils import ExperimentLogger
 
@@ -80,7 +80,7 @@ class FrohlichExperimentManager:
                 logger.error(f"Experiment {self.experiment_id} failed: {e}")
                 raise
             
-    def _create_participants(self) -> List[Agent[ParticipantContext]]:
+    def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration."""
         participants = []
         for agent_config in self.config.agents:

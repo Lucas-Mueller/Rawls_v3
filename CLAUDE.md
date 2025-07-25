@@ -66,7 +66,7 @@ python run_tests.py integration
 ### Key Features
 
 - **Configuration-driven**: Uses YAML files to specify agent properties, experiment parameters, and distribution ranges
-- **Memory Management**: Agents maintain memory (default 5000 words) that updates after each experimental step
+- **Agent-Managed Memory**: Agents create and manage their own memory (default 50,000 characters) with complete freedom over structure and content
 - **Tracing**: Uses OpenAI Agents SDK tracing with one trace per run
 - **Validation**: Built-in validation for agent responses, especially for constraint specifications
 - **Randomization**: Dynamic income distributions with configurable multiplier ranges
@@ -96,7 +96,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 #### Key Design Patterns
 - **Configuration-driven**: All agent properties, experiment parameters, and distribution ranges specified via YAML
 - **Async/Await**: Full async implementation for efficient parallel execution in Phase 1
-- **Memory Management**: Agents maintain configurable memory (default 5000 words) that updates after each step
+- **Agent-Managed Memory**: Agents maintain configurable memory (default 50,000 characters) that they update themselves after each step
 - **Validation System**: Built-in validation for agent responses, especially constraint specifications
 - **Tracing Integration**: Uses OpenAI Agents SDK tracing with one trace per experiment run
 
@@ -123,8 +123,15 @@ The system follows a modular, service-oriented architecture with clear separatio
 ### Agent Configuration
 Each participant agent has configurable:
 - `name`, `personality`, `model` (e.g., "o3-mini")  
-- `temperature`, `reasoning_enabled`, `memory_length`
+- `temperature`, `reasoning_enabled`, `memory_character_limit`
 - System automatically creates participant agents from config and validates responses with utility agent
+
+### Memory System
+- **Agent-Managed**: Agents create and update their own memory throughout the experiment
+- **Character Limit**: Default 50,000 characters (configurable via `memory_character_limit`)
+- **Complete Freedom**: Agents decide what to remember and how to structure their memory
+- **Error Handling**: 5 retry attempts if memory exceeds character limit, experiment aborts on failure
+- **Continuous**: Memory persists across Phase 1 and Phase 2 for complete experimental continuity
 
 ### Data Validation
 - Income distributions validated for positive values and proper constraint specifications

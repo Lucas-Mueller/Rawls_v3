@@ -12,7 +12,7 @@ from models import (
     VotingResponse, Phase1Results, PrincipleRanking, PrincipleRankingResponse
 )
 from config import ExperimentConfiguration, AgentConfiguration
-from experiment_agents import create_agent_with_output_type, update_participant_context, UtilityAgent
+from experiment_agents import create_agent_with_output_type, update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 
@@ -20,7 +20,7 @@ from utils.memory_manager import MemoryManager
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[Agent], utility_agent: UtilityAgent):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
         self.participants = participants
         self.utility_agent = utility_agent
     
@@ -69,7 +69,7 @@ class Phase2Manager:
         for i, phase1_result in enumerate(phase1_results):
             agent_config = config.agents[i]
             
-            # Create Phase 2 context with continuous memory
+            # Create Phase 2 context with continuous memory - no automatic transition
             phase2_context = ParticipantContext(
                 name=phase1_result.participant_name,
                 role_description=agent_config.personality,
@@ -77,18 +77,7 @@ class Phase2Manager:
                 memory=phase1_result.final_memory_state,  # CONTINUOUS MEMORY FROM PHASE 1
                 round_number=0,  # Reset for Phase 2
                 phase=ExperimentPhase.PHASE_2,
-                max_memory_length=agent_config.memory_length
-            )
-            
-            # Add Phase 2 transition information to memory
-            transition_summary = MemoryManager.create_phase_transition_summary(
-                phase1_result.final_memory_state
-            )
-            
-            phase2_context = update_participant_context(
-                phase2_context,
-                transition_summary,
-                new_phase=ExperimentPhase.PHASE_2
+                memory_character_limit=agent_config.memory_character_limit
             )
             
             phase2_contexts.append(phase2_context)
@@ -121,16 +110,18 @@ class Phase2Manager:
                 context.round_number = round_num
                 
                 # Get participant statement (with internal reasoning if enabled)
-                statement = await self._get_participant_statement(
+                statement, statement_content = await self._get_participant_statement(
                     participant, context, discussion_state, agent_config
                 )
                 
                 discussion_state.add_statement(participant.name, statement)
                 
-                # Update participant memory with their statement
+                # Update participant memory with agent
+                context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                    participant, context, statement_content
+                )
                 contexts[participant_idx] = update_participant_context(
-                    context,
-                    f"ROUND {round_num} STATEMENT: I said: '{statement}'"
+                    context, new_round=round_num
                 )
                 
                 # Check for vote proposal
@@ -145,12 +136,17 @@ class Phase2Manager:
                         discussion_state.add_vote_result(vote_result)
                         
                         # Update all participants' memory with vote result
-                        vote_memory = f"VOTE CONDUCTED: {vote_result.consensus_reached and 'Consensus reached' or 'No consensus'}"
+                        vote_content = f"VOTE CONDUCTED: {vote_result.consensus_reached and 'Consensus reached' or 'No consensus'}"
                         if vote_result.consensus_reached and vote_result.agreed_principle:
-                            vote_memory += f" on {vote_result.agreed_principle.principle.value}"
+                            vote_content += f" on {vote_result.agreed_principle.principle.value}"
                         
+                        # Update each participant's memory with the vote outcome
                         for i in range(len(contexts)):
-                            contexts[i] = update_participant_context(contexts[i], vote_memory)
+                            participant = self.participants[i]
+                            contexts[i].memory = await MemoryManager.prompt_agent_for_memory_update(
+                                participant, contexts[i], 
+                                f"Vote Outcome: {vote_content}"
+                            )
                         
                         if vote_result.consensus_reached:
                             return GroupDiscussionResult(
@@ -189,11 +185,11 @@ class Phase2Manager:
     
     async def _get_participant_statement(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext,
         discussion_state: GroupDiscussionState,
         agent_config: AgentConfiguration
-    ) -> str:
+    ) -> tuple[str, str]:
         """Get participant's statement for the current round."""
         
         discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
@@ -202,11 +198,24 @@ class Phase2Manager:
         if agent_config.reasoning_enabled:
             statement_agent = create_agent_with_output_type(agent_config, GroupStatementResponse)
             result = await Runner.run(statement_agent, discussion_prompt, context=context)
-            return result.final_output.public_statement
+            statement = result.final_output.public_statement
+            
+            # Create round content for memory
+            round_content = f"""Prompt: {discussion_prompt}
+Your Internal Reasoning: {result.final_output.internal_reasoning if hasattr(result.final_output, 'internal_reasoning') else 'N/A'}
+Your Public Statement: {statement}
+Outcome: Made statement in Round {context.round_number} of group discussion."""
         else:
             # Direct statement without structured reasoning
-            result = await Runner.run(participant, discussion_prompt, context=context)
-            return result.final_output
+            result = await Runner.run(participant.agent, discussion_prompt, context=context)
+            statement = result.final_output
+            
+            # Create round content for memory
+            round_content = f"""Prompt: {discussion_prompt}
+Your Statement: {statement}
+Outcome: Made statement in Round {context.round_number} of group discussion."""
+        
+        return statement, round_content
     
     async def _check_unanimous_vote_agreement(
         self,
@@ -228,7 +237,7 @@ class Phase2Manager:
         for i, participant in enumerate(self.participants):
             context = contexts[i]
             task = asyncio.create_task(
-                Runner.run(participant, vote_agreement_prompt, context=context)
+                Runner.run(participant.agent, vote_agreement_prompt, context=context)
             )
             agreement_tasks.append(task)
         
@@ -280,7 +289,7 @@ class Phase2Manager:
     
     async def _get_participant_vote(
         self,
-        participant: Agent, 
+        participant: ParticipantAgent, 
         context: ParticipantContext,
         agent_config: AgentConfiguration
     ) -> PrincipleChoice:
@@ -316,7 +325,7 @@ class Phase2Manager:
             vote_choice = result.final_output.vote_choice
         
         # Validate the constraint amount if needed
-        if not vote_choice.validate_constraint_amount():
+        if not vote_choice.is_valid_constraint():
             # Re-prompt for valid constraint amount
             vote_choice = await self._re_prompt_for_valid_vote(
                 participant, context, vote_choice, agent_config
@@ -326,7 +335,7 @@ class Phase2Manager:
     
     async def _re_prompt_for_valid_vote(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext, 
         invalid_vote: PrincipleChoice,
         agent_config: AgentConfiguration
@@ -419,16 +428,23 @@ class Phase2Manager:
             context = contexts[i]
             agent_config = config.agents[i]
             
-            # Update context with final results
+            # Update context with final results using agent-managed memory
             final_earnings = payoff_results[participant.name]
-            result_info = f"FINAL RESULTS: Phase 2 earnings: ${final_earnings:.2f}. "
+            result_content = f"FINAL RESULTS: Phase 2 earnings: ${final_earnings:.2f}. "
             
             if discussion_result.consensus_reached:
-                result_info += f"Group reached consensus on {discussion_result.agreed_principle.principle.value}."
+                result_content += f"Group reached consensus on {discussion_result.agreed_principle.principle.value}."
             else:
-                result_info += "Group did not reach consensus. Earnings were randomly assigned."
+                result_content += "Group did not reach consensus. Earnings were randomly assigned."
             
-            updated_context = update_participant_context(context, result_info)
+            # Update memory with agent
+            context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, f"Final Phase 2 Results: {result_content}"
+            )
+            
+            updated_context = update_participant_context(
+                context, balance_change=final_earnings
+            )
             
             task = asyncio.create_task(
                 self._get_final_ranking(participant, updated_context, agent_config)
@@ -446,7 +462,7 @@ class Phase2Manager:
     
     async def _get_final_ranking(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext,
         agent_config: AgentConfiguration
     ) -> PrincipleRanking:
@@ -462,7 +478,7 @@ class Phase2Manager:
         - The final outcome and your earnings
         - How your understanding of the principles has evolved
         
-        Provide your final ranking with certainty levels and explain how the complete experiment 
+        Provide your final ranking with an overall certainty level for the entire ranking and explain how the complete experiment 
         influenced your final preferences.
         """
         

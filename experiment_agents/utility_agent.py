@@ -95,10 +95,11 @@ class UtilityAgent:
         Response: "{response}"
         
         Extract a complete ranking of all 4 principles from best (rank 1) to worst (rank 4).
-        Also extract certainty levels for each principle.
+        Also extract the overall certainty level for the entire ranking.
         
         Return the parsed data as a dictionary with:
-        - rankings: list of {{principle, rank, certainty}} objects
+        - rankings: list of {{principle, rank}} objects (no individual certainty levels)
+        - certainty: overall certainty level for the entire ranking
         """
         
         result = await Runner.run(self.parser_agent, parse_prompt)
@@ -112,11 +113,13 @@ class UtilityAgent:
         for ranking_data in data['rankings']:
             rankings.append(RankedPrinciple(
                 principle=JusticePrinciple(ranking_data['principle']),
-                rank=ranking_data['rank'],
-                certainty=CertaintyLevel(ranking_data['certainty'])
+                rank=ranking_data['rank']
             ))
         
-        return PrincipleRanking(rankings=rankings)
+        # Extract overall certainty level for the entire ranking
+        overall_certainty = CertaintyLevel(data.get('certainty', 'sure'))
+        
+        return PrincipleRanking(rankings=rankings, certainty=overall_certainty)
     
     async def validate_constraint_specification(self, choice: PrincipleChoice) -> bool:
         """Validate constraint principles have required amounts."""

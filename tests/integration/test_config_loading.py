@@ -21,14 +21,14 @@ agents:
     model: "gpt-4o-mini"
     temperature: 0.7
     reasoning_enabled: true
-    memory_length: 5000
+    memory_character_limit: 50000
     
   - name: "TestAgent2"
     personality: "Pragmatic and results-oriented."
     model: "gpt-4o-mini"
     temperature: 0.8
     reasoning_enabled: false
-    memory_length: 4000
+    memory_character_limit: 40000
 
 phase2_rounds: 5
 distribution_range_phase1: [0.8, 1.5]
@@ -57,8 +57,8 @@ distribution_range_phase2: [0.6, 1.8]
             # Test agent-specific settings
             self.assertTrue(config.agents[0].reasoning_enabled)
             self.assertFalse(config.agents[1].reasoning_enabled)
-            self.assertEqual(config.agents[0].memory_length, 5000)
-            self.assertEqual(config.agents[1].memory_length, 4000)
+            self.assertEqual(config.agents[0].memory_character_limit, 50000)
+            self.assertEqual(config.agents[1].memory_character_limit, 40000)
             
         finally:
             # Clean up
@@ -74,14 +74,14 @@ agents:
     model: "gpt-4o-mini"
     temperature: 0.7
     reasoning_enabled: true
-    memory_length: 5000
+    memory_character_limit: 50000
     
   - name: "Agent1"  # Duplicate name
     personality: "Another personality"
     model: "gpt-4o-mini"
     temperature: 0.8
     reasoning_enabled: true
-    memory_length: 5000
+    memory_character_limit: 50000
 
 phase2_rounds: 5
 distribution_range_phase1: [0.8, 1.5]
@@ -159,7 +159,7 @@ distribution_range_phase2: [0.6, 1.8]
             self.assertIsNotNone(agent.name)
             self.assertIsNotNone(agent.personality)
             self.assertIsNotNone(agent.model)
-            self.assertGreater(agent.memory_length, 0)
+            self.assertGreater(agent.memory_character_limit, 0)
 
 
 if __name__ == '__main__':

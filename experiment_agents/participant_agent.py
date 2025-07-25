@@ -1,11 +1,10 @@
 """
 Participant agent system for the Frohlich Experiment.
 """
-from agents import Agent, RunContextWrapper, ModelSettings
+from agents import Agent, RunContextWrapper, ModelSettings, Runner
 
 from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
-from utils.memory_manager import MemoryManager
 
 
 # Broad experiment explanation that gets included in all agent instructions
@@ -28,15 +27,46 @@ Throughout the experiment, maintain your assigned personality while engaging tho
 """
 
 
-def create_participant_agent(config: AgentConfiguration) -> Agent[ParticipantContext]:
+class ParticipantAgent:
+    """Wrapper for participant agent with memory management capabilities."""
+    
+    def __init__(self, config: AgentConfiguration):
+        self.config = config
+        self.agent = Agent[ParticipantContext](
+            name=config.name,
+            instructions=lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, config),
+            model=config.model,
+            model_settings=ModelSettings(temperature=config.temperature)
+        )
+    
+    @property
+    def name(self) -> str:
+        return self.agent.name
+    
+    async def update_memory(self, prompt: str) -> str:
+        """Agent updates their own memory based on prompt."""
+        # Create a temporary context just for memory update
+        temp_context = ParticipantContext(
+            name=self.config.name,
+            role_description="Memory update",
+            bank_balance=0.0,
+            memory="",
+            round_number=0,
+            phase=ExperimentPhase.PHASE_1,
+            memory_character_limit=self.config.memory_character_limit
+        )
+        
+        result = await Runner.run(self.agent, prompt, context=temp_context)
+        return result.final_output
+    
+    def clone(self, **kwargs):
+        """Clone the underlying agent with modifications."""
+        return self.agent.clone(**kwargs)
+
+
+def create_participant_agent(config: AgentConfiguration) -> ParticipantAgent:
     """Create a participant agent with the given configuration."""
-    return Agent[ParticipantContext](
-        name=config.name,
-        instructions=lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, config),
-        model=config.model,
-        model_settings=ModelSettings(temperature=config.temperature)
-        # Note: output_type will be set dynamically based on the specific task
-    )
+    return ParticipantAgent(config)
 
 
 def _generate_dynamic_instructions(
@@ -49,7 +79,7 @@ def _generate_dynamic_instructions(
     context = ctx.context
     
     # Format memory for display
-    formatted_memory = MemoryManager.format_memory_prompt(context.memory, context.phase)
+    formatted_memory = f"=== YOUR MEMORY ===\n{context.memory if context.memory.strip() else '(Empty)'}\n{'='*20}"
     
     # Phase-specific instructions
     phase_instructions = _get_phase_specific_instructions(context.phase, context.round_number)
@@ -134,30 +164,21 @@ def create_agent_with_output_type(config: AgentConfiguration, output_type: type)
 
 def update_participant_context(
     context: ParticipantContext,
-    memory_update: str,
     balance_change: float = 0.0,
     new_round: int = None,
     new_phase: ExperimentPhase = None
 ) -> ParticipantContext:
-    """Update participant context with new information."""
-    
-    # Update memory
-    updated_memory = MemoryManager.update_memory(
-        context.memory, 
-        memory_update, 
-        context.max_memory_length,
-        priority_sections=["INITIAL RANKING", "FINAL RANKING", "EARNINGS", "PHASE TRANSITION"]
-    )
+    """Update participant context with new information (memory handled separately)."""
     
     # Create updated context
     updated_context = ParticipantContext(
         name=context.name,
         role_description=context.role_description,
         bank_balance=context.bank_balance + balance_change,
-        memory=updated_memory,
+        memory=context.memory,  # Memory updated separately by agent
         round_number=new_round if new_round is not None else context.round_number,
         phase=new_phase if new_phase is not None else context.phase,
-        max_memory_length=context.max_memory_length
+        memory_character_limit=context.memory_character_limit
     )
     
     return updated_context

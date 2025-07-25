@@ -14,7 +14,7 @@ class AgentConfiguration(BaseModel):
     model: str = Field("o3-mini", description="LLM model to use")
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="Model temperature")
     reasoning_enabled: bool = Field(True, description="Enable internal reasoning in Phase 2")
-    memory_length: int = Field(5000, gt=0, description="Maximum memory length in characters")
+    memory_character_limit: int = Field(50000, gt=0, description="Maximum memory length in characters")
 
 
 class ExperimentConfiguration(BaseModel):
