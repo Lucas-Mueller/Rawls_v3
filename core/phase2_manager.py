@@ -12,7 +12,7 @@ from models import (
     VotingResponse, Phase1Results, PrincipleRanking, PrincipleRankingResponse
 )
 from config import ExperimentConfiguration, AgentConfiguration
-from experiment_agents import create_agent_with_output_type, update_participant_context, UtilityAgent, ParticipantAgent
+from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 
@@ -194,24 +194,12 @@ class Phase2Manager:
         
         discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
         
-        # Create agent with structured output if reasoning is enabled
-        if agent_config.reasoning_enabled:
-            statement_agent = create_agent_with_output_type(agent_config, GroupStatementResponse)
-            result = await Runner.run(statement_agent, discussion_prompt, context=context)
-            statement = result.final_output.public_statement
-            
-            # Create round content for memory
-            round_content = f"""Prompt: {discussion_prompt}
-Your Internal Reasoning: {result.final_output.internal_reasoning if hasattr(result.final_output, 'internal_reasoning') else 'N/A'}
-Your Public Statement: {statement}
-Outcome: Made statement in Round {context.round_number} of group discussion."""
-        else:
-            # Direct statement without structured reasoning
-            result = await Runner.run(participant.agent, discussion_prompt, context=context)
-            statement = result.final_output
-            
-            # Create round content for memory
-            round_content = f"""Prompt: {discussion_prompt}
+        # Always use text responses, no structured output needed for statements
+        result = await Runner.run(participant.agent, discussion_prompt, context=context)
+        statement = result.final_output
+        
+        # Create round content for memory
+        round_content = f"""Prompt: {discussion_prompt}
 Your Statement: {statement}
 Outcome: Made statement in Round {context.round_number} of group discussion."""
         
@@ -311,18 +299,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         What is your vote?
         """
         
-        voting_agent = create_agent_with_output_type(agent_config, VotingResponse)
-        result = await Runner.run(voting_agent, voting_prompt, context=context)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, voting_prompt, context=context)
+        text_response = result.final_output
         
-        # Parse the vote
-        try:
-            parsed_vote = await self.utility_agent.parse_principle_choice(
-                result.final_output.vote_reasoning + " " + str(result.final_output.vote_choice.dict())
-            )
-            vote_choice = parsed_vote
-        except Exception:
-            # Fallback to structured response
-            vote_choice = result.final_output.vote_choice
+        # Parse using enhanced utility agent with retry logic
+        vote_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
         
         # Validate the constraint amount if needed
         if not vote_choice.is_valid_constraint():
@@ -346,16 +328,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             participant.name, invalid_vote
         )
         
-        voting_agent = create_agent_with_output_type(agent_config, VotingResponse)
-        result = await Runner.run(voting_agent, retry_prompt, context=context)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, retry_prompt, context=context)
+        retry_text = result.final_output
         
-        try:
-            parsed_vote = await self.utility_agent.parse_principle_choice(
-                result.final_output.vote_reasoning + " " + str(result.final_output.vote_choice.dict())
-            )
-            return parsed_vote
-        except Exception:
-            return result.final_output.vote_choice
+        # Parse using enhanced utility agent with retry logic
+        return await self.utility_agent.parse_principle_choice_enhanced(retry_text)
     
     def _check_exact_consensus(self, votes: List[PrincipleChoice]) -> PrincipleChoice:
         """Check if all votes are exactly identical (including constraint amounts)."""
@@ -482,16 +460,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         influenced your final preferences.
         """
         
-        ranking_agent = create_agent_with_output_type(agent_config, PrincipleRankingResponse)
-        result = await Runner.run(ranking_agent, final_ranking_prompt, context=context)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+        text_response = result.final_output
         
-        try:
-            # Parse the ranking using utility agent
-            parsed_ranking = await self.utility_agent.parse_principle_ranking(result.final_output.ranking_explanation)
-            return parsed_ranking
-        except Exception:
-            # Fallback to the structured response
-            return result.final_output.principle_rankings
+        # Parse using enhanced utility agent with retry logic
+        return await self.utility_agent.parse_principle_ranking_enhanced(text_response)
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for group discussion round."""

@@ -68,6 +68,7 @@ class Phase1Results(BaseModel):
     """Complete results for a participant's Phase 1."""
     participant_name: str
     initial_ranking: PrincipleRanking
+    post_explanation_ranking: PrincipleRanking
     application_results: List[ApplicationResult]
     final_ranking: PrincipleRanking
     total_earnings: float

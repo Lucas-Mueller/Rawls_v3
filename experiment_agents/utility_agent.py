@@ -2,7 +2,8 @@
 Utility agent for parsing and validating participant responses.
 """
 import asyncio
-from typing import Optional
+import re
+from typing import Optional, Dict, Any, List
 from agents import Agent, Runner, AgentOutputSchema
 
 from models import (
@@ -12,7 +13,7 @@ from models import (
 
 
 class UtilityAgent:
-    """Specialized agent for parsing and validating participant responses."""
+    """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
     def __init__(self):
         self.parser_agent = Agent(
@@ -24,6 +25,11 @@ class UtilityAgent:
             name="Response Validator", 
             instructions=self._get_validator_instructions()
         )
+        
+        # Enhanced parsing patterns
+        self._principle_patterns = self._compile_principle_patterns()
+        self._certainty_patterns = self._compile_certainty_patterns()
+        self._ranking_patterns = self._compile_ranking_patterns()
     
     def _get_parser_instructions(self) -> str:
         """Instructions for the parser agent."""
@@ -166,3 +172,294 @@ class UtilityAgent:
         - Floor constraint: "I choose maximizing average with a floor constraint of $15,000"
         - Range constraint: "I choose maximizing average with a range constraint of $20,000"
         """
+    
+    def _compile_principle_patterns(self) -> Dict[str, re.Pattern]:
+        """Compile regex patterns for principle detection."""
+        return {
+            'maximizing_floor': re.compile(
+                r'(?:maximizing?.*?floor|floor.*?income|option\s*[(\[]?a[)\]]?)', 
+                re.IGNORECASE
+            ),
+            'maximizing_average': re.compile(
+                r'(?:maximizing?.*?average(?!\s+with)|average.*?income(?!\s+with)|option\s*[(\[]?b[)\]]?)', 
+                re.IGNORECASE
+            ),
+            'maximizing_average_floor_constraint': re.compile(
+                r'(?:maximizing?.*?average.*?floor|average.*?floor.*?constraint|floor.*?constraint|option\s*[(\[]?c[)\]]?)', 
+                re.IGNORECASE
+            ),
+            'maximizing_average_range_constraint': re.compile(
+                r'(?:maximizing?.*?average.*?range|average.*?range.*?constraint|range.*?constraint|option\s*[(\[]?d[)\]]?)', 
+                re.IGNORECASE
+            )
+        }
+    
+    def _compile_certainty_patterns(self) -> Dict[str, re.Pattern]:
+        """Compile regex patterns for certainty level detection."""
+        return {
+            'very_unsure': re.compile(r'very\s+unsure|extremely\s+uncertain|highly\s+uncertain', re.IGNORECASE),
+            'unsure': re.compile(r'(?<!very\s)unsure|uncertain|not\s+confident', re.IGNORECASE),
+            'no_opinion': re.compile(r'no\s+opinion|neutral|indifferent|no\s+preference', re.IGNORECASE),
+            'sure': re.compile(r'(?<!very\s)sure|confident|certain', re.IGNORECASE),
+            'very_sure': re.compile(r'very\s+sure|extremely\s+confident|highly\s+certain|completely\s+sure', re.IGNORECASE)
+        }
+    
+    def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
+        """Compile regex patterns for ranking detection."""
+        return {
+            'ranking_line': re.compile(r'(\d+)\.?\s*(.*?)(?=\d+\.|$)', re.MULTILINE | re.DOTALL),
+            'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE),
+            'constraint_amount': re.compile(r'\$?(\d{1,3}(?:,\d{3})*|\d+)(?:\s*(?:dollars?|k|thousand))?', re.IGNORECASE)
+        }
+    
+    async def parse_principle_choice_enhanced(self, response: str, max_retries: int = 3) -> PrincipleChoice:
+        """Enhanced parsing for principle choice with retry logic."""
+        
+        for attempt in range(max_retries):
+            try:
+                # First try direct pattern matching
+                choice_data = self._extract_principle_choice_direct(response)
+                if choice_data:
+                    return self._create_principle_choice(choice_data)
+                
+                # Fallback to agent-based parsing
+                return await self.parse_principle_choice(response)
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    # Final attempt - use more permissive parsing
+                    return await self._parse_with_fallback(response, 'principle_choice')
+                
+                # Add clarifying context for retry
+                response = f"Original response: {response}\n\nPlease clearly state your principle choice."
+    
+    def _extract_principle_choice_direct(self, response: str) -> Optional[Dict[str, Any]]:
+        """Direct pattern matching for principle choice."""
+        
+        # Find principle
+        principle = None
+        for principle_key, pattern in self._principle_patterns.items():
+            if pattern.search(response):
+                principle = principle_key
+                break
+        
+        if not principle:
+            return None
+        
+        # Find constraint amount if needed
+        constraint_amount = None
+        if 'constraint' in principle:
+            amount_match = self._ranking_patterns['constraint_amount'].search(response)
+            if amount_match:
+                amount_str = amount_match.group(1).replace(',', '')
+                try:
+                    constraint_amount = float(amount_str)
+                    # Handle k/thousand notation
+                    if 'k' in response.lower() or 'thousand' in response.lower():
+                        constraint_amount *= 1000
+                except ValueError:
+                    pass
+        
+        # Find certainty
+        certainty = 'sure'  # default
+        for certainty_key, pattern in self._certainty_patterns.items():
+            if pattern.search(response):
+                certainty = certainty_key
+                break
+        
+        return {
+            'principle': principle,
+            'constraint_amount': constraint_amount,
+            'certainty': certainty,
+            'reasoning': response  # Full response as reasoning
+        }
+    
+    def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
+        """Create PrincipleChoice object from extracted data."""
+        return PrincipleChoice(
+            principle=JusticePrinciple(data['principle']),
+            constraint_amount=data.get('constraint_amount'),
+            certainty=CertaintyLevel(data['certainty']),
+            reasoning=data.get('reasoning', '')
+        )
+    
+    async def parse_principle_ranking_enhanced(self, response: str, max_retries: int = 3) -> PrincipleRanking:
+        """Enhanced parsing for principle ranking with retry logic."""
+        
+        for attempt in range(max_retries):
+            try:
+                # First try direct pattern matching
+                ranking_data = self._extract_ranking_direct(response)
+                if ranking_data and len(ranking_data['rankings']) == 4:
+                    return self._create_principle_ranking(ranking_data)
+                
+                # Fallback to agent-based parsing
+                return await self.parse_principle_ranking(response)
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    # Final attempt - use more permissive parsing
+                    return await self._parse_with_fallback(response, 'principle_ranking')
+                
+                # Add clarifying context for retry
+                response = f"Original response: {response}\n\nPlease provide a complete ranking of all 4 principles from 1-4."
+    
+    def _extract_ranking_direct(self, response: str) -> Optional[Dict[str, Any]]:
+        """Direct pattern matching for principle ranking."""
+        
+        rankings = []
+        
+        # Look for numbered list format
+        ranking_matches = self._ranking_patterns['ranking_line'].findall(response)
+        
+        if len(ranking_matches) >= 4:
+            for rank_num, rank_text in ranking_matches[:4]:
+                principle = self._identify_principle_in_text(rank_text.strip())
+                if principle:
+                    rankings.append({
+                        'principle': principle,
+                        'rank': int(rank_num)
+                    })
+        
+        # Find overall certainty
+        certainty = 'sure'  # default
+        for certainty_key, pattern in self._certainty_patterns.items():
+            if pattern.search(response):
+                certainty = certainty_key
+                break
+        
+        if len(rankings) == 4:
+            return {
+                'rankings': rankings,
+                'certainty': certainty
+            }
+        
+        return None
+    
+    def _identify_principle_in_text(self, text: str) -> Optional[str]:
+        """Identify which principle is mentioned in text."""
+        for principle_key, pattern in self._principle_patterns.items():
+            if pattern.search(text):
+                return principle_key
+        return None
+    
+    def _create_principle_ranking(self, data: Dict[str, Any]) -> PrincipleRanking:
+        """Create PrincipleRanking object from extracted data."""
+        rankings = []
+        for ranking_data in data['rankings']:
+            rankings.append(RankedPrinciple(
+                principle=JusticePrinciple(ranking_data['principle']),
+                rank=ranking_data['rank']
+            ))
+        
+        return PrincipleRanking(
+            rankings=rankings, 
+            certainty=CertaintyLevel(data.get('certainty', 'sure'))
+        )
+    
+    async def _parse_with_fallback(self, response: str, parse_type: str) -> Any:
+        """Fallback parsing with more permissive approach."""
+        
+        if parse_type == 'principle_choice':
+            # Create a basic choice if we can identify any principle
+            for principle_key, pattern in self._principle_patterns.items():
+                if pattern.search(response):
+                    return PrincipleChoice(
+                        principle=JusticePrinciple(principle_key),
+                        constraint_amount=None,
+                        certainty=CertaintyLevel.SURE,
+                        reasoning=response
+                    )
+            
+            # Ultimate fallback - default choice
+            return PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE,
+                constraint_amount=None,
+                certainty=CertaintyLevel.UNSURE,
+                reasoning=response
+            )
+        
+        elif parse_type == 'principle_ranking':
+            # Create default ranking if parsing fails
+            principles = list(JusticePrinciple)
+            rankings = []
+            for i, principle in enumerate(principles[:4]):
+                rankings.append(RankedPrinciple(
+                    principle=principle,
+                    rank=i + 1
+                ))
+            
+            return PrincipleRanking(
+                rankings=rankings,
+                certainty=CertaintyLevel.UNSURE
+            )
+        
+        raise ValueError(f"Unknown parse type: {parse_type}")
+    
+    async def validate_and_retry_parse(self, response: str, parse_type: str, max_retries: int = 3) -> Any:
+        """Validate parsed response and retry if needed."""
+        
+        for attempt in range(max_retries):
+            try:
+                if parse_type == 'principle_choice':
+                    parsed = await self.parse_principle_choice_enhanced(response)
+                    if await self.validate_constraint_specification(parsed):
+                        return parsed
+                elif parse_type == 'principle_ranking':
+                    parsed = await self.parse_principle_ranking_enhanced(response)
+                    if len(parsed.rankings) == 4:
+                        return parsed
+                
+                # If validation failed, improve the response text for retry
+                if attempt < max_retries - 1:
+                    response = await self._improve_response_format(response, parse_type)
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+        
+        raise ValueError(f"Failed to parse and validate {parse_type} after {max_retries} attempts")
+    
+    async def _improve_response_format(self, response: str, parse_type: str) -> str:
+        """Use parser agent to improve response format."""
+        
+        format_prompt = self._get_format_improvement_prompt(response, parse_type)
+        result = await Runner.run(self.parser_agent, format_prompt)
+        
+        return result.final_output
+    
+    def _get_format_improvement_prompt(self, response: str, parse_type: str) -> str:
+        """Get prompt for improving response format."""
+        
+        if parse_type == 'principle_choice':
+            return f"""
+            The following response needs to be reformatted for clear principle choice extraction:
+            
+            Original response: "{response}"
+            
+            Please rewrite this to clearly state:
+            1. Which principle they chose (a, b, c, or d)
+            2. If they chose c or d, the specific constraint amount in dollars
+            3. Their certainty level
+            4. Their reasoning
+            
+            Format as: "I choose [principle] with [constraint if applicable]. I am [certainty level] about this choice because [reasoning]."
+            """
+        
+        elif parse_type == 'principle_ranking':
+            return f"""
+            The following response needs to be reformatted for clear ranking extraction:
+            
+            Original response: "{response}"
+            
+            Please rewrite this as a numbered list ranking all 4 principles from best (1) to worst (4):
+            
+            1. [principle name]
+            2. [principle name]  
+            3. [principle name]
+            4. [principle name]
+            
+            Overall certainty: [certainty level]
+            """
+        
+        return response

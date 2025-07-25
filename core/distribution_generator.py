@@ -2,7 +2,7 @@
 Distribution generation system for the Frohlich Experiment.
 """
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
@@ -150,6 +150,57 @@ class DistributionGenerator:
             # For each distribution, randomly assign class and calculate earnings
             assigned_class, earnings = DistributionGenerator.calculate_payoff(dist)
             alternative_earnings[f"distribution_{i+1}"] = earnings
+        
+        return alternative_earnings
+    
+    @staticmethod
+    def calculate_alternative_earnings_by_principle(
+        distributions: List[IncomeDistribution], 
+        constraint_amount: Optional[int] = None
+    ) -> dict:
+        """Calculate what participant would have earned under each principle choice."""
+        from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+        
+        alternative_earnings = {}
+        
+        # Define all four principles
+        principles = [
+            JusticePrinciple.MAXIMIZING_FLOOR,
+            JusticePrinciple.MAXIMIZING_AVERAGE, 
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]
+        
+        for principle in principles:
+            try:
+                # Create a principle choice (use provided constraint_amount or default)
+                if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 
+                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                    # Use provided constraint or a reasonable default
+                    constraint = constraint_amount if constraint_amount is not None else 15000
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint,
+                        certainty=CertaintyLevel.SURE
+                    )
+                else:
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        certainty=CertaintyLevel.SURE
+                    )
+                
+                # Apply this principle to the distributions
+                chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice
+                )
+                
+                # Calculate what they would have earned with this principle
+                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
+                alternative_earnings[principle.value] = earnings
+                
+            except Exception as e:
+                # If principle application fails, record as 0 earnings
+                alternative_earnings[principle.value] = 0.0
         
         return alternative_earnings
     

@@ -20,14 +20,12 @@ agents:
     personality: "Analytical and methodical."
     model: "gpt-4o-mini"
     temperature: 0.7
-    reasoning_enabled: true
     memory_character_limit: 50000
     
   - name: "TestAgent2"
     personality: "Pragmatic and results-oriented."
     model: "gpt-4o-mini"
     temperature: 0.8
-    reasoning_enabled: false
     memory_character_limit: 40000
 
 phase2_rounds: 5
@@ -55,8 +53,6 @@ distribution_range_phase2: [0.6, 1.8]
             self.assertEqual(config.distribution_range_phase2, (0.6, 1.8))
             
             # Test agent-specific settings
-            self.assertTrue(config.agents[0].reasoning_enabled)
-            self.assertFalse(config.agents[1].reasoning_enabled)
             self.assertEqual(config.agents[0].memory_character_limit, 50000)
             self.assertEqual(config.agents[1].memory_character_limit, 40000)
             
@@ -73,14 +69,12 @@ agents:
     personality: "Test personality"
     model: "gpt-4o-mini"
     temperature: 0.7
-    reasoning_enabled: true
     memory_character_limit: 50000
     
   - name: "Agent1"  # Duplicate name
     personality: "Another personality"
     model: "gpt-4o-mini"
     temperature: 0.8
-    reasoning_enabled: true
     memory_character_limit: 50000
 
 phase2_rounds: 5
