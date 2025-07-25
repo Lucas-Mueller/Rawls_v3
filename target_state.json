@@ -1,0 +1,76 @@
+{
+  "general_information": {
+    "consensus_reached": true,
+    "consensus_principle": "Principle A",
+    "public_conversation_phase_2": "...",
+    "final_vote_results": {
+      "agent_1": "Principle A",
+      "agent_2": "Principle A"
+    },
+    "config_file_used": "default_config.yaml"
+  },
+  "agents": [
+    {
+      "name": "Agent 1",
+      "model": "Model X",
+      "temperature": 0.7,
+      "personality": "Cautious",
+      "reasoning_enabled": true,
+      "phase_1": {
+        "initial_ranking": {
+          "principle_ranking_result": "...",
+          "confidence_level": "High",
+          "memory_coming_in_this_round": "..."
+        },
+        "detailed_explanation": {
+          "response_to_demonstration": "...",
+          "memory_coming_in_this_round": "..."
+        },
+        "ranking_2": {
+          "principle_ranking_result": "...",
+          "confidence_level": "High",
+          "memory_coming_in_this_round": "..."
+        },
+        "demonstrations": [
+          {
+            "number_demonstration_round": 1,
+            "choice_principal": "Principle A",
+            "class_put_in": "Class 1",
+            "payoff_received": 10,
+            "payoff_if_other_principles": "...",
+            "memory_coming_in_this_round": "...",
+            "bank_balance_after_round": 110
+          }
+        ],
+        "ranking_3": {
+          "principle_ranking_result": "...",
+          "confidence_level": "High",
+          "memory_coming_in_this_round": "...",
+          "bank_balance": 110
+        }
+      },
+      "phase_2": {
+        "rounds": [
+          {
+            "number_discussion_round": 1,
+            "speaking_order": 1,
+            "bank_balance": 110,
+            "memory_coming_in_this_round": "...",
+            "internal_reasoning": "...",
+            "public_message": "...",
+            "initiate_vote": "Yes",
+            "favored_principle": "Principle A"
+          }
+        ],
+        "post_group_discussion": {
+          "class_put_in": "Class 1",
+          "payoff_received": 10,
+          "final_ranking": "...",
+          "confidence_level": "High",
+          "memory_coming_in_this_round": "..."
+          
+        }
+      }
+    }
+  ]
+}
