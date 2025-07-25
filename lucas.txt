@@ -1,0 +1,2 @@
+Memory system, how are they generated? 
+Logging system --> seems to be all over the place

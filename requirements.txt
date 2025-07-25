@@ -1,0 +1,12 @@
+openai-agents
+openai-agents[litellm]
+python-dotenv
+pydantic
+pandas
+PyYAML
+numpy
+matplotlib
+seaborn
+tqdm
+scipy
+statsmodels
