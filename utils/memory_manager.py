@@ -58,7 +58,7 @@ class MemoryManager:
                 )
                 
                 # Get updated memory from agent
-                updated_memory = await agent.update_memory(prompt)
+                updated_memory = await agent.update_memory(prompt, context.bank_balance)
                 
                 # Validate memory length
                 is_valid, length = MemoryManager._validate_memory_length(
