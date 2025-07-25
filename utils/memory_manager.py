@@ -123,4 +123,4 @@ class MemoryManager:
 Recent Activity:
 {round_content}
 
-Update your memory based on what just happened."""
+Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions."""
