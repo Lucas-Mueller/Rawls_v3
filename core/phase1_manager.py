@@ -14,6 +14,7 @@ from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
+from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 
 
 class Phase1Manager:
@@ -23,7 +24,7 @@ class Phase1Manager:
         self.participants = participants
         self.utility_agent = utility_agent
     
-    async def run_phase1(self, config: ExperimentConfiguration) -> List[Phase1Results]:
+    async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
         
         tasks = []
@@ -31,7 +32,7 @@ class Phase1Manager:
             agent_config = config.agents[i]
             context = self._create_initial_participant_context(agent_config)
             task = asyncio.create_task(
-                self._run_single_participant_phase1(participant, context, config, agent_config)
+                self._run_single_participant_phase1(participant, context, config, agent_config, logger)
             )
             tasks.append(task)
         
@@ -54,13 +55,26 @@ class Phase1Manager:
         participant: ParticipantAgent,
         context: ParticipantContext,
         config: ExperimentConfiguration,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        logger: AgentCentricLogger = None
     ) -> Phase1Results:
         """Run complete Phase 1 for a single participant."""
         
         # 1.1 Initial Principle Ranking
         context.round_number = 0
         initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
+        
+        # Log initial ranking with current memory state
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            confidence = MemoryStateCapture.extract_confidence_from_response(ranking_content)
+            logger.log_initial_ranking(
+                participant.name,
+                ranking_content,
+                confidence,
+                memory_before,
+                balance_before
+            )
         
         # Update memory with agent
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
@@ -71,6 +85,16 @@ class Phase1Manager:
         # 1.2 Detailed Explanation (informational only)
         context.round_number = -1  # Special round for learning
         explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config)
+        
+        # Log detailed explanation
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_detailed_explanation(
+                participant.name,
+                explanation_content,
+                memory_before,
+                balance_before
+            )
         
         # Update memory with agent
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
@@ -84,6 +108,18 @@ class Phase1Manager:
             participant, context, agent_config
         )
         
+        # Log post-explanation ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            confidence = MemoryStateCapture.extract_confidence_from_response(post_ranking_content)
+            logger.log_post_explanation_ranking(
+                participant.name,
+                post_ranking_content,
+                confidence,
+                memory_before,
+                balance_before
+            )
+        
         # Update memory with agent
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
             participant, context, post_ranking_content
@@ -95,6 +131,10 @@ class Phase1Manager:
         for round_num in range(1, 5):
             context.round_number = round_num
             
+            # Capture state before round
+            balance_before = context.bank_balance
+            memory_before = context.memory
+            
             # Generate dynamic distribution for this round
             distribution_set = DistributionGenerator.generate_dynamic_distribution(
                 config.distribution_range_phase1
@@ -104,6 +144,21 @@ class Phase1Manager:
                 participant, context, distribution_set, round_num, agent_config
             )
             application_results.append(result)
+            
+            # Log demonstration round
+            if logger:
+                alternative_payoffs = MemoryStateCapture.format_alternative_payoffs(result.alternative_earnings)
+                logger.log_demonstration_round(
+                    participant.name,
+                    round_num,
+                    result.principle_choice.principle.value,
+                    result.assigned_income_class.value,
+                    result.earnings,
+                    alternative_payoffs,
+                    memory_before,
+                    balance_before,
+                    balance_before + result.earnings
+                )
             
             # Update memory with agent
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
@@ -120,6 +175,18 @@ class Phase1Manager:
         # 1.4 Final Ranking
         context.round_number = 5
         final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
+        
+        # Log final ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            confidence = MemoryStateCapture.extract_confidence_from_response(final_content)
+            logger.log_final_ranking(
+                participant.name,
+                final_content,
+                confidence,
+                memory_before,
+                balance_before
+            )
         
         # Update memory with agent
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
@@ -233,6 +300,13 @@ Outcome: Learned how each justice principle is applied to income distributions t
             parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
         )
         
+        # CRITICAL: Calculate what participant would have earned under each principle with SAME class assignment
+        alternative_earnings_same_class = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+            distribution_set.distributions,
+            assigned_class,
+            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
+        )
+        
         # Keep old alternative earnings for compatibility with data model
         alternative_earnings = DistributionGenerator.calculate_alternative_earnings(
             distribution_set.distributions
@@ -244,27 +318,56 @@ Outcome: Learned how each justice principle is applied to income distributions t
             chosen_distribution=chosen_distribution,
             assigned_income_class=assigned_class,
             earnings=earnings,
-            alternative_earnings=alternative_earnings
+            alternative_earnings=alternative_earnings,
+            alternative_earnings_same_class=alternative_earnings_same_class
         )
         
-        # Format alternative earnings by principle for display
-        alt_earnings_text = "\nAlternative earnings if you had chosen different principles:"
-        principle_labels = {
-            "maximizing_floor": "Maximizing floor income",
-            "maximizing_average": "Maximizing average income", 
-            "maximizing_average_floor_constraint": "Max average with floor constraint",
-            "maximizing_average_range_constraint": "Max average with range constraint"
+        # Format counterfactual analysis matching chit_example.png specification
+        class_name_mapping = {
+            "high": "HIGH",
+            "medium_high": "MEDIUM HIGH", 
+            "medium": "MEDIUM",
+            "medium_low": "MEDIUM LOW",
+            "low": "LOW"
         }
         
-        for principle_key, alt_earnings in alternative_earnings_by_principle.items():
-            principle_label = principle_labels.get(principle_key, principle_key)
-            alt_earnings_text += f"\n  - {principle_label}: ${alt_earnings:.2f}"
+        # Get the income for the assigned class in the chosen distribution
+        assigned_income = chosen_distribution.get_income_by_class(assigned_class)
         
-        # Create round content for memory
+        # Build the counterfactual table
+        counterfactual_table = f"""
+This assigns you to the following income class: {class_name_mapping[assigned_class.value]}
+
+For each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.
+
+Principle of Justice                          Income    Payoff"""
+        
+        # Format each principle with proper spacing
+        principle_display_names = {
+            "maximizing_floor": "Maximizing the floor",
+            "maximizing_average": "Maximizing the average", 
+            "maximizing_average_floor_constraint": "Maximizing the average with a floor constraint",
+            "maximizing_average_range_constraint": "Maximizing the average with a range constraint"
+        }
+        
+        for principle_key, alt_earnings in alternative_earnings_same_class.items():
+            principle_label = principle_display_names.get(principle_key, principle_key)
+            # Calculate income from earnings (reverse the payoff calculation)
+            alt_income = int(alt_earnings * 10000)
+            counterfactual_table += f"\n{principle_label:<40}  ${alt_income:,}    ${alt_earnings:.2f}"
+        
+        # Create round content for memory with properly formatted principle name
+        chosen_principle_display = DistributionGenerator.format_principle_name_with_constraint(parsed_choice)
+        
         round_content = f"""Prompt: {application_prompt}
 Your Response: {text_response}
-Your Choice: {parsed_choice.dict() if hasattr(parsed_choice, 'dict') else str(parsed_choice)}
-Outcome: Chose {parsed_choice.principle.value}, assigned to {assigned_class.value} class, earned ${earnings:.2f}. Total earnings now ${context.bank_balance + earnings:.2f}.{alt_earnings_text}"""
+Your Choice: {chosen_principle_display}
+
+ROUND {round_num} OUTCOME:
+{counterfactual_table}
+
+Your actual earnings this round: ${earnings:.2f}
+Your total earnings so far: ${context.bank_balance + earnings:.2f}"""
         
         return application_result, round_content
     

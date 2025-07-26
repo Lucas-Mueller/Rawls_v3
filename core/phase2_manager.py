@@ -15,6 +15,7 @@ from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
+from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 
 
 class Phase2Manager:
@@ -27,7 +28,8 @@ class Phase2Manager:
     async def run_phase2(
         self, 
         config: ExperimentConfiguration,
-        phase1_results: List[Phase1Results]
+        phase1_results: List[Phase1Results],
+        logger: AgentCentricLogger = None
     ) -> Phase2Results:
         """Execute complete Phase 2 group discussion."""
         
@@ -36,7 +38,7 @@ class Phase2Manager:
         
         # Group discussion
         discussion_result = await self._run_group_discussion(
-            config, participant_contexts
+            config, participant_contexts, logger
         )
         
         # Apply chosen principle and calculate payoffs
@@ -46,7 +48,7 @@ class Phase2Manager:
         
         # Final individual rankings
         final_rankings = await self._collect_final_rankings(
-            participant_contexts, discussion_result, payoff_results, config
+            participant_contexts, discussion_result, payoff_results, config, logger
         )
         
         return Phase2Results(
@@ -87,7 +89,8 @@ class Phase2Manager:
     async def _run_group_discussion(
         self,
         config: ExperimentConfiguration,
-        contexts: List[ParticipantContext]
+        contexts: List[ParticipantContext],
+        logger: AgentCentricLogger = None
     ) -> GroupDiscussionResult:
         """Run sequential group discussion with voting."""
         
@@ -101,7 +104,7 @@ class Phase2Manager:
             speaking_order = self._generate_speaking_order(round_num, contexts, last_round_starter)
             last_round_starter = speaking_order[0]
             
-            for participant_idx in speaking_order:
+            for speaking_order_position, participant_idx in enumerate(speaking_order):
                 participant = self.participants[participant_idx]
                 context = contexts[participant_idx]
                 agent_config = config.agents[participant_idx]
@@ -109,12 +112,33 @@ class Phase2Manager:
                 # Update context with current round
                 context.round_number = round_num
                 
+                # Capture pre-statement state
+                memory_before = context.memory
+                balance_before = context.bank_balance
+                
                 # Get participant statement (with internal reasoning if enabled)
-                statement, statement_content = await self._get_participant_statement(
+                statement, statement_content, internal_reasoning = await self._get_participant_statement_enhanced(
                     participant, context, discussion_state, agent_config
                 )
                 
                 discussion_state.add_statement(participant.name, statement)
+                
+                # Log discussion round
+                if logger:
+                    vote_intention = MemoryStateCapture.extract_vote_intention(statement)
+                    favored_principle = self._extract_favored_principle(statement)
+                    
+                    logger.log_discussion_round(
+                        participant.name,
+                        round_num,
+                        speaking_order_position + 1,  # 1-indexed speaking order
+                        internal_reasoning,
+                        statement,
+                        vote_intention,
+                        favored_principle,
+                        memory_before,
+                        balance_before
+                    )
                 
                 # Update participant memory with agent
                 context.memory = await MemoryManager.prompt_agent_for_memory_update(
@@ -204,6 +228,64 @@ Your Statement: {statement}
 Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         return statement, round_content
+
+    async def _get_participant_statement_enhanced(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        discussion_state: GroupDiscussionState,
+        agent_config: AgentConfiguration
+    ) -> tuple[str, str, str]:
+        """Get participant's statement with separated internal reasoning."""
+        
+        # If reasoning is enabled, ask for internal reasoning first
+        internal_reasoning = ""
+        if agent_config.reasoning_enabled:
+            reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
+            reasoning_result = await Runner.run(participant.agent, reasoning_prompt, context=context)
+            internal_reasoning = reasoning_result.final_output
+        
+        # Get public statement
+        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
+        result = await Runner.run(participant.agent, discussion_prompt, context=context)
+        statement = result.final_output
+        
+        # Create round content for memory
+        round_content = f"""Prompt: {discussion_prompt}
+Internal Reasoning: {internal_reasoning}
+Your Public Statement: {statement}
+Outcome: Made statement in Round {context.round_number} of group discussion."""
+        
+        return statement, round_content, internal_reasoning
+    
+    def _extract_favored_principle(self, statement: str) -> str:
+        """Extract favored principle from participant statement."""
+        statement_lower = statement.lower()
+        
+        if any(phrase in statement_lower for phrase in ["principle a", "maximizing floor", "floor income"]):
+            return "Principle A"
+        elif any(phrase in statement_lower for phrase in ["principle b", "maximizing average", "average income"]):
+            return "Principle B"
+        elif any(phrase in statement_lower for phrase in ["principle c", "floor constraint", "average with floor"]):
+            return "Principle C"
+        elif any(phrase in statement_lower for phrase in ["principle d", "range constraint", "average with range"]):
+            return "Principle D"
+        else:
+            return "Not specified"
+    
+    def _determine_assigned_class(self, earnings: float) -> str:
+        """Determine income class based on earnings amount."""
+        # Simple mapping based on typical earnings ranges
+        if earnings >= 30:
+            return "High"
+        elif earnings >= 25:
+            return "Medium high"
+        elif earnings >= 20:
+            return "Medium"
+        elif earnings >= 15:
+            return "Medium low"
+        else:
+            return "Low"
     
     async def _check_unanimous_vote_agreement(
         self,
@@ -396,7 +478,8 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         contexts: List[ParticipantContext],
         discussion_result: GroupDiscussionResult,
         payoff_results: Dict[str, float],
-        config: ExperimentConfiguration
+        config: ExperimentConfiguration,
+        logger: AgentCentricLogger = None
     ) -> Dict[str, PrincipleRanking]:
         """Collect final principle rankings from all participants."""
         
@@ -423,6 +506,22 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             updated_context = update_participant_context(
                 context, balance_change=final_earnings
             )
+            
+            # Log post-discussion state
+            if logger:
+                # Get assigned income class (simplified assignment for logging)
+                assigned_class = self._determine_assigned_class(final_earnings)
+                confidence = "Not specified"  # Will be updated after ranking
+                
+                logger.log_post_discussion(
+                    participant.name,
+                    assigned_class,
+                    final_earnings,
+                    "To be collected",  # Will be updated after ranking
+                    confidence,
+                    context.memory,
+                    updated_context.bank_balance
+                )
             
             task = asyncio.create_task(
                 self._get_final_ranking(participant, updated_context, agent_config)
@@ -466,6 +565,24 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         # Parse using enhanced utility agent with retry logic
         return await self.utility_agent.parse_principle_ranking_enhanced(text_response)
+    
+    def _build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
+        """Build prompt for internal reasoning before public statement."""
+        
+        return f"""
+        GROUP DISCUSSION - Round {round_num} (Internal Reasoning)
+        
+        Discussion History:
+        {discussion_state.public_history or "No previous discussion."}
+        
+        Before making your public statement, consider internally:
+        - What is your current position on which justice principle the group should adopt?
+        - How has the discussion so far influenced your thinking?
+        - What arguments do you want to make in your public statement?
+        - Are you ready to call for a vote, or do you need more discussion?
+        
+        Provide your internal reasoning (this will not be shared with other participants).
+        """
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for group discussion round."""

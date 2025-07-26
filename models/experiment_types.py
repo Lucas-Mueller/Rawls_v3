@@ -62,6 +62,7 @@ class ApplicationResult(BaseModel):
     assigned_income_class: IncomeClass
     earnings: float
     alternative_earnings: Dict[str, float] = Field(default_factory=dict, description="What participant would have earned under other distributions")
+    alternative_earnings_same_class: Dict[str, float] = Field(default_factory=dict, description="What participant would have earned under each principle with SAME class assignment")
 
 
 class Phase1Results(BaseModel):

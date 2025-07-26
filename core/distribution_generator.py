@@ -205,6 +205,62 @@ class DistributionGenerator:
         return alternative_earnings
     
     @staticmethod
+    def calculate_alternative_earnings_by_principle_fixed_class(
+        distributions: List[IncomeDistribution], 
+        assigned_class: IncomeClass,
+        constraint_amount: Optional[int] = None
+    ) -> dict:
+        """Calculate what participant would have earned under each principle with FIXED class assignment."""
+        from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+        
+        alternative_earnings = {}
+        
+        # Define all four principles
+        principles = [
+            JusticePrinciple.MAXIMIZING_FLOOR,
+            JusticePrinciple.MAXIMIZING_AVERAGE, 
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]
+        
+        for principle in principles:
+            try:
+                # Create a principle choice (use provided constraint_amount or default)
+                if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 
+                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                    # Use provided constraint or a reasonable default
+                    constraint = constraint_amount if constraint_amount is not None else 15000
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint,
+                        certainty=CertaintyLevel.SURE
+                    )
+                else:
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        certainty=CertaintyLevel.SURE
+                    )
+                
+                # Apply this principle to the distributions
+                chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice
+                )
+                
+                # Get income for the FIXED assigned class (not random)
+                income = chosen_distribution.get_income_by_class(assigned_class)
+                
+                # Calculate payoff: $1 for every $10,000 of income
+                earnings = income / 10000.0
+                
+                alternative_earnings[principle.value] = earnings
+                
+            except Exception as e:
+                # If principle application fails, record as 0 earnings
+                alternative_earnings[principle.value] = 0.0
+        
+        return alternative_earnings
+    
+    @staticmethod
     def format_distributions_table(distributions: List[IncomeDistribution]) -> str:
         """Format distributions as a table for display to participants."""
         table = "Income Distributions:\n\n"
@@ -222,3 +278,25 @@ class DistributionGenerator:
             table += "\n"
         
         return table
+    
+    @staticmethod
+    def format_principle_name_with_constraint(principle_choice) -> str:
+        """Format principle name with constraint amount for display."""
+        from models.principle_types import JusticePrinciple
+        
+        base_names = {
+            JusticePrinciple.MAXIMIZING_FLOOR: "Maximizing the floor",
+            JusticePrinciple.MAXIMIZING_AVERAGE: "Maximizing the average",
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT: "Maximizing the average with a floor constraint",
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT: "Maximizing the average with a range constraint"
+        }
+        
+        base_name = base_names.get(principle_choice.principle, str(principle_choice.principle))
+        
+        if principle_choice.constraint_amount and principle_choice.principle in [
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]:
+            base_name += f" of ${principle_choice.constraint_amount:,}"
+        
+        return base_name

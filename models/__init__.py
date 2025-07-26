@@ -36,6 +36,22 @@ from .response_types import (
     ParticipantResponse
 )
 
+from .logging_types import (
+    BaseRoundLog,
+    InitialRankingLog,
+    DetailedExplanationLog,
+    PostExplanationRankingLog,
+    DemonstrationRoundLog,
+    FinalRankingLog,
+    DiscussionRoundLog,
+    PostDiscussionLog,
+    AgentPhase1Logging,
+    AgentPhase2Logging,
+    AgentExperimentLog,
+    GeneralExperimentInfo,
+    TargetStateStructure
+)
+
 __all__ = [
     # Principle types
     "JusticePrinciple",
@@ -67,5 +83,20 @@ __all__ = [
     "VotingResponse",
     "ParsedResponse",
     "ValidationResult",
-    "ParticipantResponse"
+    "ParticipantResponse",
+    
+    # Logging types
+    "BaseRoundLog",
+    "InitialRankingLog",
+    "DetailedExplanationLog",
+    "PostExplanationRankingLog",
+    "DemonstrationRoundLog",
+    "FinalRankingLog",
+    "DiscussionRoundLog",
+    "PostDiscussionLog",
+    "AgentPhase1Logging",
+    "AgentPhase2Logging",
+    "AgentExperimentLog",
+    "GeneralExperimentInfo",
+    "TargetStateStructure"
 ]

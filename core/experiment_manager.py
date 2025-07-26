@@ -12,7 +12,7 @@ from models import ExperimentResults, ParticipantContext
 from config import ExperimentConfiguration
 from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
 from core import Phase1Manager, Phase2Manager
-from utils.logging_utils import ExperimentLogger
+from utils.agent_centric_logger import AgentCentricLogger
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class FrohlichExperimentManager:
         self.utility_agent = UtilityAgent()
         self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
         self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
+        self.agent_logger = AgentCentricLogger()
         
     async def run_complete_experiment(self) -> ExperimentResults:
         """Run complete two-phase experiment with tracing."""
@@ -45,9 +46,12 @@ class FrohlichExperimentManager:
         ) as experiment_trace:
             
             try:
+                # Initialize agent-centric logging
+                self.agent_logger.initialize_experiment(self.participants, self.config)
+                
                 # Phase 1: Individual familiarization (parallel)
                 logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
-                phase1_results = await self.phase1_manager.run_phase1(self.config)
+                phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
                 
                 logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
                 for result in phase1_results:
@@ -56,13 +60,16 @@ class FrohlichExperimentManager:
                 # Phase 2: Group discussion (sequential)  
                 logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
                 phase2_results = await self.phase2_manager.run_phase2(
-                    self.config, phase1_results
+                    self.config, phase1_results, self.agent_logger
                 )
                 
                 if phase2_results.discussion_result.consensus_reached:
                     logger.info(f"Phase 2 completed with consensus on {phase2_results.discussion_result.agreed_principle.principle.value}")
                 else:
                     logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")
+                
+                # Set general experiment information for logging
+                self._set_general_logging_info(phase2_results)
                 
                 # Compile final results
                 results = ExperimentResults(
@@ -90,10 +97,48 @@ class FrohlichExperimentManager:
         
         return participants
     
+    def _set_general_logging_info(self, phase2_results):
+        """Set general experiment information for agent-centric logging."""
+        # Build public conversation from discussion history
+        public_conversation = ""
+        if phase2_results.discussion_result.discussion_history:
+            for statement in phase2_results.discussion_result.discussion_history:
+                public_conversation += f"{statement}\n"
+        else:
+            public_conversation = "No public discussion recorded."
+        
+        # Build final vote results
+        final_vote_results = {}
+        if phase2_results.discussion_result.vote_history:
+            last_vote = phase2_results.discussion_result.vote_history[-1]
+            # Since votes are anonymous (stored as list), we'll map them to participant names by order
+            for i, participant in enumerate(self.participants):
+                if i < len(last_vote.votes):
+                    vote = last_vote.votes[i]
+                    final_vote_results[participant.name] = vote.principle.value if vote else "No vote"
+                else:
+                    final_vote_results[participant.name] = "No vote"
+        else:
+            # If no votes, use participant names with "No vote"
+            for participant in self.participants:
+                final_vote_results[participant.name] = "No vote"
+        
+        # Set the general information
+        self.agent_logger.set_general_information(
+            consensus_reached=phase2_results.discussion_result.consensus_reached,
+            consensus_principle=(
+                phase2_results.discussion_result.agreed_principle.principle.value
+                if phase2_results.discussion_result.agreed_principle
+                else None
+            ),
+            public_conversation=public_conversation,
+            final_vote_results=final_vote_results,
+            config_file="default_config.yaml"  # Could be made configurable
+        )
+    
     def save_results(self, results: ExperimentResults, output_path: str):
-        """Save experiment results to JSON file."""
-        logger_instance = ExperimentLogger(output_path)
-        logger_instance.log_experiment_results(results)
+        """Save experiment results to JSON file using agent-centric logging."""
+        self.agent_logger.save_to_file(output_path)
         logger.info(f"Results saved to: {output_path}")
     
     def get_experiment_summary(self, results: ExperimentResults) -> str:

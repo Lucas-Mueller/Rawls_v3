@@ -42,6 +42,13 @@ python run_tests.py unit
 python run_tests.py integration
 ```
 
+### Environment Requirements
+```bash
+# Environment file required
+# Create .env file with OpenAI API key:
+OPENAI_API_KEY=your_key_here
+```
+
 
 
 
@@ -111,7 +118,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 - **Simplicity**: "As simple as possible and as complex as necessary"
 - **Logging**: Agent-centric JSON logging system tracking all inputs/outputs
 - **Configuration**: All experimental parameters configurable via YAML files
-- **Dependencies**: Core dependencies are `openai-agents`, `pydantic`, `PyYAML` - avoid adding unnecessary packages
+- **Dependencies**: Core dependencies are `openai-agents`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`) - avoid adding unnecessary packages
 
 ## Important Implementation Details
 

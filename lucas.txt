@@ -1,5 +1,4 @@
-Memory system, how are they generated? 
-Logging system --> seems to be all over the place
+Logging system --> seems to be all over the place --> fine tuning 
 Models beyond OpenAI
 Prinicpile 3 & 4 with their respective payoff may need fixing
 Winner?? 

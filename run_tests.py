@@ -42,7 +42,7 @@ def run_import_test():
         from config import ExperimentConfiguration
         from core import DistributionGenerator, Phase1Manager, Phase2Manager
         from experiment_agents import UtilityAgent, create_participant_agent
-        from utils import MemoryManager, ExperimentLogger
+        from utils import MemoryManager, AgentCentricLogger
         
         print("✓ All core imports successful")
         
