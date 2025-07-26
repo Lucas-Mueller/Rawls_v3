@@ -12,8 +12,10 @@ from models.logging_types import (
     AgentExperimentLog, AgentPhase1Logging, AgentPhase2Logging,
     InitialRankingLog, DetailedExplanationLog, PostExplanationRankingLog,
     DemonstrationRoundLog, FinalRankingLog, DiscussionRoundLog,
-    PostDiscussionLog, GeneralExperimentInfo, TargetStateStructure
+    PostDiscussionLog, GeneralExperimentInfo, TargetStateStructure,
+    PrincipleRankingResult
 )
+from models.principle_types import PrincipleRanking
 from experiment_agents import ParticipantAgent
 from config import ExperimentConfiguration
 
@@ -49,8 +51,7 @@ class AgentCentricLogger:
                 reasoning_enabled=agent_config.reasoning_enabled,
                 phase_1=AgentPhase1Logging(
                     initial_ranking=InitialRankingLog(
-                        principle_ranking_result="",
-                        confidence_level="",
+                        ranking_result=PrincipleRankingResult(rankings=[], certainty=""),
                         memory_coming_in_this_round="",
                         bank_balance=0.0
                     ),
@@ -60,15 +61,13 @@ class AgentCentricLogger:
                         bank_balance=0.0
                     ),
                     ranking_2=PostExplanationRankingLog(
-                        principle_ranking_result="",
-                        confidence_level="",
+                        ranking_result=PrincipleRankingResult(rankings=[], certainty=""),
                         memory_coming_in_this_round="",
                         bank_balance=0.0
                     ),
                     demonstrations=[],
                     ranking_3=FinalRankingLog(
-                        principle_ranking_result="",
-                        confidence_level="",
+                        ranking_result=PrincipleRankingResult(rankings=[], certainty=""),
                         memory_coming_in_this_round="",
                         bank_balance=0.0
                     )
@@ -78,8 +77,7 @@ class AgentCentricLogger:
                     post_group_discussion=PostDiscussionLog(
                         class_put_in="",
                         payoff_received=0.0,
-                        final_ranking="",
-                        confidence_level="",
+                        final_ranking=PrincipleRankingResult(rankings=[], certainty=""),
                         memory_coming_in_this_round="",
                         bank_balance=0.0
                     )
@@ -89,16 +87,15 @@ class AgentCentricLogger:
     def log_initial_ranking(
         self, 
         agent_name: str, 
-        ranking_result: str,
-        confidence: str,
+        ranking: PrincipleRanking,
         memory_state: str,
         bank_balance: float
     ):
         """Log initial ranking in Phase 1."""
         if agent_name in self.agent_logs:
+            ranking_result = PrincipleRankingResult.from_principle_ranking(ranking)
             self.agent_logs[agent_name].phase_1.initial_ranking = InitialRankingLog(
-                principle_ranking_result=ranking_result,
-                confidence_level=confidence,
+                ranking_result=ranking_result,
                 memory_coming_in_this_round=memory_state,
                 bank_balance=bank_balance
             )
@@ -121,16 +118,15 @@ class AgentCentricLogger:
     def log_post_explanation_ranking(
         self,
         agent_name: str,
-        ranking_result: str,
-        confidence: str,
+        ranking: PrincipleRanking,
         memory_state: str,
         bank_balance: float
     ):
         """Log ranking after detailed explanation in Phase 1."""
         if agent_name in self.agent_logs:
+            ranking_result = PrincipleRankingResult.from_principle_ranking(ranking)
             self.agent_logs[agent_name].phase_1.ranking_2 = PostExplanationRankingLog(
-                principle_ranking_result=ranking_result,
-                confidence_level=confidence,
+                ranking_result=ranking_result,
                 memory_coming_in_this_round=memory_state,
                 bank_balance=bank_balance
             )
@@ -164,16 +160,15 @@ class AgentCentricLogger:
     def log_final_ranking(
         self,
         agent_name: str,
-        ranking_result: str,
-        confidence: str,
+        ranking: PrincipleRanking,
         memory_state: str,
         bank_balance: float
     ):
         """Log final ranking in Phase 1."""
         if agent_name in self.agent_logs:
+            ranking_result = PrincipleRankingResult.from_principle_ranking(ranking)
             self.agent_logs[agent_name].phase_1.ranking_3 = FinalRankingLog(
-                principle_ranking_result=ranking_result,
-                confidence_level=confidence,
+                ranking_result=ranking_result,
                 memory_coming_in_this_round=memory_state,
                 bank_balance=bank_balance
             )
@@ -209,18 +204,17 @@ class AgentCentricLogger:
         agent_name: str,
         class_assigned: str,
         payoff: float,
-        final_ranking: str,
-        confidence: str,
+        ranking: PrincipleRanking,
         memory_state: str,
         bank_balance: float
     ):
         """Log post-discussion state in Phase 2."""
         if agent_name in self.agent_logs:
+            ranking_result = PrincipleRankingResult.from_principle_ranking(ranking)
             self.agent_logs[agent_name].phase_2.post_group_discussion = PostDiscussionLog(
                 class_put_in=class_assigned,
                 payoff_received=payoff,
-                final_ranking=final_ranking,
-                confidence_level=confidence,
+                final_ranking=ranking_result,
                 memory_coming_in_this_round=memory_state,
                 bank_balance=bank_balance
             )
@@ -308,25 +302,7 @@ class MemoryStateCapture:
         
         return "; ".join(payoff_lines)
     
-    @staticmethod
-    def extract_confidence_from_response(response_text: str) -> str:
-        """Extract confidence level from agent response."""
-        # Simple extraction - look for confidence keywords
-        response_lower = response_text.lower()
-        
-        # Check more specific patterns first to avoid false matches
-        if "very_sure" in response_lower or "very sure" in response_lower:
-            return "Very sure"
-        elif "very_unsure" in response_lower or "very unsure" in response_lower:
-            return "Very unsure"
-        elif "no_opinion" in response_lower or "no opinion" in response_lower:
-            return "No opinion"
-        elif "unsure" in response_lower:
-            return "Unsure"
-        elif "sure" in response_lower:
-            return "Sure"
-        else:
-            return "Not specified"
+    # Removed extract_confidence_from_response - no longer needed with structured data
     
     @staticmethod
     def extract_vote_intention(response_text: str) -> str:

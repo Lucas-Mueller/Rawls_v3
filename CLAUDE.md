@@ -32,7 +32,7 @@ python main.py my_config.yaml
 
 ### Testing Commands
 ```bash
-# Run all tests (includes import validation)
+# Run all tests (includes import validation, unit tests, and integration tests)
 python run_tests.py
 
 # Run only unit tests
@@ -40,17 +40,33 @@ python run_tests.py unit
 
 # Run only integration tests  
 python run_tests.py integration
+
+# Run specific test files using unittest
+python -m unittest tests.unit.test_memory_manager -v
+python -m unittest tests.integration.test_complete_experiment_flow -v
+python -m unittest tests.integration.test_error_recovery -v
+python -m unittest tests.integration.test_state_consistency -v
 ```
 
 ### Environment Requirements
 ```bash
-# Environment file required
-# Create .env file with OpenAI API key:
+# Environment file required - create .env file in project root:
 OPENAI_API_KEY=your_key_here
 ```
 
+**Important**: The `.env` file is required for all operations. The system will fail without a valid OpenAI API key.
 
+### Debugging and Development
+```bash
+# View experiment results and logs
+ls experiment_results_*.json
 
+# Check OpenAI trace links in experiment output
+# Results include trace URLs for debugging agent interactions
+
+# Monitor error handling during development
+# All modules use standardized error categorization with automatic retry logic
+```
 
 ## System Architecture
 
@@ -114,7 +130,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 ## Development Guidelines
 
 - **Modularity**: System follows service-oriented architecture principles  
-- **Testing**: Always run `python run_tests.py` before committing changes - includes import validation, unit tests, and integration tests
+- **Testing**: Always run `python run_tests.py` before committing changes - includes import validation, unit tests, and integration tests with comprehensive error handling and state consistency validation
 - **Simplicity**: "As simple as possible and as complex as necessary"
 - **Logging**: Agent-centric JSON logging system tracking all inputs/outputs
 - **Configuration**: All experimental parameters configurable via YAML files
@@ -122,10 +138,17 @@ The system follows a modular, service-oriented architecture with clear separatio
 
 ## Important Implementation Details
 
+### Error Handling & Recovery
+- **Standardized Error Framework**: All modules use consistent error categorization (memory, validation, communication, system, experiment logic)
+- **Automatic Retry Logic**: Configurable retry mechanisms for recoverable errors with exponential backoff
+- **Error Statistics**: Comprehensive error tracking and reporting throughout experiment execution
+- **Graceful Degradation**: System handles partial failures and continues when possible
+
 ### Experiment Flow
 1. **Phase 1** (parallel): Individual agents familiarize with justice principles through 4 rounds of applications
-2. **Phase 2** (sequential): Group discussion with random speaking order, voting mechanism, and consensus building
+2. **Phase 2** (sequential): Group discussion with random speaking order, voting mechanism, and consensus building  
 3. **Results**: Complete JSON output with agent-centric logging and OpenAI trace links
+4. **Error Recovery**: Built-in recovery mechanisms for memory limits, agent communication failures, and validation errors
 
 ### Agent Configuration
 Each participant agent has configurable:

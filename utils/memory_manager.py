@@ -1,34 +1,31 @@
 """
 Memory management utilities for agent-managed memory system.
 """
+import logging
 from typing import TYPE_CHECKING
+
+from utils.error_handling import (
+    MemoryError, ExperimentError, ErrorSeverity, 
+    ExperimentErrorCategory, get_global_error_handler,
+    handle_experiment_errors
+)
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
     from models.experiment_types import ParticipantContext
 
-
-class MemoryLengthExceededError(Exception):
-    """Raised when agent memory exceeds the character limit."""
-    
-    def __init__(self, attempted_length: int, limit: int):
-        self.attempted_length = attempted_length
-        self.limit = limit
-        super().__init__(
-            f"Memory length {attempted_length} exceeds limit {limit} characters. "
-            f"Please reduce your memory by {attempted_length - limit} characters."
-        )
-
-
-class ExperimentAbortError(Exception):
-    """Raised when experiment must be aborted due to repeated memory failures."""
-    pass
+logger = logging.getLogger(__name__)
 
 
 class MemoryManager:
     """Manages agent-generated memory with validation and retry logic."""
     
     @staticmethod
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.MEMORY_ERROR,
+        severity=ErrorSeverity.RECOVERABLE,
+        operation_name="memory_update"
+    )
     async def prompt_agent_for_memory_update(
         agent: "ParticipantAgent",
         context: "ParticipantContext", 
@@ -48,8 +45,10 @@ class MemoryManager:
             Updated memory string
             
         Raises:
-            ExperimentAbortError: If agent fails to create valid memory after max_retries
+            MemoryError: If agent fails to create valid memory after max_retries
         """
+        error_handler = get_global_error_handler()
+        
         for attempt in range(max_retries):
             try:
                 # Create memory update prompt
@@ -66,9 +65,28 @@ class MemoryManager:
                 )
                 
                 if is_valid:
+                    if attempt > 0:
+                        logger.info(f"Memory update succeeded for {agent.name} after {attempt + 1} attempts")
                     return updated_memory
                 else:
-                    # Memory too long - create error message for next attempt
+                    # Memory too long - create specific error for retry
+                    memory_error = MemoryError(
+                        f"Memory length {length} exceeds limit {agent.config.memory_character_limit}",
+                        ErrorSeverity.RECOVERABLE,
+                        {
+                            "agent_name": agent.name,
+                            "attempted_length": length,
+                            "limit": agent.config.memory_character_limit,
+                            "attempt": attempt + 1,
+                            "max_retries": max_retries
+                        }
+                    )
+                    memory_error.operation = "memory_length_validation"
+                    
+                    # Log the error
+                    error_handler._log_error(memory_error)
+                    
+                    # Create error message for next attempt
                     error_msg = (
                         f"Your memory is {length} characters, which exceeds the limit of "
                         f"{agent.config.memory_character_limit} characters. Please shorten "
@@ -76,18 +94,41 @@ class MemoryManager:
                     )
                     round_content = f"ERROR: {error_msg}\n\nPlease update your memory again, making it shorter."
                     
+            except MemoryError:
+                raise  # Re-raise memory errors as-is
             except Exception as e:
+                # Wrap other exceptions as memory errors
+                memory_error = MemoryError(
+                    f"Agent {agent.name} memory update failed: {str(e)}",
+                    ErrorSeverity.RECOVERABLE if attempt < max_retries - 1 else ErrorSeverity.FATAL,
+                    {
+                        "agent_name": agent.name,
+                        "attempt": attempt + 1,
+                        "max_retries": max_retries,
+                        "original_error": str(e)
+                    },
+                    cause=e
+                )
+                memory_error.operation = "agent_memory_update"
+                
                 if attempt == max_retries - 1:
-                    raise ExperimentAbortError(
-                        f"Agent {agent.name} failed to create valid memory after "
-                        f"{max_retries} attempts. Last error: {str(e)}"
-                    )
-                # For other exceptions, try again with error context
-                round_content = f"ERROR: An error occurred while updating memory: {str(e)}\n\nPlease try updating your memory again."
+                    # Final attempt - make it fatal
+                    memory_error.severity = ErrorSeverity.FATAL
+                    raise memory_error
+                else:
+                    # Log the error and continue
+                    error_handler._log_error(memory_error)
+                    round_content = f"ERROR: An error occurred while updating memory: {str(e)}\n\nPlease try updating your memory again."
         
         # This should never be reached due to the exception handling above
-        raise ExperimentAbortError(
-            f"Agent {agent.name} failed to create valid memory after {max_retries} attempts"
+        raise MemoryError(
+            f"Agent {agent.name} failed to create valid memory after {max_retries} attempts",
+            ErrorSeverity.FATAL,
+            {
+                "agent_name": agent.name,
+                "max_retries": max_retries,
+                "operation": "memory_update_exhausted"
+            }
         )
     
     @staticmethod

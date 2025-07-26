@@ -13,6 +13,11 @@ from config import ExperimentConfiguration
 from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
 from core import Phase1Manager, Phase2Manager
 from utils.agent_centric_logger import AgentCentricLogger
+from utils.error_handling import (
+    ExperimentError, ExperimentLogicError, SystemError, AgentCommunicationError,
+    ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
+    handle_experiment_errors, set_global_error_handler
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +28,36 @@ class FrohlichExperimentManager:
     def __init__(self, config: ExperimentConfiguration):
         self.config = config
         self.experiment_id = str(uuid.uuid4())
-        self.participants = self._create_participants()
-        self.utility_agent = UtilityAgent()
-        self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
-        self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
-        self.agent_logger = AgentCentricLogger()
+        self.error_handler = get_global_error_handler()
         
+        # Initialize error handler with custom logger
+        experiment_logger = logging.getLogger(f"experiment.{self.experiment_id}")
+        set_global_error_handler(type(self.error_handler)(experiment_logger))
+        self.error_handler = get_global_error_handler()
+        
+        try:
+            self.participants = self._create_participants()
+            self.utility_agent = UtilityAgent()
+            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
+            self.agent_logger = AgentCentricLogger()
+        except Exception as e:
+            raise ExperimentLogicError(
+                f"Failed to initialize experiment manager: {str(e)}",
+                ErrorSeverity.FATAL,
+                {
+                    "experiment_id": self.experiment_id,
+                    "config_agents_count": len(config.agents),
+                    "initialization_error": str(e)
+                },
+                cause=e
+            )
+        
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.EXPERIMENT_LOGIC_ERROR,
+        severity=ErrorSeverity.FATAL,
+        operation_name="run_complete_experiment"
+    )
     async def run_complete_experiment(self) -> ExperimentResults:
         """Run complete two-phase experiment with tracing."""
         
@@ -51,7 +80,21 @@ class FrohlichExperimentManager:
                 
                 # Phase 1: Individual familiarization (parallel)
                 logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
-                phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
+                
+                try:
+                    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
+                except Exception as e:
+                    raise ExperimentLogicError(
+                        f"Phase 1 execution failed: {str(e)}",
+                        ErrorSeverity.FATAL,
+                        {
+                            "experiment_id": self.experiment_id,
+                            "phase": "phase_1",
+                            "participants_count": len(self.participants),
+                            "phase1_error": str(e)
+                        },
+                        cause=e
+                    )
                 
                 logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
                 for result in phase1_results:
@@ -59,9 +102,23 @@ class FrohlichExperimentManager:
                 
                 # Phase 2: Group discussion (sequential)  
                 logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
-                phase2_results = await self.phase2_manager.run_phase2(
-                    self.config, phase1_results, self.agent_logger
-                )
+                
+                try:
+                    phase2_results = await self.phase2_manager.run_phase2(
+                        self.config, phase1_results, self.agent_logger
+                    )
+                except Exception as e:
+                    raise ExperimentLogicError(
+                        f"Phase 2 execution failed: {str(e)}",
+                        ErrorSeverity.FATAL,
+                        {
+                            "experiment_id": self.experiment_id,
+                            "phase": "phase_2",
+                            "phase1_completed": True,
+                            "phase2_error": str(e)
+                        },
+                        cause=e
+                    )
                 
                 if phase2_results.discussion_result.consensus_reached:
                     logger.info(f"Phase 2 completed with consensus on {phase2_results.discussion_result.agreed_principle.principle.value}")
@@ -69,7 +126,11 @@ class FrohlichExperimentManager:
                     logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")
                 
                 # Set general experiment information for logging
-                self._set_general_logging_info(phase2_results)
+                try:
+                    self._set_general_logging_info(phase2_results)
+                except Exception as e:
+                    # Log the error but don't fail the experiment
+                    logger.warning(f"Failed to set general logging info: {e}")
                 
                 # Compile final results
                 results = ExperimentResults(
@@ -81,11 +142,28 @@ class FrohlichExperimentManager:
                 )
                 
                 logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
+                
+                # Log error statistics
+                error_stats = self.error_handler.get_error_statistics()
+                if error_stats.get("total_errors", 0) > 0:
+                    logger.info(f"Experiment completed with {error_stats['total_errors']} recoverable errors")
+                
                 return results
                 
+            except ExperimentError:
+                raise  # Re-raise experiment errors as-is
             except Exception as e:
-                logger.error(f"Experiment {self.experiment_id} failed: {e}")
-                raise
+                # Wrap unexpected errors
+                raise ExperimentLogicError(
+                    f"Unexpected error during experiment execution: {str(e)}",
+                    ErrorSeverity.FATAL,
+                    {
+                        "experiment_id": self.experiment_id,
+                        "runtime_seconds": time.time() - start_time,
+                        "unexpected_error": str(e)
+                    },
+                    cause=e
+                )
             
     def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration."""

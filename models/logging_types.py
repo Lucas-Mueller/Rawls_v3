@@ -81,8 +81,7 @@ class PostDiscussionLog(BaseRoundLog):
     """Captures post-group discussion state in Phase 2."""
     class_put_in: str
     payoff_received: float
-    final_ranking: str
-    confidence_level: str
+    final_ranking: PrincipleRankingResult
 
 
 class AgentPhase1Logging(BaseModel):
@@ -120,18 +119,18 @@ class AgentExperimentLog(BaseModel):
             "reasoning_enabled": self.reasoning_enabled,
             "phase_1": {
                 "initial_ranking": {
-                    "principle_ranking_result": self.phase_1.initial_ranking.principle_ranking_result,
-                    "confidence_level": self.phase_1.initial_ranking.confidence_level,
-                    "memory_coming_in_this_round": self.phase_1.initial_ranking.memory_coming_in_this_round
+                    "ranking_result": self.phase_1.initial_ranking.ranking_result.dict(),
+                    "memory_coming_in_this_round": self.phase_1.initial_ranking.memory_coming_in_this_round,
+                    "bank_balance": self.phase_1.initial_ranking.bank_balance
                 },
                 "detailed_explanation": {
                     "response_to_demonstration": self.phase_1.detailed_explanation.response_to_demonstration,
                     "memory_coming_in_this_round": self.phase_1.detailed_explanation.memory_coming_in_this_round
                 },
                 "ranking_2": {
-                    "principle_ranking_result": self.phase_1.ranking_2.principle_ranking_result,
-                    "confidence_level": self.phase_1.ranking_2.confidence_level,
-                    "memory_coming_in_this_round": self.phase_1.ranking_2.memory_coming_in_this_round
+                    "ranking_result": self.phase_1.ranking_2.ranking_result.dict(),
+                    "memory_coming_in_this_round": self.phase_1.ranking_2.memory_coming_in_this_round,
+                    "bank_balance": self.phase_1.ranking_2.bank_balance
                 },
                 "demonstrations": [
                     {
@@ -146,8 +145,7 @@ class AgentExperimentLog(BaseModel):
                     for demo in self.phase_1.demonstrations
                 ],
                 "ranking_3": {
-                    "principle_ranking_result": self.phase_1.ranking_3.principle_ranking_result,
-                    "confidence_level": self.phase_1.ranking_3.confidence_level,
+                    "ranking_result": self.phase_1.ranking_3.ranking_result.dict(),
                     "memory_coming_in_this_round": self.phase_1.ranking_3.memory_coming_in_this_round,
                     "bank_balance": self.phase_1.ranking_3.bank_balance
                 }
@@ -169,9 +167,9 @@ class AgentExperimentLog(BaseModel):
                 "post_group_discussion": {
                     "class_put_in": self.phase_2.post_group_discussion.class_put_in,
                     "payoff_received": self.phase_2.post_group_discussion.payoff_received,
-                    "final_ranking": self.phase_2.post_group_discussion.final_ranking,
-                    "confidence_level": self.phase_2.post_group_discussion.confidence_level,
-                    "memory_coming_in_this_round": self.phase_2.post_group_discussion.memory_coming_in_this_round
+                    "final_ranking": self.phase_2.post_group_discussion.final_ranking.dict(),
+                    "memory_coming_in_this_round": self.phase_2.post_group_discussion.memory_coming_in_this_round,
+                    "bank_balance": self.phase_2.post_group_discussion.bank_balance
                 }
             }
         }

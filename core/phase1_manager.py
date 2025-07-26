@@ -67,11 +67,9 @@ class Phase1Manager:
         # Log initial ranking with current memory state
         if logger:
             memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-            confidence = MemoryStateCapture.extract_confidence_from_response(ranking_content)
             logger.log_initial_ranking(
                 participant.name,
-                ranking_content,
-                confidence,
+                initial_ranking,
                 memory_before,
                 balance_before
             )
@@ -111,11 +109,9 @@ class Phase1Manager:
         # Log post-explanation ranking
         if logger:
             memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-            confidence = MemoryStateCapture.extract_confidence_from_response(post_ranking_content)
             logger.log_post_explanation_ranking(
                 participant.name,
-                post_ranking_content,
-                confidence,
+                post_explanation_ranking,
                 memory_before,
                 balance_before
             )
@@ -179,11 +175,9 @@ class Phase1Manager:
         # Log final ranking
         if logger:
             memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-            confidence = MemoryStateCapture.extract_confidence_from_response(final_content)
             logger.log_final_ranking(
                 participant.name,
-                final_content,
-                confidence,
+                final_ranking,
                 memory_before,
                 balance_before
             )

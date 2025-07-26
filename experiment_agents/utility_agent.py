@@ -2,6 +2,7 @@
 Utility agent for parsing and validating participant responses.
 """
 import asyncio
+import logging
 import re
 from typing import Optional, Dict, Any, List
 from agents import Agent, Runner, AgentOutputSchema
@@ -10,6 +11,13 @@ from models import (
     PrincipleChoice, PrincipleRanking, VoteProposal, JusticePrinciple,
     ParsedResponse, ValidationResult, CertaintyLevel, RankedPrinciple
 )
+from utils.error_handling import (
+    ValidationError, AgentCommunicationError, ExperimentError,
+    ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
+    handle_experiment_errors
+)
+
+logger = logging.getLogger(__name__)
 
 
 class UtilityAgent:
@@ -63,8 +71,15 @@ class UtilityAgent:
         Return is_valid=True if validation passes, is_valid=False with specific errors if not.
         """
     
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.VALIDATION_ERROR,
+        severity=ErrorSeverity.RECOVERABLE,
+        operation_name="parse_principle_choice"
+    )
     async def parse_principle_choice(self, response: str) -> PrincipleChoice:
         """Parse principle choice from participant response."""
+        error_handler = get_global_error_handler()
+        
         parse_prompt = f"""
         Parse the following participant response to extract their justice principle choice:
         
@@ -79,20 +94,57 @@ class UtilityAgent:
         Return the parsed data as a dictionary with keys: principle, constraint_amount, certainty, reasoning
         """
         
-        result = await Runner.run(self.parser_agent, parse_prompt)
-        parsed_result = result.final_output
-        
-        if not parsed_result.success:
-            raise ValueError(f"Failed to parse principle choice: {parsed_result.error_message}")
-        
-        data = parsed_result.parsed_data
-        return PrincipleChoice(
-            principle=JusticePrinciple(data['principle']),
-            constraint_amount=data.get('constraint_amount'),
-            certainty=CertaintyLevel(data['certainty']),
-            reasoning=data.get('reasoning')
-        )
+        try:
+            result = await Runner.run(self.parser_agent, parse_prompt)
+            parsed_result = result.final_output
+            
+            if not parsed_result.success:
+                raise ValidationError(
+                    f"Failed to parse principle choice: {parsed_result.error_message}",
+                    ErrorSeverity.RECOVERABLE,
+                    {
+                        "response_text": response,
+                        "parse_error": parsed_result.error_message,
+                        "operation": "principle_choice_parsing"
+                    }
+                )
+            
+            data = parsed_result.parsed_data
+            return PrincipleChoice(
+                principle=JusticePrinciple(data['principle']),
+                constraint_amount=data.get('constraint_amount'),
+                certainty=CertaintyLevel(data['certainty']),
+                reasoning=data.get('reasoning')
+            )
+            
+        except (ValueError, KeyError) as e:
+            raise ValidationError(
+                f"Invalid principle choice format: {str(e)}",
+                ErrorSeverity.RECOVERABLE,
+                {
+                    "response_text": response,
+                    "parsing_error": str(e),
+                    "operation": "principle_choice_validation"
+                },
+                cause=e
+            )
+        except Exception as e:
+            raise AgentCommunicationError(
+                f"Agent communication failed during principle choice parsing: {str(e)}",
+                ErrorSeverity.RECOVERABLE,
+                {
+                    "response_text": response,
+                    "communication_error": str(e),
+                    "operation": "principle_choice_agent_communication"
+                },
+                cause=e
+            )
     
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.VALIDATION_ERROR,
+        severity=ErrorSeverity.RECOVERABLE,
+        operation_name="parse_principle_ranking"
+    )
     async def parse_principle_ranking(self, response: str) -> PrincipleRanking:
         """Parse principle ranking from participant response."""
         parse_prompt = f"""
@@ -108,36 +160,122 @@ class UtilityAgent:
         - certainty: overall certainty level for the entire ranking
         """
         
-        result = await Runner.run(self.parser_agent, parse_prompt)
-        parsed_result = result.final_output
-        
-        if not parsed_result.success:
-            raise ValueError(f"Failed to parse principle ranking: {parsed_result.error_message}")
-        
-        data = parsed_result.parsed_data
-        rankings = []
-        for ranking_data in data['rankings']:
-            rankings.append(RankedPrinciple(
-                principle=JusticePrinciple(ranking_data['principle']),
-                rank=ranking_data['rank']
-            ))
-        
-        # Extract overall certainty level for the entire ranking
-        overall_certainty = CertaintyLevel(data.get('certainty', 'sure'))
-        
-        return PrincipleRanking(rankings=rankings, certainty=overall_certainty)
+        try:
+            result = await Runner.run(self.parser_agent, parse_prompt)
+            parsed_result = result.final_output
+            
+            if not parsed_result.success:
+                raise ValidationError(
+                    f"Failed to parse principle ranking: {parsed_result.error_message}",
+                    ErrorSeverity.RECOVERABLE,
+                    {
+                        "response_text": response,
+                        "parse_error": parsed_result.error_message,
+                        "operation": "principle_ranking_parsing"
+                    }
+                )
+            
+            data = parsed_result.parsed_data
+            rankings = []
+            for ranking_data in data['rankings']:
+                rankings.append(RankedPrinciple(
+                    principle=JusticePrinciple(ranking_data['principle']),
+                    rank=ranking_data['rank']
+                ))
+            
+            # Extract overall certainty level for the entire ranking
+            overall_certainty = CertaintyLevel(data.get('certainty', 'sure'))
+            
+            ranking = PrincipleRanking(rankings=rankings, certainty=overall_certainty)
+            
+            # Validate ranking completeness
+            if not self._validate_ranking_completeness(ranking):
+                raise ValidationError(
+                    "Incomplete ranking - missing principles or invalid ranks",
+                    ErrorSeverity.RECOVERABLE,
+                    {
+                        "response_text": response,
+                        "parsed_rankings": [{"principle": r.principle.value, "rank": r.rank} for r in rankings],
+                        "operation": "ranking_completeness_validation"
+                    }
+                )
+            
+            return ranking
+            
+        except (ValueError, KeyError) as e:
+            raise ValidationError(
+                f"Invalid principle ranking format: {str(e)}",
+                ErrorSeverity.RECOVERABLE,
+                {
+                    "response_text": response,
+                    "parsing_error": str(e),
+                    "operation": "principle_ranking_validation"
+                },
+                cause=e
+            )
+        except Exception as e:
+            raise AgentCommunicationError(
+                f"Agent communication failed during principle ranking parsing: {str(e)}",
+                ErrorSeverity.RECOVERABLE,
+                {
+                    "response_text": response,
+                    "communication_error": str(e),
+                    "operation": "principle_ranking_agent_communication"
+                },
+                cause=e
+            )
     
-    async def validate_constraint_specification(self, choice: PrincipleChoice) -> bool:
-        """Validate constraint principles have required amounts."""
-        constraint_principles = [
-            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
-        ]
+    def _validate_ranking_completeness(self, ranking: PrincipleRanking) -> bool:
+        """Validate that ranking includes all 4 principles with ranks 1-4."""
+        if len(ranking.rankings) != 4:
+            return False
         
-        if choice.principle in constraint_principles:
-            return choice.constraint_amount is not None and choice.constraint_amount > 0
+        principles = {r.principle for r in ranking.rankings}
+        expected_principles = set(JusticePrinciple)
+        if principles != expected_principles:
+            return False
+        
+        ranks = {r.rank for r in ranking.rankings}
+        expected_ranks = {1, 2, 3, 4}
+        if ranks != expected_ranks:
+            return False
         
         return True
+    
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.VALIDATION_ERROR,
+        severity=ErrorSeverity.RECOVERABLE,
+        operation_name="validate_constraint"
+    )
+    async def validate_constraint_specification(self, choice: PrincipleChoice) -> bool:
+        """Validate constraint principles have required amounts."""
+        try:
+            constraint_principles = [
+                JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+            ]
+            
+            if choice.principle in constraint_principles:
+                is_valid = choice.constraint_amount is not None and choice.constraint_amount > 0
+                if not is_valid:
+                    logger.warning(
+                        f"Constraint principle {choice.principle.value} missing valid constraint amount: {choice.constraint_amount}"
+                    )
+                return is_valid
+            
+            return True
+            
+        except Exception as e:
+            raise ValidationError(
+                f"Constraint validation failed: {str(e)}",
+                ErrorSeverity.RECOVERABLE,
+                {
+                    "principle": choice.principle.value if choice.principle else "unknown",
+                    "constraint_amount": choice.constraint_amount,
+                    "validation_error": str(e)
+                },
+                cause=e
+            )
     
     async def extract_vote_from_statement(self, statement: str) -> Optional[VoteProposal]:
         """Detect if participant is proposing a vote."""

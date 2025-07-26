@@ -42,13 +42,13 @@ class Phase2Manager:
         )
         
         # Apply chosen principle and calculate payoffs
-        payoff_results = await self._apply_group_principle_and_calculate_payoffs(
+        payoff_results, assigned_classes = await self._apply_group_principle_and_calculate_payoffs(
             discussion_result, config
         )
         
         # Final individual rankings
         final_rankings = await self._collect_final_rankings(
-            participant_contexts, discussion_result, payoff_results, config, logger
+            participant_contexts, discussion_result, payoff_results, assigned_classes, config, logger
         )
         
         return Phase2Results(
@@ -444,8 +444,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         self,
         discussion_result: GroupDiscussionResult,
         config: ExperimentConfiguration
-    ) -> Dict[str, float]:
-        """Apply chosen principle or random assignment if no consensus."""
+    ) -> tuple[Dict[str, float], Dict[str, str]]:
+        """Apply chosen principle or random assignment if no consensus.
+        
+        Returns:
+            tuple: (payoffs dict, assigned_classes dict)
+        """
         
         # Generate new distribution set for Phase 2 payoffs
         distribution_set = DistributionGenerator.generate_dynamic_distribution(
@@ -453,6 +457,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         )
         
         payoffs = {}
+        assigned_classes = {}
         
         if discussion_result.consensus_reached and discussion_result.agreed_principle:
             # Apply agreed principle
@@ -464,20 +469,23 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             for participant in self.participants:
                 assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
                 payoffs[participant.name] = earnings
+                assigned_classes[participant.name] = assigned_class
         else:
             # Random assignment - each participant gets random income class from random distribution
             for participant in self.participants:
                 random_distribution = random.choice(distribution_set.distributions)
                 assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution)
                 payoffs[participant.name] = earnings
+                assigned_classes[participant.name] = assigned_class
         
-        return payoffs
+        return payoffs, assigned_classes
     
     async def _collect_final_rankings(
         self,
         contexts: List[ParticipantContext],
         discussion_result: GroupDiscussionResult,
         payoff_results: Dict[str, float],
+        assigned_classes: Dict[str, str],
         config: ExperimentConfiguration,
         logger: AgentCentricLogger = None
     ) -> Dict[str, PrincipleRanking]:
@@ -507,33 +515,38 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                 context, balance_change=final_earnings
             )
             
-            # Log post-discussion state
-            if logger:
-                # Get assigned income class (simplified assignment for logging)
-                assigned_class = self._determine_assigned_class(final_earnings)
-                confidence = "Not specified"  # Will be updated after ranking
-                
-                logger.log_post_discussion(
-                    participant.name,
-                    assigned_class,
-                    final_earnings,
-                    "To be collected",  # Will be updated after ranking
-                    confidence,
-                    context.memory,
-                    updated_context.bank_balance
-                )
-            
             task = asyncio.create_task(
                 self._get_final_ranking(participant, updated_context, agent_config)
             )
-            final_ranking_tasks.append(task)
+            assigned_class = assigned_classes[participant.name]
+            final_ranking_tasks.append((task, participant.name, assigned_class, final_earnings, context.memory, updated_context.bank_balance))
         
-        rankings = await asyncio.gather(*final_ranking_tasks)
+        # Gather just the tasks for asyncio
+        tasks = [task_info[0] for task_info in final_ranking_tasks]
+        rankings = await asyncio.gather(*tasks)
         
-        # Return as dictionary mapping participant name to ranking
+        # Log post-discussion state with final rankings and return dictionary
         final_rankings = {}
         for i, ranking in enumerate(rankings):
-            final_rankings[self.participants[i].name] = ranking
+            task_info = final_ranking_tasks[i]
+            participant_name = task_info[1]
+            assigned_class = task_info[2]
+            final_earnings = task_info[3]
+            memory_state = task_info[4]
+            bank_balance = task_info[5]
+            
+            # Log post-discussion state with actual ranking
+            if logger:
+                logger.log_post_discussion(
+                    participant_name,
+                    assigned_class,
+                    final_earnings,
+                    ranking,
+                    memory_state,
+                    bank_balance
+                )
+            
+            final_rankings[participant_name] = ranking
         
         return final_rankings
     

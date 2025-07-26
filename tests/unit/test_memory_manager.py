@@ -4,7 +4,8 @@ Unit tests for agent-managed memory system.
 import unittest
 from unittest.mock import Mock, AsyncMock, patch
 import asyncio
-from utils.memory_manager import MemoryManager, MemoryLengthExceededError, ExperimentAbortError
+from utils.memory_manager import MemoryManager
+from utils.error_handling import MemoryError, ExperimentError
 
 
 class TestMemoryManager(unittest.TestCase):
@@ -110,7 +111,7 @@ class TestMemoryManager(unittest.TestCase):
             round_content = "Test round content"
             
             # Execute & Verify
-            with self.assertRaises(ExperimentAbortError):
+            with self.assertRaises(MemoryError):
                 await MemoryManager.prompt_agent_for_memory_update(
                     self.mock_agent, self.mock_context, round_content, max_retries=3
                 )
@@ -149,7 +150,7 @@ class TestMemoryManager(unittest.TestCase):
             round_content = "Test round content"
             
             # Execute & Verify
-            with self.assertRaises(ExperimentAbortError):
+            with self.assertRaises(MemoryError):
                 await MemoryManager.prompt_agent_for_memory_update(
                     self.mock_agent, self.mock_context, round_content, max_retries=2
                 )
@@ -159,15 +160,15 @@ class TestMemoryManager(unittest.TestCase):
         
         asyncio.run(run_test())
     
-    def test_memory_length_exceeded_error(self):
-        """Test MemoryLengthExceededError creation."""
-        error = MemoryLengthExceededError(1500, 1000)
+    def test_memory_error_creation(self):
+        """Test MemoryError creation."""
+        from utils.error_handling import ErrorSeverity
+        error = MemoryError("Memory too long", ErrorSeverity.RECOVERABLE, {"length": 1500, "limit": 1000})
         
-        self.assertEqual(error.attempted_length, 1500)
-        self.assertEqual(error.limit, 1000)
-        self.assertIn("1500", str(error))
-        self.assertIn("1000", str(error))
-        self.assertIn("reduce", str(error).lower())
+        self.assertIn("Memory too long", str(error))
+        self.assertEqual(error.severity, ErrorSeverity.RECOVERABLE)
+        self.assertEqual(error.context["length"], 1500)
+        self.assertEqual(error.context["limit"], 1000)
 
 
 class TestMemoryManagerIntegration(unittest.TestCase):
