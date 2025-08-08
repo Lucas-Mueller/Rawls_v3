@@ -113,8 +113,16 @@ The system follows a modular, service-oriented architecture with clear separatio
   - `experiment_types.py`: Core experiment structures (phases, distributions, results)
   - `principle_types.py`: Justice principle choices and rankings
   - `response_types.py`: Agent response schemas and validation
-- **`utils/`**: Supporting utilities (memory management, logging)
-- **`tests/`**: Unit and integration tests organized by category
+  - `logging_types.py`: Logging and tracing data structures
+- **`utils/`**: Supporting utilities
+  - `memory_manager.py`: Agent-managed memory with character limits and retry logic
+  - `agent_centric_logger.py`: JSON logging system tracking agent inputs/outputs
+  - `error_handling.py`: Standardized error categorization with automatic retry mechanisms
+- **`tests/`**: Comprehensive testing infrastructure
+  - `unit/`: Component-level tests (models, memory manager, distribution generator, logger)
+  - `integration/`: End-to-end tests (complete experiment flow, error recovery, state consistency)
+  - `integration/fixtures/`: Test fixtures and setup utilities
+  - `integration/utils/`: Async testing utilities
 
 #### Key Design Patterns
 - **Configuration-driven**: All agent properties, experiment parameters, and distribution ranges specified via YAML
@@ -152,7 +160,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 
 ### Agent Configuration
 Each participant agent has configurable:
-- `name`, `personality`, `model` (e.g., "o3-mini")  
+- `name`, `personality`, `model` (e.g., "gpt-4.1-mini")  
 - `temperature`, `reasoning_enabled`, `memory_character_limit`
 - System automatically creates participant agents from config and validates responses with utility agent
 

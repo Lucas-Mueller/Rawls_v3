@@ -1,4 +1,3 @@
-Logging system --> seems to be all over the place --> fine tuning 
 Models beyond OpenAI
 Prinicpile 3 & 4 with their respective payoff may need fixing
 Winner?? 
