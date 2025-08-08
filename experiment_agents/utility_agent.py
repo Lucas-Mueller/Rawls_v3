@@ -18,6 +18,7 @@ from utils.error_handling import (
     handle_experiment_errors
 )
 from utils.model_provider import create_model_config
+from utils.language_manager import get_language_manager, get_english_principle_name
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +33,18 @@ class UtilityAgent:
         
         model_config = create_model_config(utility_model)
         
+        # Get language manager for instructions
+        self.language_manager = get_language_manager()
+        
         # Both OpenAI and LiteLLM models use the same Agent pattern
         self.parser_agent = Agent(
             name="Response Parser",
-            instructions=self._get_parser_instructions(),
+            instructions=self.language_manager.get_parser_instructions(),
             model=model_config
         )
         self.validator_agent = Agent(
             name="Response Validator", 
-            instructions=self._get_validator_instructions(),
+            instructions=self.language_manager.get_validator_instructions(),
             model=model_config
         )
         
@@ -49,37 +53,7 @@ class UtilityAgent:
         self._certainty_patterns = self._compile_certainty_patterns()
         self._ranking_patterns = self._compile_ranking_patterns()
     
-    def _get_parser_instructions(self) -> str:
-        """Instructions for the parser agent."""
-        return """
-        You are a specialized parser for the Frohlich Experiment.
-        
-        When analyzing text for vote proposals, respond with either:
-        - "VOTE_PROPOSAL: [extracted proposal text]" if a vote is proposed
-        - "NO_VOTE" if no vote is proposed
-        
-        Look for phrases like "I propose we vote", "Let's vote on", "Should we take a vote", etc.
-        
-        For other parsing tasks, extract the relevant information and respond clearly and concisely.
-        """
-    
-    def _get_validator_instructions(self) -> str:
-        """Instructions for the validator agent."""
-        return """
-        You are a validator agent for the Frohlich Experiment.
-        
-        Your task is to validate parsed responses for completeness and correctness:
-        
-        1. Constraint Validation: If a participant chooses a constraint principle 
-           (maximizing_average_floor_constraint or maximizing_average_range_constraint),
-           they MUST specify a constraint amount.
-        
-        2. Ranking Validation: Complete rankings must include all 4 principles with ranks 1-4.
-        
-        3. Data Integrity: All required fields must be present and valid.
-        
-        Return is_valid=True if validation passes, is_valid=False with specific errors if not.
-        """
+    # Old instruction methods replaced by language manager calls
     
     @handle_experiment_errors(
         category=ExperimentErrorCategory.VALIDATION_ERROR,
@@ -90,19 +64,7 @@ class UtilityAgent:
         """Parse principle choice from participant response."""
         error_handler = get_global_error_handler()
         
-        parse_prompt = f"""
-        Parse the following participant response to extract their justice principle choice:
-        
-        Response: "{response}"
-        
-        Extract:
-        - Which principle they chose
-        - Constraint amount (if applicable)
-        - Their certainty level
-        - Their reasoning
-        
-        Return the parsed data as a dictionary with keys: principle, constraint_amount, certainty, reasoning
-        """
+        parse_prompt = self.language_manager.get_principle_choice_parsing_prompt(response)
         
         try:
             result = await Runner.run(self.parser_agent, parse_prompt)
@@ -157,18 +119,7 @@ class UtilityAgent:
     )
     async def parse_principle_ranking(self, response: str) -> PrincipleRanking:
         """Parse principle ranking from participant response."""
-        parse_prompt = f"""
-        Parse the following participant response to extract their complete ranking of justice principles:
-        
-        Response: "{response}"
-        
-        Extract a complete ranking of all 4 principles from best (rank 1) to worst (rank 4).
-        Also extract the overall certainty level for the entire ranking.
-        
-        Return the parsed data as a dictionary with:
-        - rankings: list of {{principle, rank}} objects (no individual certainty levels)
-        - certainty: overall certainty level for the entire ranking
-        """
+        parse_prompt = self.language_manager.get_principle_ranking_parsing_prompt(response)
         
         try:
             result = await Runner.run(self.parser_agent, parse_prompt)
@@ -289,11 +240,7 @@ class UtilityAgent:
     
     async def extract_vote_from_statement(self, statement: str) -> Optional[VoteProposal]:
         """Detect if participant is proposing a vote."""
-        detection_prompt = f"""
-        Analyze this group discussion statement to determine if the participant is proposing a vote:
-        
-        Statement: "{statement}"
-        """
+        detection_prompt = self.language_manager.get_vote_detection_prompt(statement)
         
         result = await Runner.run(self.parser_agent, detection_prompt)
         response_text = result.final_output.strip()
@@ -311,15 +258,18 @@ class UtilityAgent:
         """Generate re-prompt message for missing constraint."""
         constraint_type = "floor" if choice.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT else "range"
         
-        return f"""
-        {participant_name}, you chose the "{choice.principle.value}" principle, but you did not specify the {constraint_type} constraint amount.
+        # Use translated principle name for agent-facing re-prompt
+        principle_name = self.language_manager.get_justice_principle_name(choice.principle.value)
         
-        Please specify the dollar amount for your {constraint_type} constraint.
+        # Use English principle name for system logging
+        english_principle_name = get_english_principle_name(choice.principle.value)
+        logger.info(f"Re-prompting {participant_name} for missing constraint on {english_principle_name}")
         
-        For example:
-        - Floor constraint: "I choose maximizing average with a floor constraint of $15,000"
-        - Range constraint: "I choose maximizing average with a range constraint of $20,000"
-        """
+        return self.language_manager.get_constraint_re_prompt(
+            participant_name=participant_name,
+            principle_name=principle_name,
+            constraint_type=constraint_type
+        )
     
     def _compile_principle_patterns(self) -> Dict[str, re.Pattern]:
         """Compile regex patterns for principle detection."""
@@ -578,36 +528,4 @@ class UtilityAgent:
     
     def _get_format_improvement_prompt(self, response: str, parse_type: str) -> str:
         """Get prompt for improving response format."""
-        
-        if parse_type == 'principle_choice':
-            return f"""
-            The following response needs to be reformatted for clear principle choice extraction:
-            
-            Original response: "{response}"
-            
-            Please rewrite this to clearly state:
-            1. Which principle they chose (a, b, c, or d)
-            2. If they chose c or d, the specific constraint amount in dollars
-            3. Their certainty level
-            4. Their reasoning
-            
-            Format as: "I choose [principle] with [constraint if applicable]. I am [certainty level] about this choice because [reasoning]."
-            """
-        
-        elif parse_type == 'principle_ranking':
-            return f"""
-            The following response needs to be reformatted for clear ranking extraction:
-            
-            Original response: "{response}"
-            
-            Please rewrite this as a numbered list ranking all 4 principles from best (1) to worst (4):
-            
-            1. [principle name]
-            2. [principle name]  
-            3. [principle name]
-            4. [principle name]
-            
-            Overall certainty: [certainty level]
-            """
-        
-        return response
+        return self.language_manager.get_format_improvement_prompt(response, parse_type)

@@ -9,6 +9,7 @@ from utils.error_handling import (
     ExperimentErrorCategory, get_global_error_handler,
     handle_experiment_errors
 )
+from utils.language_manager import get_language_manager
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -158,10 +159,10 @@ class MemoryManager:
         Returns:
             Formatted prompt for memory update
         """
-        return f"""Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions.
-
-Current Memory:
-{current_memory if current_memory.strip() else "(Empty)"}
-
-Recent Activity:
-{round_content}"""
+        language_manager = get_language_manager()
+        return language_manager.get_prompt(
+            "memory_manager_strings", 
+            "memory_update_prompt",
+            current_memory=current_memory if current_memory.strip() else language_manager.get_prompt("memory_manager_strings", "empty_memory_placeholder"),
+            round_content=round_content
+        )

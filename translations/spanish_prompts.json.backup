@@ -1,0 +1,76 @@
+{
+  "experiment_explanation": {
+    "broad_experiment_explanation": "\nEstás participando en un experimento que estudia los principios de justicia y distribución de la renta.\n\nEl experimento tiene dos fases principales:\n\nFASE 1: Conocerás y aplicarás individualmente cuatro principios de justicia diferentes a la distribución de la renta. Se te pedirá que clasifiques estos principios según tus preferencias y que los apliques a situaciones concretas. Tus elecciones afectarán a tus ingresos.\n\nFASE 2: Participarás en un debate de grupo para llegar a un consenso sobre qué principio de justicia debe adoptar el grupo. El principio elegido por el grupo se aplicará para determinar los ingresos finales de cada uno.\n\nLos cuatro principios de justicia:\n1. **Maximización de la renta mínima**: Elegir el reparto que maximice la renta más baja de la sociedad\n2. **Maximización de la renta media**: Elegir la distribución que maximiza la renta media\n3. **Maximizar la renta media con una restricción mínima**: Maximizar la renta media garantizando al mismo tiempo que todos obtengan al menos un mínimo especificado.\n4. **Maximizar la renta media con una restricción de rango**: Maximizar la renta media manteniendo la diferencia entre los más ricos y los más pobres dentro de un límite determinado.\n\nA lo largo de todo el experimento, mantén la personalidad que se te haya asignado mientras te relacionas de forma reflexiva con los principios y los demás participantes.\n"
+  },
+  "phase1_instructions": {
+    "round0_initial_ranking": "\nTAREA ACTUAL: Clasificación inicial de principios\nSe le pedirá que clasifique los cuatro principios de justicia del mejor (1) al peor (4) según su preferencia.\nPara cada principio, indique también su nivel de certeza (muy inseguro, inseguro, sin opinión, seguro, muy seguro).\nExplique claramente su razonamiento.\n\nFORMATO DE LA RESPUESTA:\nEstructure su respuesta de la siguiente manera:\n1. [Su mejor opción]\n2. 2. [Su segunda opción]\n3. [Su tercera opción]\n4. [Su peor elección]\n\nCerteza general: [muy inseguro/inseguro/sin opinión/seguro/muy seguro]\n\nRazone detalladamente esta clasificación.\n\nEjemplo:\n1. Maximización de la media con restricción de suelo\n2. Maximización de la renta mínima\n3. Maximización de la renta media\n4. Maximización de la media con restricción de rango\n\nCerteza global: seguro\n\n[Su razonamiento aquí...]\n",
+    "round_neg1_detailed_explanation": "\nTAREA ACTUAL: Aprender sobre la aplicación de los principios\nSe te mostrarán ejemplos de cómo se aplicaría cada principio de justicia a distribuciones de ingresos específicas.\nEsto es con fines de aprendizaje - presta atención a cómo funciona cada principio en la práctica.\n",
+    "rounds1_4_principle_application": "\nTAREA ACTUAL: Aplicación de principios (Ronda {round_number} de 4)\nSe le mostrarán 4 distribuciones de ingresos y deberá elegir UNO de los principios de justicia para aplicar.\nSi elige un principio de restricción (piso o rango), DEBE especificar la cantidad de restricción en dólares.\nTu elección determinará qué distribución se selecciona, y se te asignará aleatoriamente a una clase de ingresos dentro de esa distribución.\nSus ingresos serán de 1 $ por cada 10.000 $ de ingresos que perciba.\n\nFORMATO DE RESPUESTA:\nPor favor, estructure su respuesta de la siguiente manera:\n1. Exponga claramente su elección: \"Elijo [principio a/b/c/d]\"\n2. Si elige c o d, especifique: \"con una restricción de $[cantidad]\"\n3. Indique su certeza: \"Estoy [muy inseguro/inseguro/seguro/muy seguro] sobre esta elección\"\n4. Explique detalladamente su razonamiento\n\nEjemplo: \"Elijo el principio c (maximización de la media con restricción de suelo) con una restricción de 15.000 dólares. Estoy seguro de esta elección porque equilibra la eficiencia con la protección de los más desfavorecidos.\"\n",
+    "round5_final_ranking": "\nTAREA ACTUAL: Clasificación final de los principios\nDespués de experimentar las cuatro rondas de aplicación de principios, vuelve a clasificar los principios del mejor (1) al peor (4).\nReflexiona sobre lo que has aprendido al aplicar estos principios y cómo puede haber cambiado tus preferencias.\n\nFORMATO DE RESPUESTA:\nEstructure su respuesta de la siguiente manera:\n1. [Su mejor opción]\n2. 2. [Su segunda opción]\n3. [Su tercera opción]\n4. [Su peor elección]\n\nCerteza general: [muy inseguro/inseguro/sin opinión/seguro/muy seguro]\n\nA continuación, explique cómo ha influido en su clasificación su experiencia en las cuatro rondas de solicitudes.\n\nEjemplo:\n1. Maximización de los ingresos del piso\n2. Maximización de la media con restricción de suelo\n3. Maximización de la renta media\n4. Maximización de la media con restricción de rango\n\nCerteza global: muy seguro\n\nDespués de aplicar estos principios, he aprendido que...\n"
+  },
+  "phase2_instructions": {
+    "group_discussion": "\nTAREA ACTUAL: Discusión en grupo (Ronda {round_number})\nAhora se encuentra en la fase de debate en grupo. Trabaja con los demás participantes para llegar a un consenso sobre qué principio de justicia debe adoptar el grupo.\n\nREGLAS DE DISCUSIÓN:\n- Hablar por turnos en el orden asignado\n- Escucha las perspectivas y razonamientos de los demás\n- Comparte tus propias opiniones basadas en tus experiencias de la Fase 1\n- Puedes proponer una votación cuando creas que el grupo está preparado\n- Todos los participantes deben estar de acuerdo en votar antes de que comience la votación\n- El consenso requiere que todos elijan EXACTAMENTE el mismo principio (incluidos los importes de las restricciones)\n\nFORMATO DE RESPUESTA:\nEstructure claramente su enunciado de debate:\n1. Comparta su perspectiva basada en la experiencia de la Fase 1\n2. Responda a los puntos de vista de los demás si procede\n3. Si está listo para votar, diga claramente \"Propongo que votemos sobre [principio específico con restricción si procede]\"\n4. Finalice con su principio preferido actual\n\nEjemplo: \"Basándome en mi experiencia de la Fase 1, me pareció que el principio de limitación del suelo funcionaba bien porque... Estoy de acuerdo con [participante] en que la eficiencia es importante, pero creo que deberíamos dar prioridad a la protección de los más desfavorecidos. Propongo que votemos sobre la maximización de la media con una limitación mínima de 18.000 $\".\n\nEl principio elegido por el grupo determinará las ganancias finales de cada uno.\nSi no se llega a un consenso, las ganancias finales se determinarán al azar.\n"
+  },
+  "utility_agent_prompts": {
+    "parser_instructions": "\nUsted es un analizador especializado para el Experimento Frohlich.\n\nCuando analices el texto de las propuestas de voto, responde con\n- \"VOTE_PROPOSAL: [texto de la propuesta extraído]\" si se propone una votación\n- \"NO_VOTE\" si no se propone ningún voto\n\nBusque frases como \"Propongo que votemos\", \"Vamos a votar\", \"¿Deberíamos votar?\", etc.\n\nPara otras tareas de análisis sintáctico, extraiga la información relevante y responda de forma clara y concisa.\n",
+    "validator_instructions": "\nEres un agente validador del Experimento Frohlich.\n\nSu tarea consiste en validar las respuestas analizadas para comprobar si están completas y son correctas:\n\n1. Validación de restricciones: Si un participante elige un principio de restricción\n   (maximizar_promedio_floor_constraint o maximizar_promedio_rango_constraint),\n   DEBE especificar una cantidad de restricción.\n\n2. 2. Validación de la clasificación: Las clasificaciones completas deben incluir los 4 principios con los rangos 1-4.\n\n3. 3. Integridad de los datos: Todos los campos obligatorios deben estar presentes y ser válidos.\n\nDevuelve is_valid=True si la validación es correcta, is_valid=False con errores específicos en caso contrario.\n",
+    "parse_principle_choice": "\nAnaliza la siguiente respuesta del participante para extraer su elección de principio de justicia:\n\nRespuesta: \"{response}\"\n\nExtraer:\n- Principio elegido\n- Importe de la restricción (si procede)\n- Su nivel de certeza\n- Su razonamiento\n\nDevuelve los datos analizados como un diccionario con las claves: principio, importe_limitación, certeza, razonamiento\n",
+    "parse_principle_ranking": "\nAnaliza las siguientes respuestas de los participantes para extraer su clasificación completa de los principios de justicia:\n\nRespuesta: \"{response}\"\n\nExtraiga una clasificación completa de los 4 principios, del mejor (puesto 1) al peor (puesto 4).\nExtrae también el nivel de certeza global de toda la clasificación.\n\nDevuelve los datos analizados como un diccionario con:\n- rankings: lista de objetos {{principle, rank}} (sin niveles de certeza individuales)\n- certeza: nivel de certeza general de toda la clasificación\n",
+    "vote_detection": "\nAnaliza esta declaración de discusión en grupo para determinar si el participante está proponiendo una votación:\n\nEnunciado: \"{statement}\"\n",
+    "constraint_re_prompt": "\n{participant_name}, ha elegido el principio \"{principle_name}\", pero no ha especificado el importe de la restricción {constraint_type}.\n\nPor favor, especifique el importe en dólares para su restricción {constraint_type}.\n\nPor ejemplo:\n- Restricción de suelo: \"Elijo maximizar la media con una restricción de suelo de 15.000 dólares\"\n- Restricción de rango: \"Elijo maximizar la media con una restricción de rango de 20.000 $\".\n",
+    "format_improvement_choice": "\nLa siguiente respuesta necesita ser reformateada para una extracción clara de la elección de principio:\n\nRespuesta original: \"{response}\"\n\nPor favor, reescríbala para que diga claramente:\n1. Qué principio eligieron (a, b, c o d).\n2. Si eligieron c o d, el importe específico de la restricción en dólares\n3. Su nivel de certeza\n4. Su razonamiento\n\nFormato como: \"Elijo [principio] con [restricción, si procede]. Tengo [nivel de certeza] sobre esta elección porque [razonamiento]\".\n",
+    "format_improvement_ranking": "\nLa siguiente respuesta necesita ser reformateada para una clara extracción del ranking:\n\nRespuesta original: \"{response}\"\n\nPor favor, reescríbala como una lista numerada clasificando los 4 principios del mejor (1) al peor (4):\n\n1. [nombre del principio]\n2. 2. [nombre del principio]\n3. [nombre del principio]\n4. [nombre del principio]\n\n5. Certeza global: [nivel de certeza]\n"
+  },
+  "system_messages": {
+    "error_messages": {
+      "memory_limit_exceeded": "Su memoria excede el límite de caracteres. Por favor, condensa tu memoria manteniendo la información más importante.",
+      "invalid_principle_choice": "Se ha detectado una elección de principio no válida. Por favor, seleccione uno de los cuatro principios de justicia disponibles.",
+      "missing_constraint_amount": "Ha seleccionado un principio de restricción pero no ha especificado el importe de la restricción. Indique el importe en dólares.",
+      "incomplete_ranking": "Su clasificación está incompleta. Por favor, clasifique los cuatro principios del 1 al 4.",
+      "parsing_failed": "No se ha podido analizar su respuesta. Por favor, reformatee su respuesta de acuerdo con el formato especificado.",
+      "consensus_not_reached": "El grupo no ha llegado a un consenso. El debate continuará.",
+      "experiment_timeout": "El experimento ha finalizado. Los resultados se finalizarán con los datos actuales."
+    },
+    "success_messages": {
+      "choice_accepted": "Su elección principal ha sido aceptada y registrada.",
+      "ranking_accepted": "Su clasificación principal ha sido aceptada y registrada.",
+      "memory_updated": "Tu memoria se ha actualizado correctamente.",
+      "vote_proposal_detected": "Propuesta de voto detectada y será procesada.",
+      "consensus_reached": "Enhorabuena. El grupo ha llegado a un consenso."
+    },
+    "status_messages": {
+      "phase1_starting": "Comienza la Fase 1. Ahora conocerás y aplicarás los principios de la justicia.",
+      "phase2_starting": "Comienza la fase 2. Ahora participará en un debate en grupo.",
+      "round_starting": "Comienza la ronda {round_number}.",
+      "earnings_update": "Tus ganancias actuales: ${amount:.2f}",
+      "final_results": "Experimento completado. Ganancias finales: ${amount:.2f}"
+    }
+  },
+  "context_formatting": {
+    "memory_section_format": "=== TU MEMORIA ===\n{memory}\n====================",
+    "memory_empty_placeholder": "(Vacío)",
+    "context_info_format": "\nNombre: {name}\nDescripción del rol: {role_description}\nSaldo bancario: ${bank_balance:.2f}\nFase actual: {phase}\nRonda: {round_number}\n\n{formatted_memory}\n\n{experiment_explanation}\n\nPERSONALIDAD: {personality}\n\n{phase_instructions}\n\nRecuerda mantenerte fiel a tu personalidad mientras participas reflexivamente en el experimento.\nProporciona respuestas claras y razonadas que expliquen lo que piensas.\n"
+  },
+  "names_and_labels": {
+    "justice_principle_names": {
+      "maximizing_floor": "Maximizar los ingresos del suelo",
+      "maximizing_average": "Maximizar los ingresos medios",
+      "maximizing_average_floor_constraint": "Maximización de la renta media con una restricción mínima",
+      "maximizing_average_range_constraint": "Maximización de la renta media con una restricción de rango"
+    },
+    "certainty_level_names": {
+      "very_unsure": "muy inseguro",
+      "unsure": "inseguro",
+      "no_opinion": "sin opinión",
+      "sure": "seguro",
+      "very_sure": "muy seguro"
+    },
+    "phase_names": {
+      "phase_1": "Fase 1",
+      "phase_2": "Fase 2"
+    }
+  },
+  "fallback": {
+    "default_phase_instructions": "No hay instrucciones específicas para la fase/ronda actual."
+  }
+}

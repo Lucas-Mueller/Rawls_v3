@@ -6,6 +6,7 @@ from typing import List, Tuple, Optional
 from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
+from utils.language_manager import get_language_manager
 
 
 class DistributionGenerator:
@@ -263,14 +264,20 @@ class DistributionGenerator:
     @staticmethod
     def format_distributions_table(distributions: List[IncomeDistribution]) -> str:
         """Format distributions as a table for display to participants."""
-        table = "Income Distributions:\n\n"
-        table += "| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n"
-        table += "|--------------|---------|---------|---------|----------|\n"
+        language_manager = get_language_manager()
         
-        income_classes = ["High", "Medium high", "Medium", "Medium low", "Low"]
+        # Get localized table components
+        table = language_manager.get_prompt("distribution_generator_strings", "distributions_table_header")
+        table += language_manager.get_prompt("distribution_generator_strings", "distributions_table_column_header")
+        table += language_manager.get_prompt("distribution_generator_strings", "distributions_table_separator")
+        
+        # Get income class names dictionary directly
+        translations = language_manager.get_current_translations()
+        income_class_names = translations["distribution_generator_strings"]["income_class_names"]
         class_attrs = ["high", "medium_high", "medium", "medium_low", "low"]
         
-        for class_name, attr in zip(income_classes, class_attrs):
+        for attr in class_attrs:
+            class_name = income_class_names[attr]
             table += f"| {class_name:<12} |"
             for dist in distributions:
                 income = getattr(dist, attr)
@@ -284,14 +291,12 @@ class DistributionGenerator:
         """Format principle name with constraint amount for display."""
         from models.principle_types import JusticePrinciple
         
-        base_names = {
-            JusticePrinciple.MAXIMIZING_FLOOR: "Maximizing the floor",
-            JusticePrinciple.MAXIMIZING_AVERAGE: "Maximizing the average",
-            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT: "Maximizing the average with a floor constraint",
-            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT: "Maximizing the average with a range constraint"
-        }
+        language_manager = get_language_manager()
+        # Get principle names dictionary directly
+        translations = language_manager.get_current_translations()
+        base_names = translations["distribution_generator_strings"]["base_principle_names"]
         
-        base_name = base_names.get(principle_choice.principle, str(principle_choice.principle))
+        base_name = base_names.get(principle_choice.principle.value, str(principle_choice.principle))
         
         if principle_choice.constraint_amount and principle_choice.principle in [
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,

@@ -15,6 +15,7 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.language_manager import get_language_manager
 
 
 class Phase1Manager:
@@ -328,21 +329,18 @@ Outcome: Learned how each justice principle is applied to income distributions t
         # Get the income for the assigned class in the chosen distribution
         assigned_income = chosen_distribution.get_income_by_class(assigned_class)
         
-        # Build the counterfactual table
-        counterfactual_table = f"""
-This assigns you to the following income class: {class_name_mapping[assigned_class.value]}
-
-For each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.
-
-Principle of Justice                          Income    Payoff"""
+        # Build the counterfactual table using language manager
+        language_manager = get_language_manager()
         
-        # Format each principle with proper spacing
-        principle_display_names = {
-            "maximizing_floor": "Maximizing the floor",
-            "maximizing_average": "Maximizing the average", 
-            "maximizing_average_floor_constraint": "Maximizing the average with a floor constraint",
-            "maximizing_average_range_constraint": "Maximizing the average with a range constraint"
-        }
+        counterfactual_table = language_manager.get_prompt(
+            "phase1_manager_strings", 
+            "counterfactual_table_header",
+            assigned_class=class_name_mapping[assigned_class.value]
+        )
+        
+        # Get principle display names dictionary directly
+        translations = language_manager.get_current_translations()
+        principle_display_names = translations["phase1_manager_strings"]["principle_display_names"]
         
         for principle_key, alt_earnings in alternative_earnings_same_class.items():
             principle_label = principle_display_names.get(principle_key, principle_key)
@@ -353,15 +351,17 @@ Principle of Justice                          Income    Payoff"""
         # Create round content for memory with properly formatted principle name
         chosen_principle_display = DistributionGenerator.format_principle_name_with_constraint(parsed_choice)
         
-        round_content = f"""Prompt: {application_prompt}
-Your Response: {text_response}
-Your Choice: {chosen_principle_display}
-
-ROUND {round_num} OUTCOME:
-{counterfactual_table}
-
-Your actual earnings this round: ${earnings:.2f}
-Your total earnings so far: ${context.bank_balance + earnings:.2f}"""
+        round_content = language_manager.get_prompt(
+            "phase1_manager_strings",
+            "round_memory_template",
+            application_prompt=application_prompt,
+            text_response=text_response,
+            chosen_principle_display=chosen_principle_display,
+            round_num=round_num,
+            counterfactual_table=counterfactual_table,
+            earnings=earnings,
+            total_earnings=context.bank_balance + earnings
+        )
         
         return application_result, round_content
     
@@ -417,63 +417,18 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
     
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
-        return """
-Please rank the four justice principles from best (1) to worst (4) based on your preference:
-
-1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income
-2. **Maximizing the average income**: Choose the distribution that maximizes the average income  
-3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income
-4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap
-
-Indicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.
-
-Provide your ranking with clear reasoning for your preferences.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get_prompt("phase1_manager_strings", "initial_ranking_prompt_template")
     
     def _build_detailed_explanation_prompt(self) -> str:
         """Build prompt for detailed explanation of principles."""
-        return """
-Here is how each justice principle would be applied to example income distributions:
-
-Example Distributions:
-| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |
-|--------------|---------|---------|---------|----------|
-| High         | $32,000 | $28,000 | $31,000 | $21,000 |
-| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |
-| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |
-| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |
-| Low          | $12,000 | $13,000 | $14,000 | $15,000 |
-
-How each principle would choose:
-- **Maximizing the floor**: Would choose Distribution 4 (highest low income: $15,000)
-- **Maximizing average**: Would choose Distribution 1 (highest average: $21,600)
-- **Maximizing average with floor constraint ≤ $13,000**: Would choose Distribution 1
-- **Maximizing average with floor constraint ≤ $14,000**: Would choose Distribution 3  
-- **Maximizing average with range constraint ≥ $20,000**: Would choose Distribution 1
-- **Maximizing average with range constraint ≥ $15,000**: Would choose Distribution 2
-
-Study these examples to understand how each principle works in practice.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get_prompt("phase1_manager_strings", "detailed_principles_explanation")
     
     def _build_post_explanation_ranking_prompt(self) -> str:
         """Build prompt for post-explanation ranking."""
-        return """
-After learning how each justice principle is applied to income distributions, please rank the four principles again from best (1) to worst (4):
-
-1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income
-2. **Maximizing the average income**: Choose the distribution that maximizes the average income  
-3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income
-4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap
-
-Consider:
-- How each principle works in practice based on the examples you just studied
-- Whether the detailed explanations changed your understanding
-- Your preference for how income should be distributed
-
-Indicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.
-
-Provide your ranking with reasoning, noting any changes from your initial ranking and why.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get_prompt("phase1_manager_strings", "post_explanation_ranking_prompt")
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""

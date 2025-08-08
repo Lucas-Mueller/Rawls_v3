@@ -6,26 +6,10 @@ from agents import Agent, RunContextWrapper, ModelSettings, Runner
 from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
 from utils.model_provider import create_model_config
+from utils.language_manager import get_language_manager
 
 
-# Broad experiment explanation that gets included in all agent instructions
-BROAD_EXPERIMENT_EXPLANATION = """
-You are participating in an experiment studying principles of justice and income distribution.
-
-The experiment has two main phases:
-
-PHASE 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.
-
-PHASE 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings.
-
-The Four Justice Principles:
-1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income in society
-2. **Maximizing the average income**: Choose the distribution that maximizes the average income  
-3. **Maximizing the average income with a floor constraint**: Maximize average income while ensuring everyone gets at least a specified minimum
-4. **Maximizing the average income with a range constraint**: Maximize average income while keeping the gap between richest and poorest within a specified limit
-
-Throughout the experiment, maintain your assigned personality while engaging thoughtfully with the principles and other participants.
-"""
+# This will be replaced by dynamic language manager calls
 
 
 class ParticipantAgent:
@@ -83,144 +67,43 @@ def _generate_dynamic_instructions(
 ) -> str:
     """Generate context-aware instructions including memory, bank balance, etc."""
     
+    language_manager = get_language_manager()
     context = ctx.context
     
-    # Format memory for display
-    formatted_memory = f"=== YOUR MEMORY ===\n{context.memory if context.memory.strip() else '(Empty)'}\n{'='*20}"
+    # Format memory for display using language manager
+    memory_content = context.memory if context.memory.strip() else None
+    formatted_memory = language_manager.format_memory_section(memory_content or "")
     
-    # Phase-specific instructions
-    phase_instructions = _get_phase_specific_instructions(context.phase, context.round_number)
+    # Get phase-specific instructions using language manager
+    phase_instructions = _get_phase_specific_instructions_translated(
+        context.phase, context.round_number, language_manager
+    )
     
-    return f"""
-Name: {context.name}
-Role Description: {context.role_description}
-Bank Balance: ${context.bank_balance:.2f}
-Current Phase: {context.phase.value.replace('_', ' ').title()}
-Round: {context.round_number}
-
-{formatted_memory}
-
-{BROAD_EXPERIMENT_EXPLANATION}
-
-PERSONALITY: {config.personality}
-
-{phase_instructions}
-
-Remember to stay true to your personality while participating thoughtfully in the experiment.
-Provide clear, reasoned responses that explain your thinking.
-"""
+    # Format everything using language manager
+    return language_manager.format_context_info(
+        name=context.name,
+        role_description=context.role_description,
+        bank_balance=context.bank_balance,
+        phase=context.phase.value.replace('_', ' ').title(),
+        round_number=context.round_number,
+        formatted_memory=formatted_memory,
+        personality=config.personality,
+        phase_instructions=phase_instructions
+    )
 
 
-def _get_phase_specific_instructions(phase: ExperimentPhase, round_number: int) -> str:
-    """Get instructions specific to the current phase and round."""
+def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_number: int, language_manager) -> str:
+    """Get instructions specific to the current phase and round using language manager."""
     
     if phase == ExperimentPhase.PHASE_1:
-        if round_number == 0:
-            return """
-CURRENT TASK: Initial Principle Ranking
-You will be asked to rank the four justice principles from best (1) to worst (4) based on your preference.
-For each principle, also indicate your certainty level (very unsure, unsure, no opinion, sure, very sure).
-Explain your reasoning clearly.
-
-RESPONSE FORMAT:
-Please structure your response as follows:
-1. [Your best choice]
-2. [Your second choice]
-3. [Your third choice]
-4. [Your worst choice]
-
-Overall certainty: [very unsure/unsure/no opinion/sure/very sure]
-
-Then provide your detailed reasoning for this ranking.
-
-Example:
-1. Maximizing average with floor constraint
-2. Maximizing the floor income
-3. Maximizing average income
-4. Maximizing average with range constraint
-
-Overall certainty: sure
-
-[Your reasoning here...]
-"""
-        elif round_number == -1:  # Special case for detailed explanation step
-            return """
-CURRENT TASK: Learning About Principle Applications
-You will be shown examples of how each justice principle would be applied to specific income distributions.
-This is for learning purposes - pay attention to how each principle works in practice.
-"""
-        elif 1 <= round_number <= 4:
-            return f"""
-CURRENT TASK: Principle Application (Round {round_number} of 4)
-You will be shown 4 income distributions and must choose ONE of the justice principles to apply.
-If you choose a constraint principle (floor or range), you MUST specify the constraint amount in dollars.
-Your choice will determine which distribution is selected, and you'll be randomly assigned to an income class within that distribution.
-Your earnings will be $1 for every $10,000 of income you receive.
-
-RESPONSE FORMAT:
-Please structure your response as follows:
-1. State your choice clearly: "I choose [principle a/b/c/d]"
-2. If choosing c or d, specify: "with a constraint of $[amount]"
-3. State your certainty: "I am [very unsure/unsure/sure/very sure] about this choice"
-4. Explain your reasoning in detail
-
-Example: "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protecting the worst-off."
-"""
-        elif round_number == 5:  # Final ranking
-            return """
-CURRENT TASK: Final Principle Ranking
-After experiencing the four rounds of principle application, rank the principles again from best (1) to worst (4).
-Reflect on what you learned from applying these principles and how it may have changed your preferences.
-
-RESPONSE FORMAT:
-Please structure your response as follows:
-1. [Your best choice]
-2. [Your second choice] 
-3. [Your third choice]
-4. [Your worst choice]
-
-Overall certainty: [very unsure/unsure/no opinion/sure/very sure]
-
-Then explain how your experience in the four application rounds influenced your ranking.
-
-Example:
-1. Maximizing the floor income
-2. Maximizing average with floor constraint
-3. Maximizing average income
-4. Maximizing average with range constraint
-
-Overall certainty: very sure
-
-After applying these principles, I learned that...
-"""
-    
+        return language_manager.get_phase1_instructions(round_number)
     elif phase == ExperimentPhase.PHASE_2:
-        return f"""
-CURRENT TASK: Group Discussion (Round {round_number})
-You are now in the group discussion phase. Work with other participants to reach consensus on which justice principle the group should adopt.
+        return language_manager.get_phase2_instructions(round_number)
+    else:
+        return language_manager.get_prompt("fallback", "default_phase_instructions")
 
-DISCUSSION RULES:
-- Take turns speaking in the assigned order
-- Listen to others' perspectives and reasoning  
-- Share your own views based on your Phase 1 experiences
-- You may propose a vote when you think the group is ready
-- All participants must agree to vote before voting begins
-- Consensus requires everyone to choose the EXACT same principle (including constraint amounts)
 
-RESPONSE FORMAT:
-Structure your discussion statement clearly:
-1. Share your perspective based on Phase 1 experience
-2. Respond to others' points if applicable
-3. If ready to vote, clearly state: "I propose we vote on [specific principle with constraint if applicable]"
-4. End with your current preferred principle
-
-Example: "Based on my Phase 1 experience, I found that the floor constraint principle worked well because... I agree with [participant] that efficiency matters, but I think we should prioritize protecting the worst-off. I propose we vote on maximizing average with a floor constraint of $18,000."
-
-The group's chosen principle will determine everyone's final earnings.
-If no consensus is reached, final earnings will be randomly determined.
-"""
-    
-    return "No specific instructions for current phase/round."
+# Old hardcoded function replaced by _get_phase_specific_instructions_translated()
 
 
 

@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 from config import ExperimentConfiguration
 from core.experiment_manager import FrohlichExperimentManager
+from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,7 +42,7 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # Parse command line arguments
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config/default_config.yaml"
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "config/mandarin_config.yaml"
     
     if len(sys.argv) > 2:
         output_path = sys.argv[2]
@@ -58,6 +59,15 @@ async def main():
         
         logger.info(f"Loading configuration from: {config_path}")
         config = ExperimentConfiguration.from_yaml(config_path)
+        
+        # Initialize language manager
+        try:
+            language_enum = SupportedLanguage(config.language)
+            set_global_language(language_enum)
+            logger.info(f"Language set to: {config.language}")
+        except ValueError:
+            logger.error(f"Unsupported language: {config.language}. Using English as fallback.")
+            set_global_language(SupportedLanguage.ENGLISH)
         
         # Validate configuration
         logger.info(f"Configuration loaded: {len(config.agents)} participants, {config.phase2_rounds} max rounds")

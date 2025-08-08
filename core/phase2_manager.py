@@ -16,6 +16,7 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.language_manager import get_language_manager
 
 
 class Phase2Manager:
@@ -271,21 +272,27 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         elif any(phrase in statement_lower for phrase in ["principle d", "range constraint", "average with range"]):
             return "Principle D"
         else:
-            return "Not specified"
+            language_manager = get_language_manager()
+            return language_manager.get_prompt("phase2_manager_strings", "default_constraint_specification")
     
     def _determine_assigned_class(self, earnings: float) -> str:
         """Determine income class based on earnings amount."""
+        language_manager = get_language_manager()
+        # Get income class names dictionary directly
+        translations = language_manager.get_current_translations()
+        income_class_names = translations["phase2_manager_strings"]["income_class_assignment_names"]
+        
         # Simple mapping based on typical earnings ranges
         if earnings >= 30:
-            return "High"
+            return income_class_names["high"]
         elif earnings >= 25:
-            return "Medium high"
+            return income_class_names["medium_high"]
         elif earnings >= 20:
-            return "Medium"
+            return income_class_names["medium"]
         elif earnings >= 15:
-            return "Medium low"
+            return income_class_names["medium_low"]
         else:
-            return "Low"
+            return income_class_names["low"]
     
     async def _check_unanimous_vote_agreement(
         self,

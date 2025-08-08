@@ -1,0 +1,59 @@
+{
+  "phase1_manager_strings": {
+    "counterfactual_table_header": "This assigns you to the following income class: {assigned_class}\n\nFor each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.\n\nPrinciple of Justice                          Income    Payoff",
+    "principle_display_names": {
+      "maximizing_floor": "Maximizing the floor",
+      "maximizing_average": "Maximizing the average",
+      "maximizing_average_floor_constraint": "Maximizing the average with a floor constraint",
+      "maximizing_average_range_constraint": "Maximizing the average with a range constraint"
+    },
+    "round_memory_template": "Prompt: {application_prompt}\nYour Response: {text_response}\nYour Choice: {chosen_principle_display}\n\nROUND {round_num} OUTCOME:\n{counterfactual_table}\n\nYour actual earnings this round: ${earnings:.2f}\nYour total earnings so far: ${total_earnings:.2f}",
+    "detailed_principles_explanation": "Here is how each justice principle would be applied to example income distributions:\n\nExample Distributions:\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n\nHow each principle would choose:\n- **Maximizing the floor**: Would choose Distribution 4 (highest low income: $15,000)\n- **Maximizing average**: Would choose Distribution 1 (highest average: $21,600)\n- **Maximizing average with floor constraint ≤ $13,000**: Would choose Distribution 1\n- **Maximizing average with floor constraint ≤ $14,000**: Would choose Distribution 3  \n- **Maximizing average with range constraint ≥ $20,000**: Would choose Distribution 1\n- **Maximizing average with range constraint ≥ $15,000**: Would choose Distribution 2\n\nStudy these examples to understand how each principle works in practice.",
+    "post_explanation_ranking_prompt": "After learning how each justice principle is applied to income distributions, please rank the four principles again from best (1) to worst (4):\n\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nConsider:\n- How each principle works in practice based on the examples you just studied\n- Whether the detailed explanations changed your understanding\n- Your preference for how income should be distributed\n\nIndicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.\n\nProvide your ranking with reasoning, noting any changes from your initial ranking and why.",
+    "initial_ranking_prompt_template": "This is your first time ranking these four principles of justice:\n\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nPlease rank the principles from best (1) to worst (4) based on your initial understanding.\n\nIndicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.\n\nProvide your ranking with clear reasoning for your preferences."
+  },
+  "distribution_generator_strings": {
+    "distributions_table_header": "Income Distributions:\n\n",
+    "distributions_table_column_header": "| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n",
+    "distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
+    "income_class_names": {
+      "high": "High",
+      "medium_high": "Medium high",
+      "medium": "Medium",
+      "medium_low": "Medium low",
+      "low": "Low"
+    },
+    "base_principle_names": {
+      "maximizing_floor": "Maximizing the floor",
+      "maximizing_average": "Maximizing the average",
+      "maximizing_average_floor_constraint": "Maximizing the average with a floor constraint",
+      "maximizing_average_range_constraint": "Maximizing the average with a range constraint"
+    }
+  },
+  "phase2_manager_strings": {
+    "income_class_assignment_names": {
+      "high": "High",
+      "medium_high": "Medium high",
+      "medium": "Medium",
+      "medium_low": "Medium low",
+      "low": "Low"
+    },
+    "default_constraint_specification": "Not specified"
+  },
+  "utility_agent_strings": {
+    "parser_agent_name": "Response Parser",
+    "validator_agent_name": "Response Validator",
+    "validation_error_incomplete_ranking": "Incomplete ranking - missing principles or invalid ranks"
+  },
+  "system_formatting_strings": {
+    "earnings_display_format": "Your actual earnings this round: ${earnings:.2f}",
+    "total_earnings_format": "Your total earnings so far: ${total_earnings:.2f}",
+    "bank_balance_format": "Bank Balance: ${bank_balance:.2f}",
+    "round_outcome_header": "ROUND {round_num} OUTCOME:",
+    "current_phase_format": "Current Phase: {phase}",
+    "round_number_format": "Round: {round_number}",
+    "class_assignment_format": "This assigns you to the following income class: {assigned_class}",
+    "floor_constraint_example": "Floor constraint: \"I choose maximizing average with a floor constraint of $15,000\"",
+    "range_constraint_example": "Range constraint: \"I choose maximizing average with a range constraint of $20,000\""
+  }
+}
