@@ -61,6 +61,7 @@ async def main():
         
         # Validate configuration
         logger.info(f"Configuration loaded: {len(config.agents)} participants, {config.phase2_rounds} max rounds")
+        logger.info(f"  Utility agent model: {config.utility_agent_model}")
         for agent in config.agents:
             logger.info(f"  - {agent.name}: {agent.model} (temp={agent.temperature})")
         

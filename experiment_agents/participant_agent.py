@@ -5,6 +5,7 @@ from agents import Agent, RunContextWrapper, ModelSettings, Runner
 
 from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
+from utils.model_provider import create_model_config
 
 
 # Broad experiment explanation that gets included in all agent instructions
@@ -32,11 +33,17 @@ class ParticipantAgent:
     
     def __init__(self, config: AgentConfiguration):
         self.config = config
+        
+        # Use new model provider logic
+        model_config = create_model_config(config.model, config.temperature)
+        
+        # Handle ModelSettings creation - both OpenAI and LiteLLM use ModelSettings for temperature
+        model_settings = ModelSettings(temperature=config.temperature)
         self.agent = Agent[ParticipantContext](
             name=config.name,
             instructions=lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, config),
-            model=config.model,
-            model_settings=ModelSettings(temperature=config.temperature)
+            model=model_config,
+            model_settings=model_settings
         )
     
     @property

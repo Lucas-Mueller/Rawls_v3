@@ -4,6 +4,7 @@ Utility agent for parsing and validating participant responses.
 import asyncio
 import logging
 import re
+import os
 from typing import Optional, Dict, Any, List
 from agents import Agent, Runner, AgentOutputSchema
 
@@ -16,6 +17,7 @@ from utils.error_handling import (
     ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
     handle_experiment_errors
 )
+from utils.model_provider import create_model_config
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +25,23 @@ logger = logging.getLogger(__name__)
 class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
-    def __init__(self):
+    def __init__(self, utility_model: str = None):
+        # Use environment variable or default for utility agents
+        if utility_model is None:
+            utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
+        
+        model_config = create_model_config(utility_model)
+        
+        # Both OpenAI and LiteLLM models use the same Agent pattern
         self.parser_agent = Agent(
             name="Response Parser",
-            instructions=self._get_parser_instructions()
+            instructions=self._get_parser_instructions(),
+            model=model_config
         )
-        
         self.validator_agent = Agent(
             name="Response Validator", 
-            instructions=self._get_validator_instructions()
+            instructions=self._get_validator_instructions(),
+            model=model_config
         )
         
         # Enhanced parsing patterns

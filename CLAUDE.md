@@ -28,6 +28,15 @@ python main.py config/custom_config.yaml results/my_experiment.json
 
 # Run with specific config file
 python main.py my_config.yaml
+
+# Example configurations with different model providers
+# OpenAI models (existing behavior)
+model: "gpt-4.1-mini"
+
+# OpenRouter models (new LiteLLM integration)  
+model: "google/gemini-2.5-flash"
+model: "anthropic/claude-3-5-sonnet-20241022"
+model: "meta-llama/llama-3.1-70b-instruct"
 ```
 
 ### Testing Commands
@@ -50,11 +59,15 @@ python -m unittest tests.integration.test_state_consistency -v
 
 ### Environment Requirements
 ```bash
-# Environment file required - create .env file in project root:
+# Environment file optional - create .env file in project root if needed:
 OPENAI_API_KEY=your_key_here
+OPENROUTER_API_KEY=your_openrouter_key_here
 ```
 
-**Important**: The `.env` file is required for all operations. The system will fail without a valid OpenAI API key.
+**Important**: 
+- `OPENAI_API_KEY` is retrieved automatically for OpenAI models (e.g., "gpt-4.1-mini") - set only if needed
+- `OPENROUTER_API_KEY` is retrieved automatically for OpenRouter models (e.g., "google/gemini-2.5-flash") - set only if needed
+- Both API keys are handled the same way as in Open_Router_Test.py - using `os.getenv()` without strict validation
 
 ### Debugging and Development
 ```bash
@@ -175,6 +188,15 @@ Each participant agent has configurable:
 - Income distributions validated for positive values and proper constraint specifications
 - Justice principle choices validated (principles c/d require constraint amounts)
 - All agent responses parsed and validated by dedicated utility agent
+
+### Model Provider Support
+- **OpenAI Models**: Model strings without "/" use standard OpenAI Agents SDK
+- **OpenRouter Models**: Model strings with "/" trigger LiteLLM integration
+- **Environment Variables**: 
+  - `OPENAI_API_KEY`: Retrieved automatically for OpenAI models - set only if needed
+  - `OPENROUTER_API_KEY`: Retrieved automatically for OpenRouter models (those containing "/") - set only if needed
+- **Mixed Configurations**: Experiments can use different model providers for different agents
+- **Utility Agent Configuration**: `utility_agent_model` in config controls model for parser/validator agents
 
 ### Output & Tracing
 - Results saved as timestamped JSON files: `experiment_results_YYYYMMDD_HHMMSS.json`

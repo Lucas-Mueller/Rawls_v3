@@ -1,10 +1,8 @@
 from agents import Agent, Runner, function_tool
 from agents.extensions.models.litellm_model import LitellmModel
 import os
+from agents.model_settings import ModelSettings
 
-@function_tool
-def get_weather(city: str):
-    return f"The weather in {city} is sunny."
 
 agent = Agent(
     name="Assistant",
@@ -12,11 +10,13 @@ agent = Agent(
     model=LitellmModel(
         # Pick any OpenRouter-listed model; these IDs work with LiteLLM
         # Good, safe pick for tool-calling via OpenAI spec:
-        model="openrouter/openai/gpt-4o-mini-2024-07-18",
+        model="openrouter/google/gemini-2.5-flash",
         api_key=os.getenv("OPENROUTER_API_KEY"),
     ),
-    tools=[get_weather],
+    model_settings=ModelSettings(
+    temperature=0,
+)
 )
 
-result = Runner.run_sync(agent, "What's the weather in Tokyo?")
+result = Runner.run_sync(agent, "How are you doing today")
 print(result.final_output)

@@ -1,7 +1,7 @@
 agents:
   - name: "Alice"
     personality: "Analytical and methodical. Values fairness and systematic approaches to problem-solving. Tends to think through decisions carefully and considers long-term consequences."
-    model: "gpt-4.1-mini"
+    model: "moonshotai/kimi-k2"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
@@ -19,6 +19,9 @@ agents:
     temperature: 0.8
     memory_character_limit: 50000
     reasoning_enabled: true
+
+# Utility agent model (can also use OpenRouter models)
+utility_agent_model: "gpt-4.1-mini"
 
 phase2_rounds: 5
 distribution_range_phase1: [0.5, 2.0]

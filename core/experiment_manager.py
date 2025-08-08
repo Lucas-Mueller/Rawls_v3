@@ -37,7 +37,8 @@ class FrohlichExperimentManager:
         
         try:
             self.participants = self._create_participants()
-            self.utility_agent = UtilityAgent()
+            # Pass utility agent model from config
+            self.utility_agent = UtilityAgent(config.utility_agent_model)
             self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
             self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
             self.agent_logger = AgentCentricLogger()

@@ -20,6 +20,7 @@ class AgentConfiguration(BaseModel):
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     agents: List[AgentConfiguration] = Field(..., min_items=2, description="Participant agents")
+    utility_agent_model: str = Field("gpt-4.1-mini", description="Model for utility agents (parser/validator)")
     phase2_rounds: int = Field(10, gt=0, description="Maximum rounds for Phase 2 discussion")
     distribution_range_phase1: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 1 distributions")
     distribution_range_phase2: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 2 distributions")

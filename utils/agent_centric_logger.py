@@ -6,7 +6,7 @@ import json
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 from models.logging_types import (
     AgentExperimentLog, AgentPhase1Logging, AgentPhase2Logging,
@@ -16,8 +16,11 @@ from models.logging_types import (
     PrincipleRankingResult
 )
 from models.principle_types import PrincipleRanking
-from experiment_agents import ParticipantAgent
 from config import ExperimentConfiguration
+
+# Use TYPE_CHECKING import to avoid circular dependency
+if TYPE_CHECKING:
+    from experiment_agents import ParticipantAgent
 
 
 class AgentCentricLogger:
@@ -33,7 +36,7 @@ class AgentCentricLogger:
         
     def initialize_experiment(
         self, 
-        participants: List[ParticipantAgent], 
+        participants: List["ParticipantAgent"], 
         config: ExperimentConfiguration
     ):
         """Initialize agent logs at experiment start."""
