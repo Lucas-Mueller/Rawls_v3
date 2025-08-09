@@ -29,6 +29,11 @@ python main.py config/custom_config.yaml results/my_experiment.json
 # Run with specific config file
 python main.py my_config.yaml
 
+# Run with language-specific configurations
+python main.py config/spanish_config.yaml
+python main.py config/mandarin_config.yaml
+python main.py config/mixed_models_example.yaml
+
 # Example configurations with different model providers
 # OpenAI models (existing behavior)
 model: "gpt-4.1-mini"
@@ -102,6 +107,7 @@ ls experiment_results_*.json
 ### Key Features
 
 - **Configuration-driven**: Uses YAML files to specify agent properties, experiment parameters, and distribution ranges
+- **Multi-language Support**: Full experimental support for English, Spanish, and Mandarin with translated prompts and agents
 - **Agent-Managed Memory**: Agents create and manage their own memory (default 50,000 characters) with complete freedom over structure and content
 - **Tracing**: Uses OpenAI Agents SDK tracing with one trace per run
 - **Validation**: Built-in validation for agent responses, especially for constraint specifications
@@ -131,6 +137,8 @@ The system follows a modular, service-oriented architecture with clear separatio
   - `memory_manager.py`: Agent-managed memory with character limits and retry logic
   - `agent_centric_logger.py`: JSON logging system tracking agent inputs/outputs
   - `error_handling.py`: Standardized error categorization with automatic retry mechanisms
+  - `language_manager.py`: Multi-language support with translation loading and management
+  - `model_provider.py`: Model provider abstraction for OpenAI and OpenRouter integration
 - **`tests/`**: Comprehensive testing infrastructure
   - `unit/`: Component-level tests (models, memory manager, distribution generator, logger)
   - `integration/`: End-to-end tests (complete experiment flow, error recovery, state consistency)
@@ -147,6 +155,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 #### Reference Documentation
 - `knowledge_base/agents_sdk/`: Comprehensive OpenAI Agents SDK documentation and examples
 - `master_plan.md`: Complete experimental procedure and detailed system specifications
+- `translations/`: Multi-language support files (English, Spanish, Mandarin)
 
 ## Development Guidelines
 
@@ -197,6 +206,13 @@ Each participant agent has configurable:
   - `OPENROUTER_API_KEY`: Retrieved automatically for OpenRouter models (those containing "/") - set only if needed
 - **Mixed Configurations**: Experiments can use different model providers for different agents
 - **Utility Agent Configuration**: `utility_agent_model` in config controls model for parser/validator agents
+
+### Multi-Language Support
+- **Supported Languages**: English, Spanish, and Mandarin
+- **Translation Files**: Located in `translations/` directory with language-specific prompt files
+- **Language Configuration**: Use language-specific config files (`spanish_config.yaml`, `mandarin_config.yaml`)
+- **Agent Language**: All participant agents conduct the experiment in the configured language
+- **Validation**: Utility agents parse responses in the appropriate language
 
 ### Output & Tracing
 - Results saved as timestamped JSON files: `experiment_results_YYYYMMDD_HHMMSS.json`
