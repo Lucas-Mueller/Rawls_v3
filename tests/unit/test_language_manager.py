@@ -23,59 +23,47 @@ class TestLanguageManager(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         self.manager = LanguageManager(translations_dir=self.test_dir)
         
-        # Create complete test translation data with all required categories
+        # Create complete test translation data with new flattened structure
         self.test_translations = {
-            "experiment_explanation": {
-                "broad_experiment_explanation": "Test experiment explanation"
-            },
-            "phase1_instructions": {
-                "round0_initial_ranking": "Test initial ranking instructions",
-                "round_neg1_detailed_explanation": "Test detailed explanation",
-                "rounds1_4_principle_application": "Test principle application",
-                "round5_final_ranking": "Test final ranking"
-            },
-            "phase2_instructions": {
-                "group_discussion": "Test group discussion instructions"
-            },
-            "utility_agent_prompts": {
-                "parser_instructions": "Test parser instructions",
-                "validator_instructions": "Test validator instructions",
-                "parse_principle_choice": "Test parse choice prompt",
-                "parse_principle_ranking": "Test parse ranking prompt",
-                "vote_detection": "Test vote detection prompt",
-                "constraint_re_prompt": "Test constraint re-prompt",
-                "format_improvement_choice": "Test format improvement choice",
-                "format_improvement_ranking": "Test format improvement ranking"
-            },
-            "system_messages": {
-                "error_messages": {
-                    "memory_limit_exceeded": "Test memory limit error"
+            "common": {
+                "principle_names": {
+                    "maximizing_floor": "Test maximizing floor",
+                    "maximizing_average": "Test maximizing average"
                 },
-                "success_messages": {
-                    "choice_accepted": "Test choice accepted"
+                "income_classes": {
+                    "high": "Test high",
+                    "medium_high": "Test medium high",
+                    "medium": "Test medium",
+                    "medium_low": "Test medium low",
+                    "low": "Test low"
                 },
-                "status_messages": {
-                    "phase1_starting": "Test phase 1 starting"
+                "certainty_levels": {
+                    "sure": "Test sure",
+                    "very_sure": "Test very sure"
                 }
             },
-            "context_formatting": {
-                "memory_section_format": "Test memory format",
-                "memory_empty_placeholder": "Test empty placeholder",
-                "context_info_format": "Test context format"
-            },
-            "names_and_labels": {
-                "justice_principle_names": {
-                    "maximizing_floor": "Test maximizing floor"
-                },
-                "certainty_level_names": {
-                    "sure": "Test sure"
-                },
-                "phase_names": {
-                    "phase_1": "Test Phase 1"
-                }
-            },
-            "fallback": {
-                "default_phase_instructions": "Test default instructions"
+            "prompts": {
+                "experiment_explanation": "Test experiment explanation",
+                "phase1_round0_initial_ranking": "Test initial ranking instructions",
+                "phase1_round_neg1_detailed_explanation": "Test detailed explanation",
+                "phase1_rounds1_4_principle_application": "Test principle application",
+                "phase1_round5_final_ranking": "Test final ranking",
+                "phase2_group_discussion": "Test group discussion instructions",
+                "utility_parser_instructions": "Test parser instructions",
+                "utility_validator_instructions": "Test validator instructions",
+                "utility_parse_principle_choice": "Test parse choice prompt",
+                "utility_parse_principle_ranking": "Test parse ranking prompt",
+                "utility_vote_detection": "Test vote detection prompt",
+                "utility_constraint_re_prompt": "Test constraint re-prompt",
+                "utility_format_improvement_choice": "Test format improvement choice",
+                "utility_format_improvement_ranking": "Test format improvement ranking",
+                "system_error_messages_memory_limit_exceeded": "Test memory limit error",
+                "system_success_messages_choice_accepted": "Test choice accepted",
+                "system_status_messages_phase1_starting": "Test phase 1 starting",
+                "context_memory_section_format": "Test memory format",
+                "context_memory_empty_placeholder": "Test empty placeholder",
+                "context_context_info_format": "Test context format",
+                "fallback_default_phase_instructions": "Test default instructions"
             }
         }
         
@@ -114,20 +102,28 @@ class TestLanguageManager(unittest.TestCase):
         for language in SupportedLanguage:
             translations = self.manager.load_language(language)
             self.assertIsInstance(translations, dict)
-            self.assertIn("experiment_explanation", translations)
+            self.assertIn("common", translations)
+            self.assertIn("prompts", translations)
     
     def test_prompt_retrieval(self):
         """Test that prompts can be retrieved correctly."""
-        explanation = self.manager.get_prompt("experiment_explanation", "broad_experiment_explanation")
+        # Test old API (still supported)
+        explanation = self.manager.get_prompt("prompts", "experiment_explanation")
         self.assertEqual(explanation, "Test experiment explanation")
+        
+        # Test new API
+        explanation_new = self.manager.get("prompts.experiment_explanation")
+        self.assertEqual(explanation_new, "Test experiment explanation")
+        
+        # Test common section
+        principle = self.manager.get("common.principle_names.maximizing_floor")
+        self.assertEqual(principle, "Test maximizing floor")
     
     def test_prompt_formatting(self):
         """Test that prompts with format strings work correctly."""
         # For this test we need a prompt with format placeholders
         test_translations_with_format = self.test_translations.copy()
-        test_translations_with_format["test_category"] = {
-            "formatted_prompt": "Hello {name}, your score is {score}"
-        }
+        test_translations_with_format["prompts"]["formatted_prompt"] = "Hello {name}, your score is {score}"
         
         # Update test files with formatted prompt
         for language in SupportedLanguage:
@@ -139,15 +135,20 @@ class TestLanguageManager(unittest.TestCase):
         # Clear cache to force reload
         self.manager.translations_cache.clear()
         
-        # Test formatted prompt
-        formatted = self.manager.get_prompt("test_category", "formatted_prompt", 
+        # Test formatted prompt with old API
+        formatted = self.manager.get_prompt("prompts", "formatted_prompt", 
                                           name="Alice", score=95)
         self.assertEqual(formatted, "Hello Alice, your score is 95")
+        
+        # Test formatted prompt with new API
+        formatted_new = self.manager.get("prompts.formatted_prompt", name="Alice", score=95)
+        self.assertEqual(formatted_new, "Hello Alice, your score is 95")
     
     def test_message_retrieval(self):
         """Test that nested messages can be retrieved correctly."""
-        error_msg = self.manager.get_message("system_messages", "error_messages", 
-                                           "memory_limit_exceeded")
+        # The old get_message API doesn't work the same way anymore since we flattened the structure
+        # Just test the new API
+        error_msg = self.manager.get("prompts.system_error_messages_memory_limit_exceeded")
         self.assertEqual(error_msg, "Test memory limit error")
     
     def test_convenience_methods(self):

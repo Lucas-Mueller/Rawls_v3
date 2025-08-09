@@ -273,14 +273,19 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             return "Principle D"
         else:
             language_manager = get_language_manager()
-            return language_manager.get_prompt("phase2_manager_strings", "default_constraint_specification")
+            return language_manager.get("prompts.phase2_default_constraint_specification")
     
     def _determine_assigned_class(self, earnings: float) -> str:
         """Determine income class based on earnings amount."""
         language_manager = get_language_manager()
-        # Get income class names dictionary directly
-        translations = language_manager.get_current_translations()
-        income_class_names = translations["phase2_manager_strings"]["income_class_assignment_names"]
+        # Get income class names using the new API
+        income_class_names = {
+            "high": language_manager.get("common.income_classes.high"),
+            "medium_high": language_manager.get("common.income_classes.medium_high"),
+            "medium": language_manager.get("common.income_classes.medium"),
+            "medium_low": language_manager.get("common.income_classes.medium_low"),
+            "low": language_manager.get("common.income_classes.low")
+        }
         
         # Simple mapping based on typical earnings ranges
         if earnings >= 30:

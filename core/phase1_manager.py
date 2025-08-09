@@ -332,15 +332,19 @@ Outcome: Learned how each justice principle is applied to income distributions t
         # Build the counterfactual table using language manager
         language_manager = get_language_manager()
         
-        counterfactual_table = language_manager.get_prompt(
-            "phase1_manager_strings", 
-            "counterfactual_table_header",
+        counterfactual_table = language_manager.get(
+            "prompts.phase1_counterfactual_table_header",
             assigned_class=class_name_mapping[assigned_class.value]
         )
         
         # Get principle display names dictionary directly
         translations = language_manager.get_current_translations()
-        principle_display_names = translations["phase1_manager_strings"]["principle_display_names"]
+        principle_display_names = {
+            "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
+            "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
+            "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
+            "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
+        }
         
         for principle_key, alt_earnings in alternative_earnings_same_class.items():
             principle_label = principle_display_names.get(principle_key, principle_key)
@@ -351,9 +355,8 @@ Outcome: Learned how each justice principle is applied to income distributions t
         # Create round content for memory with properly formatted principle name
         chosen_principle_display = DistributionGenerator.format_principle_name_with_constraint(parsed_choice)
         
-        round_content = language_manager.get_prompt(
-            "phase1_manager_strings",
-            "round_memory_template",
+        round_content = language_manager.get(
+            "prompts.phase1_round_memory_template",
             application_prompt=application_prompt,
             text_response=text_response,
             chosen_principle_display=chosen_principle_display,
@@ -418,17 +421,17 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
         language_manager = get_language_manager()
-        return language_manager.get_prompt("phase1_manager_strings", "initial_ranking_prompt_template")
+        return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
     
     def _build_detailed_explanation_prompt(self) -> str:
         """Build prompt for detailed explanation of principles."""
         language_manager = get_language_manager()
-        return language_manager.get_prompt("phase1_manager_strings", "detailed_principles_explanation")
+        return language_manager.get("prompts.phase1_detailed_principles_explanation")
     
     def _build_post_explanation_ranking_prompt(self) -> str:
         """Build prompt for post-explanation ranking."""
         language_manager = get_language_manager()
-        return language_manager.get_prompt("phase1_manager_strings", "post_explanation_ranking_prompt")
+        return language_manager.get("prompts.phase1_post_explanation_ranking_prompt")
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""

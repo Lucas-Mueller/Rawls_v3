@@ -160,9 +160,8 @@ class MemoryManager:
             Formatted prompt for memory update
         """
         language_manager = get_language_manager()
-        return language_manager.get_prompt(
-            "memory_manager_strings", 
-            "memory_update_prompt",
-            current_memory=current_memory if current_memory.strip() else language_manager.get_prompt("memory_manager_strings", "empty_memory_placeholder"),
+        return language_manager.get(
+            "prompts.memory_memory_update_prompt",
+            current_memory=current_memory if current_memory.strip() else language_manager.get("prompts.memory_empty_memory_placeholder"),
             round_content=round_content
         )

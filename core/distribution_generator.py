@@ -267,13 +267,18 @@ class DistributionGenerator:
         language_manager = get_language_manager()
         
         # Get localized table components
-        table = language_manager.get_prompt("distribution_generator_strings", "distributions_table_header")
-        table += language_manager.get_prompt("distribution_generator_strings", "distributions_table_column_header")
-        table += language_manager.get_prompt("distribution_generator_strings", "distributions_table_separator")
+        table = language_manager.get("prompts.distribution_distributions_table_header")
+        table += language_manager.get("prompts.distribution_distributions_table_column_header")
+        table += language_manager.get("prompts.distribution_distributions_table_separator")
         
-        # Get income class names dictionary directly
-        translations = language_manager.get_current_translations()
-        income_class_names = translations["distribution_generator_strings"]["income_class_names"]
+        # Get income class names using new API
+        income_class_names = {
+            "high": language_manager.get("common.income_classes.high"),
+            "medium_high": language_manager.get("common.income_classes.medium_high"),
+            "medium": language_manager.get("common.income_classes.medium"),
+            "medium_low": language_manager.get("common.income_classes.medium_low"),
+            "low": language_manager.get("common.income_classes.low")
+        }
         class_attrs = ["high", "medium_high", "medium", "medium_low", "low"]
         
         for attr in class_attrs:
@@ -292,11 +297,11 @@ class DistributionGenerator:
         from models.principle_types import JusticePrinciple
         
         language_manager = get_language_manager()
-        # Get principle names dictionary directly
-        translations = language_manager.get_current_translations()
-        base_names = translations["distribution_generator_strings"]["base_principle_names"]
-        
-        base_name = base_names.get(principle_choice.principle.value, str(principle_choice.principle))
+        # Get principle names using new API
+        try:
+            base_name = language_manager.get(f"common.principle_names.{principle_choice.principle.value}")
+        except (KeyError, ValueError):
+            base_name = str(principle_choice.principle)
         
         if principle_choice.constraint_amount and principle_choice.principle in [
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
