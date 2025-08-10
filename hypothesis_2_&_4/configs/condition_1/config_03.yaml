@@ -1,30 +1,30 @@
 agents:
 - memory_character_limit: 50000
-  model: openai/gpt-4.1
+  model: qwen/qwen3-coder
   name: Agent_1
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: moonshotai/kimi-k2
+  model: openai/gpt-4.1-mini
   name: Agent_2
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: deepseek/deepseek-chat-v3-0324
+  model: openai/gpt-4.1
   name: Agent_3
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: google/gemini-2.5-pro
+  model: deepseek/deepseek-chat-v3-0324
   name: Agent_4
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: openai/gpt-4.1-mini
+  model: google/gemini-2.5-flash
   name: Agent_5
   personality: You are an american college student.
   reasoning_enabled: true

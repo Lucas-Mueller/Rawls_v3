@@ -152,11 +152,28 @@ class Phase2Manager:
                 # Check for vote proposal
                 vote_proposal = await self.utility_agent.extract_vote_from_statement(statement)
                 
+                # ADD VOTE DETECTION DEBUG LOGGING
+                import logging
+                debug_logger = logging.getLogger(__name__)
+                
+                debug_logger.info(f"=== VOTE DETECTION DEBUG ===")
+                debug_logger.info(f"Agent: {participant.name}")
+                debug_logger.info(f"Statement: {statement}")
+                debug_logger.info(f"Vote proposal detected: {vote_proposal is not None}")
                 if vote_proposal:
+                    debug_logger.info(f"Vote proposal text: {vote_proposal.proposal_text}")
+                else:
+                    debug_logger.info(f"No vote proposal detected")
+                
+                if vote_proposal:
+                    debug_logger.info(f"Checking unanimous agreement...")
                     # Check if all participants agree to vote
-                    if await self._check_unanimous_vote_agreement(
+                    unanimous_agreement = await self._check_unanimous_vote_agreement(
                         discussion_state, contexts, config
-                    ):
+                    )
+                    debug_logger.info(f"Unanimous agreement result: {unanimous_agreement}")
+                    
+                    if unanimous_agreement:
                         vote_result = await self._conduct_group_vote(contexts, config)
                         discussion_state.add_vote_result(vote_result)
                         
@@ -325,8 +342,22 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         responses = await asyncio.gather(*agreement_tasks)
         
+        # ADD UNANIMOUS AGREEMENT DEBUG LOGGING
+        import logging
+        debug_logger = logging.getLogger(__name__)
+        
+        debug_logger.info(f"=== UNANIMOUS AGREEMENT DEBUG ===")
+        for i, response in enumerate(responses):
+            participant_name = self.participants[i].name
+            response_text = response.final_output
+            contains_yes = "YES" in response_text.upper()
+            debug_logger.info(f"{participant_name} response: '{response_text}' -> Contains YES: {contains_yes}")
+        
         # Check if all responses contain "YES"
         agreements = [("YES" in response.final_output.upper()) for response in responses]
+        debug_logger.info(f"All agreements: {agreements}")
+        debug_logger.info(f"Unanimous result: {all(agreements)}")
+        
         return all(agreements)
     
     async def _conduct_group_vote(

@@ -187,3 +187,151 @@ async def run_experiment_from_config(
 def run_experiment(config_dict: dict, output_path: str = None, verbose: bool = True) -> dict:
     """Synchronous wrapper for running experiments in Jupyter notebooks."""
     return asyncio.run(run_experiment_from_config(config_dict, output_path, verbose))
+
+
+async def run_experiments_parallel_async(
+    config_files: List[str],
+    max_parallel: int = 5,
+    output_dir: str = "hypothesis_2_&_4/logs",
+    verbose: bool = True
+) -> List[dict]:
+    """
+    Run multiple experiments in parallel with controlled concurrency.
+    
+    Parameters:
+    - config_files: List of paths to config YAML files
+    - max_parallel: Maximum number of experiments to run concurrently
+    - output_dir: Directory to save results
+    - verbose: Whether to enable verbose logging
+    
+    Returns:
+    - List of experiment results dictionaries
+    """
+    if verbose:
+        setup_logging()
+    logger = logging.getLogger(__name__)
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Load all configurations
+    configs_and_files = []
+    for config_file in config_files:
+        try:
+            with open(config_file, 'r') as f:
+                config_dict = yaml.safe_load(f)
+            configs_and_files.append((config_dict, config_file))
+        except Exception as e:
+            if verbose:
+                logger.error(f"Failed to load config {config_file}: {e}")
+            continue
+    
+    if verbose:
+        logger.info(f"Loaded {len(configs_and_files)} configurations")
+        logger.info(f"Running with max {max_parallel} parallel experiments")
+    
+    # Semaphore to control concurrency
+    semaphore = asyncio.Semaphore(max_parallel)
+    
+    async def run_single_experiment(config_dict: dict, config_file: str):
+        """Run a single experiment with semaphore control."""
+        async with semaphore:
+            try:
+                # Generate output path based on config file name
+                config_name = Path(config_file).stem
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_path = os.path.join(output_dir, f"{config_name}_results_{timestamp}.json")
+                
+                if verbose:
+                    logger.info(f"Starting experiment: {config_name}")
+                
+                # Run the experiment
+                result = await run_experiment_from_config(
+                    config_dict, 
+                    output_path, 
+                    verbose=False  # Disable individual experiment logging to reduce noise
+                )
+                
+                if verbose:
+                    logger.info(f"Completed experiment: {config_name} -> {output_path}")
+                
+                return {
+                    'config_file': config_file,
+                    'output_path': output_path,
+                    'status': 'success',
+                    'result': result
+                }
+                
+            except Exception as e:
+                if verbose:
+                    logger.error(f"Failed experiment {config_file}: {e}")
+                return {
+                    'config_file': config_file,
+                    'status': 'failed',
+                    'error': str(e)
+                }
+    
+    # Create tasks for all experiments
+    tasks = []
+    for config_dict, config_file in configs_and_files:
+        task = run_single_experiment(config_dict, config_file)
+        tasks.append(task)
+    
+    # Run all experiments with controlled concurrency
+    if verbose:
+        logger.info("Starting parallel experiment execution...")
+    
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Process results
+    successful_results = []
+    failed_results = []
+    
+    for result in results:
+        if isinstance(result, Exception):
+            failed_results.append({'error': str(result), 'status': 'exception'})
+        elif result.get('status') == 'success':
+            successful_results.append(result)
+        else:
+            failed_results.append(result)
+    
+    if verbose:
+        logger.info("=" * 60)
+        logger.info("PARALLEL EXECUTION COMPLETED")
+        logger.info("=" * 60)
+        logger.info(f"Successful experiments: {len(successful_results)}")
+        logger.info(f"Failed experiments: {len(failed_results)}")
+        
+        if successful_results:
+            logger.info("\nSuccessful experiments:")
+            for result in successful_results:
+                logger.info(f"  - {Path(result['config_file']).name} -> {result['output_path']}")
+        
+        if failed_results:
+            logger.info("\nFailed experiments:")
+            for result in failed_results:
+                config_name = Path(result.get('config_file', 'unknown')).name if 'config_file' in result else 'unknown'
+                logger.info(f"  - {config_name}: {result.get('error', 'Unknown error')}")
+    
+    return results
+
+
+def run_experiments_parallel(
+    config_files: List[str],
+    max_parallel: int = 5,
+    output_dir: str = "hypothesis_2_&_4/logs",
+    verbose: bool = True
+) -> List[dict]:
+    """
+    Synchronous wrapper for running experiments in parallel.
+    
+    Parameters:
+    - config_files: List of paths to config YAML files
+    - max_parallel: Maximum number of experiments to run concurrently
+    - output_dir: Directory to save results
+    - verbose: Whether to enable verbose logging
+    
+    Returns:
+    - List of experiment results dictionaries
+    """
+    return asyncio.run(run_experiments_parallel_async(config_files, max_parallel, output_dir, verbose))

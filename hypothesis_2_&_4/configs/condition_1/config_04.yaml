@@ -1,24 +1,24 @@
 agents:
 - memory_character_limit: 50000
-  model: moonshotai/kimi-k2
+  model: google/gemini-2.5-flash
   name: Agent_1
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: anthropic/claude-sonnet-4
+  model: meta/llama/llama-4-maverick
   name: Agent_2
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: anthropic/claude-sonnet-4
+  model: meta/llama/llama-4-maverick
   name: Agent_3
   personality: You are an american college student.
   reasoning_enabled: true
   temperature: 0.0
 - memory_character_limit: 50000
-  model: google/gemini-2.5-flash
+  model: google/gemini-2.5-pro
   name: Agent_4
   personality: You are an american college student.
   reasoning_enabled: true

@@ -44,6 +44,28 @@ model: "anthropic/claude-3-5-sonnet-20241022"
 model: "meta-llama/llama-3.1-70b-instruct"
 ```
 
+### Jupyter Notebook Execution
+```python
+# For Jupyter notebook environments, use the experiment_runner utility
+from utils.experiment_runner import (
+    generate_random_config, 
+    run_experiment, 
+    run_experiments_parallel,
+    generate_and_save_configs
+)
+
+# Generate and run a single experiment
+config = generate_random_config(num_agents=3, num_rounds=20)
+results = run_experiment(config)
+
+# Generate multiple config files (useful for batch experiments)
+generate_and_save_configs(num_configs=10, save_path="hypothesis_2_&_4/configs/condition_1")
+
+# Run multiple experiments in parallel
+config_files = ["path/to/config1.yaml", "path/to/config2.yaml"]
+results = run_experiments_parallel(config_files, max_parallel=5)
+```
+
 ### Testing Commands
 ```bash
 # Run all tests (includes import validation, unit tests, and integration tests)
@@ -139,6 +161,7 @@ The system follows a modular, service-oriented architecture with clear separatio
   - `error_handling.py`: Standardized error categorization with automatic retry mechanisms
   - `language_manager.py`: Multi-language support with translation loading and management
   - `model_provider.py`: Model provider abstraction for OpenAI and OpenRouter integration
+  - `experiment_runner.py`: Jupyter notebook utilities for batch experiments and parallel execution
 - **`tests/`**: Comprehensive testing infrastructure
   - `unit/`: Component-level tests (models, memory manager, distribution generator, logger)
   - `integration/`: End-to-end tests (complete experiment flow, error recovery, state consistency)
@@ -151,6 +174,14 @@ The system follows a modular, service-oriented architecture with clear separatio
 - **Agent-Managed Memory**: Agents maintain configurable memory (default 50,000 characters) that they update themselves after each step
 - **Validation System**: Built-in validation for agent responses, especially constraint specifications
 - **Tracing Integration**: Uses OpenAI Agents SDK tracing with one trace per experiment run
+
+#### Special Directories
+- **`hypothesis_2_&_4/`**: Experimental condition directory with batch configs and analysis notebooks
+  - `configs/condition_1/`: Generated config files for hypothesis testing (config_01.yaml through config_10.yaml)
+  - `analysis.ipynb`: Jupyter notebook for result analysis
+  - `execution.ipynb`: Jupyter notebook for running experiments
+  - `parallel_execution_showcase.ipynb`: Demonstration of parallel execution capabilities
+  - `logs/`: Experiment output files and results
 
 #### Reference Documentation
 - `knowledge_base/agents_sdk/`: Comprehensive OpenAI Agents SDK documentation and examples

@@ -5,21 +5,21 @@ language: "English"
 agents:
   - name: "Alice"
     personality: "Analytical and methodical. Values fairness and systematic approaches to problem-solving. Tends to think through decisions carefully and considers long-term consequences."
-    model: "google/gemini-2.5-flash"
+    model: "gpt-4.1-mini"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Bob" 
     personality: "Pragmatic and results-oriented. Focuses on practical outcomes and efficiency. Makes decisions based on what works best in practice rather than abstract ideals."
-    model: "moonshotai/kimi-k2"
+    model: "gpt-4.1-mini"
     temperature: 0.4
     memory_character_limit: 50000
     reasoning_enabled: true
     
-  - name: "Carol"
-    personality: "Empathetic and community-focused. Prioritizes helping those in need and social welfare. Strong advocate for supporting the most vulnerable members of society."
-    model: "gpt-4.1" 
+  - name: "Donald"
+    personality: "You are not very smart and erratic, you are Donald Trump"
+    model: "gpt-4.1-nano" 
     temperature: 0.8
     memory_character_limit: 50000
     reasoning_enabled: true

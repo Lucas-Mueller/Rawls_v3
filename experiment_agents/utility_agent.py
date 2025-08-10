@@ -272,40 +272,60 @@ class UtilityAgent:
         )
     
     def _compile_principle_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for principle detection."""
+        """Compile regex patterns for principle detection with comprehensive coverage."""
         return {
-            'maximizing_floor': re.compile(
-                r'(?:maximizing?.*?floor|floor.*?income|option\s*[(\[]?a[)\]]?)', 
-                re.IGNORECASE
-            ),
-            'maximizing_average': re.compile(
-                r'(?:maximizing?.*?average(?!\s+with)|average.*?income(?!\s+with)|option\s*[(\[]?b[)\]]?)', 
-                re.IGNORECASE
-            ),
+            # Order matters - more specific patterns first to avoid false matches
             'maximizing_average_floor_constraint': re.compile(
-                r'(?:maximizing?.*?average.*?floor|average.*?floor.*?constraint|floor.*?constraint|option\s*[(\[]?c[)\]]?)', 
+                r'(?:maximizing?.*?(?:average.*?(?:income\s+)?with.*?floor|average.*?floor).*?constraint|'
+                r'average.*?(?:income\s+)?with.*?floor.*?constraint|'
+                r'average.*?floor.*?constraint|'
+                r'floor.*?constraint.*?average|'
+                r'average.*?with.*?floor|'  # Added shorter version
+                r'floor.*?constraint(?!.*range)|'  # Floor constraint but not range
+                r'option\s*[(\[]?c[)\]]?)', 
                 re.IGNORECASE
             ),
             'maximizing_average_range_constraint': re.compile(
-                r'(?:maximizing?.*?average.*?range|average.*?range.*?constraint|range.*?constraint|option\s*[(\[]?d[)\]]?)', 
+                r'(?:maximizing?.*?(?:average.*?(?:income\s+)?with.*?range|average.*?range).*?constraint|'
+                r'average.*?(?:income\s+)?with.*?range.*?constraint|'
+                r'average.*?range.*?constraint|'
+                r'range.*?constraint.*?average|'
+                r'average.*?with.*?range|'  # Added shorter version
+                r'range.*?constraint(?!.*floor)|'  # Range constraint but not floor
+                r'option\s*[(\[]?d[)\]]?)', 
+                re.IGNORECASE
+            ),
+            'maximizing_floor': re.compile(
+                r'(?:maximizing?.*?(?:the\s+)?floor(?!\s+constraint)(?:\s+income)?|'
+                r'floor(?!\s+constraint).*?(?:income|maximization)|'
+                r'(?:the\s+)?floor(?!\s+constraint)(?!.*(?:with|constraint|range))|'
+                r'option\s*[(\[]?a[)\]]?)(?!.*constraint)', 
+                re.IGNORECASE
+            ),
+            'maximizing_average': re.compile(
+                r'(?:maximizing?.*?(?:the\s+)?average(?!\s+(?:with|floor|range)|.*?constraint)(?:\s+income)?|'
+                r'average(?!\s+(?:with|floor|range)|.*?constraint).*?(?:income|maximization)|'
+                r'(?:the\s+)?average(?!\s+(?:with|floor|range))(?!.*(?:constraint|floor|range|with))|'
+                r'option\s*[(\[]?b[)\]]?)(?!.*(?:constraint|floor|range|with))', 
                 re.IGNORECASE
             )
         }
     
     def _compile_certainty_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for certainty level detection."""
+        """Compile regex patterns for certainty level detection - order matters!"""
         return {
+            # More specific patterns first to avoid false matches
+            'very_sure': re.compile(r'very\s+sure|extremely\s+confident|highly\s+certain|completely\s+sure', re.IGNORECASE),
             'very_unsure': re.compile(r'very\s+unsure|extremely\s+uncertain|highly\s+uncertain', re.IGNORECASE),
-            'unsure': re.compile(r'(?<!very\s)unsure|uncertain|not\s+confident', re.IGNORECASE),
-            'no_opinion': re.compile(r'no\s+opinion|neutral|indifferent|no\s+preference', re.IGNORECASE),
-            'sure': re.compile(r'(?<!very\s)sure|confident|certain', re.IGNORECASE),
-            'very_sure': re.compile(r'very\s+sure|extremely\s+confident|highly\s+certain|completely\s+sure', re.IGNORECASE)
+            'sure': re.compile(r'(?<!very\s)(?<!extremely\s)(?<!highly\s)sure|confident|certain', re.IGNORECASE),
+            'unsure': re.compile(r'(?<!very\s)(?<!extremely\s)(?<!highly\s)unsure|uncertain|not\s+confident', re.IGNORECASE),
+            'no_opinion': re.compile(r'no\s+opinion|neutral|indifferent|no\s+preference', re.IGNORECASE)
         }
     
     def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
         """Compile regex patterns for ranking detection."""
         return {
-            'ranking_line': re.compile(r'(\d+)\.?\s*(.*?)(?=\d+\.|$)', re.MULTILINE | re.DOTALL),
+            'ranking_line': re.compile(r'(\d+)\.?\s*\*?\*?\s*(.*?)(?=\n\s*\d+\.|$)', re.MULTILINE | re.DOTALL),
             'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE),
             'constraint_amount': re.compile(r'\$?(\d{1,3}(?:,\d{3})*|\d+)(?:\s*(?:dollars?|k|thousand))?', re.IGNORECASE)
         }
@@ -435,10 +455,23 @@ class UtilityAgent:
         return None
     
     def _identify_principle_in_text(self, text: str) -> Optional[str]:
-        """Identify which principle is mentioned in text."""
+        """Identify which principle is mentioned in text - focus on beginning of text."""
+        # Focus on the first part of the text to avoid confusion from later mentions
+        # Take first sentence or first 200 characters, whichever is shorter
+        first_sentence = text.split(':')[0] if ':' in text else text.split('.')[0]
+        focus_text = first_sentence[:200].strip()
+        
+        # The patterns are ordered from most specific to least specific
+        # This ensures we match the correct principle even when text could match multiple patterns
+        for principle_key, pattern in self._principle_patterns.items():
+            if pattern.search(focus_text):
+                return principle_key
+        
+        # Fallback to full text if focus text doesn't match
         for principle_key, pattern in self._principle_patterns.items():
             if pattern.search(text):
                 return principle_key
+                
         return None
     
     def _create_principle_ranking(self, data: Dict[str, Any]) -> PrincipleRanking:
