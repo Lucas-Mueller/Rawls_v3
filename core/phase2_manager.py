@@ -25,6 +25,17 @@ class Phase2Manager:
     def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
         self.participants = participants
         self.utility_agent = utility_agent
+        self.logger = None  # Will be set in run_phase2
+    
+    def _log_info(self, message: str):
+        """Safe logging helper."""
+        if self.logger and hasattr(self.logger, 'debug_logger'):
+            self.logger.debug_logger.info(message)
+    
+    def _log_warning(self, message: str):
+        """Safe logging helper."""
+        if self.logger and hasattr(self.logger, 'debug_logger'):
+            self.logger.debug_logger.warning(message)
     
     async def run_phase2(
         self, 
@@ -33,6 +44,9 @@ class Phase2Manager:
         logger: AgentCentricLogger = None
     ) -> Phase2Results:
         """Execute complete Phase 2 group discussion."""
+        
+        # Store logger for use in consensus methods
+        self.logger = logger
         
         # CRITICAL: Initialize participants with CONTINUOUS memory from Phase 1
         participant_contexts = self._initialize_phase2_contexts(phase1_results, config)
@@ -327,7 +341,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         vote_agreement_prompt = """
         A vote has been proposed. Do you agree to conduct a vote now?
         
-        Respond with either "YES" or "NO" and briefly explain your reasoning.
+        Respond with either "YES" or "NO".
         If you think more discussion is needed, respond "NO".
         If you think the group is ready to vote, respond "YES".
         """
@@ -390,8 +404,18 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                 )
                 valid_votes.append(corrected_vote)
         
-        # Check for exact consensus (including constraint amounts)
+        # Check for consensus (try exact first, then semantic matching)
         consensus_principle = self._check_exact_consensus(valid_votes)
+        if consensus_principle is None:
+            self._log_info("Exact consensus failed, trying semantic matching...")
+            consensus_principle = self._check_semantic_consensus(valid_votes)
+        
+        # Additional logging for vote result
+        self._log_info("=== VOTE RESULT SUMMARY ===")
+        self._log_info(f"Consensus reached: {consensus_principle is not None}")
+        self._log_info(f"Vote counts: {self._count_votes(valid_votes)}")
+        if consensus_principle:
+            self._log_info(f"Agreed principle: {consensus_principle.principle.value} with constraint: {consensus_principle.constraint_amount}")
         
         return VoteResult(
             votes=valid_votes,
@@ -462,16 +486,135 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
     
     def _check_exact_consensus(self, votes: List[PrincipleChoice]) -> PrincipleChoice:
         """Check if all votes are exactly identical (including constraint amounts)."""
+        
+        if not votes:
+            self._log_warning("No votes provided for consensus check")
+            return None
+        
+        # Log all votes for comparison
+        self._log_info("=== VOTE COMPARISON ANALYSIS ===")
+        self._log_info(f"Total votes: {len(votes)}")
+        
+        for i, vote in enumerate(votes):
+            self._log_info(f"Vote {i+1}: principle={vote.principle.value}, constraint_amount={vote.constraint_amount}, certainty={vote.certainty}")
+            if vote.reasoning:
+                self._log_info(f"Vote {i+1} reasoning excerpt: {vote.reasoning[:100]}...")
+        
+        first_vote = votes[0]
+        self._log_info(f"Reference vote (first): principle={first_vote.principle.value}, constraint_amount={first_vote.constraint_amount}")
+        
+        # Check each vote against the first
+        consensus_failed = False
+        for i, vote in enumerate(votes[1:], 1):
+            principle_match = vote.principle == first_vote.principle
+            constraint_match = vote.constraint_amount == first_vote.constraint_amount
+            
+            self._log_info(f"Vote {i+1} vs Reference: principle_match={principle_match}, constraint_match={constraint_match}")
+            
+            if not principle_match:
+                self._log_warning(f"CONSENSUS FAILURE: Vote {i+1} principle mismatch - '{vote.principle.value}' != '{first_vote.principle.value}'")
+                consensus_failed = True
+            
+            if not constraint_match:
+                self._log_warning(f"CONSENSUS FAILURE: Vote {i+1} constraint mismatch - {vote.constraint_amount} != {first_vote.constraint_amount}")
+                consensus_failed = True
+        
+        if consensus_failed:
+            self._log_info("=== CONSENSUS RESULT: FAILED ===")
+            return None
+        else:
+            self._log_info("=== CONSENSUS RESULT: SUCCESS ===")
+            self._log_info(f"Agreed principle: {first_vote.principle.value} with constraint: {first_vote.constraint_amount}")
+            return first_vote
+    
+    def _check_semantic_consensus(self, votes: List[PrincipleChoice]) -> PrincipleChoice:
+        """Check for semantic consensus with fuzzy matching for constraint amounts."""
+        
         if not votes:
             return None
-            
-        first_vote = votes[0]
-        for vote in votes[1:]:
-            if (vote.principle != first_vote.principle or 
-                vote.constraint_amount != first_vote.constraint_amount):
-                return None
         
-        return first_vote
+        self._log_info("=== SEMANTIC CONSENSUS ANALYSIS ===")
+        
+        # Group votes by principle first
+        principle_groups = {}
+        for vote in votes:
+            principle_key = vote.principle.value
+            if principle_key not in principle_groups:
+                principle_groups[principle_key] = []
+            principle_groups[principle_key].append(vote)
+        
+        self._log_info(f"Principle groups: {[(k, len(v)) for k, v in principle_groups.items()]}")
+        
+        # Check if all votes are for the same principle
+        if len(principle_groups) != 1:
+            self._log_info("Multiple principles chosen - no semantic consensus possible")
+            return None
+        
+        # All votes are for the same principle, now check constraint amounts
+        principle = list(principle_groups.keys())[0]
+        votes_for_principle = principle_groups[principle]
+        
+        self._log_info(f"All votes are for: {principle}")
+        
+        # If it's not a constraint principle, we have consensus
+        if 'constraint' not in principle.lower():
+            self._log_info("Non-constraint principle - semantic consensus achieved")
+            return votes_for_principle[0]
+        
+        # For constraint principles, check if amounts are semantically similar
+        constraint_amounts = [v.constraint_amount for v in votes_for_principle if v.constraint_amount is not None]
+        
+        self._log_info(f"Constraint amounts: {constraint_amounts}")
+        
+        if not constraint_amounts:
+            self._log_warning("Constraint principle but no constraint amounts found")
+            return None
+        
+        # Check if constraint amounts are within semantic tolerance
+        semantic_consensus = self._check_constraint_semantic_similarity(constraint_amounts)
+        
+        if semantic_consensus:
+            # Use the most common constraint amount (or first if tied)
+            from collections import Counter
+            amount_counts = Counter(constraint_amounts)
+            most_common_amount = amount_counts.most_common(1)[0][0]
+            
+            self._log_info(f"Semantic consensus achieved with constraint amount: {most_common_amount}")
+            
+            # Return a vote with the consensus principle and amount
+            return PrincipleChoice(
+                principle=votes_for_principle[0].principle,
+                constraint_amount=most_common_amount,
+                certainty=votes_for_principle[0].certainty,
+                reasoning="Semantic consensus from group votes"
+            )
+        else:
+            self._log_info("Constraint amounts too different for semantic consensus")
+            return None
+    
+    def _check_constraint_semantic_similarity(self, amounts: List[int]) -> bool:
+        """Check if constraint amounts are semantically similar (within tolerance)."""
+        
+        if len(set(amounts)) == 1:
+            self._log_info("All constraint amounts identical")
+            return True
+        
+        # Calculate tolerance (10% of the average or minimum $1000)
+        avg_amount = sum(amounts) / len(amounts)
+        tolerance = max(1000, int(avg_amount * 0.1))
+        
+        self._log_info(f"Average amount: {avg_amount}, tolerance: ±{tolerance}")
+        
+        # Check if all amounts are within tolerance of each other
+        min_amount = min(amounts)
+        max_amount = max(amounts)
+        
+        if max_amount - min_amount <= tolerance:
+            self._log_info(f"Amounts within tolerance: {min_amount} to {max_amount} (range: {max_amount - min_amount})")
+            return True
+        else:
+            self._log_info(f"Amounts outside tolerance: {min_amount} to {max_amount} (range: {max_amount - min_amount})")
+            return False
     
     def _count_votes(self, votes: List[PrincipleChoice]) -> Dict[str, int]:
         """Count votes by principle (including constraint amounts)."""
@@ -653,8 +796,6 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         the group should adopt. The group's chosen principle will determine everyone's final earnings.
         
         Guidelines:
-        - Share your perspective based on your Phase 1 experiences
-        - Listen to and consider others' viewpoints
         - You may propose a vote when you think the group is ready
         - All participants must agree to vote before voting begins
         - Consensus requires everyone to choose the EXACT same principle (including constraint amounts)

@@ -367,16 +367,8 @@ class UtilityAgent:
         # Find constraint amount if needed
         constraint_amount = None
         if 'constraint' in principle:
-            amount_match = self._ranking_patterns['constraint_amount'].search(response)
-            if amount_match:
-                amount_str = amount_match.group(1).replace(',', '')
-                try:
-                    constraint_amount = float(amount_str)
-                    # Handle k/thousand notation
-                    if 'k' in response.lower() or 'thousand' in response.lower():
-                        constraint_amount *= 1000
-                except ValueError:
-                    pass
+            # Enhanced constraint amount parsing with multiple patterns
+            constraint_amount = self._extract_constraint_amount_robust(response, principle)
         
         # Find certainty
         certainty = 'sure'  # default
@@ -394,9 +386,20 @@ class UtilityAgent:
     
     def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
         """Create PrincipleChoice object from extracted data."""
+        principle = JusticePrinciple(data['principle'])
+        constraint_amount = data.get('constraint_amount')
+        
+        # If constraint principle but no amount specified, try to parse from reasoning
+        if (principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                         JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT] and
+            constraint_amount is None):
+            
+            reasoning = data.get('reasoning', '')
+            constraint_amount = self._extract_constraint_amount_robust(reasoning, principle.value)
+        
         return PrincipleChoice(
-            principle=JusticePrinciple(data['principle']),
-            constraint_amount=data.get('constraint_amount'),
+            principle=principle,
+            constraint_amount=constraint_amount,
             certainty=CertaintyLevel(data['certainty']),
             reasoning=data.get('reasoning', '')
         )
@@ -488,6 +491,105 @@ class UtilityAgent:
             certainty=CertaintyLevel(data.get('certainty', 'sure'))
         )
     
+    def _extract_constraint_amount_robust(self, response: str, principle: str) -> Optional[int]:
+        """Enhanced constraint amount extraction with multiple patterns and fuzzy matching."""
+        
+        # Pattern 1: Direct amount matching with various formats
+        amount_patterns = [
+            r'(\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" format first
+            r'\$?(\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000 or 20,000
+            r'(\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k or 20 thousand
+            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # floor of $20,000
+            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # constraint of $20,000
+            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
+        ]
+        
+        for pattern in amount_patterns:
+            matches = re.findall(pattern, response, re.IGNORECASE)
+            for match in matches:
+                try:
+                    amount_str = match.replace(',', '')
+                    amount = float(amount_str)
+                    
+                    # Check if this is a "k" pattern (first pattern in our list)
+                    if pattern == r'(\d{1,2})\s*k(?:\s|$)':
+                        amount *= 1000
+                    elif re.search(r'\b' + re.escape(match) + r'\s*(?:k|thousand)', response, re.IGNORECASE):
+                        amount *= 1000
+                    
+                    # Convert to int for consistency
+                    return int(amount)
+                except (ValueError, TypeError):
+                    continue
+        
+        # Pattern 2: Contextual amount extraction (look for numbers near constraint keywords)
+        constraint_context_patterns = [
+            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(\d{1,3}(?:,\d{3})*)',
+            r'\$?(\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
+            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
+            r'\$?(\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
+        ]
+        
+        for pattern in constraint_context_patterns:
+            matches = re.findall(pattern, response, re.IGNORECASE)
+            for match in matches:
+                try:
+                    amount = int(match.replace(',', ''))
+                    # Reasonable range check (between $1,000 and $100,000)
+                    if 1000 <= amount <= 100000:
+                        return amount
+                except (ValueError, TypeError):
+                    continue
+        
+        # Pattern 3: Fallback to abstract constraint parsing
+        return self._parse_abstract_constraint(response, principle)
+    
+    def _parse_abstract_constraint(self, response: str, principle: str) -> Optional[int]:
+        """Parse abstract constraint descriptions like 'practical maximum'."""
+        response_lower = response.lower()
+        
+        # Look for abstract constraint terms
+        if any(term in response_lower for term in [
+            'practical maximum', 'practical max', 'highest possible',
+            'maximum possible', 'as high as possible', 'optimal level',
+            'best level', 'sweet spot'
+        ]):
+            # For practical maximum constraints, use a reasonable default
+            if 'floor' in principle:
+                return 10000  # $10,000 default floor constraint
+            elif 'range' in principle:
+                return 20000  # $20,000 default range constraint
+        
+        # Look for relative constraint terms  
+        if any(term in response_lower for term in [
+            'reasonable', 'moderate', 'middle', 'balanced'
+        ]):
+            if 'floor' in principle:
+                return 8000   # $8,000 moderate floor
+            elif 'range' in principle:
+                return 15000  # $15,000 moderate range
+        
+        # Look for high/low terms
+        if any(term in response_lower for term in ['high', 'strong', 'substantial']):
+            if 'floor' in principle:
+                return 12000  # $12,000 high floor
+            elif 'range' in principle:
+                return 25000  # $25,000 high range
+        
+        if any(term in response_lower for term in ['low', 'minimal', 'basic']):
+            if 'floor' in principle:
+                return 5000   # $5,000 low floor
+            elif 'range' in principle:
+                return 10000  # $10,000 low range
+        
+        # Default fallback for constraint principles
+        if 'floor' in principle:
+            return 10000  # Default $10,000 floor
+        elif 'range' in principle:
+            return 20000  # Default $20,000 range
+        
+        return None
+
     async def _parse_with_fallback(self, response: str, parse_type: str) -> Any:
         """Fallback parsing with more permissive approach."""
         
@@ -495,9 +597,14 @@ class UtilityAgent:
             # Create a basic choice if we can identify any principle
             for principle_key, pattern in self._principle_patterns.items():
                 if pattern.search(response):
+                    # Get constraint amount for constraint principles
+                    constraint_amount = None
+                    if 'constraint' in principle_key:
+                        constraint_amount = self._extract_constraint_amount_robust(response, principle_key)
+                    
                     return PrincipleChoice(
                         principle=JusticePrinciple(principle_key),
-                        constraint_amount=None,
+                        constraint_amount=constraint_amount,
                         certainty=CertaintyLevel.SURE,
                         reasoning=response
                     )

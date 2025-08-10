@@ -5,28 +5,28 @@ language: "English"
 agents:
   - name: "Alice"
     personality: "Analytical and methodical. Values fairness and systematic approaches to problem-solving. Tends to think through decisions carefully and considers long-term consequences."
-    model: "gpt-4.1-mini"
+    model: "gpt-4.1"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Bob" 
     personality: "Pragmatic and results-oriented. Focuses on practical outcomes and efficiency. Makes decisions based on what works best in practice rather than abstract ideals."
-    model: "gpt-4.1-mini"
-    temperature: 0.4
+    model: "gpt-4.1"
+    temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Donald"
-    personality: "You are not very smart and erratic, you are Donald Trump"
-    model: "gpt-4.1-nano" 
-    temperature: 0.8
+    personality: "You are  very smart"
+    model: "gpt-4.1" 
+    temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
 
 # Utility agent model (can also use OpenRouter models)
 utility_agent_model: "gpt-4.1-mini"
 
-phase2_rounds: 20
+phase2_rounds: 5
 distribution_range_phase1: [0.5, 2.0]
 distribution_range_phase2: [0.5, 2.0]
