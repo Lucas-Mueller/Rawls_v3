@@ -1,0 +1,40 @@
+agents:
+- memory_character_limit: 50000
+  model: openai/gpt-4.1
+  name: Agent_1
+  personality: You are an american college student.
+  reasoning_enabled: true
+  temperature: 0.0
+- memory_character_limit: 50000
+  model: google/gemini-2.5-pro
+  name: Agent_2
+  personality: You are an american college student.
+  reasoning_enabled: true
+  temperature: 0.0
+- memory_character_limit: 50000
+  model: openai/gpt-4.1-mini
+  name: Agent_3
+  personality: You are an american college student.
+  reasoning_enabled: true
+  temperature: 0.0
+- memory_character_limit: 50000
+  model: openai/gpt-4.1
+  name: Agent_4
+  personality: You are an american college student.
+  reasoning_enabled: true
+  temperature: 0.0
+- memory_character_limit: 50000
+  model: meta/llama/llama-4-maverick
+  name: Agent_5
+  personality: You are an american college student.
+  reasoning_enabled: true
+  temperature: 0.0
+distribution_range_phase1:
+- 0.5
+- 2.0
+distribution_range_phase2:
+- 0.5
+- 2.0
+language: English
+phase2_rounds: 20
+utility_agent_model: gpt-4.1-mini

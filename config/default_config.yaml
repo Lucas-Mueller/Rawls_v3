@@ -5,21 +5,21 @@ language: "English"
 agents:
   - name: "Alice"
     personality: "Analytical and methodical. Values fairness and systematic approaches to problem-solving. Tends to think through decisions carefully and considers long-term consequences."
-    model: "gpt-4.1-nano"
+    model: "google/gemini-2.5-flash"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Bob" 
     personality: "Pragmatic and results-oriented. Focuses on practical outcomes and efficiency. Makes decisions based on what works best in practice rather than abstract ideals."
-    model: "gpt-4.1-nano"
+    model: "moonshotai/kimi-k2"
     temperature: 0.4
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Carol"
     personality: "Empathetic and community-focused. Prioritizes helping those in need and social welfare. Strong advocate for supporting the most vulnerable members of society."
-    model: "gpt-4.1-nano" 
+    model: "gpt-4.1" 
     temperature: 0.8
     memory_character_limit: 50000
     reasoning_enabled: true
@@ -27,6 +27,6 @@ agents:
 # Utility agent model (can also use OpenRouter models)
 utility_agent_model: "gpt-4.1-mini"
 
-phase2_rounds: 5
+phase2_rounds: 20
 distribution_range_phase1: [0.5, 2.0]
 distribution_range_phase2: [0.5, 2.0]

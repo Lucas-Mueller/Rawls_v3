@@ -42,7 +42,7 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # Parse command line arguments
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config/mandarin_config.yaml"
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "config/default_config.yaml"
     
     if len(sys.argv) > 2:
         output_path = sys.argv[2]
