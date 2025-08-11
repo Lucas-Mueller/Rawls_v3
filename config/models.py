@@ -13,16 +13,27 @@ class AgentConfiguration(BaseModel):
     personality: str = Field(..., description="Agent personality description")
     model: str = Field("o3-mini", description="LLM model to use")
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="Model temperature")
-    reasoning_enabled: bool = Field(True, description="Enable internal reasoning in Phase 2")
-    memory_length: int = Field(5000, gt=0, description="Maximum memory length in characters")
+    memory_character_limit: int = Field(50000, gt=0, description="Maximum memory length in characters")
+    reasoning_enabled: bool = Field(True, description="Enable/disable internal reasoning in Phase 2")
 
 
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
+    language: str = Field("English", description="Language for experiment prompts and messages")
     agents: List[AgentConfiguration] = Field(..., min_items=2, description="Participant agents")
+    utility_agent_model: str = Field("gpt-4.1-mini", description="Model for utility agents (parser/validator)")
     phase2_rounds: int = Field(10, gt=0, description="Maximum rounds for Phase 2 discussion")
     distribution_range_phase1: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 1 distributions")
     distribution_range_phase2: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 2 distributions")
+    
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        """Validate language is supported."""
+        valid_languages = ["English", "Spanish", "Mandarin"]
+        if v not in valid_languages:
+            raise ValueError(f"Invalid language: {v}. Must be one of {valid_languages}")
+        return v
     
     @field_validator('distribution_range_phase1', 'distribution_range_phase2')
     @classmethod

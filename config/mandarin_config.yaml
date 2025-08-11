@@ -1,0 +1,24 @@
+# Mandarin Language Configuration for Frohlich Experiment
+language: "Mandarin"
+
+agents:
+  - name: "Alice"
+    personality: "Analytical and methodical. Values fairness and systematic approaches to problem-solving. Tends to think through decisions carefully and considers long-term consequences."
+    model: "gpt-4.1-mini"
+    temperature: 0.7
+    memory_character_limit: 50000
+
+    
+  - name: "Bob" 
+    personality: "Pragmatic and results-oriented. Focuses on practical outcomes and efficiency. Makes decisions based on what works best in practice rather than abstract ideals."
+    model: "gpt-4.1-mini"
+    temperature: 0.4
+    memory_character_limit: 50000
+    reasoning_enabled: true
+
+# Utility agent model
+utility_agent_model: "gpt-4.1-mini"
+
+phase2_rounds: 5
+distribution_range_phase1: [0.5, 2.0]
+distribution_range_phase2: [0.5, 2.0]

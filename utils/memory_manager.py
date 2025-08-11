@@ -1,172 +1,167 @@
 """
-Memory management utilities for agent memory handling.
+Memory management utilities for agent-managed memory system.
 """
-from typing import List
-from models import ExperimentPhase
+import logging
+from typing import TYPE_CHECKING
+
+from utils.error_handling import (
+    MemoryError, ExperimentError, ErrorSeverity, 
+    ExperimentErrorCategory, get_global_error_handler,
+    handle_experiment_errors
+)
+from utils.language_manager import get_language_manager
+
+if TYPE_CHECKING:
+    from experiment_agents.participant_agent import ParticipantAgent
+    from models.experiment_types import ParticipantContext
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryManager:
-    """Manages agent memory with intelligent truncation and formatting."""
+    """Manages agent-generated memory with validation and retry logic."""
     
     @staticmethod
-    def update_memory(
-        current_memory: str, 
-        new_info: str, 
-        max_length: int,
-        priority_sections: List[str] = None
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.MEMORY_ERROR,
+        severity=ErrorSeverity.RECOVERABLE,
+        operation_name="memory_update"
+    )
+    async def prompt_agent_for_memory_update(
+        agent: "ParticipantAgent",
+        context: "ParticipantContext", 
+        round_content: str,
+        max_retries: int = 5
     ) -> str:
         """
-        Intelligent memory truncation maintaining important information.
+        Prompt agent to update their memory based on round content.
         
         Args:
-            current_memory: Current memory content
-            new_info: New information to add
-            max_length: Maximum memory length in characters
-            priority_sections: Sections to preserve during truncation
+            agent: The participant agent to prompt
+            context: Current participant context
+            round_content: Content from the current round (prompt + response + outcome)
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            Updated memory string
+            
+        Raises:
+            MemoryError: If agent fails to create valid memory after max_retries
         """
-        # Add new information
-        updated_memory = current_memory + "\n" + new_info
+        error_handler = get_global_error_handler()
         
-        # If within limits, return as-is
-        if len(updated_memory) <= max_length:
-            return updated_memory
+        for attempt in range(max_retries):
+            try:
+                # Create memory update prompt
+                prompt = MemoryManager._create_memory_update_prompt(
+                    context.memory, round_content
+                )
+                
+                # Get updated memory from agent
+                updated_memory = await agent.update_memory(prompt, context.bank_balance)
+                
+                # Validate memory length
+                is_valid, length = MemoryManager._validate_memory_length(
+                    updated_memory, agent.config.memory_character_limit
+                )
+                
+                if is_valid:
+                    if attempt > 0:
+                        logger.info(f"Memory update succeeded for {agent.name} after {attempt + 1} attempts")
+                    return updated_memory
+                else:
+                    # Memory too long - create specific error for retry
+                    memory_error = MemoryError(
+                        f"Memory length {length} exceeds limit {agent.config.memory_character_limit}",
+                        ErrorSeverity.RECOVERABLE,
+                        {
+                            "agent_name": agent.name,
+                            "attempted_length": length,
+                            "limit": agent.config.memory_character_limit,
+                            "attempt": attempt + 1,
+                            "max_retries": max_retries
+                        }
+                    )
+                    memory_error.operation = "memory_length_validation"
+                    
+                    # Log the error
+                    error_handler._log_error(memory_error)
+                    
+                    # Create error message for next attempt
+                    error_msg = (
+                        f"Your memory is {length} characters, which exceeds the limit of "
+                        f"{agent.config.memory_character_limit} characters. Please shorten "
+                        f"your memory by {length - agent.config.memory_character_limit} characters."
+                    )
+                    round_content = f"ERROR: {error_msg}\n\nPlease update your memory again, making it shorter."
+                    
+            except MemoryError:
+                raise  # Re-raise memory errors as-is
+            except Exception as e:
+                # Wrap other exceptions as memory errors
+                memory_error = MemoryError(
+                    f"Agent {agent.name} memory update failed: {str(e)}",
+                    ErrorSeverity.RECOVERABLE if attempt < max_retries - 1 else ErrorSeverity.FATAL,
+                    {
+                        "agent_name": agent.name,
+                        "attempt": attempt + 1,
+                        "max_retries": max_retries,
+                        "original_error": str(e)
+                    },
+                    cause=e
+                )
+                memory_error.operation = "agent_memory_update"
+                
+                if attempt == max_retries - 1:
+                    # Final attempt - make it fatal
+                    memory_error.severity = ErrorSeverity.FATAL
+                    raise memory_error
+                else:
+                    # Log the error and continue
+                    error_handler._log_error(memory_error)
+                    round_content = f"ERROR: An error occurred while updating memory: {str(e)}\n\nPlease try updating your memory again."
         
-        # Need to truncate - preserve priority sections and recent information
-        return MemoryManager._intelligent_truncate(
-            updated_memory, max_length, priority_sections or []
+        # This should never be reached due to the exception handling above
+        raise MemoryError(
+            f"Agent {agent.name} failed to create valid memory after {max_retries} attempts",
+            ErrorSeverity.FATAL,
+            {
+                "agent_name": agent.name,
+                "max_retries": max_retries,
+                "operation": "memory_update_exhausted"
+            }
         )
     
     @staticmethod
-    def _intelligent_truncate(
-        memory: str, 
-        max_length: int, 
-        priority_sections: List[str]
-    ) -> str:
+    def _validate_memory_length(memory: str, limit: int) -> tuple[bool, int]:
         """
-        Perform intelligent truncation preserving important information.
+        Validate memory doesn't exceed character limit.
         
-        Strategy:
-        1. Always preserve priority sections
-        2. Keep recent information (last 30% of max_length)
-        3. Preserve key experiment milestones
-        4. Remove middle content if necessary
-        """
-        lines = memory.split('\n')
-        
-        # Calculate space allocation
-        recent_space = int(max_length * 0.3)  # 30% for recent info
-        priority_space = int(max_length * 0.4)  # 40% for priority sections
-        buffer_space = max_length - recent_space - priority_space  # 30% buffer
-        
-        # Extract priority content
-        priority_content = []
-        remaining_lines = []
-        
-        for line in lines:
-            is_priority = any(section in line for section in priority_sections)
-            if is_priority:
-                priority_content.append(line)
-            else:
-                remaining_lines.append(line)
-        
-        # Build priority section
-        priority_text = '\n'.join(priority_content)
-        if len(priority_text) > priority_space:
-            # Truncate priority content if too long
-            priority_text = priority_text[:priority_space]
-        
-        # Get recent content
-        recent_text = '\n'.join(remaining_lines[-10:])  # Last 10 lines
-        if len(recent_text) > recent_space:
-            recent_text = recent_text[-recent_space:]
-        
-        # Fill buffer with middle content if space allows
-        remaining_space = max_length - len(priority_text) - len(recent_text) - 20  # 20 for separators
-        
-        if remaining_space > 0 and len(remaining_lines) > 10:
-            # Take some middle content
-            middle_lines = remaining_lines[:-10]  # Exclude recent lines
-            middle_text = '\n'.join(middle_lines)
+        Args:
+            memory: Memory string to validate
+            limit: Maximum allowed character count
             
-            if len(middle_text) <= remaining_space:
-                # All middle content fits
-                final_memory = priority_text + "\n\n" + middle_text + "\n\n" + recent_text
-            else:
-                # Take first part of middle content
-                middle_text = middle_text[:remaining_space]
-                final_memory = priority_text + "\n\n" + middle_text + "\n...[TRUNCATED]...\n" + recent_text
-        else:
-            # Only priority and recent content
-            final_memory = priority_text + "\n\n...[MEMORY TRUNCATED]...\n\n" + recent_text
-        
-        return final_memory.strip()
+        Returns:
+            Tuple of (is_valid, actual_length)
+        """
+        length = len(memory)
+        return length <= limit, length
     
     @staticmethod
-    def format_memory_prompt(memory: str, phase: ExperimentPhase) -> str:
-        """Format memory for agent consumption based on current phase."""
-        if not memory.strip():
-            return "No previous memories."
+    def _create_memory_update_prompt(current_memory: str, round_content: str) -> str:
+        """
+        Create generic prompt for memory update.
         
-        if phase == ExperimentPhase.PHASE_1:
-            header = "=== YOUR MEMORY (Phase 1 - Individual Learning) ==="
-        else:
-            header = "=== YOUR MEMORY (Including Phase 1 + Phase 2 Group Discussion) ==="
-        
-        return f"{header}\n{memory}\n{'='*50}"
-    
-    @staticmethod
-    def add_memory_entry(
-        current_memory: str,
-        entry_type: str,
-        content: str,
-        round_number: int = None
-    ) -> str:
-        """Add a structured memory entry."""
-        timestamp_info = f" (Round {round_number})" if round_number else ""
-        entry = f"\n[{entry_type.upper()}{timestamp_info}] {content}"
-        return current_memory + entry
-    
-    @staticmethod
-    def extract_key_learnings(memory: str) -> List[str]:
-        """Extract key learnings from memory for summarization."""
-        key_learnings = []
-        lines = memory.split('\n')
-        
-        # Look for specific patterns that indicate important learnings
-        learning_indicators = [
-            "learned that",
-            "discovered that", 
-            "realized that",
-            "found that",
-            "concluded that",
-            "earned $",
-            "chose principle",
-            "ranking:"
-        ]
-        
-        for line in lines:
-            line_lower = line.lower()
-            if any(indicator in line_lower for indicator in learning_indicators):
-                key_learnings.append(line.strip())
-        
-        return key_learnings[:10]  # Return top 10 key learnings
-    
-    @staticmethod
-    def create_phase_transition_summary(phase1_memory: str) -> str:
-        """Create a summary for transitioning from Phase 1 to Phase 2."""
-        key_learnings = MemoryManager.extract_key_learnings(phase1_memory)
-        
-        summary = "=== PHASE 1 SUMMARY ===\n"
-        summary += "Key experiences and learnings:\n"
-        
-        if key_learnings:
-            for i, learning in enumerate(key_learnings, 1):
-                summary += f"{i}. {learning}\n"
-        else:
-            summary += "No specific key learnings extracted.\n"
-        
-        summary += "\n=== TRANSITIONING TO PHASE 2 ===\n"
-        summary += "You will now participate in group discussion to reach consensus on a justice principle.\n"
-        summary += "Your Phase 1 experiences should inform your contributions to the group discussion.\n"
-        
-        return summary
+        Args:
+            current_memory: Agent's current memory
+            round_content: Content from the current round
+            
+        Returns:
+            Formatted prompt for memory update
+        """
+        language_manager = get_language_manager()
+        return language_manager.get(
+            "prompts.memory_memory_update_prompt",
+            current_memory=current_memory if current_memory.strip() else language_manager.get("prompts.memory_empty_memory_placeholder"),
+            round_content=round_content
+        )

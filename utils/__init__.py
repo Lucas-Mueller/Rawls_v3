@@ -2,6 +2,6 @@
 Utility functions for the Frohlich Experiment.
 """
 from .memory_manager import MemoryManager
-from .logging_utils import ExperimentLogger
+from .agent_centric_logger import AgentCentricLogger
 
-__all__ = ["MemoryManager", "ExperimentLogger"]
+__all__ = ["MemoryManager", "AgentCentricLogger"]

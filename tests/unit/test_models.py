@@ -49,29 +49,30 @@ class TestPrincipleModels(unittest.TestCase):
         """Test PrincipleRanking validation."""
         # Valid complete ranking
         rankings = [
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1, certainty=CertaintyLevel.SURE),
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2, certainty=CertaintyLevel.SURE),
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3, certainty=CertaintyLevel.SURE),
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4, certainty=CertaintyLevel.SURE)
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
         ]
         
-        ranking = PrincipleRanking(rankings=rankings)
+        ranking = PrincipleRanking(rankings=rankings, certainty=CertaintyLevel.SURE)
         self.assertEqual(len(ranking.rankings), 4)
+        self.assertEqual(ranking.certainty, CertaintyLevel.SURE)
         
         # Invalid: missing principle
         incomplete_rankings = rankings[:3]  # Only 3 principles
         with self.assertRaises(ValidationError):
-            PrincipleRanking(rankings=incomplete_rankings)
+            PrincipleRanking(rankings=incomplete_rankings, certainty=CertaintyLevel.SURE)
         
         # Invalid: duplicate ranks
         duplicate_rankings = [
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1, certainty=CertaintyLevel.SURE),
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=1, certainty=CertaintyLevel.SURE),  # Duplicate rank
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3, certainty=CertaintyLevel.SURE),
-            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4, certainty=CertaintyLevel.SURE)
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=1),  # Duplicate rank
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+            RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
         ]
         with self.assertRaises(ValidationError):
-            PrincipleRanking(rankings=duplicate_rankings)
+            PrincipleRanking(rankings=duplicate_rankings, certainty=CertaintyLevel.SURE)
 
 
 class TestIncomeModels(unittest.TestCase):

@@ -11,19 +11,21 @@ from models import (
     IncomeClass
 )
 from config import ExperimentConfiguration, AgentConfiguration
-from experiment_agents import create_agent_with_output_type, update_participant_context, UtilityAgent
+from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
+from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.language_manager import get_language_manager
 
 
 class Phase1Manager:
     """Manages Phase 1 execution for all participants."""
     
-    def __init__(self, participants: List[Agent], utility_agent: UtilityAgent):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
         self.participants = participants
         self.utility_agent = utility_agent
     
-    async def run_phase1(self, config: ExperimentConfiguration) -> List[Phase1Results]:
+    async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
         
         tasks = []
@@ -31,7 +33,7 @@ class Phase1Manager:
             agent_config = config.agents[i]
             context = self._create_initial_participant_context(agent_config)
             task = asyncio.create_task(
-                self._run_single_participant_phase1(participant, context, config, agent_config)
+                self._run_single_participant_phase1(participant, context, config, agent_config, logger)
             )
             tasks.append(task)
         
@@ -43,74 +45,154 @@ class Phase1Manager:
             name=agent_config.name,
             role_description=agent_config.personality,
             bank_balance=0.0,
-            memory="Experiment starting. I am participating in a study of justice principles and income distribution.",
+            memory="",  # Start with empty memory - agent will manage their own memory
             round_number=0,
             phase=ExperimentPhase.PHASE_1,
-            max_memory_length=agent_config.memory_length
+            memory_character_limit=agent_config.memory_character_limit
         )
     
     async def _run_single_participant_phase1(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext,
         config: ExperimentConfiguration,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        logger: AgentCentricLogger = None
     ) -> Phase1Results:
         """Run complete Phase 1 for a single participant."""
         
         # 1.1 Initial Principle Ranking
         context.round_number = 0
-        initial_ranking = await self._step_1_1_initial_ranking(participant, context, agent_config)
-        context = update_participant_context(
-            context,
-            f"INITIAL RANKING: Completed initial ranking of justice principles. My top choice was {initial_ranking.rankings[0].principle.value}.",
-            new_round=context.round_number
+        initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
+        
+        # Log initial ranking with current memory state
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_initial_ranking(
+                participant.name,
+                initial_ranking,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, ranking_content
         )
+        context = update_participant_context(context, new_round=context.round_number)
         
         # 1.2 Detailed Explanation (informational only)
         context.round_number = -1  # Special round for learning
-        await self._step_1_2_detailed_explanation(participant, context, agent_config)
-        context = update_participant_context(
-            context,
-            "DETAILED EXPLANATION: Learned how each justice principle is applied to income distributions through examples.",
-            new_round=context.round_number
+        explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config)
+        
+        # Log detailed explanation
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_detailed_explanation(
+                participant.name,
+                explanation_content,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, explanation_content
         )
+        context = update_participant_context(context, new_round=context.round_number)
+        
+        # 1.2b Post-explanation ranking
+        context.round_number = 0  # Reset to 0 for second ranking
+        post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
+            participant, context, agent_config
+        )
+        
+        # Log post-explanation ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_post_explanation_ranking(
+                participant.name,
+                post_explanation_ranking,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, post_ranking_content
+        )
+        context = update_participant_context(context, new_round=context.round_number)
         
         # 1.3 Repeated Application (4 rounds)
         application_results = []
         for round_num in range(1, 5):
             context.round_number = round_num
             
+            # Capture state before round
+            balance_before = context.bank_balance
+            memory_before = context.memory
+            
             # Generate dynamic distribution for this round
             distribution_set = DistributionGenerator.generate_dynamic_distribution(
                 config.distribution_range_phase1
             )
             
-            result = await self._step_1_3_principle_application(
+            result, round_content = await self._step_1_3_principle_application(
                 participant, context, distribution_set, round_num, agent_config
             )
             application_results.append(result)
             
-            # Update context with earnings and feedback
+            # Log demonstration round
+            if logger:
+                alternative_payoffs = MemoryStateCapture.format_alternative_payoffs(result.alternative_earnings)
+                logger.log_demonstration_round(
+                    participant.name,
+                    round_num,
+                    result.principle_choice.principle.value,
+                    result.assigned_income_class.value,
+                    result.earnings,
+                    alternative_payoffs,
+                    memory_before,
+                    balance_before,
+                    balance_before + result.earnings
+                )
+            
+            # Update memory with agent
+            context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, round_content
+            )
+            
+            # Update context with earnings
             context = update_participant_context(
                 context,
-                f"ROUND {round_num}: Chose {result.principle_choice.principle.value}, assigned to {result.assigned_income_class.value} class, earned ${result.earnings:.2f}. Total earnings now ${context.bank_balance + result.earnings:.2f}.",
                 balance_change=result.earnings,
                 new_round=round_num
             )
         
         # 1.4 Final Ranking
         context.round_number = 5
-        final_ranking = await self._step_1_4_final_ranking(participant, context, agent_config)
-        context = update_participant_context(
-            context,
-            f"FINAL RANKING: Completed final ranking. My top choice is now {final_ranking.rankings[0].principle.value}.",
-            new_round=context.round_number
+        final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
+        
+        # Log final ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_final_ranking(
+                participant.name,
+                final_ranking,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, final_content
         )
+        context = update_participant_context(context, new_round=context.round_number)
         
         return Phase1Results(
             participant_name=participant.name,
             initial_ranking=initial_ranking,
+            post_explanation_ranking=post_explanation_ranking,
             application_results=application_results,
             final_ranking=final_ranking,
             total_earnings=context.bank_balance,
@@ -119,69 +201,67 @@ class Phase1Manager:
     
     async def _step_1_1_initial_ranking(
         self, 
-        participant: Agent, 
+        participant: ParticipantAgent, 
         context: ParticipantContext,
         agent_config: AgentConfiguration
-    ) -> PrincipleRanking:
+    ) -> tuple[PrincipleRanking, str]:
         """Step 1.1: Initial principle ranking with certainty."""
         
         ranking_prompt = self._build_ranking_prompt()
         
-        # Create agent with structured output type
-        ranking_agent = create_agent_with_output_type(agent_config, PrincipleRankingResponse)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, ranking_prompt, context=context)
+        text_response = result.final_output
         
-        result = await Runner.run(ranking_agent, ranking_prompt, context=context)
+        # Parse using enhanced utility agent with retry logic
+        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
         
-        # Parse and validate response using utility agent
-        try:
-            parsed_ranking = await self.utility_agent.parse_principle_ranking(
-                result.final_output.ranking_explanation + " " + str(result.final_output.principle_rankings.dict())
-            )
-            return parsed_ranking
-        except Exception as e:
-            # Fallback to the structured response if parsing fails
-            return result.final_output.principle_rankings
+        # Create round content for memory
+        round_content = f"""Prompt: {ranking_prompt}
+Your Response: {text_response}
+Your Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Outcome: Completed initial ranking of justice principles."""
+        
+        return parsed_ranking, round_content
     
     async def _step_1_2_detailed_explanation(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext, 
         agent_config: AgentConfiguration
-    ):
+    ) -> str:
         """Step 1.2: Detailed explanation of principles applied to distributions."""
         
         explanation_prompt = self._build_detailed_explanation_prompt()
         
         # This is informational only - no structured response needed
-        await Runner.run(participant, explanation_prompt, context=context)
+        result = await Runner.run(participant.agent, explanation_prompt, context=context)
         
-        # No return value needed - this is just for learning
+        # Create round content for memory
+        round_content = f"""Prompt: {explanation_prompt}
+Your Response: {result.final_output}
+Outcome: Learned how each justice principle is applied to income distributions through examples."""
+        
+        return round_content
     
     async def _step_1_3_principle_application(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext,
         distribution_set,
         round_num: int,
         agent_config: AgentConfiguration
-    ) -> ApplicationResult:
+    ) -> tuple[ApplicationResult, str]:
         """Step 1.3: Single round of principle application."""
         
         application_prompt = self._build_application_prompt(distribution_set, round_num)
         
-        # Create agent with structured output type
-        choice_agent = create_agent_with_output_type(agent_config, PrincipleChoiceResponse)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, application_prompt, context=context)
+        text_response = result.final_output
         
-        result = await Runner.run(choice_agent, application_prompt, context=context)
-        
-        # Parse and validate choice
-        try:
-            parsed_choice = await self.utility_agent.parse_principle_choice(
-                result.final_output.choice_explanation + " " + str(result.final_output.principle_choice.dict())
-            )
-        except Exception as e:
-            # Fallback to structured response
-            parsed_choice = result.final_output.principle_choice
+        # Parse using enhanced utility agent with retry logic
+        parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
         
         # Validate constraint specification
         max_retries = 2
@@ -193,13 +273,11 @@ class Phase1Manager:
                 participant.name, parsed_choice
             )
             
-            retry_result = await Runner.run(choice_agent, retry_prompt, context=context)
-            try:
-                parsed_choice = await self.utility_agent.parse_principle_choice(
-                    retry_result.final_output.choice_explanation + " " + str(retry_result.final_output.principle_choice.dict())
-                )
-            except Exception:
-                parsed_choice = retry_result.final_output.principle_choice
+            retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+            retry_text = retry_result.final_output
+            
+            # Parse retry response using enhanced parsing
+            parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(retry_text)
             
             retry_count += 1
         
@@ -211,84 +289,149 @@ class Phase1Manager:
         # Calculate payoff and income class assignment
         assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
         
-        # Calculate alternative earnings
+        # Calculate alternative earnings by principle (not just distribution)
+        alternative_earnings_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
+            distribution_set.distributions, 
+            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
+        )
+        
+        # CRITICAL: Calculate what participant would have earned under each principle with SAME class assignment
+        alternative_earnings_same_class = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+            distribution_set.distributions,
+            assigned_class,
+            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
+        )
+        
+        # Keep old alternative earnings for compatibility with data model
         alternative_earnings = DistributionGenerator.calculate_alternative_earnings(
             distribution_set.distributions
         )
         
-        return ApplicationResult(
+        application_result = ApplicationResult(
             round_number=round_num,
             principle_choice=parsed_choice,
             chosen_distribution=chosen_distribution,
             assigned_income_class=assigned_class,
             earnings=earnings,
-            alternative_earnings=alternative_earnings
+            alternative_earnings=alternative_earnings,
+            alternative_earnings_same_class=alternative_earnings_same_class
         )
+        
+        # Format counterfactual analysis matching chit_example.png specification
+        class_name_mapping = {
+            "high": "HIGH",
+            "medium_high": "MEDIUM HIGH", 
+            "medium": "MEDIUM",
+            "medium_low": "MEDIUM LOW",
+            "low": "LOW"
+        }
+        
+        # Get the income for the assigned class in the chosen distribution
+        assigned_income = chosen_distribution.get_income_by_class(assigned_class)
+        
+        # Build the counterfactual table using language manager
+        language_manager = get_language_manager()
+        
+        counterfactual_table = language_manager.get(
+            "prompts.phase1_counterfactual_table_header",
+            assigned_class=class_name_mapping[assigned_class.value]
+        )
+        
+        # Get principle display names dictionary directly
+        translations = language_manager.get_current_translations()
+        principle_display_names = {
+            "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
+            "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
+            "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
+            "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
+        }
+        
+        for principle_key, alt_earnings in alternative_earnings_same_class.items():
+            principle_label = principle_display_names.get(principle_key, principle_key)
+            # Calculate income from earnings (reverse the payoff calculation)
+            alt_income = int(alt_earnings * 10000)
+            counterfactual_table += f"\n{principle_label:<40}  ${alt_income:,}    ${alt_earnings:.2f}"
+        
+        # Create round content for memory with properly formatted principle name
+        chosen_principle_display = DistributionGenerator.format_principle_name_with_constraint(parsed_choice)
+        
+        round_content = language_manager.get(
+            "prompts.phase1_round_memory_template",
+            application_prompt=application_prompt,
+            text_response=text_response,
+            chosen_principle_display=chosen_principle_display,
+            round_num=round_num,
+            counterfactual_table=counterfactual_table,
+            earnings=earnings,
+            total_earnings=context.bank_balance + earnings
+        )
+        
+        return application_result, round_content
+    
+    async def _step_1_2b_post_explanation_ranking(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        agent_config: AgentConfiguration
+    ) -> tuple[PrincipleRanking, str]:
+        """Step 1.2b: Post-explanation principle ranking."""
+        
+        post_explanation_prompt = self._build_post_explanation_ranking_prompt()
+        
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, post_explanation_prompt, context=context)
+        text_response = result.final_output
+        
+        # Parse using enhanced utility agent with retry logic
+        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
+        
+        # Create round content for memory
+        round_content = f"""Prompt: {post_explanation_prompt}
+Your Response: {text_response}
+Your Post-Explanation Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Outcome: Completed ranking after learning how principles apply to distributions."""
+        
+        return parsed_ranking, round_content
     
     async def _step_1_4_final_ranking(
         self,
-        participant: Agent,
+        participant: ParticipantAgent,
         context: ParticipantContext,
         agent_config: AgentConfiguration
-    ) -> PrincipleRanking:
+    ) -> tuple[PrincipleRanking, str]:
         """Step 1.4: Final principle ranking after experience."""
         
         final_ranking_prompt = self._build_final_ranking_prompt()
         
-        # Create agent with structured output type
-        ranking_agent = create_agent_with_output_type(agent_config, PrincipleRankingResponse)
+        # Always use text responses, parse with enhanced utility agent
+        result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+        text_response = result.final_output
         
-        result = await Runner.run(ranking_agent, final_ranking_prompt, context=context)
+        # Parse using enhanced utility agent with retry logic
+        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
         
-        # Parse and validate response
-        try:
-            parsed_ranking = await self.utility_agent.parse_principle_ranking(
-                result.final_output.ranking_explanation + " " + str(result.final_output.principle_rankings.dict())
-            )
-            return parsed_ranking
-        except Exception as e:
-            # Fallback to structured response
-            return result.final_output.principle_rankings
+        # Create round content for memory
+        round_content = f"""Prompt: {final_ranking_prompt}
+Your Response: {text_response}
+Your Final Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Outcome: Completed final ranking of justice principles after experiencing all four rounds."""
+        
+        return parsed_ranking, round_content
     
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
-        return """
-Please rank the four justice principles from best (1) to worst (4) based on your preference:
-
-1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income
-2. **Maximizing the average income**: Choose the distribution that maximizes the average income  
-3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income
-4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap
-
-For each principle, indicate your certainty level: very_unsure, unsure, no_opinion, sure, or very_sure.
-
-Provide your ranking with clear reasoning for your preferences.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
     
     def _build_detailed_explanation_prompt(self) -> str:
         """Build prompt for detailed explanation of principles."""
-        return """
-Here is how each justice principle would be applied to example income distributions:
-
-Example Distributions:
-| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |
-|--------------|---------|---------|---------|----------|
-| High         | $32,000 | $28,000 | $31,000 | $21,000 |
-| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |
-| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |
-| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |
-| Low          | $12,000 | $13,000 | $14,000 | $15,000 |
-
-How each principle would choose:
-- **Maximizing the floor**: Would choose Distribution 4 (highest low income: $15,000)
-- **Maximizing average**: Would choose Distribution 1 (highest average: $21,600)
-- **Maximizing average with floor constraint ≤ $13,000**: Would choose Distribution 1
-- **Maximizing average with floor constraint ≤ $14,000**: Would choose Distribution 3  
-- **Maximizing average with range constraint ≥ $20,000**: Would choose Distribution 1
-- **Maximizing average with range constraint ≥ $15,000**: Would choose Distribution 2
-
-Study these examples to understand how each principle works in practice.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get("prompts.phase1_detailed_principles_explanation")
+    
+    def _build_post_explanation_ranking_prompt(self) -> str:
+        """Build prompt for post-explanation ranking."""
+        language_manager = get_language_manager()
+        return language_manager.get("prompts.phase1_post_explanation_ranking_prompt")
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""
@@ -297,22 +440,17 @@ Study these examples to understand how each principle works in practice.
         )
         
         return f"""
-ROUND {round_num}: Choose a Justice Principle
+ROUND {round_num}
 
 {distributions_table}
 
-Choose ONE of the four justice principles to apply to these distributions:
-(a) maximizing the floor
-(b) maximizing the average  
-(c) maximizing the average with a floor constraint
-(d) maximizing the average with a range constraint
+You are to make a choice from among the four principles of justice which are mentioned above:
+(a) maximizing the floor,
+(b) maximizing the average,
+(c) maximizing the average with a floor constraint, and
+(d) maximizing the average with a range constraint.
 
-**IMPORTANT**: If you choose (c) or (d), you MUST specify the constraint amount in dollars.
-
-Examples of valid choices:
-- "I choose (a) maximizing the floor"
-- "I choose (c) maximizing the average with a floor constraint of $15,000"
-- "I choose (d) maximizing the average with a range constraint of $18,000"
+If you choose (c) or (d), you will have to tell us what that floor or range constraint is before you can be said to have made a well-defined choice.
 
 Your chosen principle will determine which distribution is selected. You'll then be randomly assigned to an income class and earn $1 for every $10,000 of income.
 
@@ -330,5 +468,5 @@ Reflect on:
 - Whether your preferences have changed
 - What you observed about the outcomes of different principles
 
-Provide your updated ranking with certainty levels and explain how your experience influenced your preferences.
+Provide your updated ranking with an overall certainty level for the entire ranking and explain how your experience influenced your preferences.
 """

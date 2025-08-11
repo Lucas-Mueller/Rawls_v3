@@ -1,0 +1,76 @@
+﻿1. Level;2. Level;;1. Level;2. Level;3. Level;4. Level;5. Level;1. Level;2. Level;3. Level;4. Level;5. Level
+General Information ;;;Agent 1 ;;;;;Agent N;;;;
+;Consenus reached Yes/No;;;Name;;;;;Name;;;
+;If Consensus, which principle;;;Model ;;;;;Model ;;;
+;Entire Public Convsersation Phase 2;;;Temperature;;;;;Temperature;;;
+;Final Vote Results (which agent voted for which principle);;;Personality;;;;;Personality;;;
+;Config file used ;;;Reasoning Enabled / Disabled;;;;;Reasoning Enabled / Disabled;;;
+;;;;Phase 1 ;;;;;Phase 1 ;;;
+;;;;;Intital Ranking;;;;;Intital Ranking;;
+;;;;;;Initial Principle Ranking Result;;;;;Initial Principle Ranking Result;
+;;;;;;Confidence Level ;;;;;Confidence Level ;
+;;;;;;Memory after the round  (even though it happens after the first round) ;;;;;Memory after the round  (even though it happens after the first round) ;
+;;;;;Detailed Explanation;;;;;Detailed Explanation;;
+;;;;;;Response to demonstration of principles;;;;;Response to demonstration of principles;
+;;;;;;Memory after the round  (even though it happens after the second round) ;;;;;Memory after the round  (even though it happens after the second round) ;
+;;;;;2. Ranking;;;;;2. Ranking;;
+;;;;;;Principle Ranking Result;;;;;Principle Ranking Result;
+;;;;;;Confidence Level ;;;;;Confidence Level ;
+;;;;;;Memory after the round  (even though it happens after the first round) ;;;;;Memory after the round  (even though it happens after the first round) ;
+;;;;;Demonstration ;;;;;Demonstration ;;
+;;;;;;Demonstration 1 ;;;;;Demonstration 1 ;
+;;;;;;;Choice Principal ;;;;;Choice Principal 
+;;;;;;;Class that the agent was put in ;;;;;Class that the agent was put in 
+;;;;;;;Payoff received;;;;;Payoff received
+;;;;;;;Payoff if other Principles were applied;;;;;Payoff if other Principles were applied
+;;;;;;;Memory after the round ;;;;;Memory after the round 
+;;;;;;;Bank Balance after the round;;;;;Bank Balance after the round
+;;;;;;Demonstration …;;;;;Demonstration …;
+;;;;;;;Choice Principal ;;;;;Choice Principal 
+;;;;;;;Class that the agent was put in ;;;;;Class that the agent was put in 
+;;;;;;;Payoff received;;;;;Payoff received
+;;;;;;;Payoff if other Principles were applied;;;;;Payoff if other Principles were applied
+;;;;;;;Memory after the round ;;;;;Memory after the round 
+;;;;;;;Bank Balance after the round;;;;;Bank Balance after the round
+;;;;;;Demonstration N (default value 4) ;;;;;Demonstration N (default value 4) ;
+;;;;;;;Choice Principal ;;;;;Choice Principal 
+;;;;;;;Class that the agent was put in ;;;;;Class that the agent was put in 
+;;;;;;;Payoff received;;;;;Payoff received
+;;;;;;;Payoff if other Principles were applied;;;;;Payoff if other Principles were applied
+;;;;;;;Memory after the round ;;;;;Memory after the round 
+;;;;;;;Bank Balance after the round;;;;;Bank Balance after the round
+;;;;;3. Ranking;;;;;3. Ranking;;
+;;;;;;Principle Ranking Result;;;;;Principle Ranking Result;
+;;;;;;Confidence Level ;;;;;Confidence Level ;
+;;;;;;Memory after the round  (even though it happens after the first round) ;;;;;Memory after the round  (even though it happens after the first round) ;
+;;;;;;Bank Balance;;;;;Bank Balance;
+;;;;Phase 2 ;;;;;Phase 2 ;;;
+;;;;;1. Round ;;;;;1. Round ;;
+;;;;;;Speaking order;;;;;Speaking order;
+;;;;;;Bank Balance;;;;;Bank Balance;
+;;;;;;Memory after the round ;;;;;Memory after the round ;
+;;;;;;Internal Reasoning;;;;;Internal Reasoning;
+;;;;;;Public Message;;;;;Public Message;
+;;;;;;Initiate Vote (YES/NO);;;;;Initiate Vote (YES/NO);
+;;;;;;Favored Principle ;;;;;Favored Principle ;
+;;;;;... Round ;;;;;... Round ;;
+;;;;;;Speaking order;;;;;Speaking order;
+;;;;;;Bank Balance;;;;;Bank Balance;
+;;;;;;Memory after the round ;;;;;Memory after the round ;
+;;;;;;Internal Reasoning;;;;;Internal Reasoning;
+;;;;;;Public Message;;;;;Public Message;
+;;;;;;Initiate Vote (YES/NO);;;;;Initiate Vote (YES/NO);
+;;;;;;Favored Principle ;;;;;Favored Principle ;
+;;;;;Final Round ;;;;;Final Round ;;
+;;;;;;Speaking order;;;;;Speaking order;
+;;;;;;Bank Balance;;;;;Bank Balance;
+;;;;;;Memory after the round ;;;;;Memory after the round ;
+;;;;;;Internal Reasoning;;;;;Internal Reasoning;
+;;;;;;Public Message;;;;;Public Message;
+;;;;;;Initiate Vote (YES/NO);;;;;Initiate Vote (YES/NO);
+;;;;;;Favored Principle ;;;;;Favored Principle ;
+;;;;;Post Group Discussion ;;;;;Post Group Discussion ;;
+;;;;;;Class that the agent was put in ;;;;;Class that the agent was put in ;
+;;;;;;Payoff received;;;;;Payoff received;
+;;;;;;Final Ranking;;;;;Final Ranking;
+;;;;;;Confidence Level ;;;;;Confidence Level ;

@@ -62,12 +62,14 @@ class ApplicationResult(BaseModel):
     assigned_income_class: IncomeClass
     earnings: float
     alternative_earnings: Dict[str, float] = Field(default_factory=dict, description="What participant would have earned under other distributions")
+    alternative_earnings_same_class: Dict[str, float] = Field(default_factory=dict, description="What participant would have earned under each principle with SAME class assignment")
 
 
 class Phase1Results(BaseModel):
     """Complete results for a participant's Phase 1."""
     participant_name: str
     initial_ranking: PrincipleRanking
+    post_explanation_ranking: PrincipleRanking
     application_results: List[ApplicationResult]
     final_ranking: PrincipleRanking
     total_earnings: float
@@ -79,10 +81,10 @@ class ParticipantContext(BaseModel):
     name: str
     role_description: str
     bank_balance: float
-    memory: str = Field(..., description="Continuous across Phase 1 and Phase 2")
+    memory: str = Field(..., description="Agent-managed memory continuous across Phase 1 and Phase 2")
     round_number: int
     phase: ExperimentPhase
-    max_memory_length: int = 5000
+    memory_character_limit: int = 50000
 
 
 class DiscussionStatement(BaseModel):

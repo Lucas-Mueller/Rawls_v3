@@ -30,8 +30,21 @@ class PrincipleChoice(BaseModel):
     certainty: CertaintyLevel
     reasoning: Optional[str] = Field(None, description="Participant's reasoning")
     
-    def validate_constraint_amount(self) -> bool:
-        """Validate that constraint principles have constraint amounts. Returns True if valid."""
+    @model_validator(mode='after')
+    def validate_constraint_amount(self):
+        """Validate that constraint principles have constraint amounts."""
+        if self.principle in [
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]:
+            if self.constraint_amount is None:
+                raise ValueError(f"Constraint amount required for principle {self.principle}")
+            if self.constraint_amount <= 0:
+                raise ValueError("Constraint amount must be positive")
+        return self
+    
+    def is_valid_constraint(self) -> bool:
+        """Check if constraint amount is valid. Returns True if valid."""
         if self.principle in [
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
@@ -45,12 +58,12 @@ class RankedPrinciple(BaseModel):
     """A principle with its ranking position."""
     principle: JusticePrinciple
     rank: int = Field(..., ge=1, le=4, description="Rank from 1 (best) to 4 (worst)")
-    certainty: CertaintyLevel
 
 
 class PrincipleRanking(BaseModel):
     """Complete ranking of all four principles."""
     rankings: List[RankedPrinciple] = Field(..., min_items=4, max_items=4)
+    certainty: CertaintyLevel = Field(..., description="Overall certainty level for the entire ranking")
     
     @field_validator('rankings')
     @classmethod

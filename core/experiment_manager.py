@@ -10,9 +10,15 @@ from agents import Agent, trace
 
 from models import ExperimentResults, ParticipantContext
 from config import ExperimentConfiguration
-from experiment_agents import create_participant_agent, UtilityAgent
+from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
 from core import Phase1Manager, Phase2Manager
-from utils.logging_utils import ExperimentLogger
+from utils.agent_centric_logger import AgentCentricLogger
+from utils.error_handling import (
+    ExperimentError, ExperimentLogicError, SystemError, AgentCommunicationError,
+    ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
+    handle_experiment_errors, set_global_error_handler
+)
+from utils.language_manager import get_english_principle_name
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +29,37 @@ class FrohlichExperimentManager:
     def __init__(self, config: ExperimentConfiguration):
         self.config = config
         self.experiment_id = str(uuid.uuid4())
-        self.participants = self._create_participants()
-        self.utility_agent = UtilityAgent()
-        self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
-        self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
+        self.error_handler = get_global_error_handler()
         
+        # Initialize error handler with custom logger
+        experiment_logger = logging.getLogger(f"experiment.{self.experiment_id}")
+        set_global_error_handler(type(self.error_handler)(experiment_logger))
+        self.error_handler = get_global_error_handler()
+        
+        try:
+            self.participants = self._create_participants()
+            # Pass utility agent model from config
+            self.utility_agent = UtilityAgent(config.utility_agent_model)
+            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
+            self.agent_logger = AgentCentricLogger()
+        except Exception as e:
+            raise ExperimentLogicError(
+                f"Failed to initialize experiment manager: {str(e)}",
+                ErrorSeverity.FATAL,
+                {
+                    "experiment_id": self.experiment_id,
+                    "config_agents_count": len(config.agents),
+                    "initialization_error": str(e)
+                },
+                cause=e
+            )
+        
+    @handle_experiment_errors(
+        category=ExperimentErrorCategory.EXPERIMENT_LOGIC_ERROR,
+        severity=ErrorSeverity.FATAL,
+        operation_name="run_complete_experiment"
+    )
     async def run_complete_experiment(self) -> ExperimentResults:
         """Run complete two-phase experiment with tracing."""
         
@@ -45,9 +77,26 @@ class FrohlichExperimentManager:
         ) as experiment_trace:
             
             try:
+                # Initialize agent-centric logging
+                self.agent_logger.initialize_experiment(self.participants, self.config)
+                
                 # Phase 1: Individual familiarization (parallel)
                 logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
-                phase1_results = await self.phase1_manager.run_phase1(self.config)
+                
+                try:
+                    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
+                except Exception as e:
+                    raise ExperimentLogicError(
+                        f"Phase 1 execution failed: {str(e)}",
+                        ErrorSeverity.FATAL,
+                        {
+                            "experiment_id": self.experiment_id,
+                            "phase": "phase_1",
+                            "participants_count": len(self.participants),
+                            "phase1_error": str(e)
+                        },
+                        cause=e
+                    )
                 
                 logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
                 for result in phase1_results:
@@ -55,14 +104,37 @@ class FrohlichExperimentManager:
                 
                 # Phase 2: Group discussion (sequential)  
                 logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
-                phase2_results = await self.phase2_manager.run_phase2(
-                    self.config, phase1_results
-                )
+                
+                try:
+                    phase2_results = await self.phase2_manager.run_phase2(
+                        self.config, phase1_results, self.agent_logger
+                    )
+                except Exception as e:
+                    raise ExperimentLogicError(
+                        f"Phase 2 execution failed: {str(e)}",
+                        ErrorSeverity.FATAL,
+                        {
+                            "experiment_id": self.experiment_id,
+                            "phase": "phase_2",
+                            "phase1_completed": True,
+                            "phase2_error": str(e)
+                        },
+                        cause=e
+                    )
                 
                 if phase2_results.discussion_result.consensus_reached:
-                    logger.info(f"Phase 2 completed with consensus on {phase2_results.discussion_result.agreed_principle.principle.value}")
+                    # Use English principle name for system logging
+                    english_principle_name = get_english_principle_name(phase2_results.discussion_result.agreed_principle.principle.value)
+                    logger.info(f"Phase 2 completed with consensus on {english_principle_name}")
                 else:
                     logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")
+                
+                # Set general experiment information for logging
+                try:
+                    self._set_general_logging_info(phase2_results)
+                except Exception as e:
+                    # Log the error but don't fail the experiment
+                    logger.warning(f"Failed to set general logging info: {e}")
                 
                 # Compile final results
                 results = ExperimentResults(
@@ -74,13 +146,30 @@ class FrohlichExperimentManager:
                 )
                 
                 logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
+                
+                # Log error statistics
+                error_stats = self.error_handler.get_error_statistics()
+                if error_stats.get("total_errors", 0) > 0:
+                    logger.info(f"Experiment completed with {error_stats['total_errors']} recoverable errors")
+                
                 return results
                 
+            except ExperimentError:
+                raise  # Re-raise experiment errors as-is
             except Exception as e:
-                logger.error(f"Experiment {self.experiment_id} failed: {e}")
-                raise
+                # Wrap unexpected errors
+                raise ExperimentLogicError(
+                    f"Unexpected error during experiment execution: {str(e)}",
+                    ErrorSeverity.FATAL,
+                    {
+                        "experiment_id": self.experiment_id,
+                        "runtime_seconds": time.time() - start_time,
+                        "unexpected_error": str(e)
+                    },
+                    cause=e
+                )
             
-    def _create_participants(self) -> List[Agent[ParticipantContext]]:
+    def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration."""
         participants = []
         for agent_config in self.config.agents:
@@ -90,10 +179,49 @@ class FrohlichExperimentManager:
         
         return participants
     
+    def _set_general_logging_info(self, phase2_results):
+        """Set general experiment information for agent-centric logging."""
+        # Build public conversation from discussion history
+        if phase2_results.discussion_result.discussion_history:
+            public_conversation = phase2_results.discussion_result.discussion_history
+            # Ensure it ends with a newline for consistency
+            if not public_conversation.endswith('\n'):
+                public_conversation += '\n'
+        else:
+            public_conversation = "No public discussion recorded."
+        
+        # Build final vote results
+        final_vote_results = {}
+        if phase2_results.discussion_result.vote_history:
+            last_vote = phase2_results.discussion_result.vote_history[-1]
+            # Since votes are anonymous (stored as list), we'll map them to participant names by order
+            for i, participant in enumerate(self.participants):
+                if i < len(last_vote.votes):
+                    vote = last_vote.votes[i]
+                    final_vote_results[participant.name] = vote.principle.value if vote else "No vote"
+                else:
+                    final_vote_results[participant.name] = "No vote"
+        else:
+            # If no votes, use participant names with "No vote"
+            for participant in self.participants:
+                final_vote_results[participant.name] = "No vote"
+        
+        # Set the general information
+        self.agent_logger.set_general_information(
+            consensus_reached=phase2_results.discussion_result.consensus_reached,
+            consensus_principle=(
+                phase2_results.discussion_result.agreed_principle.principle.value
+                if phase2_results.discussion_result.agreed_principle
+                else None
+            ),
+            public_conversation=public_conversation,
+            final_vote_results=final_vote_results,
+            config_file="default_config.yaml"  # Could be made configurable
+        )
+    
     def save_results(self, results: ExperimentResults, output_path: str):
-        """Save experiment results to JSON file."""
-        logger_instance = ExperimentLogger(output_path)
-        logger_instance.log_experiment_results(results)
+        """Save experiment results to JSON file using agent-centric logging."""
+        self.agent_logger.save_to_file(output_path)
         logger.info(f"Results saved to: {output_path}")
     
     def get_experiment_summary(self, results: ExperimentResults) -> str:

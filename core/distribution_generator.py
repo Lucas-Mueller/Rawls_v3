@@ -2,10 +2,11 @@
 Distribution generation system for the Frohlich Experiment.
 """
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
+from utils.language_manager import get_language_manager
 
 
 class DistributionGenerator:
@@ -154,16 +155,134 @@ class DistributionGenerator:
         return alternative_earnings
     
     @staticmethod
+    def calculate_alternative_earnings_by_principle(
+        distributions: List[IncomeDistribution], 
+        constraint_amount: Optional[int] = None
+    ) -> dict:
+        """Calculate what participant would have earned under each principle choice."""
+        from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+        
+        alternative_earnings = {}
+        
+        # Define all four principles
+        principles = [
+            JusticePrinciple.MAXIMIZING_FLOOR,
+            JusticePrinciple.MAXIMIZING_AVERAGE, 
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]
+        
+        for principle in principles:
+            try:
+                # Create a principle choice (use provided constraint_amount or default)
+                if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 
+                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                    # Use provided constraint or a reasonable default
+                    constraint = constraint_amount if constraint_amount is not None else 15000
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint,
+                        certainty=CertaintyLevel.SURE
+                    )
+                else:
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        certainty=CertaintyLevel.SURE
+                    )
+                
+                # Apply this principle to the distributions
+                chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice
+                )
+                
+                # Calculate what they would have earned with this principle
+                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
+                alternative_earnings[principle.value] = earnings
+                
+            except Exception as e:
+                # If principle application fails, record as 0 earnings
+                alternative_earnings[principle.value] = 0.0
+        
+        return alternative_earnings
+    
+    @staticmethod
+    def calculate_alternative_earnings_by_principle_fixed_class(
+        distributions: List[IncomeDistribution], 
+        assigned_class: IncomeClass,
+        constraint_amount: Optional[int] = None
+    ) -> dict:
+        """Calculate what participant would have earned under each principle with FIXED class assignment."""
+        from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+        
+        alternative_earnings = {}
+        
+        # Define all four principles
+        principles = [
+            JusticePrinciple.MAXIMIZING_FLOOR,
+            JusticePrinciple.MAXIMIZING_AVERAGE, 
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]
+        
+        for principle in principles:
+            try:
+                # Create a principle choice (use provided constraint_amount or default)
+                if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 
+                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                    # Use provided constraint or a reasonable default
+                    constraint = constraint_amount if constraint_amount is not None else 15000
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint,
+                        certainty=CertaintyLevel.SURE
+                    )
+                else:
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        certainty=CertaintyLevel.SURE
+                    )
+                
+                # Apply this principle to the distributions
+                chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice
+                )
+                
+                # Get income for the FIXED assigned class (not random)
+                income = chosen_distribution.get_income_by_class(assigned_class)
+                
+                # Calculate payoff: $1 for every $10,000 of income
+                earnings = income / 10000.0
+                
+                alternative_earnings[principle.value] = earnings
+                
+            except Exception as e:
+                # If principle application fails, record as 0 earnings
+                alternative_earnings[principle.value] = 0.0
+        
+        return alternative_earnings
+    
+    @staticmethod
     def format_distributions_table(distributions: List[IncomeDistribution]) -> str:
         """Format distributions as a table for display to participants."""
-        table = "Income Distributions:\n\n"
-        table += "| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n"
-        table += "|--------------|---------|---------|---------|----------|\n"
+        language_manager = get_language_manager()
         
-        income_classes = ["High", "Medium high", "Medium", "Medium low", "Low"]
+        # Get localized table components
+        table = language_manager.get("prompts.distribution_distributions_table_header")
+        table += language_manager.get("prompts.distribution_distributions_table_column_header")
+        table += language_manager.get("prompts.distribution_distributions_table_separator")
+        
+        # Get income class names using new API
+        income_class_names = {
+            "high": language_manager.get("common.income_classes.high"),
+            "medium_high": language_manager.get("common.income_classes.medium_high"),
+            "medium": language_manager.get("common.income_classes.medium"),
+            "medium_low": language_manager.get("common.income_classes.medium_low"),
+            "low": language_manager.get("common.income_classes.low")
+        }
         class_attrs = ["high", "medium_high", "medium", "medium_low", "low"]
         
-        for class_name, attr in zip(income_classes, class_attrs):
+        for attr in class_attrs:
+            class_name = income_class_names[attr]
             table += f"| {class_name:<12} |"
             for dist in distributions:
                 income = getattr(dist, attr)
@@ -171,3 +290,23 @@ class DistributionGenerator:
             table += "\n"
         
         return table
+    
+    @staticmethod
+    def format_principle_name_with_constraint(principle_choice) -> str:
+        """Format principle name with constraint amount for display."""
+        from models.principle_types import JusticePrinciple
+        
+        language_manager = get_language_manager()
+        # Get principle names using new API
+        try:
+            base_name = language_manager.get(f"common.principle_names.{principle_choice.principle.value}")
+        except (KeyError, ValueError):
+            base_name = str(principle_choice.principle)
+        
+        if principle_choice.constraint_amount and principle_choice.principle in [
+            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        ]:
+            base_name += f" of ${principle_choice.constraint_amount:,}"
+        
+        return base_name

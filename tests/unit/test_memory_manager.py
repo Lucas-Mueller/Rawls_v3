@@ -1,133 +1,213 @@
 """
-Unit tests for memory management utilities.
+Unit tests for agent-managed memory system.
 """
 import unittest
+from unittest.mock import Mock, AsyncMock, patch
+import asyncio
 from utils.memory_manager import MemoryManager
-from models import ExperimentPhase
+from utils.error_handling import MemoryError, ExperimentError
 
 
 class TestMemoryManager(unittest.TestCase):
-    """Test cases for the MemoryManager class."""
+    """Test cases for the new agent-managed MemoryManager class."""
     
-    def test_update_memory_within_limits(self):
-        """Test memory update when within size limits."""
-        current_memory = "Initial memory content."
-        new_info = "New information to add."
-        max_length = 1000
+    def setUp(self):
+        """Set up test fixtures."""
+        self.mock_agent = Mock()
+        self.mock_agent.name = "TestAgent"
+        self.mock_agent.config = Mock()
+        self.mock_agent.config.memory_character_limit = 1000
+        self.mock_agent.update_memory = AsyncMock()
         
-        updated_memory = MemoryManager.update_memory(current_memory, new_info, max_length)
-        
-        # Should contain both old and new content
-        self.assertIn("Initial memory content", updated_memory)
-        self.assertIn("New information to add", updated_memory)
-        self.assertLessEqual(len(updated_memory), max_length)
+        self.mock_context = Mock()
+        self.mock_context.memory = "Current memory content"
     
-    def test_update_memory_with_truncation(self):
-        """Test memory update when truncation is needed."""
-        # Create memory that will exceed limits
-        current_memory = "A" * 800  # 800 characters
-        new_info = "B" * 300       # 300 characters 
-        max_length = 500           # Total would be 1100, limit is 500
+    def test_validate_memory_length_valid(self):
+        """Test memory length validation with valid memory."""
+        memory = "This is a short memory"
+        limit = 1000
         
-        updated_memory = MemoryManager.update_memory(current_memory, new_info, max_length)
+        is_valid, length = MemoryManager._validate_memory_length(memory, limit)
         
-        # Should be within limits
-        self.assertLessEqual(len(updated_memory), max_length)
-        
-        # Should contain recent information
-        self.assertIn("B", updated_memory)  # New info should be preserved
+        self.assertTrue(is_valid)
+        self.assertEqual(length, len(memory))
     
-    def test_format_memory_prompt_phase1(self):
-        """Test memory formatting for Phase 1."""
-        memory = "Test memory content"
+    def test_validate_memory_length_invalid(self):
+        """Test memory length validation with memory exceeding limit."""
+        memory = "A" * 1500  # 1500 characters
+        limit = 1000
         
-        formatted = MemoryManager.format_memory_prompt(memory, ExperimentPhase.PHASE_1)
+        is_valid, length = MemoryManager._validate_memory_length(memory, limit)
         
-        self.assertIn("Phase 1", formatted)
-        self.assertIn("Individual Learning", formatted)
-        self.assertIn("Test memory content", formatted)
+        self.assertFalse(is_valid)
+        self.assertEqual(length, 1500)
     
-    def test_format_memory_prompt_phase2(self):
-        """Test memory formatting for Phase 2."""
-        memory = "Test memory content"
+    def test_create_memory_update_prompt(self):
+        """Test memory update prompt creation."""
+        current_memory = "Previous memory content"
+        round_content = "New round information"
         
-        formatted = MemoryManager.format_memory_prompt(memory, ExperimentPhase.PHASE_2)
+        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content)
         
-        self.assertIn("Phase 1 + Phase 2", formatted)
-        self.assertIn("Group Discussion", formatted)
-        self.assertIn("Test memory content", formatted)
+        self.assertIn("Previous memory content", prompt)
+        self.assertIn("New round information", prompt)
+        self.assertIn("update your memory", prompt)
     
-    def test_format_memory_prompt_empty(self):
-        """Test memory formatting with empty memory."""
-        memory = ""
+    def test_create_memory_update_prompt_empty_memory(self):
+        """Test memory update prompt creation with empty memory."""
+        current_memory = ""
+        round_content = "New round information"
         
-        formatted = MemoryManager.format_memory_prompt(memory, ExperimentPhase.PHASE_1)
+        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content)
         
-        self.assertIn("No previous memories", formatted)
+        self.assertIn("(Empty)", prompt)
+        self.assertIn("New round information", prompt)
+        self.assertIn("update your memory", prompt)
     
-    def test_add_memory_entry(self):
-        """Test structured memory entry addition."""
-        current_memory = "Existing content"
+    def test_prompt_agent_for_memory_update_success(self):
+        """Test successful agent memory update."""
+        async def run_test():
+            # Setup
+            self.mock_agent.update_memory.return_value = "Updated memory content"
+            round_content = "Test round content"
+            
+            # Execute
+            result = await MemoryManager.prompt_agent_for_memory_update(
+                self.mock_agent, self.mock_context, round_content
+            )
+            
+            # Verify
+            self.assertEqual(result, "Updated memory content")
+            self.mock_agent.update_memory.assert_called_once()
         
-        updated_memory = MemoryManager.add_memory_entry(
-            current_memory, "RANKING", "Completed initial ranking", 1
-        )
-        
-        self.assertIn("Existing content", updated_memory)
-        self.assertIn("[RANKING (Round 1)]", updated_memory)
-        self.assertIn("Completed initial ranking", updated_memory)
+        asyncio.run(run_test())
     
-    def test_add_memory_entry_no_round(self):
-        """Test memory entry addition without round number."""
-        current_memory = "Existing content"
+    def test_prompt_agent_for_memory_update_length_exceeded_then_success(self):
+        """Test memory update with initial length exceeded, then success."""
+        async def run_test():
+            # Setup - first call returns too long memory, second call succeeds
+            self.mock_agent.update_memory.side_effect = [
+                "A" * 1500,  # Too long
+                "Updated memory content"  # Valid length
+            ]
+            round_content = "Test round content"
+            
+            # Execute
+            result = await MemoryManager.prompt_agent_for_memory_update(
+                self.mock_agent, self.mock_context, round_content
+            )
+            
+            # Verify
+            self.assertEqual(result, "Updated memory content")
+            self.assertEqual(self.mock_agent.update_memory.call_count, 2)
         
-        updated_memory = MemoryManager.add_memory_entry(
-            current_memory, "TRANSITION", "Moving to Phase 2"
-        )
-        
-        self.assertIn("[TRANSITION]", updated_memory)
-        self.assertIn("Moving to Phase 2", updated_memory)
-        self.assertNotIn("Round", updated_memory)
+        asyncio.run(run_test())
     
-    def test_extract_key_learnings(self):
-        """Test key learning extraction."""
-        memory = """
-        I learned that maximizing floor is important.
-        I discovered that average income can be misleading.
-        I earned $2.50 in round 1.
-        Other random content here.
-        I realized that constraints matter.
-        More content without key indicators.
-        """
+    def test_prompt_agent_for_memory_update_max_retries_exceeded(self):
+        """Test memory update failure after max retries."""
+        async def run_test():
+            # Setup - always return memory that's too long
+            self.mock_agent.update_memory.return_value = "A" * 1500
+            round_content = "Test round content"
+            
+            # Execute & Verify
+            with self.assertRaises(MemoryError):
+                await MemoryManager.prompt_agent_for_memory_update(
+                    self.mock_agent, self.mock_context, round_content, max_retries=3
+                )
+            
+            # Should have tried 3 times
+            self.assertEqual(self.mock_agent.update_memory.call_count, 3)
         
-        key_learnings = MemoryManager.extract_key_learnings(memory)
-        
-        # Should extract lines with learning indicators
-        self.assertTrue(any("learned that" in learning.lower() for learning in key_learnings))
-        self.assertTrue(any("discovered that" in learning.lower() for learning in key_learnings))
-        self.assertTrue(any("earned $" in learning.lower() for learning in key_learnings))
-        self.assertTrue(any("realized that" in learning.lower() for learning in key_learnings))
-        
-        # Should not exceed maximum
-        self.assertLessEqual(len(key_learnings), 10)
+        asyncio.run(run_test())
     
-    def test_create_phase_transition_summary(self):
-        """Test phase transition summary creation."""
-        phase1_memory = """
-        I learned that maximizing floor helps the poorest.
-        I earned $3.20 total in Phase 1.
-        I chose principle (a) maximizing floor in round 2.
-        Other content here.
-        """
+    def test_prompt_agent_for_memory_update_exception_then_success(self):
+        """Test memory update with exception, then success."""
+        async def run_test():
+            # Setup - first call raises exception, second succeeds
+            self.mock_agent.update_memory.side_effect = [
+                Exception("Test error"),
+                "Updated memory content"
+            ]
+            round_content = "Test round content"
+            
+            # Execute
+            result = await MemoryManager.prompt_agent_for_memory_update(
+                self.mock_agent, self.mock_context, round_content
+            )
+            
+            # Verify
+            self.assertEqual(result, "Updated memory content")
+            self.assertEqual(self.mock_agent.update_memory.call_count, 2)
         
-        summary = MemoryManager.create_phase_transition_summary(phase1_memory)
+        asyncio.run(run_test())
+    
+    def test_prompt_agent_for_memory_update_persistent_exception(self):
+        """Test memory update with persistent exceptions."""
+        async def run_test():
+            # Setup - always raise exception
+            self.mock_agent.update_memory.side_effect = Exception("Persistent error")
+            round_content = "Test round content"
+            
+            # Execute & Verify
+            with self.assertRaises(MemoryError):
+                await MemoryManager.prompt_agent_for_memory_update(
+                    self.mock_agent, self.mock_context, round_content, max_retries=2
+                )
+            
+            # Should have tried max_retries times
+            self.assertEqual(self.mock_agent.update_memory.call_count, 2)
         
-        self.assertIn("PHASE 1 SUMMARY", summary)
-        self.assertIn("TRANSITIONING TO PHASE 2", summary)
-        self.assertIn("Key experiences", summary)
+        asyncio.run(run_test())
+    
+    def test_memory_error_creation(self):
+        """Test MemoryError creation."""
+        from utils.error_handling import ErrorSeverity
+        error = MemoryError("Memory too long", ErrorSeverity.RECOVERABLE, {"length": 1500, "limit": 1000})
         
-        # Should include extracted learnings
-        self.assertTrue(any("learned that" in line for line in summary.split('\n')))
+        self.assertIn("Memory too long", str(error))
+        self.assertEqual(error.severity, ErrorSeverity.RECOVERABLE)
+        self.assertEqual(error.context["length"], 1500)
+        self.assertEqual(error.context["limit"], 1000)
+
+
+class TestMemoryManagerIntegration(unittest.TestCase):
+    """Integration tests for memory manager with real async behavior."""
+    
+    def setUp(self):
+        """Set up test fixtures."""
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+    
+    def tearDown(self):
+        """Clean up test fixtures."""
+        self.loop.close()
+    
+    def test_async_memory_update_flow(self):
+        """Test complete async memory update flow."""
+        async def run_test():
+            # Create mock agent
+            mock_agent = Mock()
+            mock_agent.name = "TestAgent"
+            mock_agent.config = Mock()
+            mock_agent.config.memory_character_limit = 100
+            mock_agent.update_memory = AsyncMock(return_value="Short memory")
+            
+            # Create mock context
+            mock_context = Mock()
+            mock_context.memory = "Previous"
+            
+            # Run memory update
+            result = await MemoryManager.prompt_agent_for_memory_update(
+                mock_agent, mock_context, "New content"
+            )
+            
+            # Verify
+            self.assertEqual(result, "Short memory")
+            mock_agent.update_memory.assert_called_once()
+        
+        # Run the async test
+        self.loop.run_until_complete(run_test())
 
 
 if __name__ == '__main__':
