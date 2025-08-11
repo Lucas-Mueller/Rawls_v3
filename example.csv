@@ -1,2 +1,0 @@
-Config,Rounds,#Agents,Prompt,Model own,Model other agents,Temperature self,Initial Preference,Agreement?,Agreed Principle
-hypothesis_2_&_4/logs/config_01_results_20250811_002825,10,5,"You are a college student","Claude-4-Sonnet","['GPT-4.1', 'GPT-4o']",0,1,Yes,3

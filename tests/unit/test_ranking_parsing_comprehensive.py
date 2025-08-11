@@ -8,12 +8,11 @@ import os
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 os.environ.setdefault('OPENAI_API_KEY', 'test-key')
 
 from models.principle_types import JusticePrinciple, CertaintyLevel
-sys.path.insert(0, str(Path(__file__).parent / 'experiment_agents'))
-from utility_agent import UtilityAgent
+from experiment_agents.utility_agent import UtilityAgent
 
 # Comprehensive test cases covering various response formats
 COMPREHENSIVE_TEST_CASES = [
