@@ -3,28 +3,28 @@ language: "English"
 agents:
   - name: "Alice"
     personality: "Analytical and methodical. "
-    model: "gpt-4.1"
+    model: "gpt-4.1-nano"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Bob" 
     personality: "Pragmatic and results-oriented."
-    model: "gpt-4.1"
+    model: "gpt-4.1-nano"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Donald"
     personality: "You are very smart"
-    model: "gpt-4.1" 
+    model: "gpt-4.1-nano" 
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
 
 # Utility agent model (can also use OpenRouter models)
-utility_agent_model: "gpt-4.1-mini"
+utility_agent_model: "gpt-4.1-nano"
 
 phase2_rounds: 5
 distribution_range_phase1: [0.5, 2.0]
-distribution_range_phase2: [0.5, 2.0]
+distribution_range_phase2: [2, 4]
