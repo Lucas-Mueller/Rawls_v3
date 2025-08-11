@@ -165,7 +165,8 @@ async def run_experiment_from_config(
         # Set output path if not provided
         if output_path is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = f"experiment_results_{timestamp}.json"
+            # Default to logs directory to match parallel execution behavior
+            output_path = f"hypothesis_2_&_4/logs/experiment_results_{timestamp}.json"
         
         # Save results
         experiment_manager.save_results(results, output_path)

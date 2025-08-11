@@ -182,10 +182,11 @@ class FrohlichExperimentManager:
     def _set_general_logging_info(self, phase2_results):
         """Set general experiment information for agent-centric logging."""
         # Build public conversation from discussion history
-        public_conversation = ""
         if phase2_results.discussion_result.discussion_history:
-            for statement in phase2_results.discussion_result.discussion_history:
-                public_conversation += f"{statement}\n"
+            public_conversation = phase2_results.discussion_result.discussion_history
+            # Ensure it ends with a newline for consistency
+            if not public_conversation.endswith('\n'):
+                public_conversation += '\n'
         else:
             public_conversation = "No public discussion recorded."
         
