@@ -17,7 +17,8 @@ from utils.error_handling import (
     ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
     handle_experiment_errors
 )
-from utils.model_provider import create_model_config
+from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
+from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 from utils.language_manager import get_language_manager, get_english_principle_name
 
 logger = logging.getLogger(__name__)
@@ -31,27 +32,80 @@ class UtilityAgent:
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
         
-        model_config = create_model_config(utility_model)
-        
-        # Get language manager for instructions
+        self.utility_model = utility_model
+        self.temperature_info = None
         self.language_manager = get_language_manager()
         
-        # Both OpenAI and LiteLLM models use the same Agent pattern
-        self.parser_agent = Agent(
-            name="Response Parser",
-            instructions=self.language_manager.get_parser_instructions(),
-            model=model_config
-        )
-        self.validator_agent = Agent(
-            name="Response Validator", 
-            instructions=self.language_manager.get_validator_instructions(),
-            model=model_config
-        )
+        # Agents will be created in async_init
+        self.parser_agent = None
+        self.validator_agent = None
+        self._initialization_complete = False
         
         # Enhanced parsing patterns
         self._principle_patterns = self._compile_principle_patterns()
         self._certainty_patterns = self._compile_certainty_patterns()
         self._ranking_patterns = self._compile_ranking_patterns()
+        
+    async def async_init(self):
+        """Asynchronously initialize utility agents with dynamic temperature detection."""
+        if self._initialization_complete:
+            return
+        
+        try:
+            logger.info(f"Creating utility agents with model: {self.utility_model}")
+            
+            # Create parser agent with dynamic temperature detection
+            parser_kwargs = {
+                "name": "Response Parser",
+                "instructions": self.language_manager.get_parser_instructions(),
+            }
+            
+            self.parser_agent, self.temperature_info = await create_agent_with_temperature_retry(
+                agent_class=Agent,
+                model_string=self.utility_model,
+                temperature=0.0,  # Utility agents use temp 0
+                agent_kwargs=parser_kwargs
+            )
+            
+            # Create validator agent (reuse temperature info since it's the same model)
+            validator_kwargs = {
+                "name": "Response Validator", 
+                "instructions": self.language_manager.get_validator_instructions(),
+            }
+            
+            self.validator_agent, _ = await create_agent_with_temperature_retry(
+                agent_class=Agent,
+                model_string=self.utility_model,
+                temperature=0.0,  # Utility agents use temp 0
+                agent_kwargs=validator_kwargs
+            )
+            
+            # Log temperature status
+            self._log_temperature_status()
+            
+            self._initialization_complete = True
+            logger.info(f"✅ Utility agents initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize utility agents: {e}")
+            raise e
+            
+    def _log_temperature_status(self):
+        """Log temperature detection status for utility agent."""
+        if not self.temperature_info:
+            return
+            
+        temp_info = self.temperature_info
+        detection_method = temp_info.get('detection_method', 'unknown')
+        
+        if not temp_info.get("supports_temperature", False):
+            was_retried = temp_info.get('was_retried', False)
+            if was_retried:
+                logger.info(f"🔄 Utility agent: Temperature not supported, automatically retried without temperature (method: {detection_method})")
+            else:
+                logger.info(f"Utility agent: Using default behavior, temperature not supported (method: {detection_method})")
+        else:
+            logger.info(f"✅ Utility agent: Temperature support confirmed (method: {detection_method})")
     
     # Old instruction methods replaced by language manager calls
     
@@ -62,6 +116,9 @@ class UtilityAgent:
     )
     async def parse_principle_choice(self, response: str) -> PrincipleChoice:
         """Parse principle choice from participant response."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         error_handler = get_global_error_handler()
         
         parse_prompt = self.language_manager.get_principle_choice_parsing_prompt(response)
@@ -119,6 +176,9 @@ class UtilityAgent:
     )
     async def parse_principle_ranking(self, response: str) -> PrincipleRanking:
         """Parse principle ranking from participant response."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         parse_prompt = self.language_manager.get_principle_ranking_parsing_prompt(response)
         
         try:
@@ -240,6 +300,9 @@ class UtilityAgent:
     
     async def extract_vote_from_statement(self, statement: str) -> Optional[VoteProposal]:
         """Detect if participant is proposing a vote."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         detection_prompt = self.language_manager.get_vote_detection_prompt(statement)
         
         result = await Runner.run(self.parser_agent, detection_prompt)
@@ -660,6 +723,8 @@ class UtilityAgent:
     
     async def _improve_response_format(self, response: str, parse_type: str) -> str:
         """Use parser agent to improve response format."""
+        # Ensure utility agent is initialized
+        await self.async_init()
         
         format_prompt = self._get_format_improvement_prompt(response, parse_type)
         result = await Runner.run(self.parser_agent, format_prompt)

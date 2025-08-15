@@ -1,30 +1,30 @@
 language: "English"
 
 agents:
-  - name: "Alice"
-    personality: "Analytical and methodical. "
-    model: "gpt-4.1-nano"
+  - name: "Bob"
+    personality: "You are bob the builder"
+    model: "openai/gpt-oss-120b"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
-  - name: "Bob" 
-    personality: "Pragmatic and results-oriented."
-    model: "gpt-4.1-nano"
+  - name: "Hillary" 
+    personality: "You are Hillary Clinton"
+    model: "openai/gpt-oss-120b"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
   - name: "Donald"
-    personality: "You are very smart"
-    model: "gpt-4.1-nano" 
+    personality: "You are Donald Trump"
+    model: "openai/gpt-oss-120b" 
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
 
-# Utility agent model (can also use OpenRouter models)
-utility_agent_model: "gpt-4.1-nano"
 
-phase2_rounds: 5
+utility_agent_model: "openai/gpt-oss-20b"
+
+phase2_rounds: 10
 distribution_range_phase1: [0.5, 2.0]
 distribution_range_phase2: [2, 4]

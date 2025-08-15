@@ -11,6 +11,7 @@ from agents import Agent, trace
 from models import ExperimentResults, ParticipantContext
 from config import ExperimentConfiguration
 from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
+from experiment_agents.participant_agent import create_participant_agents_with_dynamic_temperature
 from core import Phase1Manager, Phase2Manager
 from utils.agent_centric_logger import AgentCentricLogger
 from utils.error_handling import (
@@ -36,20 +37,41 @@ class FrohlichExperimentManager:
         set_global_error_handler(type(self.error_handler)(experiment_logger))
         self.error_handler = get_global_error_handler()
         
+        # Initialize managers will be done in async_init
+        self.participants = None
+        self.utility_agent = None
+        self.phase1_manager = None
+        self.phase2_manager = None
+        self.agent_logger = AgentCentricLogger()
+        self._initialization_complete = False
+        
+    async def async_init(self):
+        """Asynchronously initialize the experiment manager."""
+        if self._initialization_complete:
+            return
+            
         try:
-            self.participants = self._create_participants()
-            # Pass utility agent model from config
-            self.utility_agent = UtilityAgent(config.utility_agent_model)
+            # Create participants with dynamic temperature detection
+            self.participants = await self._create_participants()
+            
+            # Create utility agent (also with dynamic detection)
+            self.utility_agent = UtilityAgent(self.config.utility_agent_model)
+            await self.utility_agent.async_init()
+            
+            # Initialize phase managers
             self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
             self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
-            self.agent_logger = AgentCentricLogger()
+            
+            self._initialization_complete = True
+            logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")
+            
         except Exception as e:
             raise ExperimentLogicError(
                 f"Failed to initialize experiment manager: {str(e)}",
                 ErrorSeverity.FATAL,
                 {
                     "experiment_id": self.experiment_id,
-                    "config_agents_count": len(config.agents),
+                    "config_agents_count": len(self.config.agents),
                     "initialization_error": str(e)
                 },
                 cause=e
@@ -62,6 +84,9 @@ class FrohlichExperimentManager:
     )
     async def run_complete_experiment(self) -> ExperimentResults:
         """Run complete two-phase experiment with tracing."""
+        
+        # Ensure experiment manager is initialized
+        await self.async_init()
         
         start_time = time.time()
         
@@ -169,13 +194,12 @@ class FrohlichExperimentManager:
                     cause=e
                 )
             
-    def _create_participants(self) -> List[ParticipantAgent]:
-        """Create participant agents from configuration."""
-        participants = []
-        for agent_config in self.config.agents:
-            participant = create_participant_agent(agent_config)
-            participants.append(participant)
-            logger.info(f"Created participant: {agent_config.name} ({agent_config.model}, temp={agent_config.temperature})")
+    async def _create_participants(self) -> List[ParticipantAgent]:
+        """Create participant agents from configuration with dynamic temperature detection."""
+        logger.info(f"Creating {len(self.config.agents)} participant agents...")
+        
+        # Use dynamic temperature detection for all participants
+        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents)
         
         return participants
     

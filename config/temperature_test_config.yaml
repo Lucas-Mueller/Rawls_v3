@@ -1,0 +1,30 @@
+language: "English"
+
+agents:
+  - name: "Alice"
+    personality: "Analytical and methodical with temperature support."
+    model: "gpt-4.1-mini"
+    temperature: 0.5
+    memory_character_limit: 5000
+    reasoning_enabled: true
+    
+  - name: "Bob" 
+    personality: "Pragmatic agent without temperature support."
+    model: "gpt-5-nano-2025-08-07"  # Does NOT support temperature
+    temperature: 0.8  # This should trigger a warning
+    memory_character_limit: 5000
+    reasoning_enabled: true
+    
+  - name: "Charlie"
+    personality: "Smart agent also without temperature support."
+    model: "gpt-4.1-nano"  # Does NOT support temperature
+    temperature: 0.3  # This should also trigger a warning
+    memory_character_limit: 5000
+    reasoning_enabled: true
+
+# Utility agent model (also test non-temperature supporting model)
+utility_agent_model: "gpt-5-nano-2025-08-07"
+
+phase2_rounds: 3
+distribution_range_phase1: [0.5, 2.0]
+distribution_range_phase2: [1.0, 1.5]
