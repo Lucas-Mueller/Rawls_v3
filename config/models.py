@@ -3,8 +3,9 @@ Configuration models for the Frohlich Experiment.
 """
 import yaml
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from pydantic import BaseModel, Field, field_validator
+from models.experiment_types import IncomeClassProbabilities
 
 
 class AgentConfiguration(BaseModel):
@@ -17,6 +18,11 @@ class AgentConfiguration(BaseModel):
     reasoning_enabled: bool = Field(True, description="Enable/disable internal reasoning in Phase 2")
 
 
+class OriginalValuesModeConfig(BaseModel):
+    """Configuration for original values mode."""
+    enabled: bool = Field(default=False, description="Enable original values mode for Phase 1 (uses Sample for explanations, A-D for rounds 1-4)")
+
+
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     language: str = Field("English", description="Language for experiment prompts and messages")
@@ -25,6 +31,8 @@ class ExperimentConfiguration(BaseModel):
     phase2_rounds: int = Field(10, gt=0, description="Maximum rounds for Phase 2 discussion")
     distribution_range_phase1: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 1 distributions")
     distribution_range_phase2: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 2 distributions")
+    income_class_probabilities: Optional[IncomeClassProbabilities] = Field(None, description="Income class assignment probabilities (defaults to equal if not specified)")
+    original_values_mode: Optional[OriginalValuesModeConfig] = Field(None, description="Original values mode configuration")
     
     @field_validator('language')
     @classmethod

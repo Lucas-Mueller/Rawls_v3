@@ -228,7 +228,9 @@ class AgentCentricLogger:
         consensus_principle: Optional[str],
         public_conversation: str,
         final_vote_results: Dict[str, str],
-        config_file: str
+        config_file: str,
+        income_class_probabilities: Optional[Dict[str, float]] = None,
+        original_values_mode_enabled: Optional[bool] = None
     ):
         """Set general experiment information."""
         self.general_info = GeneralExperimentInfo(
@@ -236,7 +238,9 @@ class AgentCentricLogger:
             consensus_principle=consensus_principle,
             public_conversation_phase_2=public_conversation,
             final_vote_results=final_vote_results,
-            config_file_used=config_file
+            config_file_used=config_file,
+            income_class_probabilities=income_class_probabilities,
+            original_values_mode_enabled=original_values_mode_enabled
         )
     
     def generate_target_state(self) -> TargetStateStructure:

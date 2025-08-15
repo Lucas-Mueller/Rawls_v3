@@ -1,30 +1,58 @@
 language: "English"
 
 agents:
-  - name: "Bob"
-    personality: "You are bob the builder"
-    model: "openai/gpt-oss-120b"
+  - name: "Agent_1"
+    personality: "You are an american college student"
+    model: "google/gemini-2.5-flash"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
-  - name: "Hillary" 
-    personality: "You are Hillary Clinton"
-    model: "openai/gpt-oss-120b"
+  - name: "Agent_2" 
+    personality: "You are an american college student"
+    model: "google/gemini-2.5-flash"
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
     
-  - name: "Donald"
-    personality: "You are Donald Trump"
-    model: "openai/gpt-oss-120b" 
+  - name: "Agent_3"
+    personality: "You are an american college student"
+    model: "google/gemini-2.5-pro" 
+    temperature: 0
+    memory_character_limit: 50000
+    reasoning_enabled: true
+  
+  - name: "Agent_4"
+    personality: "You are an american college student"
+    model: "google/gemini-2.5-flash" 
+    temperature: 0
+    memory_character_limit: 50000
+    reasoning_enabled: true
+
+  - name: "Agent_5"
+    personality: "You are an american college student"
+    model: "google/gemini-2.5-flash" 
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
 
 
-utility_agent_model: "openai/gpt-oss-20b"
 
-phase2_rounds: 10
+utility_agent_model: "google/gemini-2.5-flash"
+
+phase2_rounds: 4
 distribution_range_phase1: [0.5, 2.0]
-distribution_range_phase2: [2, 4]
+distribution_range_phase2: [4, 8]
+
+# Income class assignment probabilities (used when original_values_mode is disabled)
+income_class_probabilities:
+  high: 0.05          # 5%
+  medium_high: 0.10   # 10%
+  medium: 0.50        # 50%
+  medium_low: 0.25    # 25%
+  low: 0.10           # 10%
+
+# Original Values Mode Configuration
+original_values_mode:
+  enabled: true                    # Set to true to use predefined distributions in Phase 1
+  situation: "sample"              # Options: sample, a, b, c, d

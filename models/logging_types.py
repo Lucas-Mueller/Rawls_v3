@@ -182,6 +182,8 @@ class GeneralExperimentInfo(BaseModel):
     public_conversation_phase_2: str
     final_vote_results: Dict[str, str]
     config_file_used: str
+    income_class_probabilities: Optional[Dict[str, float]] = None
+    original_values_mode_enabled: Optional[bool] = None
 
 
 class TargetStateStructure(BaseModel):
@@ -197,7 +199,9 @@ class TargetStateStructure(BaseModel):
                 "consensus_principle": self.general_information.consensus_principle,
                 "public_conversation_phase_2": self.general_information.public_conversation_phase_2,
                 "final_vote_results": self.general_information.final_vote_results,
-                "config_file_used": self.general_information.config_file_used
+                "config_file_used": self.general_information.config_file_used,
+                "income_class_probabilities": self.general_information.income_class_probabilities,
+                "original_values_mode_enabled": self.general_information.original_values_mode_enabled
             },
             "agents": self.agents
         }

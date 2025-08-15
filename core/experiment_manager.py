@@ -230,6 +230,22 @@ class FrohlichExperimentManager:
             for participant in self.participants:
                 final_vote_results[participant.name] = "No vote"
         
+        # Extract probabilities from config for logging
+        probabilities_dict = None
+        if hasattr(self.config, 'income_class_probabilities') and self.config.income_class_probabilities:
+            probabilities_dict = {
+                "high": self.config.income_class_probabilities.high,
+                "medium_high": self.config.income_class_probabilities.medium_high,
+                "medium": self.config.income_class_probabilities.medium,
+                "medium_low": self.config.income_class_probabilities.medium_low,
+                "low": self.config.income_class_probabilities.low
+            }
+
+        # Extract original values mode info for logging
+        original_values_enabled = None
+        if hasattr(self.config, 'original_values_mode') and self.config.original_values_mode:
+            original_values_enabled = self.config.original_values_mode.enabled
+
         # Set the general information
         self.agent_logger.set_general_information(
             consensus_reached=phase2_results.discussion_result.consensus_reached,
@@ -240,7 +256,9 @@ class FrohlichExperimentManager:
             ),
             public_conversation=public_conversation,
             final_vote_results=final_vote_results,
-            config_file="default_config.yaml"  # Could be made configurable
+            config_file="default_config.yaml",  # Could be made configurable
+            income_class_probabilities=probabilities_dict,
+            original_values_mode_enabled=original_values_enabled
         )
     
     def save_results(self, results: ExperimentResults, output_path: str):

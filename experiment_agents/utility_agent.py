@@ -460,6 +460,10 @@ class UtilityAgent:
             reasoning = data.get('reasoning', '')
             constraint_amount = self._extract_constraint_amount_robust(reasoning, principle.value)
         
+        # Validate constraint amount before creating PrincipleChoice
+        if (constraint_amount is not None and constraint_amount <= 0):
+            constraint_amount = None  # Set to None to trigger retry logic
+        
         return PrincipleChoice(
             principle=principle,
             constraint_amount=constraint_amount,
@@ -557,14 +561,14 @@ class UtilityAgent:
     def _extract_constraint_amount_robust(self, response: str, principle: str) -> Optional[int]:
         """Enhanced constraint amount extraction with multiple patterns and fuzzy matching."""
         
-        # Pattern 1: Direct amount matching with various formats
+        # Pattern 1: Direct amount matching with various formats (including negative detection)
         amount_patterns = [
-            r'(\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" format first
-            r'\$?(\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000 or 20,000
-            r'(\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k or 20 thousand
-            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # floor of $20,000
-            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # constraint of $20,000
-            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
+            r'(-?\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" or "-20k" format first
+            r'\$?(-?\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000, -20,000, or $-20,000
+            r'(-?\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k, -20k or 20 thousand
+            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # floor of $20,000 or $-20,000
+            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # constraint of $20,000
+            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
         ]
         
         for pattern in amount_patterns:
@@ -580,17 +584,21 @@ class UtilityAgent:
                     elif re.search(r'\b' + re.escape(match) + r'\s*(?:k|thousand)', response, re.IGNORECASE):
                         amount *= 1000
                     
-                    # Convert to int for consistency
-                    return int(amount)
+                    # Convert to int and validate
+                    amount_int = int(amount)
+                    # Return None for invalid values to trigger retry logic
+                    if amount_int <= 0:
+                        continue
+                    return amount_int
                 except (ValueError, TypeError):
                     continue
         
         # Pattern 2: Contextual amount extraction (look for numbers near constraint keywords)
         constraint_context_patterns = [
-            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(\d{1,3}(?:,\d{3})*)',
-            r'\$?(\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
-            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
-            r'\$?(\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
+            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(-?\d{1,3}(?:,\d{3})*)',
+            r'\$?(-?\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
+            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(-?\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
+            r'\$?(-?\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
         ]
         
         for pattern in constraint_context_patterns:
@@ -598,7 +606,7 @@ class UtilityAgent:
             for match in matches:
                 try:
                     amount = int(match.replace(',', ''))
-                    # Reasonable range check (between $1,000 and $100,000)
+                    # Reasonable range check (between $1,000 and $100,000) and positive
                     if 1000 <= amount <= 100000:
                         return amount
                 except (ValueError, TypeError):
@@ -610,6 +618,17 @@ class UtilityAgent:
     def _parse_abstract_constraint(self, response: str, principle: str) -> Optional[int]:
         """Parse abstract constraint descriptions like 'practical maximum'."""
         response_lower = response.lower()
+        
+        # First check for negative numbers - if found, return None to trigger retry
+        import re
+        negative_patterns = [
+            r'-\s*\$?\d+',  # -$1000 or -1000
+            r'\$\s*-\s*\d+',  # $-1000
+            r'negative\s+\d+',  # negative 1000
+        ]
+        for pattern in negative_patterns:
+            if re.search(pattern, response_lower):
+                return None  # Trigger retry for negative values
         
         # Look for abstract constraint terms
         if any(term in response_lower for term in [
@@ -664,13 +683,30 @@ class UtilityAgent:
                     constraint_amount = None
                     if 'constraint' in principle_key:
                         constraint_amount = self._extract_constraint_amount_robust(response, principle_key)
+                        # Validate constraint amount - if invalid, set to None to trigger retry
+                        if constraint_amount is not None and constraint_amount <= 0:
+                            constraint_amount = None
                     
-                    return PrincipleChoice(
-                        principle=JusticePrinciple(principle_key),
-                        constraint_amount=constraint_amount,
-                        certainty=CertaintyLevel.SURE,
-                        reasoning=response
-                    )
+                    # For constraint principles with None constraint, use a temporary bypass
+                    if ('constraint' in principle_key and constraint_amount is None):
+                        # Create with temporary valid constraint that will pass Pydantic validation
+                        temp_constraint = 1  # Temporary positive value to pass Pydantic validation
+                        choice = PrincipleChoice(
+                            principle=JusticePrinciple(principle_key),
+                            constraint_amount=temp_constraint,
+                            certainty=CertaintyLevel.SURE,
+                            reasoning=response
+                        )
+                        # Override with None after creation to trigger retry logic
+                        choice.constraint_amount = None
+                        return choice
+                    else:
+                        return PrincipleChoice(
+                            principle=JusticePrinciple(principle_key),
+                            constraint_amount=constraint_amount,
+                            certainty=CertaintyLevel.SURE,
+                            reasoning=response
+                        )
             
             # Ultimate fallback - default choice
             return PrincipleChoice(

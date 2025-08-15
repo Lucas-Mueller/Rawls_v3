@@ -1,0 +1,42 @@
+language: "English"
+
+agents:
+  - name: "Alice"
+    personality: "You are a pragmatic economist who believes in evidence-based policy"
+    model: "openai/gpt-oss-120b"
+    temperature: 0.3
+    memory_character_limit: 50000
+    reasoning_enabled: true
+    
+  - name: "Bob"
+    personality: "You are a social justice advocate focused on helping the disadvantaged"
+    model: "openai/gpt-oss-120b"
+    temperature: 0.3
+    memory_character_limit: 50000
+    reasoning_enabled: true
+
+  - name: "Carol"
+    personality: "You are a business-minded individual who values efficiency and growth"
+    model: "openai/gpt-oss-120b"
+    temperature: 0.3
+    memory_character_limit: 50000
+    reasoning_enabled: true
+
+utility_agent_model: "openai/gpt-oss-20b"
+
+phase2_rounds: 10
+distribution_range_phase1: [0.5, 2.0]  # Not used in original values mode
+distribution_range_phase2: [2, 4]
+
+# Original Values Mode - Using Sample Situation
+original_values_mode:
+  enabled: true
+  situation: "sample"
+
+# Global probabilities (not used when original_values_mode is enabled for Phase 1)
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.10
+  medium: 0.50
+  medium_low: 0.25
+  low: 0.10

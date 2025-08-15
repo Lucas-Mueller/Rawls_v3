@@ -134,6 +134,7 @@ ls experiment_results_*.json
 - **Tracing**: Uses OpenAI Agents SDK tracing with one trace per run
 - **Validation**: Built-in validation for agent responses, especially for constraint specifications
 - **Randomization**: Dynamic income distributions with configurable multiplier ranges
+- **Original Values Mode**: Fixed predefined distributions for experimental consistency
 
 ### Code Architecture
 
@@ -146,7 +147,8 @@ The system follows a modular, service-oriented architecture with clear separatio
   - `experiment_manager.py`: Main coordinator with OpenAI SDK tracing
   - `phase1_manager.py`: Parallel individual agent familiarization
   - `phase2_manager.py`: Sequential group discussion and consensus
-  - `distribution_generator.py`: Dynamic income distribution creation
+  - `distribution_generator.py`: Dynamic income distribution creation and original values mode
+  - `original_values_data.py`: Predefined distribution situations for experimental consistency
 - **`experiment_agents/`**: AI agent implementations
   - `participant_agent.py`: Main experimental subjects with configurable personalities
   - `utility_agent.py`: Specialized agent for response parsing and validation
@@ -198,6 +200,31 @@ The system follows a modular, service-oriented architecture with clear separatio
 - **Dependencies**: Core dependencies are `openai-agents`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`) - avoid adding unnecessary packages
 
 ## Important Implementation Details
+
+### Original Values Mode
+
+The system supports an "Original Values Mode" for Phase 1 that uses predefined distribution sets instead of randomly generated ones. This mode is useful for experimental consistency and comparison studies.
+
+#### Configuration
+```yaml
+# Enable original values mode
+original_values_mode:
+  enabled: true                    # Use predefined distributions
+  situation: "sample"              # Choose situation: sample, a, b, c, d
+```
+
+#### Available Situations
+- **Sample**: Baseline distributions with standard 5/10/50/25/10 probability weighting
+- **Situation A**: Higher upper-class probability (10%) with 10/20/40/20/10 weighting
+- **Situation B**: Higher medium-low probability with 6.3/20.8/28.3/34.5/10 weighting  
+- **Situation C**: Extreme high-income outlier with 1.3/4.3/58.3/26/10 weighting
+- **Situation D**: Graduated middle-class focus with 5/20.8/28.3/35.8/10 weighting
+
+#### Behavior
+- **Phase 1**: Uses predefined distributions and situation-specific probabilities
+- **Phase 2**: Uses normal dynamic generation (unaffected)
+- **Logging**: Mode and situation are tracked in experiment results
+- **Backward Compatibility**: Mode disabled by default; existing experiments unchanged
 
 ### Error Handling & Recovery
 - **Standardized Error Framework**: All modules use consistent error categorization (memory, validation, communication, system, experiment logic)
