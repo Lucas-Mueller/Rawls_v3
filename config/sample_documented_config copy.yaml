@@ -16,13 +16,6 @@ agents:
     memory_character_limit: 75000
     reasoning_enabled: true
 
-  - name: "Carol"
-    personality: "Business-minded individual valuing efficiency and growth"
-    model: "anthropic/claude-sonnet-4"
-    temperature: 0.5
-    memory_character_limit: 50000
-    reasoning_enabled: false
-
 utility_agent_model: "openai/gpt-4.1-nano"
 utility_agent_temperature: 0 
 
@@ -31,7 +24,6 @@ original_values_mode:
 
 distribution_range_phase1: [0.5, 2.0]
 distribution_range_phase2: [4.0, 8.0]
-
 
 income_class_probabilities:
   high: 0.05
@@ -43,4 +35,3 @@ income_class_probabilities:
 
 
 
-  
