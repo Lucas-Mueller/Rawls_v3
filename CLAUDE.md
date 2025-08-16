@@ -16,6 +16,10 @@ source .venv/bin/activate  # On macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Core dependencies: openai-agents[litellm], python-dotenv, pydantic, PyYAML
+# Analysis libraries: pandas, numpy, matplotlib, seaborn, scipy, statsmodels, plotly
+# Additional: tqdm, diagrams
 ```
 
 ### Running the System
@@ -82,6 +86,8 @@ python -m unittest tests.unit.test_memory_manager -v
 python -m unittest tests.integration.test_complete_experiment_flow -v
 python -m unittest tests.integration.test_error_recovery -v
 python -m unittest tests.integration.test_state_consistency -v
+
+# Note: No linting/formatting commands configured - system relies on code review
 ```
 
 ### Environment Requirements
@@ -197,7 +203,7 @@ The system follows a modular, service-oriented architecture with clear separatio
 - **Simplicity**: "As simple as possible and as complex as necessary"
 - **Logging**: Agent-centric JSON logging system tracking all inputs/outputs
 - **Configuration**: All experimental parameters configurable via YAML files
-- **Dependencies**: Core dependencies are `openai-agents`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`) - avoid adding unnecessary packages
+- **Dependencies**: Core dependencies are `openai-agents[litellm]`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`, `plotly`) and utilities (`tqdm`, `diagrams`) - avoid adding unnecessary packages
 
 ## Important Implementation Details
 

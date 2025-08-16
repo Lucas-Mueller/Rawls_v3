@@ -1,0 +1,41 @@
+
+graph TD
+    Start[Group Discussion<br/>Begins] --> Round[Discussion Round]
+    
+    subgraph "Discussion Process"
+        Round --> Speak[Random Speaking<br/>Order]
+        Speak --> Statement[Agent Makes<br/>Statement]
+        Statement --> Check[Check for<br/>Vote Proposal]
+        Check --> AllSpoke{All Agents<br/>Spoken?}
+        AllSpoke -->|No| Speak
+        AllSpoke -->|Yes| VoteProp{Vote<br/>Proposed?}
+    end
+    
+    VoteProp -->|No| NextRound{Max Rounds<br/>Reached?}
+    NextRound -->|No| Round
+    NextRound -->|Yes| NoConsensus[No Consensus<br/>Random Payoff]
+    
+    VoteProp -->|Yes| VoteAgree[Check Vote<br/>Agreement]
+    VoteAgree --> Unanimous{All Agree<br/>to Vote?}
+    Unanimous -->|No| Round
+    
+    Unanimous -->|Yes| SecretVote[Secret Ballot<br/>Voting]
+    SecretVote --> CountVotes[Count & Validate<br/>Votes]
+    CountVotes --> Consensus{Consensus<br/>Reached?}
+    
+    Consensus -->|No| Round
+    Consensus -->|Yes| Success[Consensus Success<br/>Apply Principle]
+    
+    NoConsensus --> End[Experiment<br/>Continues]
+    Success --> End
+    
+    %% Styling
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px
+    classDef process fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef outcome fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class Start,End start
+    class Round,Speak,Statement,Check,VoteAgree,SecretVote,CountVotes process
+    class AllSpoke,VoteProp,NextRound,Unanimous,Consensus decision
+    class NoConsensus,Success outcome

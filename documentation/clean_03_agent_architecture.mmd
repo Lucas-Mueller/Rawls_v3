@@ -1,0 +1,49 @@
+
+graph LR
+    subgraph "Agent Core"
+        Agent[Participant Agent]
+        Memory[Agent Memory<br/>50,000 chars]
+        Bank[Bank Account<br/>Earnings Tracker]
+    end
+    
+    subgraph "Processing Pipeline"
+        Prompt[Experimental<br/>Prompt]
+        LLM[Language Model<br/>Provider]
+        Response[Agent Response]
+        Parse[Utility Agent<br/>Parser]
+        Validate[Response<br/>Validator]
+    end
+    
+    subgraph "Economic System"
+        Distribution[Income<br/>Distribution]
+        Assignment[Class<br/>Assignment]
+        Earnings[Earnings<br/>Calculation]
+        Update[Balance<br/>Update]
+    end
+    
+    %% Flow
+    Prompt --> Agent
+    Agent --> Memory
+    Agent --> LLM
+    LLM --> Response
+    Response --> Parse
+    Parse --> Validate
+    
+    Validate --> Distribution
+    Distribution --> Assignment
+    Assignment --> Earnings
+    Earnings --> Bank
+    Bank --> Update
+    Update --> Memory
+    
+    %% Feedback loop
+    Memory -.-> Agent
+    
+    %% Styling
+    classDef agentCore fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef processing fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef economic fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class Agent,Memory,Bank agentCore
+    class Prompt,LLM,Response,Parse,Validate processing
+    class Distribution,Assignment,Earnings,Update economic

@@ -1,10 +1,10 @@
 {
   "common": {
     "principle_names": {
-      "maximizing_floor": "Aprovechar al máximo el suelo",
-      "maximizing_average": "Maximizar la media",
-      "maximizing_average_floor_constraint": "Maximización de la media con una restricción de suelo",
-      "maximizing_average_range_constraint": "Maximización de la media con una restricción de rango"
+      "maximizing_floor": "Maximizar el ingreso mínimo",
+      "maximizing_average": "Maximizar el ingreso promedio",
+      "maximizing_average_floor_constraint": "Maximizar el ingreso promedio con restricción de ingreso mínimo",
+      "maximizing_average_range_constraint": "Maximizar el ingreso promedio con restricción de rango"
     },
     "income_classes": {
       "high": "Alta",

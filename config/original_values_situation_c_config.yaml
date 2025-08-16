@@ -23,15 +23,15 @@ agents:
     reasoning_enabled: true
 
 utility_agent_model: "openai/gpt-oss-20b"
+utility_agent_temperature: 0.0
 
 phase2_rounds: 10
 distribution_range_phase1: [0.5, 2.0]  # Not used in original values mode
 distribution_range_phase2: [2, 4]
 
-# Original Values Mode - Using Situation C (extreme inequality with high outlier)
+# Original Values Mode - Enabled (automatically cycles through scenarios)
 original_values_mode:
   enabled: true
-  situation: "c"
 
 # Global probabilities (not used when original_values_mode is enabled for Phase 1)
 income_class_probabilities:

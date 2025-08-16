@@ -24,6 +24,7 @@ agents:
 
 # Utility agent model (also test non-temperature supporting model)
 utility_agent_model: "gpt-5-nano-2025-08-07"
+utility_agent_temperature: 0.2
 
 phase2_rounds: 3
 distribution_range_phase1: [0.5, 2.0]

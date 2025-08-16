@@ -1,0 +1,46 @@
+
+graph TD
+    Start[Agent Initialization<br/>Balance: $0.00] --> P1[Phase 1 Earnings]
+    
+    subgraph "Phase 1 Earnings Cycle"
+        P1 --> Choose[Choose Justice<br/>Principle]
+        Choose --> Apply[Apply Principle<br/>to Distribution]
+        Apply --> Assign[Random Class<br/>Assignment]
+        Assign --> Earn[Calculate Earnings<br/>$1 per $10,000 income]
+        Earn --> Update1[Update Bank<br/>Balance]
+        Update1 --> Memory1[Update Agent<br/>Memory]
+        Memory1 --> NextRound{Next Round?}
+        NextRound -->|Yes<br/>Round 2,3,4| Choose
+        NextRound -->|No| P1Complete[Phase 1 Complete<br/>Total Earnings]
+    end
+    
+    P1Complete --> P2[Phase 2 Discussion]
+    
+    subgraph "Phase 2 Economic Stakes"
+        P2 --> Discuss[Group Discussion<br/>with P1 Earnings Context]
+        Discuss --> Outcome{Group Outcome}
+        Outcome -->|Consensus| GroupPay[Apply Agreed<br/>Principle]
+        Outcome -->|No Consensus| RandomPay[Random<br/>Assignment]
+        GroupPay --> P2Earn[Phase 2<br/>Earnings]
+        RandomPay --> P2Earn
+        P2Earn --> Final[Final Total<br/>Earnings]
+    end
+    
+    Final --> Analysis[Economic Behavior<br/>Analysis]
+    
+    %% Economic feedback
+    Memory1 -.->|Influences<br/>Future Decisions| Choose
+    P1Complete -.->|Stakes Context| Discuss
+    
+    %% Styling
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px
+    classDef phase1 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef phase2 fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef economic fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef decision fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    
+    class Start start
+    class Choose,Apply,Assign,Earn,Update1,Memory1 phase1
+    class Discuss,GroupPay,RandomPay,P2Earn phase2
+    class P1Complete,Final,Analysis economic
+    class NextRound,Outcome decision

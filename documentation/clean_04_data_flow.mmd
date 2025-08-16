@@ -1,0 +1,52 @@
+
+graph TB
+    subgraph "Data Sources"
+        Agents[Agent Interactions]
+        System[System Events]
+        Errors[Error Events]
+    end
+    
+    subgraph "Collection & Processing"
+        Logger[Agent-Centric<br/>Logger]
+        Processor[Data Processor]
+        Validator[Data Validator]
+    end
+    
+    subgraph "Storage"
+        ExperimentDB[(Experimental<br/>Data)]
+        ConfigDB[(Configuration<br/>Archive)]
+        TraceDB[(Trace Data)]
+    end
+    
+    subgraph "Analysis & Export"
+        JSON[JSON Export]
+        CSV[CSV Export]
+        Stats[Statistical<br/>Analysis]
+    end
+    
+    %% Flow
+    Agents --> Logger
+    System --> Logger
+    Errors --> Logger
+    
+    Logger --> Processor
+    Processor --> Validator
+    
+    Validator --> ExperimentDB
+    Validator --> ConfigDB
+    Validator --> TraceDB
+    
+    ExperimentDB --> JSON
+    ExperimentDB --> CSV
+    ExperimentDB --> Stats
+    
+    %% Styling
+    classDef source fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef process fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef storage fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef export fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class Agents,System,Errors source
+    class Logger,Processor,Validator process
+    class ExperimentDB,ConfigDB,TraceDB storage
+    class JSON,CSV,Stats export

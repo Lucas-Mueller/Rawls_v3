@@ -1,0 +1,85 @@
+
+graph LR
+    subgraph "1. Configuration"
+        Config[YAML Configuration]
+        Models[Pydantic Models]
+    end
+    
+    subgraph "2. Experiment Setup"
+        ExpMgr[Experiment Manager]
+        Init[Initialize Agents<br/>& Bank Accounts]
+    end
+    
+    subgraph "3. Phase 1 Execution"
+        Phase1[Phase 1 Manager]
+        P1Process[Individual Learning<br/>4 Application Rounds]
+        Distributions[Distribution Generator]
+    end
+    
+    subgraph "4. Phase 2 Execution"  
+        Phase2[Phase 2 Manager]
+        P2Process[Group Discussion<br/>& Consensus]
+        Consensus[Consensus Detection]
+    end
+    
+    subgraph "5. AI Agent Layer"
+        Participants[Participant Agents<br/>5 Agents]
+        Utility[Utility Agents<br/>Parser & Validator]
+        LLMs[Language Models<br/>OpenAI, Anthropic, Google]
+    end
+    
+    subgraph "6. Core Systems"
+        Memory[Memory Management]
+        Bank[Bank Account System]
+    end
+    
+    subgraph "7. Data & Results"
+        Logger[Agent-Centric Logger]
+        Storage[Experimental Data]
+        Export[Analysis Export]
+    end
+    
+    %% Process Flow Connections (Left to Right)
+    Config --> ExpMgr
+    Models --> ExpMgr
+    ExpMgr --> Init
+    Init --> Phase1
+    
+    Phase1 --> P1Process
+    P1Process --> Phase2
+    Phase2 --> P2Process
+    P2Process --> Logger
+    
+    %% Supporting System Connections
+    Phase1 --> Distributions
+    Phase2 --> Consensus
+    
+    P1Process --> Participants
+    P2Process --> Participants
+    Participants --> Utility
+    Participants --> LLMs
+    
+    Participants --> Memory
+    Participants --> Bank
+    
+    %% Data Flow
+    Participants --> Logger
+    Logger --> Storage
+    Storage --> Export
+    
+    %% Styling
+    classDef configClass fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef setupClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef phase1Class fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef phase2Class fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef agentClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef coreClass fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef dataClass fill:#fafafa,stroke:#424242,stroke-width:2px
+    
+    class Config,Models configClass
+    class ExpMgr,Init setupClass
+    class Phase1,P1Process,Distributions phase1Class
+    class Phase2,P2Process,Consensus phase2Class
+    class Participants,Utility,LLMs agentClass
+    class Memory,Bank coreClass
+    class Logger,Storage,Export dataClass

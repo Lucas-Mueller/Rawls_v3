@@ -1,0 +1,41 @@
+
+graph TD
+    Start([Experiment Start]) --> Init[Initialize Agents & Accounts]
+    
+    Init --> P1Start[Phase 1: Individual Learning]
+    
+    subgraph "Phase 1 Process"
+        P1Start --> InitRank[Initial Principle Ranking]
+        InitRank --> Learn[Learn Principle Applications]
+        Learn --> Apply[Apply Principles<br/>4 Rounds with Earnings]
+        Apply --> FinalRank[Final Principle Ranking]
+    end
+    
+    FinalRank --> P2Start[Phase 2: Group Discussion]
+    
+    subgraph "Phase 2 Process"
+        P2Start --> Discuss[Group Discussion<br/>Multiple Rounds]
+        Discuss --> VoteCheck{Vote Proposed?}
+        VoteCheck -->|No| Discuss
+        VoteCheck -->|Yes| Vote[Secret Ballot Vote]
+        Vote --> Consensus{Consensus<br/>Reached?}
+        Consensus -->|No| CheckRounds{Max Rounds<br/>Reached?}
+        CheckRounds -->|No| Discuss
+        CheckRounds -->|Yes| Random[Random Payoff]
+        Consensus -->|Yes| Apply2[Apply Agreed Principle]
+    end
+    
+    Random --> Final[Final Rankings & Results]
+    Apply2 --> Final
+    Final --> End([Experiment Complete])
+    
+    %% Styling
+    classDef startEnd fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px
+    classDef phase1 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef phase2 fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class Start,End startEnd
+    class InitRank,Learn,Apply,FinalRank phase1
+    class Discuss,Vote,Apply2,Random phase2
+    class VoteCheck,Consensus,CheckRounds decision

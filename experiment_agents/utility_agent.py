@@ -27,12 +27,13 @@ logger = logging.getLogger(__name__)
 class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
-    def __init__(self, utility_model: str = None):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0):
         # Use environment variable or default for utility agents
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
         
         self.utility_model = utility_model
+        self.temperature = temperature
         self.temperature_info = None
         self.language_manager = get_language_manager()
         
@@ -63,7 +64,7 @@ class UtilityAgent:
             self.parser_agent, self.temperature_info = await create_agent_with_temperature_retry(
                 agent_class=Agent,
                 model_string=self.utility_model,
-                temperature=0.0,  # Utility agents use temp 0
+                temperature=self.temperature,
                 agent_kwargs=parser_kwargs
             )
             
@@ -76,7 +77,7 @@ class UtilityAgent:
             self.validator_agent, _ = await create_agent_with_temperature_retry(
                 agent_class=Agent,
                 model_string=self.utility_model,
-                temperature=0.0,  # Utility agents use temp 0
+                temperature=self.temperature,
                 agent_kwargs=validator_kwargs
             )
             

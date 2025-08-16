@@ -1,0 +1,46 @@
+language: "English" 
+phase2_rounds: 10
+
+agents:
+  - name: "Alice"
+    personality: "Analytical economist focused on evidence-based policy"
+    model: "moonshotai/kimi-k2"     
+    temperature: 0.3                 
+    memory_character_limit: 50000    
+    reasoning_enabled: true          
+
+  - name: "Bob"
+    personality: "Social justice advocate focused on disadvantaged populations"
+    model: "google/gemini-2.5-flash"
+    temperature: 0.7
+    memory_character_limit: 75000
+    reasoning_enabled: true
+
+  - name: "Carol"
+    personality: "Business-minded individual valuing efficiency and growth"
+    model: "anthropic/claude-sonnet-4"
+    temperature: 0.5
+    memory_character_limit: 50000
+    reasoning_enabled: false
+
+utility_agent_model: "openai/gpt-4.1-nano"
+utility_agent_temperature: 0 
+
+original_values_mode:
+  enabled: true
+
+distribution_range_phase1: [0.5, 2.0]
+distribution_range_phase2: [4.0, 8.0]
+
+
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.10
+  medium: 0.50
+  medium_low: 0.25
+  low: 0.10
+
+
+
+
+  
