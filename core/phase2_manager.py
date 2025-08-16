@@ -17,6 +17,7 @@ from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from utils.language_manager import get_language_manager
+from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
 
 
 class Phase2Manager:
@@ -26,6 +27,14 @@ class Phase2Manager:
         self.participants = participants
         self.utility_agent = utility_agent
         self.logger = None  # Will be set in run_phase2
+        self.error_handler = ExperimentErrorHandler()
+        self.validation_stats = {
+            "total_statement_requests": 0,
+            "successful_statements": 0,
+            "failed_validations": 0,
+            "retry_attempts": 0,
+            "fallback_statements": 0
+        }
     
     def _log_info(self, message: str):
         """Safe logging helper."""
@@ -36,6 +45,157 @@ class Phase2Manager:
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
+    
+    def _validate_statement(self, statement: str, participant_name: str) -> bool:
+        """
+        Validate that a statement is non-empty and meaningful.
+        
+        Args:
+            statement: The statement to validate
+            participant_name: Name of the participant for logging
+            
+        Returns:
+            True if statement is valid, False otherwise
+        """
+        if not statement:
+            self._log_warning(f"Empty statement received from {participant_name}")
+            return False
+            
+        if not statement.strip():
+            self._log_warning(f"Whitespace-only statement received from {participant_name}")
+            return False
+            
+        # Check for minimum meaningful content (at least 10 characters after stripping)
+        if len(statement.strip()) < 10:
+            self._log_warning(f"Statement too short from {participant_name}: '{statement.strip()}'")
+            return False
+            
+        self._log_info(f"Valid statement received from {participant_name} ({len(statement.strip())} characters)")
+        return True
+    
+    def _log_validation_statistics(self):
+        """Log final validation statistics for the experiment."""
+        self._log_info("=== STATEMENT VALIDATION STATISTICS ===")
+        self._log_info(f"Total statement requests: {self.validation_stats['total_statement_requests']}")
+        self._log_info(f"Successful statements: {self.validation_stats['successful_statements']}")
+        self._log_info(f"Failed validations: {self.validation_stats['failed_validations']}")
+        self._log_info(f"Total retry attempts: {self.validation_stats['retry_attempts']}")
+        self._log_info(f"Fallback statements used: {self.validation_stats['fallback_statements']}")
+        
+        if self.validation_stats['total_statement_requests'] > 0:
+            success_rate = (self.validation_stats['successful_statements'] / 
+                          self.validation_stats['total_statement_requests']) * 100
+            self._log_info(f"Success rate: {success_rate:.1f}%")
+        
+        if self.validation_stats['successful_statements'] > 0:
+            avg_retries = (self.validation_stats['retry_attempts'] / 
+                          self.validation_stats['successful_statements'])
+            self._log_info(f"Average retries per successful statement: {avg_retries:.2f}")
+        
+        self._log_info("=== END VALIDATION STATISTICS ===")
+        
+        return self.validation_stats.copy()
+    
+    async def _get_participant_statement_with_retry(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        discussion_state: GroupDiscussionState,
+        agent_config: AgentConfiguration,
+        max_retries: int = 3
+    ) -> tuple[str, str]:
+        """
+        Get participant statement with retry logic for empty responses.
+        
+        Args:
+            participant: The participant agent
+            context: Current participant context
+            discussion_state: Current discussion state
+            agent_config: Agent configuration
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            tuple: (statement, round_content)
+            
+        Raises:
+            AgentCommunicationError: If all retry attempts fail
+        """
+        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
+        self.validation_stats["total_statement_requests"] += 1
+        
+        for attempt in range(max_retries):
+            try:
+                self._log_info(f"Getting statement from {participant.name} (attempt {attempt + 1}/{max_retries})")
+                
+                # Get statement from agent
+                result = await Runner.run(participant.agent, discussion_prompt, context=context)
+                statement = result.final_output
+                
+                # Validate the statement
+                if self._validate_statement(statement, participant.name):
+                    # Update statistics
+                    self.validation_stats["successful_statements"] += 1
+                    if attempt > 0:
+                        self.validation_stats["retry_attempts"] += attempt
+                    
+                    # Create round content for memory
+                    round_content = f"""Prompt: {discussion_prompt}
+Your Statement: {statement}
+Outcome: Made statement in Round {context.round_number} of group discussion."""
+                    
+                    if attempt > 0:
+                        self._log_info(f"Valid statement received from {participant.name} after {attempt + 1} attempts")
+                    
+                    return statement, round_content
+                else:
+                    # Statement validation failed
+                    self.validation_stats["failed_validations"] += 1
+                    
+                    if attempt < max_retries - 1:
+                        self._log_warning(f"Invalid statement from {participant.name}, retrying... (attempt {attempt + 1}/{max_retries})")
+                        
+                        # Modify prompt for retry to be more explicit
+                        discussion_prompt = f"""
+IMPORTANT: Your previous response was empty or too short. Please provide a meaningful response.
+
+{self._build_discussion_prompt(discussion_state, context.round_number)}
+
+Please ensure your response contains a clear statement about your position on the justice principles.
+                        """.strip()
+                    else:
+                        # All retries exhausted
+                        error_msg = f"Agent {participant.name} failed to provide valid statement after {max_retries} attempts"
+                        self._log_warning(error_msg)
+                        raise AgentCommunicationError(
+                            error_msg,
+                            ErrorSeverity.DEGRADED,
+                            context={
+                                "participant": participant.name,
+                                "round": context.round_number,
+                                "attempts": max_retries,
+                                "last_response": statement
+                            }
+                        )
+                        
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    # Final attempt failed with exception
+                    error_msg = f"Exception getting statement from {participant.name}: {str(e)}"
+                    self._log_warning(error_msg)
+                    raise AgentCommunicationError(
+                        error_msg,
+                        ErrorSeverity.DEGRADED,
+                        context={
+                            "participant": participant.name,
+                            "round": context.round_number,
+                            "attempts": max_retries,
+                            "exception": str(e)
+                        },
+                        cause=e
+                    )
+                else:
+                    self._log_warning(f"Exception on attempt {attempt + 1} for {participant.name}: {str(e)}, retrying...")
+                    continue
     
     async def run_phase2(
         self, 
@@ -132,9 +292,24 @@ class Phase2Manager:
                 balance_before = context.bank_balance
                 
                 # Get participant statement (with internal reasoning if enabled)
+                self._log_info(f"=== REQUESTING STATEMENT FROM {participant.name} ===")
+                self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
+                
                 statement, statement_content, internal_reasoning = await self._get_participant_statement_enhanced(
                     participant, context, discussion_state, agent_config
                 )
+                
+                # Log statement validation results
+                is_fallback = statement.startswith(f"[{participant.name} failed to provide")
+                self._log_info(f"=== STATEMENT RECEIVED FROM {participant.name} ===")
+                self._log_info(f"Statement length: {len(statement)} characters")
+                self._log_info(f"Is fallback statement: {is_fallback}")
+                if is_fallback:
+                    self._log_warning(f"FALLBACK STATEMENT USED for {participant.name} in round {round_num}")
+                
+                # Log first 100 characters of statement for debugging
+                statement_preview = statement[:100] + "..." if len(statement) > 100 else statement
+                self._log_info(f"Statement preview: {statement_preview}")
                 
                 discussion_state.add_statement(participant.name, statement)
                 
@@ -205,6 +380,9 @@ class Phase2Manager:
                             )
                         
                         if vote_result.consensus_reached:
+                            # Log validation statistics before returning
+                            self._log_validation_statistics()
+                            
                             return GroupDiscussionResult(
                                 consensus_reached=True,
                                 agreed_principle=vote_result.agreed_principle,
@@ -214,6 +392,9 @@ class Phase2Manager:
                             )
         
         # No consensus reached
+        # Log validation statistics before returning
+        self._log_validation_statistics()
+        
         return GroupDiscussionResult(
             consensus_reached=False,
             final_round=config.phase2_rounds,
@@ -268,7 +449,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         discussion_state: GroupDiscussionState,
         agent_config: AgentConfiguration
     ) -> tuple[str, str, str]:
-        """Get participant's statement with separated internal reasoning."""
+        """Get participant's statement with separated internal reasoning and validation."""
         
         # If reasoning is enabled, ask for internal reasoning first
         internal_reasoning = ""
@@ -277,18 +458,34 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             reasoning_result = await Runner.run(participant.agent, reasoning_prompt, context=context)
             internal_reasoning = reasoning_result.final_output
         
-        # Get public statement
-        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
-        result = await Runner.run(participant.agent, discussion_prompt, context=context)
-        statement = result.final_output
-        
-        # Create round content for memory
-        round_content = f"""Prompt: {discussion_prompt}
+        # Get public statement with validation and retry logic
+        try:
+            statement, base_round_content = await self._get_participant_statement_with_retry(
+                participant, context, discussion_state, agent_config
+            )
+            
+            # Create enhanced round content for memory with reasoning
+            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number)}
 Internal Reasoning: {internal_reasoning}
 Your Public Statement: {statement}
 Outcome: Made statement in Round {context.round_number} of group discussion."""
-        
-        return statement, round_content, internal_reasoning
+            
+            return statement, round_content, internal_reasoning
+            
+        except AgentCommunicationError as e:
+            # Log the error and use fallback statement
+            self._log_warning(f"Agent communication error for {participant.name}: {str(e)}")
+            self.validation_stats["fallback_statements"] += 1
+            
+            # Provide a fallback statement indicating the issue
+            fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
+            
+            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number)}
+Internal Reasoning: {internal_reasoning}
+Your Public Statement: {fallback_statement}
+Outcome: Failed to provide valid statement in Round {context.round_number} after retries."""
+            
+            return fallback_statement, round_content, internal_reasoning
     
     def _extract_favored_principle(self, statement: str) -> str:
         """Extract favored principle from participant statement."""
