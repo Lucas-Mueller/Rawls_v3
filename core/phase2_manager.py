@@ -270,6 +270,8 @@ Please ensure your response contains a clear statement about your position on th
         """Run sequential group discussion with voting."""
         
         discussion_state = GroupDiscussionState()
+        # Set valid participants for isolation protection
+        discussion_state.valid_participants = [agent.name for agent in config.agents]
         last_round_starter = None
         
         for round_num in range(1, config.phase2_rounds + 1):

@@ -2,6 +2,7 @@
 Core experiment data structures for the Frohlich Experiment.
 """
 import math
+import uuid
 from enum import Enum
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -137,9 +138,18 @@ class GroupDiscussionState(BaseModel):
     statements: List[DiscussionStatement] = Field(default_factory=list)
     vote_history: List[VoteResult] = Field(default_factory=list)
     public_history: str = ""
+    experiment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    valid_participants: Optional[List[str]] = None
     
     def add_statement(self, participant_name: str, statement: str):
-        """Add statement to public history."""
+        """Add statement to public history with participant validation."""
+        # Validate participant if valid_participants is set
+        if self.valid_participants and participant_name not in self.valid_participants:
+            raise ValueError(
+                f"Invalid participant '{participant_name}' not in configured agents: {self.valid_participants}. "
+                f"Experiment ID: {self.experiment_id}"
+            )
+        
         statement_obj = DiscussionStatement(
             participant_name=participant_name,
             statement=statement,
