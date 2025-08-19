@@ -18,6 +18,7 @@ agents:
 
 # Utility agent model
 utility_agent_model: "gpt-4.1-mini"
+utility_agent_temperature: 0.0
 
 phase2_rounds: 5
 distribution_range_phase1: [0.5, 2.0]

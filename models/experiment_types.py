@@ -1,10 +1,11 @@
 """
 Core experiment data structures for the Frohlich Experiment.
 """
+import math
 from enum import Enum
 from typing import List, Optional, Dict
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from .principle_types import PrincipleChoice, PrincipleRanking, VoteResult
 
 
@@ -23,6 +24,29 @@ class IncomeClass(str, Enum):
     LOW = "low"
 
 
+class IncomeClassProbabilities(BaseModel):
+    """Probabilities for income class assignment."""
+    high: float = Field(default=0.05, ge=0, le=1)
+    medium_high: float = Field(default=0.10, ge=0, le=1)
+    medium: float = Field(default=0.50, ge=0, le=1)
+    medium_low: float = Field(default=0.25, ge=0, le=1)
+    low: float = Field(default=0.10, ge=0, le=1)
+    
+    @field_validator('high', 'medium_high', 'medium', 'medium_low', 'low')
+    @classmethod
+    def validate_probability_range(cls, v):
+        if not 0 <= v <= 1:
+            raise ValueError('Probabilities must be between 0 and 1')
+        return v
+    
+    @model_validator(mode='after')
+    def validate_probabilities_sum_to_one(self):
+        total = self.high + self.medium_high + self.medium + self.medium_low + self.low
+        if not math.isclose(total, 1.0, rel_tol=1e-9):
+            raise ValueError(f'Probabilities must sum to 1.0, got {total}')
+        return self
+
+
 class IncomeDistribution(BaseModel):
     """A single income distribution with five income levels."""
     high: int = Field(..., gt=0)
@@ -39,9 +63,20 @@ class IncomeDistribution(BaseModel):
         """Get the lowest income (floor)."""
         return self.low
     
-    def get_average_income(self) -> float:
-        """Get the average income across all classes."""
-        return (self.high + self.medium_high + self.medium + self.medium_low + self.low) / 5
+    def get_average_income(self, probabilities: Optional['IncomeClassProbabilities'] = None) -> float:
+        """Get the average income across all classes with optional weighting."""
+        if probabilities is None:
+            # Backward compatibility: equal weights
+            return (self.high + self.medium_high + self.medium + self.medium_low + self.low) / 5
+        
+        # Weighted average calculation
+        return (
+            self.high * probabilities.high +
+            self.medium_high * probabilities.medium_high +
+            self.medium * probabilities.medium +
+            self.medium_low * probabilities.medium_low +
+            self.low * probabilities.low
+        )
     
     def get_range(self) -> int:
         """Get the range (high - low)."""

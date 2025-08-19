@@ -83,7 +83,7 @@ class Phase1Manager:
         
         # 1.2 Detailed Explanation (informational only)
         context.round_number = -1  # Special round for learning
-        explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config)
+        explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config, config)
         
         # Log detailed explanation
         if logger:
@@ -132,13 +132,19 @@ class Phase1Manager:
             balance_before = context.bank_balance
             memory_before = context.memory
             
-            # Generate dynamic distribution for this round
-            distribution_set = DistributionGenerator.generate_dynamic_distribution(
-                config.distribution_range_phase1
-            )
+            # Generate or retrieve distribution for this round
+            if config.original_values_mode and config.original_values_mode.enabled:
+                # Use predefined distributions from original values mode
+                # Round 1 -> Situation A, Round 2 -> Situation B, etc.
+                distribution_set = DistributionGenerator.get_original_values_distribution(round_num)
+            else:
+                # Generate dynamic distribution (existing behavior)
+                distribution_set = DistributionGenerator.generate_dynamic_distribution(
+                    config.distribution_range_phase1
+                )
             
             result, round_content = await self._step_1_3_principle_application(
-                participant, context, distribution_set, round_num, agent_config
+                participant, context, distribution_set, round_num, agent_config, config
             )
             application_results.append(result)
             
@@ -228,11 +234,12 @@ Outcome: Completed initial ranking of justice principles."""
         self,
         participant: ParticipantAgent,
         context: ParticipantContext, 
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        config: ExperimentConfiguration
     ) -> str:
         """Step 1.2: Detailed explanation of principles applied to distributions."""
         
-        explanation_prompt = self._build_detailed_explanation_prompt()
+        explanation_prompt = self._build_detailed_explanation_prompt(config)
         
         # This is informational only - no structured response needed
         result = await Runner.run(participant.agent, explanation_prompt, context=context)
@@ -250,7 +257,8 @@ Outcome: Learned how each justice principle is applied to income distributions t
         context: ParticipantContext,
         distribution_set,
         round_num: int,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        config: ExperimentConfiguration
     ) -> tuple[ApplicationResult, str]:
         """Step 1.3: Single round of principle application."""
         
@@ -281,13 +289,21 @@ Outcome: Learned how each justice principle is applied to income distributions t
             
             retry_count += 1
         
+        # Determine probabilities to use
+        if config.original_values_mode and config.original_values_mode.enabled:
+            # Use round-specific probabilities (Round 1->A, Round 2->B, etc.)
+            probabilities = DistributionGenerator.get_original_values_probabilities(round_num)
+        else:
+            # Use global configuration probabilities
+            probabilities = config.income_class_probabilities
+        
         # Apply principle to distributions
         chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distribution_set.distributions, parsed_choice
+            distribution_set.distributions, parsed_choice, probabilities
         )
         
         # Calculate payoff and income class assignment
-        assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
+        assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities)
         
         # Calculate alternative earnings by principle (not just distribution)
         alternative_earnings_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
@@ -423,10 +439,22 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
         language_manager = get_language_manager()
         return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
     
-    def _build_detailed_explanation_prompt(self) -> str:
+    def _build_detailed_explanation_prompt(self, config: ExperimentConfiguration = None) -> str:
         """Build prompt for detailed explanation of principles."""
         language_manager = get_language_manager()
-        return language_manager.get("prompts.phase1_detailed_principles_explanation")
+        
+        # If original values mode is enabled, use Sample situation distributions for explanation
+        if config and config.original_values_mode and config.original_values_mode.enabled:
+            sample_distribution_set = DistributionGenerator.get_sample_distribution()
+            distributions_table = DistributionGenerator.format_distributions_table(
+                sample_distribution_set.distributions
+            )
+            
+            # Build explanation with Sample distributions
+            base_explanation = language_manager.get("prompts.phase1_detailed_principles_explanation")
+            return f"{base_explanation}\n\nHere are some example distributions to help you understand:\n\n{distributions_table}"
+        else:
+            return language_manager.get("prompts.phase1_detailed_principles_explanation")
     
     def _build_post_explanation_ranking_prompt(self) -> str:
         """Build prompt for post-explanation ranking."""

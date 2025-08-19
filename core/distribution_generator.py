@@ -6,6 +6,7 @@ from typing import List, Tuple, Optional
 from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
+from models.experiment_types import IncomeClassProbabilities
 from utils.language_manager import get_language_manager
 
 
@@ -48,9 +49,65 @@ class DistributionGenerator:
         return DistributionSet(distributions=distributions, multiplier=multiplier)
     
     @staticmethod
+    def get_original_values_distribution(round_number: int) -> DistributionSet:
+        """Get predefined distribution set for original values mode based on round number."""
+        from .original_values_data import OriginalValuesData
+        
+        # Map round numbers to situations:
+        # Round 1 -> Situation A, Round 2 -> Situation B, etc.
+        situation_map = {
+            1: "a",
+            2: "b", 
+            3: "c",
+            4: "d"
+        }
+        
+        situation = situation_map.get(round_number)
+        if not situation:
+            raise ValueError(f"Original values mode only supports rounds 1-4, got round {round_number}")
+            
+        distributions = OriginalValuesData.get_distributions(situation)
+        return DistributionSet(distributions=distributions, multiplier=1.0)
+
+    @staticmethod
+    def get_original_values_probabilities(round_number: int) -> IncomeClassProbabilities:
+        """Get situation-specific probabilities for original values mode based on round number."""
+        from .original_values_data import OriginalValuesData
+        
+        # Map round numbers to situations:
+        # Round 1 -> Situation A, Round 2 -> Situation B, etc.
+        situation_map = {
+            1: "a",
+            2: "b",
+            3: "c", 
+            4: "d"
+        }
+        
+        situation = situation_map.get(round_number)
+        if not situation:
+            raise ValueError(f"Original values mode only supports rounds 1-4, got round {round_number}")
+            
+        return OriginalValuesData.get_probabilities(situation)
+    
+    @staticmethod
+    def get_sample_distribution() -> DistributionSet:
+        """Get sample distribution set for explanations in original values mode."""
+        from .original_values_data import OriginalValuesData
+        
+        distributions = OriginalValuesData.get_distributions("sample")
+        return DistributionSet(distributions=distributions, multiplier=1.0)
+
+    @staticmethod
+    def get_sample_probabilities() -> IncomeClassProbabilities:
+        """Get sample probabilities for explanations in original values mode."""
+        from .original_values_data import OriginalValuesData
+        return OriginalValuesData.get_probabilities("sample")
+    
+    @staticmethod
     def apply_principle_to_distributions(
         distributions: List[IncomeDistribution],
-        principle: PrincipleChoice
+        principle: PrincipleChoice,
+        probabilities: Optional[IncomeClassProbabilities] = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply justice principle logic and return chosen distribution + explanation."""
         
@@ -58,16 +115,16 @@ class DistributionGenerator:
             return DistributionGenerator._apply_maximizing_floor(distributions)
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE:
-            return DistributionGenerator._apply_maximizing_average(distributions)
+            return DistributionGenerator._apply_maximizing_average(distributions, probabilities)
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
             return DistributionGenerator._apply_maximizing_average_floor_constraint(
-                distributions, principle.constraint_amount
+                distributions, principle.constraint_amount, probabilities
             )
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT:
             return DistributionGenerator._apply_maximizing_average_range_constraint(
-                distributions, principle.constraint_amount
+                distributions, principle.constraint_amount, probabilities
             )
         
         else:
@@ -81,16 +138,21 @@ class DistributionGenerator:
         return best_dist, explanation
     
     @staticmethod
-    def _apply_maximizing_average(distributions: List[IncomeDistribution]) -> Tuple[IncomeDistribution, str]:
-        """Apply maximizing average principle - choose distribution with highest average."""
-        best_dist = max(distributions, key=lambda d: d.get_average_income())
-        explanation = f"Chose distribution with highest average income: ${best_dist.get_average_income():.0f}"
+    def _apply_maximizing_average(
+        distributions: List[IncomeDistribution], 
+        probabilities: Optional[IncomeClassProbabilities] = None
+    ) -> Tuple[IncomeDistribution, str]:
+        """Apply maximizing average principle with weighted calculation."""
+        best_dist = max(distributions, key=lambda d: d.get_average_income(probabilities))
+        avg_income = best_dist.get_average_income(probabilities)
+        explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average income: ${avg_income:.0f}"
         return best_dist, explanation
     
     @staticmethod
     def _apply_maximizing_average_floor_constraint(
         distributions: List[IncomeDistribution], 
-        floor_constraint: int
+        floor_constraint: int,
+        probabilities: Optional[IncomeClassProbabilities] = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing average with floor constraint."""
         # Filter distributions that meet floor constraint
@@ -102,15 +164,17 @@ class DistributionGenerator:
             explanation = f"No distribution met floor constraint of ${floor_constraint}. Chose distribution with highest floor: ${best_dist.low}"
         else:
             # Among valid distributions, choose one with highest average
-            best_dist = max(valid_distributions, key=lambda d: d.get_average_income())
-            explanation = f"Chose distribution with highest average (${best_dist.get_average_income():.0f}) meeting floor constraint of ${floor_constraint}"
+            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
+            avg_income = best_dist.get_average_income(probabilities)
+            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting floor constraint of ${floor_constraint}"
         
         return best_dist, explanation
     
     @staticmethod
     def _apply_maximizing_average_range_constraint(
         distributions: List[IncomeDistribution],
-        range_constraint: int
+        range_constraint: int,
+        probabilities: Optional[IncomeClassProbabilities] = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing average with range constraint."""
         # Filter distributions that meet range constraint
@@ -122,22 +186,36 @@ class DistributionGenerator:
             explanation = f"No distribution met range constraint of ${range_constraint}. Chose distribution with smallest range: ${best_dist.get_range()}"
         else:
             # Among valid distributions, choose one with highest average
-            best_dist = max(valid_distributions, key=lambda d: d.get_average_income())
-            explanation = f"Chose distribution with highest average (${best_dist.get_average_income():.0f}) meeting range constraint of ${range_constraint}"
+            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
+            avg_income = best_dist.get_average_income(probabilities)
+            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting range constraint of ${range_constraint}"
         
         return best_dist, explanation
     
     @staticmethod
-    def calculate_payoff(distribution: IncomeDistribution) -> Tuple[IncomeClass, float]:
-        """Randomly assign participant to income class and calculate payoff."""
-        # Randomly assign to one of the five income classes
+    def calculate_payoff(
+        distribution: IncomeDistribution, 
+        probabilities: Optional[IncomeClassProbabilities] = None
+    ) -> Tuple[IncomeClass, float]:
+        """Assign participant to income class using weighted probabilities."""
         income_classes = list(IncomeClass)
-        assigned_class = random.choice(income_classes)
         
-        # Get income for assigned class
+        if probabilities is None:
+            # Backward compatibility: equal probabilities
+            assigned_class = random.choice(income_classes)
+        else:
+            # Weighted random selection
+            weights = [
+                probabilities.high,
+                probabilities.medium_high,
+                probabilities.medium,
+                probabilities.medium_low,
+                probabilities.low
+            ]
+            assigned_class = random.choices(income_classes, weights=weights, k=1)[0]
+        
+        # Get income and calculate payoff
         income = distribution.get_income_by_class(assigned_class)
-        
-        # Calculate payoff: $1 for every $10,000 of income
         payoff = income / 10000.0
         
         return assigned_class, payoff

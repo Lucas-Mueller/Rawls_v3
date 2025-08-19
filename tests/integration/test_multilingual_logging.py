@@ -68,7 +68,7 @@ class TestMultilingualLogging(unittest.TestCase):
         english_name = get_english_principle_name(principle_key)
         
         assert spanish_name != english_name
-        assert spanish_name == "Aprovechar al máximo el suelo"
+        assert spanish_name == "Maximizar el ingreso mínimo"
         assert english_name == "Maximizing the floor"
         
         # Test certainty levels are different between languages
@@ -95,7 +95,7 @@ class TestMultilingualLogging(unittest.TestCase):
         english_name = get_english_principle_name(principle_key)
         
         assert mandarin_name != english_name
-        assert mandarin_name == "最大化平均值"
+        assert mandarin_name == "最大化平均收入"
         assert english_name == "Maximizing the average"
 
     def test_utility_agent_logging_consistency(self):
@@ -147,7 +147,7 @@ class TestMultilingualLogging(unittest.TestCase):
         english_principle = get_english_principle_name("maximizing_floor")
         
         # Verify they are different and correct
-        assert spanish_principle == "Aprovechar al máximo el suelo"
+        assert spanish_principle == "Maximizar el ingreso mínimo"
         assert english_principle == "Maximizing the floor" 
         
         # Verify global language is still Spanish after English function call

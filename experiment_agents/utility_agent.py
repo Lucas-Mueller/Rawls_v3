@@ -17,7 +17,8 @@ from utils.error_handling import (
     ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
     handle_experiment_errors
 )
-from utils.model_provider import create_model_config
+from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
+from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 from utils.language_manager import get_language_manager, get_english_principle_name
 
 logger = logging.getLogger(__name__)
@@ -26,32 +27,86 @@ logger = logging.getLogger(__name__)
 class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
-    def __init__(self, utility_model: str = None):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0):
         # Use environment variable or default for utility agents
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
         
-        model_config = create_model_config(utility_model)
-        
-        # Get language manager for instructions
+        self.utility_model = utility_model
+        self.temperature = temperature
+        self.temperature_info = None
         self.language_manager = get_language_manager()
         
-        # Both OpenAI and LiteLLM models use the same Agent pattern
-        self.parser_agent = Agent(
-            name="Response Parser",
-            instructions=self.language_manager.get_parser_instructions(),
-            model=model_config
-        )
-        self.validator_agent = Agent(
-            name="Response Validator", 
-            instructions=self.language_manager.get_validator_instructions(),
-            model=model_config
-        )
+        # Agents will be created in async_init
+        self.parser_agent = None
+        self.validator_agent = None
+        self._initialization_complete = False
         
         # Enhanced parsing patterns
         self._principle_patterns = self._compile_principle_patterns()
         self._certainty_patterns = self._compile_certainty_patterns()
         self._ranking_patterns = self._compile_ranking_patterns()
+        
+    async def async_init(self):
+        """Asynchronously initialize utility agents with dynamic temperature detection."""
+        if self._initialization_complete:
+            return
+        
+        try:
+            logger.info(f"Creating utility agents with model: {self.utility_model}")
+            
+            # Create parser agent with dynamic temperature detection
+            parser_kwargs = {
+                "name": "Response Parser",
+                "instructions": self.language_manager.get_parser_instructions(),
+            }
+            
+            self.parser_agent, self.temperature_info = await create_agent_with_temperature_retry(
+                agent_class=Agent,
+                model_string=self.utility_model,
+                temperature=self.temperature,
+                agent_kwargs=parser_kwargs
+            )
+            
+            # Create validator agent (reuse temperature info since it's the same model)
+            validator_kwargs = {
+                "name": "Response Validator", 
+                "instructions": self.language_manager.get_validator_instructions(),
+            }
+            
+            self.validator_agent, _ = await create_agent_with_temperature_retry(
+                agent_class=Agent,
+                model_string=self.utility_model,
+                temperature=self.temperature,
+                agent_kwargs=validator_kwargs
+            )
+            
+            # Log temperature status
+            self._log_temperature_status()
+            
+            self._initialization_complete = True
+            logger.info(f"✅ Utility agents initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize utility agents: {e}")
+            raise e
+            
+    def _log_temperature_status(self):
+        """Log temperature detection status for utility agent."""
+        if not self.temperature_info:
+            return
+            
+        temp_info = self.temperature_info
+        detection_method = temp_info.get('detection_method', 'unknown')
+        
+        if not temp_info.get("supports_temperature", False):
+            was_retried = temp_info.get('was_retried', False)
+            if was_retried:
+                logger.info(f"🔄 Utility agent: Temperature not supported, automatically retried without temperature (method: {detection_method})")
+            else:
+                logger.info(f"Utility agent: Using default behavior, temperature not supported (method: {detection_method})")
+        else:
+            logger.info(f"✅ Utility agent: Temperature support confirmed (method: {detection_method})")
     
     # Old instruction methods replaced by language manager calls
     
@@ -62,6 +117,9 @@ class UtilityAgent:
     )
     async def parse_principle_choice(self, response: str) -> PrincipleChoice:
         """Parse principle choice from participant response."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         error_handler = get_global_error_handler()
         
         parse_prompt = self.language_manager.get_principle_choice_parsing_prompt(response)
@@ -119,6 +177,9 @@ class UtilityAgent:
     )
     async def parse_principle_ranking(self, response: str) -> PrincipleRanking:
         """Parse principle ranking from participant response."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         parse_prompt = self.language_manager.get_principle_ranking_parsing_prompt(response)
         
         try:
@@ -240,6 +301,9 @@ class UtilityAgent:
     
     async def extract_vote_from_statement(self, statement: str) -> Optional[VoteProposal]:
         """Detect if participant is proposing a vote."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
         detection_prompt = self.language_manager.get_vote_detection_prompt(statement)
         
         result = await Runner.run(self.parser_agent, detection_prompt)
@@ -397,6 +461,10 @@ class UtilityAgent:
             reasoning = data.get('reasoning', '')
             constraint_amount = self._extract_constraint_amount_robust(reasoning, principle.value)
         
+        # Validate constraint amount before creating PrincipleChoice
+        if (constraint_amount is not None and constraint_amount <= 0):
+            constraint_amount = None  # Set to None to trigger retry logic
+        
         return PrincipleChoice(
             principle=principle,
             constraint_amount=constraint_amount,
@@ -494,14 +562,14 @@ class UtilityAgent:
     def _extract_constraint_amount_robust(self, response: str, principle: str) -> Optional[int]:
         """Enhanced constraint amount extraction with multiple patterns and fuzzy matching."""
         
-        # Pattern 1: Direct amount matching with various formats
+        # Pattern 1: Direct amount matching with various formats (including negative detection)
         amount_patterns = [
-            r'(\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" format first
-            r'\$?(\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000 or 20,000
-            r'(\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k or 20 thousand
-            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # floor of $20,000
-            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(\d{1,3}(?:,\d{3})*)', # constraint of $20,000
-            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
+            r'(-?\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" or "-20k" format first
+            r'\$?(-?\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000, -20,000, or $-20,000
+            r'(-?\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k, -20k or 20 thousand
+            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # floor of $20,000 or $-20,000
+            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # constraint of $20,000
+            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
         ]
         
         for pattern in amount_patterns:
@@ -517,17 +585,21 @@ class UtilityAgent:
                     elif re.search(r'\b' + re.escape(match) + r'\s*(?:k|thousand)', response, re.IGNORECASE):
                         amount *= 1000
                     
-                    # Convert to int for consistency
-                    return int(amount)
+                    # Convert to int and validate
+                    amount_int = int(amount)
+                    # Return None for invalid values to trigger retry logic
+                    if amount_int <= 0:
+                        continue
+                    return amount_int
                 except (ValueError, TypeError):
                     continue
         
         # Pattern 2: Contextual amount extraction (look for numbers near constraint keywords)
         constraint_context_patterns = [
-            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(\d{1,3}(?:,\d{3})*)',
-            r'\$?(\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
-            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
-            r'\$?(\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
+            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(-?\d{1,3}(?:,\d{3})*)',
+            r'\$?(-?\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
+            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(-?\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
+            r'\$?(-?\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
         ]
         
         for pattern in constraint_context_patterns:
@@ -535,7 +607,7 @@ class UtilityAgent:
             for match in matches:
                 try:
                     amount = int(match.replace(',', ''))
-                    # Reasonable range check (between $1,000 and $100,000)
+                    # Reasonable range check (between $1,000 and $100,000) and positive
                     if 1000 <= amount <= 100000:
                         return amount
                 except (ValueError, TypeError):
@@ -547,6 +619,17 @@ class UtilityAgent:
     def _parse_abstract_constraint(self, response: str, principle: str) -> Optional[int]:
         """Parse abstract constraint descriptions like 'practical maximum'."""
         response_lower = response.lower()
+        
+        # First check for negative numbers - if found, return None to trigger retry
+        import re
+        negative_patterns = [
+            r'-\s*\$?\d+',  # -$1000 or -1000
+            r'\$\s*-\s*\d+',  # $-1000
+            r'negative\s+\d+',  # negative 1000
+        ]
+        for pattern in negative_patterns:
+            if re.search(pattern, response_lower):
+                return None  # Trigger retry for negative values
         
         # Look for abstract constraint terms
         if any(term in response_lower for term in [
@@ -601,13 +684,30 @@ class UtilityAgent:
                     constraint_amount = None
                     if 'constraint' in principle_key:
                         constraint_amount = self._extract_constraint_amount_robust(response, principle_key)
+                        # Validate constraint amount - if invalid, set to None to trigger retry
+                        if constraint_amount is not None and constraint_amount <= 0:
+                            constraint_amount = None
                     
-                    return PrincipleChoice(
-                        principle=JusticePrinciple(principle_key),
-                        constraint_amount=constraint_amount,
-                        certainty=CertaintyLevel.SURE,
-                        reasoning=response
-                    )
+                    # For constraint principles with None constraint, use a temporary bypass
+                    if ('constraint' in principle_key and constraint_amount is None):
+                        # Create with temporary valid constraint that will pass Pydantic validation
+                        temp_constraint = 1  # Temporary positive value to pass Pydantic validation
+                        choice = PrincipleChoice(
+                            principle=JusticePrinciple(principle_key),
+                            constraint_amount=temp_constraint,
+                            certainty=CertaintyLevel.SURE,
+                            reasoning=response
+                        )
+                        # Override with None after creation to trigger retry logic
+                        choice.constraint_amount = None
+                        return choice
+                    else:
+                        return PrincipleChoice(
+                            principle=JusticePrinciple(principle_key),
+                            constraint_amount=constraint_amount,
+                            certainty=CertaintyLevel.SURE,
+                            reasoning=response
+                        )
             
             # Ultimate fallback - default choice
             return PrincipleChoice(
@@ -660,6 +760,8 @@ class UtilityAgent:
     
     async def _improve_response_format(self, response: str, parse_type: str) -> str:
         """Use parser agent to improve response format."""
+        # Ensure utility agent is initialized
+        await self.async_init()
         
         format_prompt = self._get_format_improvement_prompt(response, parse_type)
         result = await Runner.run(self.parser_agent, format_prompt)
