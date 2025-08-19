@@ -12,3 +12,7 @@ scipy
 statsmodels
 plotly
 diagrams
+
+# R programming language 
+# R package "languageserver" 
+# Python 3.11+    
