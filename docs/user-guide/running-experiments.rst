@@ -1,0 +1,439 @@
+Running Experiments
+==================
+
+This guide provides comprehensive instructions for running Frohlich Experiments with different configurations, model providers, and execution modes.
+
+Basic Execution
+---------------
+
+Default Configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+Run an experiment with the default settings:
+
+.. code-block:: bash
+
+   python main.py
+
+This executes using ``config/default_config.yaml`` with these defaults:
+- 3 agents using mixed model providers
+- Mandarin language interface  
+- 10 rounds of Phase 2 discussion
+- Original Values Mode enabled
+
+Custom Configuration Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Specify a custom configuration file:
+
+.. code-block:: bash
+
+   python main.py path/to/your/config.yaml
+
+**Available Example Configurations:**
+
+.. code-block:: bash
+
+   # Multi-language experiments
+   python main.py config/spanish_config.yaml
+   python main.py config/mandarin_config.yaml
+   
+   # Mixed model providers
+   python main.py config/mixed_models_example.yaml
+   
+   # Custom configurations
+   python main.py my_custom_config.yaml
+
+Output Control
+~~~~~~~~~~~~~~
+
+Control where results are saved:
+
+.. code-block:: bash
+
+   # Default: experiment_results_YYYYMMDD_HHMMSS.json
+   python main.py config.yaml
+   
+   # Custom output file
+   python main.py config.yaml results/my_experiment.json
+   
+   # Organized by date
+   python main.py config.yaml results/2025-08-19/experiment_01.json
+
+Execution Modes
+---------------
+
+Standard Mode
+~~~~~~~~~~~~~
+
+Standard sequential execution (default):
+
+.. code-block:: bash
+
+   python main.py
+
+**Process Flow:**
+1. Load and validate configuration
+2. Initialize agents (parallel for Phase 1 efficiency)
+3. Execute Phase 1: Individual familiarization (parallel)
+4. Execute Phase 2: Group discussion (sequential)
+5. Generate comprehensive results and tracing links
+
+Jupyter Notebook Mode
+~~~~~~~~~~~~~~~~~~~~~
+
+For interactive experimentation and analysis:
+
+.. code-block:: python
+
+   from utils.experiment_runner import (
+       generate_random_config, 
+       run_experiment, 
+       run_experiments_parallel,
+       generate_and_save_configs
+   )
+
+   # Single experiment with random configuration
+   config = generate_random_config(num_agents=3, num_rounds=20)
+   results = run_experiment(config)
+   print(f"Consensus reached: {results.phase2_results.consensus_reached}")
+
+**Batch Experiment Generation:**
+
+.. code-block:: python
+
+   # Generate multiple config files for systematic studies
+   generate_and_save_configs(
+       num_configs=10, 
+       save_path="hypothesis_2_&_4/configs/condition_1"
+   )
+
+**Parallel Execution:**
+
+.. code-block:: python
+
+   # Run multiple experiments simultaneously
+   config_files = [
+       "config/experiment_1.yaml",
+       "config/experiment_2.yaml", 
+       "config/experiment_3.yaml"
+   ]
+   
+   results = run_experiments_parallel(
+       config_files, 
+       max_parallel=5  # Adjust based on system resources
+   )
+
+Model Provider Configuration
+----------------------------
+
+OpenAI Models
+~~~~~~~~~~~~~
+
+Use standard OpenAI models:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Alice"
+       model: "gpt-4.1-mini"        # Standard OpenAI
+       model: "gpt-4-turbo"         # More powerful
+       model: "gpt-3.5-turbo"       # Cost-effective
+
+   utility_agent_model: "gpt-4.1-mini"
+
+**Environment Setup:**
+
+.. code-block:: bash
+
+   export OPENAI_API_KEY="your-openai-key"
+
+OpenRouter Models
+~~~~~~~~~~~~~~~~~
+
+Access alternative model providers via OpenRouter:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Bob"
+       model: "google/gemini-2.5-flash"              # Google
+       model: "anthropic/claude-3-5-sonnet-20241022" # Anthropic  
+       model: "meta-llama/llama-3.1-70b-instruct"    # Meta
+       model: "mistralai/mistral-large"               # Mistral
+
+   utility_agent_model: "google/gemini-2.5-flash"
+
+**Environment Setup:**
+
+.. code-block:: bash
+
+   export OPENROUTER_API_KEY="your-openrouter-key"
+
+Mixed Model Experiments
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Combine different model providers in a single experiment:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Alice"
+       model: "gpt-4.1-mini"                    # OpenAI
+     - name: "Bob"  
+       model: "google/gemini-2.5-flash"        # OpenRouter
+     - name: "Carol"
+       model: "anthropic/claude-3-5-sonnet"    # OpenRouter
+
+   utility_agent_model: "gpt-4.1-mini"         # OpenAI for parsing
+
+Language Configuration
+----------------------
+
+Multi-Language Support
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The system supports full experimental execution in multiple languages:
+
+.. code-block:: yaml
+
+   language: "english"   # Default
+   language: "spanish"   # Full Spanish interface
+   language: "mandarin"  # Full Mandarin interface
+
+**Language-Specific Files:**
+- ``config/spanish_config.yaml`` - Pre-configured Spanish experiment
+- ``config/mandarin_config.yaml`` - Pre-configured Mandarin experiment  
+- ``translations/`` - Complete translation files for all languages
+
+**Key Features:**
+- All agent prompts translated to target language
+- Justice principle names in target language
+- Agent discussions conducted in target language
+- Results logging remains in English for consistency
+
+Advanced Configuration
+----------------------
+
+Agent Personality Tuning
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Customize agent behavior through personality descriptions:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Analytical_Alice"
+       personality: "You are analytical and methodical. You value systematic approaches to fairness and carefully weigh evidence before making decisions."
+       
+     - name: "Empathetic_Bob"
+       personality: "You are empathetic and community-focused. You prioritize social welfare and consider the human impact of distribution decisions."
+       
+     - name: "Pragmatic_Carol"
+       personality: "You are pragmatic and results-oriented. You focus on practical solutions that can actually be implemented effectively."
+
+Temperature and Reasoning Control
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fine-tune agent decision-making:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Consistent_Agent"
+       temperature: 0.0              # Deterministic responses
+       reasoning_enabled: true       # Detailed reasoning
+       
+     - name: "Creative_Agent"
+       temperature: 0.8              # More creative responses
+       reasoning_enabled: true
+       
+     - name: "Simple_Agent"
+       temperature: 0.3              # Moderate creativity
+       reasoning_enabled: false      # Simpler responses
+
+Memory Configuration
+~~~~~~~~~~~~~~~~~~~~
+
+Control agent memory management:
+
+.. code-block:: yaml
+
+   agents:
+     - name: "Standard_Agent"
+       memory_character_limit: 50000    # Default limit
+       
+     - name: "Extended_Agent"  
+       memory_character_limit: 100000   # Larger memory for complex discussions
+       
+     - name: "Focused_Agent"
+       memory_character_limit: 25000    # Smaller memory for focused responses
+
+Phase Configuration
+~~~~~~~~~~~~~~~~~~~
+
+Customize experiment phases:
+
+.. code-block:: yaml
+
+   # Phase 2 discussion rounds
+   phase2_rounds: 5                    # Quick experiment
+   phase2_rounds: 10                   # Standard  
+   phase2_rounds: 20                   # Extended discussion
+
+   # Income distribution ranges for Phase 2
+   distribution_range_phase2: [2, 6]   # Narrow range
+   distribution_range_phase2: [4, 8]   # Standard
+   distribution_range_phase2: [1, 10]  # Wide range
+
+Original Values Mode
+~~~~~~~~~~~~~~~~~~~~
+
+Use predefined distribution sets for consistency:
+
+.. code-block:: yaml
+
+   original_values_mode:
+     enabled: true
+     situation: "sample"    # Options: sample, a, b, c, d
+
+**Situations:**
+- ``sample``: Standard baseline distributions
+- ``a``: Higher upper-class probability (10%)
+- ``b``: Higher medium-low probability  
+- ``c``: Extreme high-income outlier
+- ``d``: Graduated middle-class focus
+
+Monitoring and Debugging
+------------------------
+
+Real-Time Monitoring
+~~~~~~~~~~~~~~~~~~~~
+
+Monitor experiment progress through console output:
+
+.. code-block:: text
+
+   Starting Frohlich Experiment...
+   ✅ Experiment manager initialized with 3 participants
+   Phase 1: Individual agent familiarization (parallel execution)
+   ✅ Alice completed principle applications
+   ✅ Bob completed principle applications  
+   ✅ Carol completed principle applications
+   Phase 2: Group discussion and consensus building
+   Round 1: Discussion and voting...
+   ✅ Consensus reached on principle: Maximizing floor income
+   Experiment completed successfully!
+   Results saved to: experiment_results_20250819_105130.json
+
+OpenAI Tracing
+~~~~~~~~~~~~~~~
+
+Each experiment includes detailed tracing links:
+
+1. **Find Trace URL**: Located in experiment results JSON
+2. **Access Platform**: Visit https://platform.openai.com/traces
+3. **Debug Interactions**: View complete agent conversation flows
+4. **Analyze Performance**: Review response times and token usage
+
+Error Handling
+~~~~~~~~~~~~~~
+
+The system includes comprehensive error recovery:
+
+**Memory Errors**: Automatic retry with memory cleanup
+**API Errors**: Exponential backoff and retry mechanisms  
+**Validation Errors**: Detailed error messages with suggested fixes
+**Network Errors**: Automatic retries with graceful fallback
+
+**Error Reporting**: All errors are categorized and logged with:
+- Error type classification
+- Retry attempt counts
+- Recovery success rates
+- Performance impact metrics
+
+Performance Optimization
+------------------------
+
+Resource Management
+~~~~~~~~~~~~~~~~~~~
+
+Optimize system performance:
+
+.. code-block:: yaml
+
+   # Reduce memory usage
+   agents:
+     - memory_character_limit: 25000    # Smaller memory footprint
+       
+   # Reduce discussion complexity  
+   phase2_rounds: 5                     # Fewer rounds
+   
+   # Use faster models
+   agents:
+     - model: "gpt-4.1-mini"            # Fast OpenAI model
+     - model: "google/gemini-2.5-flash" # Fast OpenRouter model
+
+Parallel Execution Tips
+~~~~~~~~~~~~~~~~~~~~~~~
+
+For Jupyter batch processing:
+
+.. code-block:: python
+
+   # Optimize parallel execution
+   results = run_experiments_parallel(
+       config_files,
+       max_parallel=3  # Start conservative, increase based on API limits
+   )
+
+**Best Practices:**
+- Monitor API rate limits
+- Start with lower parallelism and scale up
+- Use different model providers to distribute load
+- Consider time-based batching for large studies
+
+Troubleshooting
+---------------
+
+Common Issues
+~~~~~~~~~~~~~
+
+**Configuration Errors:**
+
+.. code-block:: text
+
+   Error: Agent configuration invalid
+   → Check YAML syntax and required fields
+   
+**API Key Issues:**
+
+.. code-block:: text
+
+   Error: Authentication failed  
+   → Verify API keys in environment variables
+   
+**Memory Limit Exceeded:**
+
+.. code-block:: text
+
+   Error: Agent memory exceeded limit
+   → Reduce memory_character_limit or enable memory cleanup
+
+**Model Not Available:**
+
+.. code-block:: text
+
+   Error: Model not supported
+   → Check model name spelling and provider availability
+
+Getting Help
+~~~~~~~~~~~~
+
+1. **Check Error Messages**: Read detailed error output for specific guidance
+2. **Review Configuration**: Validate YAML syntax and parameter values  
+3. **Test Basic Setup**: Run default configuration to verify system health
+4. **Check API Status**: Verify model provider service availability
+5. **Examine Traces**: Use OpenAI platform traces for detailed debugging
+
+For additional support, refer to :doc:`../contributing/testing` for diagnostic procedures.

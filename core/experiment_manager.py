@@ -25,7 +25,38 @@ logger = logging.getLogger(__name__)
 
 
 class FrohlichExperimentManager:
-    """Main manager for the complete two-phase Frohlich Experiment."""
+    """Main manager for the complete two-phase Frohlich Experiment.
+    
+    This class orchestrates the full experimental lifecycle, managing both
+    phases of the Frohlich Experiment: individual agent familiarization 
+    (Phase 1) and group discussion with consensus building (Phase 2).
+    
+    The manager handles:
+    - Asynchronous agent initialization with multi-model provider support
+    - Experiment tracing through OpenAI SDK integration
+    - Comprehensive error handling and recovery mechanisms  
+    - Agent-centric logging throughout the experiment
+    - Results compilation and statistical reporting
+    
+    Args:
+        config (ExperimentConfiguration): Complete experiment configuration 
+            including agent definitions, phase parameters, and system settings.
+            
+    Attributes:
+        config (ExperimentConfiguration): The experiment configuration
+        experiment_id (str): Unique identifier for this experiment instance
+        participants (List[ParticipantAgent]): List of participant agents
+        utility_agent (UtilityAgent): Agent for response parsing and validation
+        phase1_manager (Phase1Manager): Manager for individual familiarization
+        phase2_manager (Phase2Manager): Manager for group discussion
+        agent_logger (AgentCentricLogger): Centralized logging system
+        
+    Example:
+        >>> config = ExperimentConfiguration.from_yaml("config.yaml")
+        >>> manager = FrohlichExperimentManager(config)
+        >>> results = await manager.run_complete_experiment()
+        >>> print(f"Consensus: {results.phase2_results.consensus_reached}")
+    """
     
     def __init__(self, config: ExperimentConfiguration):
         self.config = config
@@ -46,7 +77,24 @@ class FrohlichExperimentManager:
         self._initialization_complete = False
         
     async def async_init(self):
-        """Asynchronously initialize the experiment manager."""
+        """Asynchronously initialize the experiment manager.
+        
+        Performs async initialization of all experiment components including:
+        - Participant agents with dynamic temperature configuration
+        - Utility agent for response parsing and validation
+        - Phase 1 manager for parallel individual processing
+        - Phase 2 manager for sequential group discussion
+        
+        This method must be called before running the experiment. It handles
+        model provider detection, agent initialization, and error recovery.
+        
+        Raises:
+            ExperimentLogicError: If initialization fails after all retry attempts
+            
+        Note:
+            This method is idempotent - multiple calls are safe and will not
+            re-initialize already initialized components.
+        """
         if self._initialization_complete:
             return
             

@@ -1,4 +1,4 @@
-language: "Mandarin" ## Alternatives: English, Spanish
+language: "English" ## Alternatives: English, Spanish
 
 agents:
   - name: "Agent_1"
@@ -40,4 +40,3 @@ income_class_probabilities:
 # Original Values Mode Configuration
 original_values_mode:
   enabled: true                 
-  situation: "sample"              # Options: sample, a, b, c, d
