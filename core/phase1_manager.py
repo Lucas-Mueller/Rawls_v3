@@ -75,9 +75,10 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -95,9 +96,10 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -117,9 +119,10 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -163,9 +166,13 @@ class Phase1Manager:
                     balance_before + result.earnings
                 )
             
-            # Update memory with agent
+            # Update memory with agent using new guidance style
+            from config import ExperimentConfiguration
+            config_obj: ExperimentConfiguration = config
+            memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
+            
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content
+                participant, context, round_content, memory_guidance_style=memory_guidance_style
             )
             
             # Update context with earnings
@@ -189,9 +196,10 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content
+            participant, context, final_content, memory_guidance_style=memory_guidance_style
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -368,18 +376,33 @@ Outcome: Learned how each justice principle is applied to income distributions t
             alt_income = int(alt_earnings * 10000)
             counterfactual_table += f"\n{principle_label:<40}  ${alt_income:,}    ${alt_earnings:.2f}"
         
-        # Create round content for memory with properly formatted principle name
-        chosen_principle_display = DistributionGenerator.format_principle_name_with_constraint(parsed_choice)
+        # Extract counterfactual highlights instead of full table
+        from utils.memory_content import build_phase1_delta, extract_counterfactual_highlights
         
-        round_content = language_manager.get(
-            "prompts.phase1_round_memory_template",
-            application_prompt=application_prompt,
-            text_response=text_response,
-            chosen_principle_display=chosen_principle_display,
-            round_num=round_num,
-            counterfactual_table=counterfactual_table,
+        counterfactual_highlights = extract_counterfactual_highlights(
+            alternative_earnings_same_class, earnings
+        )
+        
+        # Check if original values mode was used
+        original_values_mode = getattr(config, 'original_values_mode', None)
+        is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
+        original_situation = None
+        if is_original_values:
+            # Map round numbers to situations A, B, C, D
+            situation_map = {1: "A", 2: "B", 3: "C", 4: "D"}
+            original_situation = situation_map.get(round_num, "Unknown")
+        
+        # Create delta-focused round content
+        round_content = build_phase1_delta(
+            round_number=round_num,
+            principle_choice=parsed_choice,
+            assigned_class=assigned_class,
             earnings=earnings,
-            total_earnings=context.bank_balance + earnings
+            distribution_multiplier=distribution_set.multiplier,
+            rationale=text_response if len(text_response) <= 200 else None,
+            top_counterfactuals=counterfactual_highlights,
+            original_values_mode=is_original_values,
+            original_values_situation=original_situation
         )
         
         return application_result, round_content

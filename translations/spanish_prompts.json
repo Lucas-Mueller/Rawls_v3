@@ -46,6 +46,8 @@
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
     "phase2_default_constraint_specification": "No especificado",
     "memory_memory_update_prompt": "Repasa lo que acaba de suceder y actualiza tu memoria con todo lo que consideres importante para futuras decisiones en este experimento. Céntrate en la información que pueda influir en tus elecciones sobre los principios de justicia o ayudarte en los debates en grupo.\n\nMemoria Actual:\n{current_memory}\n\nActividad Reciente:\n{round_content}",
+    "memory_narrative_update_prompt": "Actualiza tu memoria de trabajo con nuevas ideas relevantes de la actividad reciente. Usa tu memoria como consideres apropiado - enfócate en lo que cambió y lo que aprendiste, no en repetir reglas o transcripciones. Siempre tendrás acceso a transcripciones y reglas actuales.\n\nMemoria Actual:\n{current_memory}\n\nActividad Reciente:\n{round_content}",
+    "memory_compression_prompt": "Tu memoria se acerca al límite de {memory_limit} caracteres. Por favor crea un resumen narrativo condensado de los insights y patrones más importantes de tu experiencia hasta ahora. Enfócate en decisiones clave, aprendizajes y cambios de estrategia. Longitud objetivo: aproximadamente {target_length} caracteres.\n\nMemoria Actual para Comprimir:\n{current_memory}",
     "memory_empty_memory_placeholder": "(Vacío)",
     "system_error_messages_memory_limit_exceeded": "Su memoria excede el límite de caracteres. Por favor, condensa tu memoria manteniendo la información más importante.",
     "system_error_messages_invalid_principle_choice": "Se ha detectado una elección de principio no válida. Por favor, seleccione uno de los cuatro principios de justicia disponibles.",

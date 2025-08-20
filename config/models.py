@@ -37,6 +37,11 @@ class ExperimentConfiguration(BaseModel):
     income_class_probabilities: Optional[IncomeClassProbabilities] = Field(None, description="Income class assignment probabilities (defaults to equal if not specified)")
     original_values_mode: Optional[OriginalValuesModeConfig] = Field(None, description="Original values mode configuration")
     
+    # Memory optimization config options
+    memory_guidance_style: str = Field("narrative", description="Memory guidance style: 'narrative' or 'structured'")
+    include_experiment_explanation_each_turn: bool = Field(False, description="Whether to include experiment explanation on every turn (default: only first turn per phase)")
+    phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
+    
     @field_validator('language')
     @classmethod
     def validate_language(cls, v):
@@ -53,6 +58,15 @@ class ExperimentConfiguration(BaseModel):
         valid_strategies = ["random", "fixed", "conversational"]
         if v not in valid_strategies:
             raise ValueError(f"Invalid speaking order strategy: {v}. Must be one of {valid_strategies}")
+        return v
+    
+    @field_validator('memory_guidance_style')
+    @classmethod
+    def validate_memory_guidance_style(cls, v):
+        """Validate memory guidance style is supported."""
+        valid_styles = ["narrative", "structured"]
+        if v not in valid_styles:
+            raise ValueError(f"Invalid memory guidance style: {v}. Must be one of {valid_styles}")
         return v
     
     @field_validator('distribution_range_phase1', 'distribution_range_phase2')

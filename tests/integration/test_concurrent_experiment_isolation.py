@@ -118,7 +118,7 @@ class TestConcurrentExperimentIsolation(unittest.TestCase):
         manager._get_participant_statement_with_retry = MagicMock(
             return_value=("Test statement", "Test content")
         )
-        manager._check_for_vote_agreement = MagicMock(return_value=(False, None))
+        manager._check_unanimous_vote_agreement = MagicMock(return_value=False)
         
         # Mock contexts
         contexts = [MagicMock() for _ in range(3)]

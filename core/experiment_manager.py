@@ -108,7 +108,7 @@ class FrohlichExperimentManager:
             
             # Initialize phase managers
             self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
-            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config)
             
             self._initialization_complete = True
             logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")
@@ -247,7 +247,7 @@ class FrohlichExperimentManager:
         logger.info(f"Creating {len(self.config.agents)} participant agents...")
         
         # Use dynamic temperature detection for all participants
-        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents)
+        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents, self.config)
         
         return participants
     

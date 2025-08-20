@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **Frohlich Experiment**: a multi-agent AI system implementing an experiment to simulate how AI agents interact with principles of justice and income distribution. The system is based on the OpenAI Agents SDK and implements a two-phase experimental design.
+This is the **Frohlich Experiment**: a multi-agent AI system implementing experiments to simulate how AI agents interact with principles of justice and income distribution. The system uses the OpenAI Agents SDK and implements a two-phase experimental design:
+
+- **Phase 1**: Individual agent familiarization with justice principles (parallel execution)
+- **Phase 2**: Group discussion and consensus building (sequential execution)
 
 ## Development Commands
 
@@ -86,8 +89,6 @@ python -m unittest tests.unit.test_memory_manager -v
 python -m unittest tests.integration.test_complete_experiment_flow -v
 python -m unittest tests.integration.test_error_recovery -v
 python -m unittest tests.integration.test_state_consistency -v
-
-# Note: No linting/formatting commands configured - system relies on code review
 ```
 
 ### Environment Requirements
@@ -107,103 +108,59 @@ OPENROUTER_API_KEY=your_openrouter_key_here
 # View experiment results and logs
 ls experiment_results_*.json
 
-# Check OpenAI trace links in experiment output
-# Results include trace URLs for debugging agent interactions
-
-# Monitor error handling during development
-# All modules use standardized error categorization with automatic retry logic
+# Results include trace URLs for debugging agent interactions at:
+# https://platform.openai.com/traces
 ```
 
 ## System Architecture
 
-### Core Components
+The system follows a modular, service-oriented architecture with the following **key design patterns**:
 
-1. **Two-Phase Experimental Design**:
-   - **Phase 1**: Individual agent familiarization with justice principles (runs in parallel)
-   - **Phase 2**: Group discussion and consensus building (runs sequentially)
-
-2. **Agent Types**:
-   - **Participant Agents**: Main experimental subjects with configurable personalities, models, and temperatures
-   - **Utility Agent**: Specialized agent for processing participant outputs and validating responses
-
-3. **Justice Principles**: Four principles agents must understand and apply:
-   - Maximizing floor income
-   - Maximizing average income  
-   - Maximizing average with floor constraint
-   - Maximizing average with range constraint
-
-### Key Features
-
-- **Configuration-driven**: Uses YAML files to specify agent properties, experiment parameters, and distribution ranges
-- **Multi-language Support**: Full experimental support for English, Spanish, and Mandarin with translated prompts and agents
-- **Agent-Managed Memory**: Agents create and manage their own memory (default 50,000 characters) with complete freedom over structure and content
-- **Tracing**: Uses OpenAI Agents SDK tracing with one trace per run
-- **Validation**: Built-in validation for agent responses, especially for constraint specifications
-- **Randomization**: Dynamic income distributions with configurable multiplier ranges
-- **Original Values Mode**: Fixed predefined distributions for experimental consistency
-
-### Code Architecture
-
-The system follows a modular, service-oriented architecture with clear separation of concerns:
-
-#### Core Structure
-- **`main.py`**: Single entry point with command-line argument parsing
-- **`config/`**: YAML-based configuration system with Pydantic models
-- **`core/`**: Experiment orchestration and phase management
-  - `experiment_manager.py`: Main coordinator with OpenAI SDK tracing
-  - `phase1_manager.py`: Parallel individual agent familiarization
-  - `phase2_manager.py`: Sequential group discussion and consensus
-  - `distribution_generator.py`: Dynamic income distribution creation and original values mode
-  - `original_values_data.py`: Predefined distribution situations for experimental consistency
-- **`experiment_agents/`**: AI agent implementations
-  - `participant_agent.py`: Main experimental subjects with configurable personalities
-  - `utility_agent.py`: Specialized agent for response parsing and validation
-- **`models/`**: Pydantic data models for type safety
-  - `experiment_types.py`: Core experiment structures (phases, distributions, results)
-  - `principle_types.py`: Justice principle choices and rankings
-  - `response_types.py`: Agent response schemas and validation
-  - `logging_types.py`: Logging and tracing data structures
-- **`utils/`**: Supporting utilities
-  - `memory_manager.py`: Agent-managed memory with character limits and retry logic
-  - `agent_centric_logger.py`: JSON logging system tracking agent inputs/outputs
-  - `error_handling.py`: Standardized error categorization with automatic retry mechanisms
-  - `language_manager.py`: Multi-language support with translation loading and management
-  - `model_provider.py`: Model provider abstraction for OpenAI and OpenRouter integration
-  - `experiment_runner.py`: Jupyter notebook utilities for batch experiments and parallel execution
-- **`tests/`**: Comprehensive testing infrastructure
-  - `unit/`: Component-level tests (models, memory manager, distribution generator, logger)
-  - `integration/`: End-to-end tests (complete experiment flow, error recovery, state consistency)
-  - `integration/fixtures/`: Test fixtures and setup utilities
-  - `integration/utils/`: Async testing utilities
-
-#### Key Design Patterns
 - **Configuration-driven**: All agent properties, experiment parameters, and distribution ranges specified via YAML
 - **Async/Await**: Full async implementation for efficient parallel execution in Phase 1
 - **Agent-Managed Memory**: Agents maintain configurable memory (default 50,000 characters) that they update themselves after each step
 - **Validation System**: Built-in validation for agent responses, especially constraint specifications
 - **Tracing Integration**: Uses OpenAI Agents SDK tracing with one trace per experiment run
 
-#### Special Directories
-- **`hypothesis_2_&_4/`**: Experimental condition directory with batch configs and analysis notebooks
-  - `configs/condition_1/`: Generated config files for hypothesis testing (config_01.yaml through config_10.yaml)
-  - `analysis.ipynb`: Jupyter notebook for result analysis
-  - `execution.ipynb`: Jupyter notebook for running experiments
-  - `parallel_execution_showcase.ipynb`: Demonstration of parallel execution capabilities
-  - `logs/`: Experiment output files and results
+### Core Components
 
-#### Reference Documentation
-- `knowledge_base/agents_sdk/`: Comprehensive OpenAI Agents SDK documentation and examples
-- `master_plan.md`: Complete experimental procedure and detailed system specifications
-- `translations/`: Multi-language support files (English, Spanish, Mandarin)
+- **Agent Types**:
+  - **Participant Agents**: Main experimental subjects with configurable personalities, models, and temperatures
+  - **Utility Agent**: Specialized agent for processing participant outputs and validating responses
+
+- **Justice Principles**: Four principles agents must understand and apply:
+  - Maximizing floor income, maximizing average income  
+  - Maximizing average with floor constraint, maximizing average with range constraint
+
+### Key Features
+
+- **Multi-language Support**: Full experimental support for English, Spanish, and Mandarin
+- **Original Values Mode**: Fixed predefined distributions for experimental consistency  
+- **Model Provider Support**: Both OpenAI models and OpenRouter models (via LiteLLM) with mixed configurations
+
+### Directory Structure
+
+- **`main.py`**: Single entry point with command-line argument parsing
+- **`config/`**: YAML-based configuration system with Pydantic models
+- **`core/`**: Experiment orchestration and phase management
+  - `experiment_manager.py`: Main coordinator with OpenAI SDK tracing
+  - `phase1_manager.py`, `phase2_manager.py`: Phase-specific execution logic
+  - `distribution_generator.py`: Dynamic income distribution creation
+  - `original_values_data.py`: Predefined distribution situations for experimental consistency
+- **`experiment_agents/`**: AI agent implementations
+  - `participant_agent.py`: Main experimental subjects with configurable personalities
+  - `utility_agent.py`: Specialized agent for response parsing and validation
+- **`models/`**: Pydantic data models for type safety (experiment_types, principle_types, response_types, logging_types)
+- **`utils/`**: Supporting utilities (memory_manager, agent_centric_logger, error_handling, language_manager, model_provider, experiment_runner)
+- **`tests/`**: Unit and integration tests with fixtures and async testing utilities
+- **`translations/`**: Multi-language support files (English, Spanish, Mandarin)
+- **`hypothesis_2_&_4/`**: Experimental condition directory with batch configs and analysis notebooks
 
 ## Development Guidelines
 
-- **Modularity**: System follows service-oriented architecture principles  
-- **Testing**: Always run `python run_tests.py` before committing changes - includes import validation, unit tests, and integration tests with comprehensive error handling and state consistency validation
-- **Simplicity**: "As simple as possible and as complex as necessary"
-- **Logging**: Agent-centric JSON logging system tracking all inputs/outputs
+- **Testing**: Always run `python run_tests.py` before committing changes
 - **Configuration**: All experimental parameters configurable via YAML files
-- **Dependencies**: Core dependencies are `openai-agents[litellm]`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`, `plotly`) and utilities (`tqdm`, `diagrams`) - avoid adding unnecessary packages
+- **Dependencies**: Core dependencies are `openai-agents[litellm]`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries - avoid adding unnecessary packages
 
 ## Important Implementation Details
 
@@ -232,23 +189,21 @@ original_values_mode:
 - **Logging**: Mode and situation are tracked in experiment results
 - **Backward Compatibility**: Mode disabled by default; existing experiments unchanged
 
-### Error Handling & Recovery
-- **Standardized Error Framework**: All modules use consistent error categorization (memory, validation, communication, system, experiment logic)
-- **Automatic Retry Logic**: Configurable retry mechanisms for recoverable errors with exponential backoff
-- **Error Statistics**: Comprehensive error tracking and reporting throughout experiment execution
-- **Graceful Degradation**: System handles partial failures and continues when possible
-
 ### Experiment Flow
 1. **Phase 1** (parallel): Individual agents familiarize with justice principles through 4 rounds of applications
 2. **Phase 2** (sequential): Group discussion with random speaking order, voting mechanism, and consensus building  
 3. **Results**: Complete JSON output with agent-centric logging and OpenAI trace links
-4. **Error Recovery**: Built-in recovery mechanisms for memory limits, agent communication failures, and validation errors
 
 ### Agent Configuration
 Each participant agent has configurable:
 - `name`, `personality`, `model` (e.g., "gpt-4.1-mini")  
 - `temperature`, `reasoning_enabled`, `memory_character_limit`
 - System automatically creates participant agents from config and validates responses with utility agent
+
+### Error Handling & Recovery
+- **Standardized Error Framework**: All modules use consistent error categorization with automatic retry logic
+- **Error Statistics**: Comprehensive error tracking and reporting throughout experiment execution
+- **Graceful Degradation**: System handles partial failures and continues when possible
 
 ### Memory System
 - **Agent-Managed**: Agents create and update their own memory throughout the experiment

@@ -46,6 +46,8 @@
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
     "phase2_default_constraint_specification": "未说明",
     "memory_memory_update_prompt": "回顾刚刚发生的事情，并更新你的记忆，记录下你认为对未来实验决策重要的内容。重点关注可能影响你对正义原则的选择，或有助于小组讨论的信息。\n\n当前记忆：\n{current_memory}\n\n最近活动：\n{round_content}",
+    "memory_narrative_update_prompt": "用最近活动中的新的相关见解更新你的工作记忆。按你认为合适的方式使用记忆 - 专注于改变的内容和你学到的东西，而不是重述规则或记录。你将始终可以访问记录和当前规则。\n\n当前记忆：\n{current_memory}\n\n最近活动：\n{round_content}",
+    "memory_compression_prompt": "您的内存接近{memory_limit}字符限制。请创建一个关于您迄今为止经验中最重要见解和模式的简明叙述摘要。专注于关键决策、学习和策略变化。目标长度：大约{target_length}字符。\n\n当前要压缩的记忆：\n{current_memory}",
     "memory_empty_memory_placeholder": "（空）",
     "system_error_messages_memory_limit_exceeded": "您的内存超出了字符限制。请浓缩您的记忆，保留最重要的信息。",
     "system_error_messages_invalid_principle_choice": "检测到无效原则选择。请从四个可用的司法原则中选择一个。",

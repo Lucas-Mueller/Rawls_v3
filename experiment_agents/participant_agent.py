@@ -19,8 +19,9 @@ from typing import List
 class ParticipantAgent:
     """Wrapper for participant agent with memory management capabilities and dynamic temperature detection."""
     
-    def __init__(self, config: AgentConfiguration):
+    def __init__(self, config: AgentConfiguration, experiment_config=None):
         self.config = config
+        self.experiment_config = experiment_config
         self.logger = logging.getLogger(__name__)
         
         # We'll initialize the agent asynchronously in async_init
@@ -36,7 +37,7 @@ class ParticipantAgent:
         # Prepare base agent kwargs (without model and model_settings)
         base_kwargs = {
             "name": self.config.name,
-            "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config),
+            "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config),
         }
         
         # Use dynamic temperature retry system
@@ -137,7 +138,8 @@ async def create_participant_agent(config: AgentConfiguration) -> ParticipantAge
 
 
 async def create_participant_agents_with_dynamic_temperature(
-    configs: List[AgentConfiguration]
+    configs: List[AgentConfiguration],
+    experiment_config=None
 ) -> List[ParticipantAgent]:
     """
     Create multiple participant agents with dynamic temperature detection and retry.
@@ -153,7 +155,7 @@ async def create_participant_agents_with_dynamic_temperature(
     for config in configs:
         try:
             logger.info(f"Creating agent: {config.name} (model: {config.model}, temp: {config.temperature})")
-            agent = ParticipantAgent(config)
+            agent = ParticipantAgent(config, experiment_config)
             await agent.async_init()
             agents.append(agent)
         except Exception as e:
@@ -167,7 +169,8 @@ async def create_participant_agents_with_dynamic_temperature(
 def _generate_dynamic_instructions(
     ctx: RunContextWrapper[ParticipantContext], 
     agent: Agent, 
-    config: AgentConfiguration
+    config: AgentConfiguration,
+    experiment_config=None
 ) -> str:
     """Generate context-aware instructions including memory, bank balance, etc."""
     
@@ -183,7 +186,7 @@ def _generate_dynamic_instructions(
         context.phase, context.round_number, language_manager
     )
     
-    # Format everything using language manager
+    # Format everything using language manager with config-aware explanation inclusion
     return language_manager.format_context_info(
         name=context.name,
         role_description=context.role_description,
@@ -192,7 +195,8 @@ def _generate_dynamic_instructions(
         round_number=context.round_number,
         formatted_memory=formatted_memory,
         personality=config.personality,
-        phase_instructions=phase_instructions
+        phase_instructions=phase_instructions,
+        experiment_config=experiment_config
     )
 
 

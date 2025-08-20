@@ -21,6 +21,7 @@ class TestMemoryManager(unittest.TestCase):
         
         self.mock_context = Mock()
         self.mock_context.memory = "Current memory content"
+        self.mock_context.memory_character_limit = 1000
     
     def test_validate_memory_length_valid(self):
         """Test memory length validation with valid memory."""
@@ -47,22 +48,22 @@ class TestMemoryManager(unittest.TestCase):
         current_memory = "Previous memory content"
         round_content = "New round information"
         
-        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content)
+        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content, "narrative")
         
         self.assertIn("Previous memory content", prompt)
         self.assertIn("New round information", prompt)
-        self.assertIn("update your memory", prompt)
+        self.assertIn("working memory", prompt)
     
     def test_create_memory_update_prompt_empty_memory(self):
         """Test memory update prompt creation with empty memory."""
         current_memory = ""
         round_content = "New round information"
         
-        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content)
+        prompt = MemoryManager._create_memory_update_prompt(current_memory, round_content, "narrative")
         
         self.assertIn("(Empty)", prompt)
         self.assertIn("New round information", prompt)
-        self.assertIn("update your memory", prompt)
+        self.assertIn("working memory", prompt)
     
     def test_prompt_agent_for_memory_update_success(self):
         """Test successful agent memory update."""
@@ -196,6 +197,7 @@ class TestMemoryManagerIntegration(unittest.TestCase):
             # Create mock context
             mock_context = Mock()
             mock_context.memory = "Previous"
+            mock_context.memory_character_limit = 100
             
             # Run memory update
             result = await MemoryManager.prompt_agent_for_memory_update(

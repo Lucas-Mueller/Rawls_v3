@@ -23,9 +23,10 @@ from utils.error_handling import AgentCommunicationError, ErrorSeverity, Experim
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None):
         self.participants = participants
         self.utility_agent = utility_agent
+        self.config = experiment_config
         self.logger = None  # Will be set in run_phase2
         self.error_handler = ExperimentErrorHandler()
         self.validation_stats = {
@@ -197,7 +198,6 @@ Please ensure your response contains a clear statement about your position on th
                     )
                 else:
                     self._log_warning(f"Exception on attempt {attempt + 1} for {participant.name}: {str(e)}, retrying...")
-                    continue
     
     async def run_phase2(
         self, 
@@ -274,14 +274,15 @@ Please ensure your response contains a clear statement about your position on th
         discussion_state = GroupDiscussionState()
         # Set valid participants for isolation protection
         discussion_state.valid_participants = [agent.name for agent in config.agents]
-        last_round_starter = None
+        last_round_finisher = None
         
         for round_num in range(1, config.phase2_rounds + 1):
             discussion_state.round_number = round_num
             
             # Generate speaking order based on configuration
-            speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_starter)
-            last_round_starter = speaking_order[0]
+            speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_finisher)
+            # Track who finishes this round (last speaker)
+            current_round_finisher = speaking_order[-1]
             
             for speaking_order_position, participant_idx in enumerate(speaking_order):
                 participant = self.participants[participant_idx]
@@ -299,7 +300,7 @@ Please ensure your response contains a clear statement about your position on th
                 self._log_info(f"=== REQUESTING STATEMENT FROM {participant.name} ===")
                 self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
                 
-                statement, statement_content, internal_reasoning = await self._get_participant_statement_enhanced(
+                statement, internal_reasoning = await self._get_participant_statement_enhanced(
                     participant, context, discussion_state, agent_config
                 )
                 
@@ -334,9 +335,26 @@ Please ensure your response contains a clear statement about your position on th
                         balance_before
                     )
                 
-                # Update participant memory with agent
+                # Create delta-focused round content
+                from utils.memory_content import build_phase2_delta
+                from config import ExperimentConfiguration
+                
+                # Extract configuration for memory guidance
+                include_reasoning = self.config.phase2_include_internal_reasoning_in_memory if self.config else False
+                memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+                
+                round_content = build_phase2_delta(
+                    round_number=round_num,
+                    participant_name=participant.name,
+                    statement=statement,
+                    speaking_order_position=speaking_order_position + 1,
+                    internal_reasoning=internal_reasoning,
+                    include_internal_reasoning=include_reasoning
+                )
+                
+                # Update participant memory with agent using new guidance style
                 context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, statement_content
+                    participant, context, round_content, memory_guidance_style=memory_guidance_style
                 )
                 contexts[participant_idx] = update_participant_context(
                     context, new_round=round_num
@@ -394,6 +412,9 @@ Please ensure your response contains a clear statement about your position on th
                                 discussion_history=discussion_state.public_history,
                                 vote_history=discussion_state.vote_history
                             )
+            
+            # Update last round finisher for next round
+            last_round_finisher = current_round_finisher
         
         # No consensus reached
         # Log validation statistics before returning
@@ -411,9 +432,13 @@ Please ensure your response contains a clear statement about your position on th
         round_num: int, 
         contexts: List[ParticipantContext],
         config: ExperimentConfiguration,
-        last_round_starter: int = None
+        last_round_finisher: int = None
     ) -> List[int]:
-        """Generate speaking order based on configuration strategy."""
+        """Generate speaking order based on configuration strategy.
+        
+        Implements restriction from master plan: if one round ends with Agent X, 
+        the next round cannot start with Agent X.
+        """
         participant_indices = list(range(len(contexts)))
         
         if not config.randomize_speaking_order or config.speaking_order_strategy == "fixed":
@@ -421,11 +446,11 @@ Please ensure your response contains a clear statement about your position on th
             return participant_indices
         
         if config.speaking_order_strategy == "random":
-            # Current random behavior with starter variation
+            # Random behavior with finisher restriction
             random.shuffle(participant_indices)
             
-            # If this isn't the first round, ensure different starter
-            if last_round_starter is not None and participant_indices[0] == last_round_starter:
+            # If this isn't the first round, ensure different starter (can't be previous round's finisher)
+            if last_round_finisher is not None and participant_indices[0] == last_round_finisher:
                 # Swap first and second elements
                 if len(participant_indices) > 1:
                     participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
@@ -435,8 +460,8 @@ Please ensure your response contains a clear statement about your position on th
             # Could implement conversation-driven order based on discussion state
             random.shuffle(participant_indices)
             
-            # Still avoid same starter
-            if last_round_starter is not None and participant_indices[0] == last_round_starter:
+            # Still avoid previous round's finisher starting next round
+            if last_round_finisher is not None and participant_indices[0] == last_round_finisher:
                 if len(participant_indices) > 1:
                     participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
         
@@ -470,8 +495,8 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         context: ParticipantContext,
         discussion_state: GroupDiscussionState,
         agent_config: AgentConfiguration
-    ) -> tuple[str, str, str]:
-        """Get participant's statement with separated internal reasoning and validation."""
+    ) -> tuple[str, str]:
+        """Get participant's statement with internal reasoning. Returns (statement, internal_reasoning)."""
         
         # If reasoning is enabled, ask for internal reasoning first
         internal_reasoning = ""
@@ -482,16 +507,11 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         # Get public statement with validation and retry logic
         try:
-            statement, base_round_content = await self._get_participant_statement_with_retry(
+            statement, _ = await self._get_participant_statement_with_retry(
                 participant, context, discussion_state, agent_config, internal_reasoning
             )
             
-            # Create enhanced round content for memory with reasoning
-            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number, internal_reasoning)}
-Your Public Statement: {statement}
-Outcome: Made statement in Round {context.round_number} of group discussion."""
-            
-            return statement, round_content, internal_reasoning
+            return statement, internal_reasoning
             
         except AgentCommunicationError as e:
             # Log the error and use fallback statement
@@ -501,12 +521,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             # Provide a fallback statement indicating the issue
             fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
             
-            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number)}
-Internal Reasoning: {internal_reasoning}
-Your Public Statement: {fallback_statement}
-Outcome: Failed to provide valid statement in Round {context.round_number} after retries."""
-            
-            return fallback_statement, round_content, internal_reasoning
+            return fallback_statement, internal_reasoning
     
     def _extract_favored_principle(self, statement: str) -> str:
         """Extract favored principle from participant statement."""
@@ -523,30 +538,6 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
         else:
             language_manager = get_language_manager()
             return language_manager.get("prompts.phase2_default_constraint_specification")
-    
-    def _determine_assigned_class(self, earnings: float) -> str:
-        """Determine income class based on earnings amount."""
-        language_manager = get_language_manager()
-        # Get income class names using the new API
-        income_class_names = {
-            "high": language_manager.get("common.income_classes.high"),
-            "medium_high": language_manager.get("common.income_classes.medium_high"),
-            "medium": language_manager.get("common.income_classes.medium"),
-            "medium_low": language_manager.get("common.income_classes.medium_low"),
-            "low": language_manager.get("common.income_classes.low")
-        }
-        
-        # Simple mapping based on typical earnings ranges
-        if earnings >= 30:
-            return income_class_names["high"]
-        elif earnings >= 25:
-            return income_class_names["medium_high"]
-        elif earnings >= 20:
-            return income_class_names["medium"]
-        elif earnings >= 15:
-            return income_class_names["medium_low"]
-        else:
-            return income_class_names["low"]
     
     async def _check_unanimous_vote_agreement(
         self,
@@ -777,14 +768,14 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
             for participant in self.participants:
                 assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities)
                 payoffs[participant.name] = earnings
-                assigned_classes[participant.name] = assigned_class
+                assigned_classes[participant.name] = str(assigned_class)
         else:
             # Random assignment - each participant gets random income class from random distribution
             for participant in self.participants:
                 random_distribution = random.choice(distribution_set.distributions)
                 assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities)
                 payoffs[participant.name] = earnings
-                assigned_classes[participant.name] = assigned_class
+                assigned_classes[participant.name] = str(assigned_class)
         
         return payoffs, assigned_classes
     

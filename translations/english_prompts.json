@@ -46,6 +46,8 @@
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
     "phase2_default_constraint_specification": "Not specified",
     "memory_memory_update_prompt": "Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions.\n\nCurrent Memory:\n{current_memory}\n\nRecent Activity:\n{round_content}",
+    "memory_narrative_update_prompt": "Update your working memory with new, relevant insights from the recent activity. Use your memory as you see fit - focus on what changed and what you learned, not restating rules or transcripts. You'll always have access to transcripts and current rules.\n\nCurrent Memory:\n{current_memory}\n\nRecent Activity:\n{round_content}",
+    "memory_compression_prompt": "Your memory is approaching the {memory_limit} character limit. Please create a condensed narrative summary of the most important insights and patterns from your experience so far. Focus on key decisions, learnings, and strategy changes. Target length: approximately {target_length} characters.\n\nCurrent Memory to Compress:\n{current_memory}",
     "memory_empty_memory_placeholder": "(Empty)",
     "validation_memory_limit_exceeded": "Your memory exceeds the character limit. Please condense your memory while keeping the most important information.",
     "validation_invalid_principle_choice": "Invalid principle choice detected. Please select one of the four available justice principles.",

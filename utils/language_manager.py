@@ -328,9 +328,27 @@ class LanguageManager:
     
     def format_context_info(self, name: str, role_description: str, bank_balance: float,
                            phase: str, round_number: int, formatted_memory: str,
-                           personality: str, phase_instructions: str) -> str:
+                           personality: str, phase_instructions: str, experiment_config=None) -> str:
         """Format the main context information display."""
-        experiment_explanation = self.get_experiment_explanation()
+        
+        # Track first turn per phase for experiment explanation gating
+        if not hasattr(self, '_first_turn_tracker'):
+            self._first_turn_tracker = {}
+        
+        phase_key = f"{phase}_{name}"  # Track per participant and phase
+        is_first_turn = phase_key not in self._first_turn_tracker
+        if is_first_turn:
+            self._first_turn_tracker[phase_key] = True
+            
+        # Determine whether to include experiment explanation
+        include_explanation = True  # Default behavior
+        if experiment_config:
+            if hasattr(experiment_config, 'include_experiment_explanation_each_turn'):
+                # If config says always include, use the explanation
+                # If config says don't include each turn, only include on first turn per phase
+                include_explanation = (experiment_config.include_experiment_explanation_each_turn or is_first_turn)
+        
+        experiment_explanation = self.get_experiment_explanation() if include_explanation else ""
         
         return self.get("prompts.context_context_info_format",
                        name=name,

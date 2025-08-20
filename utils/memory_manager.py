@@ -31,7 +31,8 @@ class MemoryManager:
         agent: "ParticipantAgent",
         context: "ParticipantContext", 
         round_content: str,
-        max_retries: int = 5
+        max_retries: int = 5,
+        memory_guidance_style: str = "narrative"
     ) -> str:
         """
         Prompt agent to update their memory based on round content.
@@ -41,6 +42,7 @@ class MemoryManager:
             context: Current participant context
             round_content: Content from the current round (prompt + response + outcome)
             max_retries: Maximum number of retry attempts
+            memory_guidance_style: Style of memory guidance ("narrative" or "structured")
             
         Returns:
             Updated memory string
@@ -52,9 +54,17 @@ class MemoryManager:
         
         for attempt in range(max_retries):
             try:
+                # Check if memory needs compression before update
+                memory_to_use = context.memory
+                if len(context.memory) > 0.8 * context.memory_character_limit:
+                    logger.info(f"Memory approaching limit for {agent.name}, attempting compression...")
+                    memory_to_use = await MemoryManager._compress_memory_if_needed(
+                        agent, context.memory, context.bank_balance, context.memory_character_limit
+                    )
+                
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
-                    context.memory, round_content
+                    memory_to_use, round_content, memory_guidance_style
                 )
                 
                 # Get updated memory from agent
@@ -148,20 +158,72 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str) -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative") -> str:
         """
-        Create generic prompt for memory update.
+        Create prompt for memory update based on guidance style.
         
         Args:
             current_memory: Agent's current memory
             round_content: Content from the current round
+            guidance_style: Style of guidance ("narrative" or "structured")
             
         Returns:
             Formatted prompt for memory update
         """
         language_manager = get_language_manager()
+        
+        # Choose prompt based on guidance style
+        if guidance_style == "narrative":
+            prompt_key = "prompts.memory_narrative_update_prompt"
+        else:  # structured
+            prompt_key = "prompts.memory_memory_update_prompt"  # Keep old structured style as fallback
+        
         return language_manager.get(
-            "prompts.memory_memory_update_prompt",
+            prompt_key,
             current_memory=current_memory if current_memory.strip() else language_manager.get("prompts.memory_empty_memory_placeholder"),
             round_content=round_content
         )
+    
+    @staticmethod
+    async def _compress_memory_if_needed(
+        agent: "ParticipantAgent", 
+        current_memory: str, 
+        bank_balance: float,
+        memory_limit: int
+    ) -> str:
+        """
+        Compress memory when approaching the character limit.
+        
+        Args:
+            agent: The participant agent
+            current_memory: Current memory content
+            bank_balance: Current bank balance for context
+            memory_limit: Maximum memory character limit
+            
+        Returns:
+            Compressed memory string
+        """
+        language_manager = get_language_manager()
+        
+        # Create compression prompt
+        compression_prompt = language_manager.get(
+            "prompts.memory_compression_prompt",
+            current_memory=current_memory,
+            memory_limit=memory_limit,
+            target_length=int(0.6 * memory_limit)  # Target 60% of limit after compression
+        )
+        
+        try:
+            compressed_memory = await agent.update_memory(compression_prompt, bank_balance)
+            
+            # Validate that compression was successful
+            if len(compressed_memory) < len(current_memory):
+                logger.info(f"Memory compressed from {len(current_memory)} to {len(compressed_memory)} characters")
+                return compressed_memory
+            else:
+                logger.warning(f"Memory compression did not reduce size, using original memory")
+                return current_memory
+                
+        except Exception as e:
+            logger.error(f"Memory compression failed: {e}, using original memory")
+            return current_memory
