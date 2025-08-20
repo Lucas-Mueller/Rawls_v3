@@ -463,38 +463,16 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""
+        language_manager = get_language_manager()
         distributions_table = DistributionGenerator.format_distributions_table(
             distribution_set.distributions
         )
         
-        return f"""
-ROUND {round_num}
-
-{distributions_table}
-
-You are to make a choice from among the four principles of justice which are mentioned above:
-(a) maximizing the floor,
-(b) maximizing the average,
-(c) maximizing the average with a floor constraint, and
-(d) maximizing the average with a range constraint.
-
-If you choose (c) or (d), you will have to tell us what that floor or range constraint is before you can be said to have made a well-defined choice.
-
-Your chosen principle will determine which distribution is selected. You'll then be randomly assigned to an income class and earn $1 for every $10,000 of income.
-
-What is your choice and reasoning?
-"""
+        return language_manager.get("prompts.phase1_application_round",
+                                   round_number=round_num,
+                                   distributions_table=distributions_table)
     
     def _build_final_ranking_prompt(self) -> str:
         """Build prompt for final ranking after experience."""
-        return """
-After experiencing four rounds of applying justice principles, please rank them again from best (1) to worst (4).
-
-Reflect on:
-- What you learned from applying these principles
-- How your earnings were affected by your choices
-- Whether your preferences have changed
-- What you observed about the outcomes of different principles
-
-Provide your updated ranking with an overall certainty level for the entire ranking and explain how your experience influenced your preferences.
-"""
+        language_manager = get_language_manager()
+        return language_manager.get("prompts.phase1_final_ranking_after_experience")

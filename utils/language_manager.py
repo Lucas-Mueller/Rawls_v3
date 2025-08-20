@@ -138,7 +138,17 @@ class LanguageManager:
                     f"Available keys: {list(current.keys())}"
                 )
             
-            # Format template if kwargs provided
+            # Check for principle list template substitution
+            if isinstance(current, str):
+                # Handle principle list templates
+                if "{principle_list_detailed}" in current:
+                    format_kwargs["principle_list_detailed"] = self.get_principle_list_formatted("detailed")
+                if "{principle_list_simple}" in current:
+                    format_kwargs["principle_list_simple"] = self.get_principle_list_formatted("simple")  
+                if "{principle_list_letters}" in current:
+                    format_kwargs["principle_list_letters"] = self.get_principle_list_formatted("letters_only")
+            
+            # Format template if kwargs provided or if templates were substituted
             if format_kwargs:
                 return current.format(**format_kwargs)
             else:
@@ -268,6 +278,10 @@ class LanguageManager:
         else:
             raise ValueError(f"Unknown parse_type: {parse_type}")
     
+    def get_validation_message(self, validation_key: str, **format_kwargs) -> str:
+        """Get a translated validation message."""
+        return self.get(f"prompts.validation_{validation_key}", **format_kwargs)
+    
     def get_error_message(self, error_key: str, **format_kwargs) -> str:
         """Get a translated error message."""
         return self.get(f"prompts.system_error_messages_{error_key}", **format_kwargs)
@@ -336,6 +350,40 @@ class LanguageManager:
         
         return self.get("prompts.context_memory_section_format", 
                        memory=memory)
+    
+    def get_principle_list_formatted(self, list_type: str = "detailed") -> str:
+        """
+        Get formatted list of justice principles.
+        
+        Args:
+            list_type: Type of list formatting ("detailed", "simple", "letters_only")
+            
+        Returns:
+            Formatted list of justice principles
+        """
+        if list_type == "detailed":
+            # For detailed explanations in prompts
+            return f"""1. **{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income in society
+2. **{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
+3. **{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average income while ensuring everyone gets at least a specified minimum
+4. **{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average income while keeping the gap between richest and poorest within a specified limit"""
+            
+        elif list_type == "simple":
+            # For application choices
+            return f"""(a) **{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income
+(b) **{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
+(c) **{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average while ensuring minimum income
+(d) **{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average while limiting income gap"""
+            
+        elif list_type == "letters_only":
+            # For voting prompts
+            return f"""(a) {self.get("common.principle_names.maximizing_floor").lower()}
+(b) {self.get("common.principle_names.maximizing_average").lower()}  
+(c) {self.get("common.principle_names.maximizing_average_floor_constraint").lower()}
+(d) {self.get("common.principle_names.maximizing_average_range_constraint").lower()}"""
+            
+        else:
+            raise ValueError(f"Unknown list_type: {list_type}")
 
 
 # Global instance for easy access

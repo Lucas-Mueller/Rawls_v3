@@ -79,6 +79,19 @@
     "utility_string_parser_agent_name": "响应解析器",
     "utility_string_validator_agent_name": "响应验证器",
     "utility_string_validation_error_incomplete_ranking": "排名不完整 - 原则缺失或排名无效",
+    "validation_memory_limit_exceeded": "您的内存超出了字符限制。请浓缩您的记忆，保留最重要的信息。",
+    "validation_invalid_principle_choice": "检测到无效原则选择。请从四个可用的司法原则中选择一个。",
+    "validation_missing_constraint_amount": "您选择了限制原则，但没有指定限制金额。请提供美元金额。",
+    "validation_incomplete_ranking": "您的排名不完整。请将所有四项原则从 1 到 4 排序。",
+    "validation_parsing_failed": "无法解析您的答复。请按照指定格式重新整理您的答案。",
+    "validation_consensus_not_reached": "小组尚未达成共识。讨论将继续进行。",
+    "validation_experiment_timeout": "实验已超时。结果将根据当前数据最终确定。",
+    "phase1_application_round": "第{round_number}轮\n\n{distributions_table}\n\n您需要从上述四种正义原则中做出选择：\n(a) 最大化底线收入,\n(b) 最大化平均收入,\n(c) 在底线约束下最大化平均收入，和\n(d) 在范围约束下最大化平均收入。\n\n如果您选择(c)或(d)，您必须告诉我们底线或范围约束是什么，然后才能说您做出了明确的选择。\n\n您选择的原则将决定选择哪个分配。然后您将被随机分配到一个收入阶层，每10,000美元收入可获得1美元。\n\n您的选择和推理是什么？",
+    "phase2_secret_ballot_vote": "秘密投票\n\n请选择小组采用的四种正义原则中的一种：\n(a) 最大化底线收入\n(b) 最大化平均收入\n(c) 在底线约束下最大化平均收入\n(d) 在范围约束下最大化平均收入\n\n**重要**：如果您选择(c)或(d)，您必须指定确切的约束金额（美元）。\n\n这是您的最终投票。小组需要一致同意（每个人选择完全相同的原则和完全相同的约束金额）才能达成共识。\n\n您的投票是什么？",
+    "phase2_vote_agreement": "有人提议进行投票。您同意现在进行投票吗？\n\n请回答\"是\"或\"否\"。\n如果您认为需要更多讨论，请回答\"否\"。\n如果您认为小组已准备好投票，请回答\"是\"。",
+    "phase1_final_ranking_after_experience": "在经历了四轮应用正义原则后，请再次将它们从最好(1)到最差(4)进行排名。\n\n思考：\n- 您通过应用这些原则学到了什么\n- 您的收入如何受到您的选择影响\n- 您的偏好是否发生了变化\n- 您观察到不同原则的结果如何\n\n请提供您更新的排名，包括整个排名的总体确定性水平，并解释您的经验如何影响您的偏好。",
+    "phase2_internal_reasoning": "小组讨论--{round_number}回合（内部推理）\n\n讨论历史：\n{discussion_history}\n\n在发表公开声明之前，请先进行内部思考：\n- 对于小组应该采纳哪条公正原则，你目前的立场是什么？\n- 迄今为止的讨论是如何影响你的想法的？\n- 你想在公开声明中提出哪些论点？\n- 你是否准备好进行表决，还是需要更多的讨论？\n\n提供你的内部理由（不会与其他参与者分享）。",
+    "phase2_discussion_prompt": "小组讨论--{round_number}回合\n\n讨论历史：\n{discussion_history}\n\n您的任务是与其他参与者合作，就小组应采用的公正原则达成共识。小组选择的原则将决定每个人的最终收益。\n\n指导原则：\n- 当你认为小组准备就绪时，你可以提议投票\n- 投票开始前，所有参与者必须同意投票\n- 共识要求每个人都选择完全相同的原则（包括约束金额）\n\n如果无法达成共识，将随机决定最终收益。\n\n本轮投票中，您对小组的陈述是什么？",
     "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。"
   }
 }

@@ -102,6 +102,7 @@ class Phase2Manager:
         context: ParticipantContext,
         discussion_state: GroupDiscussionState,
         agent_config: AgentConfiguration,
+        internal_reasoning: str = "",
         max_retries: int = 3
     ) -> tuple[str, str]:
         """
@@ -112,6 +113,7 @@ class Phase2Manager:
             context: Current participant context
             discussion_state: Current discussion state
             agent_config: Agent configuration
+            internal_reasoning: Internal reasoning to include in prompt (if reasoning enabled)
             max_retries: Maximum number of retry attempts
             
         Returns:
@@ -120,7 +122,7 @@ class Phase2Manager:
         Raises:
             AgentCommunicationError: If all retry attempts fail
         """
-        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
+        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number, internal_reasoning)
         self.validation_stats["total_statement_requests"] += 1
         
         for attempt in range(max_retries):
@@ -277,8 +279,8 @@ Please ensure your response contains a clear statement about your position on th
         for round_num in range(1, config.phase2_rounds + 1):
             discussion_state.round_number = round_num
             
-            # Generate speaking order (avoid same participant starting consecutive rounds)
-            speaking_order = self._generate_speaking_order(round_num, contexts, last_round_starter)
+            # Generate speaking order based on configuration
+            speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_starter)
             last_round_starter = speaking_order[0]
             
             for speaking_order_position, participant_idx in enumerate(speaking_order):
@@ -340,8 +342,8 @@ Please ensure your response contains a clear statement about your position on th
                     context, new_round=round_num
                 )
                 
-                # Check for vote proposal
-                vote_proposal = await self.utility_agent.extract_vote_from_statement(statement)
+                # Check for vote proposal using new simplified detection
+                vote_proposal_text = await self.utility_agent.detect_vote_intention_simple(statement)
                 
                 # ADD VOTE DETECTION DEBUG LOGGING
                 import logging
@@ -350,13 +352,13 @@ Please ensure your response contains a clear statement about your position on th
                 debug_logger.info(f"=== VOTE DETECTION DEBUG ===")
                 debug_logger.info(f"Agent: {participant.name}")
                 debug_logger.info(f"Statement: {statement}")
-                debug_logger.info(f"Vote proposal detected: {vote_proposal is not None}")
-                if vote_proposal:
-                    debug_logger.info(f"Vote proposal text: {vote_proposal.proposal_text}")
+                debug_logger.info(f"Vote proposal detected: {vote_proposal_text is not None}")
+                if vote_proposal_text:
+                    debug_logger.info(f"Vote proposal text: {vote_proposal_text}")
                 else:
                     debug_logger.info(f"No vote proposal detected")
                 
-                if vote_proposal:
+                if vote_proposal_text:
                     debug_logger.info(f"Checking unanimous agreement...")
                     # Check if all participants agree to vote
                     unanimous_agreement = await self._check_unanimous_vote_agreement(
@@ -408,17 +410,35 @@ Please ensure your response contains a clear statement about your position on th
         self, 
         round_num: int, 
         contexts: List[ParticipantContext],
+        config: ExperimentConfiguration,
         last_round_starter: int = None
     ) -> List[int]:
-        """Generate speaking order avoiding same participant starting consecutive rounds."""
+        """Generate speaking order based on configuration strategy."""
         participant_indices = list(range(len(contexts)))
-        random.shuffle(participant_indices)
         
-        # If this isn't the first round, ensure different starter
-        if last_round_starter is not None and participant_indices[0] == last_round_starter:
-            # Swap first and second elements
-            if len(participant_indices) > 1:
-                participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
+        if not config.randomize_speaking_order or config.speaking_order_strategy == "fixed":
+            # Fixed order: same sequence every round
+            return participant_indices
+        
+        if config.speaking_order_strategy == "random":
+            # Current random behavior with starter variation
+            random.shuffle(participant_indices)
+            
+            # If this isn't the first round, ensure different starter
+            if last_round_starter is not None and participant_indices[0] == last_round_starter:
+                # Swap first and second elements
+                if len(participant_indices) > 1:
+                    participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
+        
+        elif config.speaking_order_strategy == "conversational":
+            # For future implementation - currently defaults to random
+            # Could implement conversation-driven order based on discussion state
+            random.shuffle(participant_indices)
+            
+            # Still avoid same starter
+            if last_round_starter is not None and participant_indices[0] == last_round_starter:
+                if len(participant_indices) > 1:
+                    participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
         
         return participant_indices
     
@@ -463,12 +483,11 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         # Get public statement with validation and retry logic
         try:
             statement, base_round_content = await self._get_participant_statement_with_retry(
-                participant, context, discussion_state, agent_config
+                participant, context, discussion_state, agent_config, internal_reasoning
             )
             
             # Create enhanced round content for memory with reasoning
-            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number)}
-Internal Reasoning: {internal_reasoning}
+            round_content = f"""Prompt: {self._build_discussion_prompt(discussion_state, context.round_number, internal_reasoning)}
 Your Public Statement: {statement}
 Outcome: Made statement in Round {context.round_number} of group discussion."""
             
@@ -537,13 +556,8 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
     ) -> bool:
         """Check if all participants agree to conduct a vote."""
         
-        vote_agreement_prompt = """
-        A vote has been proposed. Do you agree to conduct a vote now?
-        
-        Respond with either "YES" or "NO".
-        If you think more discussion is needed, respond "NO".
-        If you think the group is ready to vote, respond "YES".
-        """
+        language_manager = get_language_manager()
+        vote_agreement_prompt = language_manager.get("prompts.phase2_vote_agreement")
         
         agreement_tasks = []
         for i, participant in enumerate(self.participants):
@@ -560,18 +574,31 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
         debug_logger = logging.getLogger(__name__)
         
         debug_logger.info(f"=== UNANIMOUS AGREEMENT DEBUG ===")
+        
+        # Use utility agent for multilingual agreement detection
+        agreement_tasks = []
         for i, response in enumerate(responses):
             participant_name = self.participants[i].name
             response_text = response.final_output
-            contains_yes = "YES" in response_text.upper()
-            debug_logger.info(f"{participant_name} response: '{response_text}' -> Contains YES: {contains_yes}")
+            debug_logger.info(f"{participant_name} response: '{response_text}'")
+            
+            # Use utility agent to detect agreement in any language
+            task = asyncio.create_task(
+                self.utility_agent.detect_agreement_multilingual(response_text)
+            )
+            agreement_tasks.append((task, participant_name))
         
-        # Check if all responses contain "YES"
-        agreements = [("YES" in response.final_output.upper()) for response in responses]
-        debug_logger.info(f"All agreements: {agreements}")
-        debug_logger.info(f"Unanimous result: {all(agreements)}")
+        # Gather all agreement analysis results
+        agreement_results = []
+        for task, participant_name in agreement_tasks:
+            agrees = await task
+            agreement_results.append(agrees)
+            debug_logger.info(f"{participant_name} -> Agrees to vote: {agrees}")
         
-        return all(agreements)
+        debug_logger.info(f"All agreements: {agreement_results}")
+        debug_logger.info(f"Unanimous result: {all(agreement_results)}")
+        
+        return all(agreement_results)
     
     async def _conduct_group_vote(
         self, 
@@ -603,11 +630,8 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
                 )
                 valid_votes.append(corrected_vote)
         
-        # Check for consensus (try exact first, then semantic matching)
+        # Check for consensus (exact matching only - no tolerance)
         consensus_principle = self._check_exact_consensus(valid_votes)
-        if consensus_principle is None:
-            self._log_info("Exact consensus failed, trying semantic matching...")
-            consensus_principle = self._check_semantic_consensus(valid_votes)
         
         # Additional logging for vote result
         self._log_info("=== VOTE RESULT SUMMARY ===")
@@ -631,21 +655,8 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
     ) -> PrincipleChoice:
         """Get a participant's vote in secret ballot."""
         
-        voting_prompt = """
-        SECRET BALLOT VOTE
-        
-        Choose ONE of the four justice principles for the group to adopt:
-        (a) maximizing the floor
-        (b) maximizing the average  
-        (c) maximizing the average with a floor constraint
-        (d) maximizing the average with a range constraint
-        
-        **IMPORTANT**: If you choose (c) or (d), you MUST specify the exact constraint amount in dollars.
-        
-        This is your final vote. The group needs unanimous agreement (everyone choosing the exact same principle with the exact same constraint amount) to reach consensus.
-        
-        What is your vote?
-        """
+        language_manager = get_language_manager()
+        voting_prompt = language_manager.get("prompts.phase2_secret_ballot_vote")
         
         # Always use text responses, parse with enhanced utility agent
         result = await Runner.run(participant.agent, voting_prompt, context=context)
@@ -726,94 +737,6 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
             self._log_info(f"Agreed principle: {first_vote.principle.value} with constraint: {first_vote.constraint_amount}")
             return first_vote
     
-    def _check_semantic_consensus(self, votes: List[PrincipleChoice]) -> PrincipleChoice:
-        """Check for semantic consensus with fuzzy matching for constraint amounts."""
-        
-        if not votes:
-            return None
-        
-        self._log_info("=== SEMANTIC CONSENSUS ANALYSIS ===")
-        
-        # Group votes by principle first
-        principle_groups = {}
-        for vote in votes:
-            principle_key = vote.principle.value
-            if principle_key not in principle_groups:
-                principle_groups[principle_key] = []
-            principle_groups[principle_key].append(vote)
-        
-        self._log_info(f"Principle groups: {[(k, len(v)) for k, v in principle_groups.items()]}")
-        
-        # Check if all votes are for the same principle
-        if len(principle_groups) != 1:
-            self._log_info("Multiple principles chosen - no semantic consensus possible")
-            return None
-        
-        # All votes are for the same principle, now check constraint amounts
-        principle = list(principle_groups.keys())[0]
-        votes_for_principle = principle_groups[principle]
-        
-        self._log_info(f"All votes are for: {principle}")
-        
-        # If it's not a constraint principle, we have consensus
-        if 'constraint' not in principle.lower():
-            self._log_info("Non-constraint principle - semantic consensus achieved")
-            return votes_for_principle[0]
-        
-        # For constraint principles, check if amounts are semantically similar
-        constraint_amounts = [v.constraint_amount for v in votes_for_principle if v.constraint_amount is not None]
-        
-        self._log_info(f"Constraint amounts: {constraint_amounts}")
-        
-        if not constraint_amounts:
-            self._log_warning("Constraint principle but no constraint amounts found")
-            return None
-        
-        # Check if constraint amounts are within semantic tolerance
-        semantic_consensus = self._check_constraint_semantic_similarity(constraint_amounts)
-        
-        if semantic_consensus:
-            # Use the most common constraint amount (or first if tied)
-            from collections import Counter
-            amount_counts = Counter(constraint_amounts)
-            most_common_amount = amount_counts.most_common(1)[0][0]
-            
-            self._log_info(f"Semantic consensus achieved with constraint amount: {most_common_amount}")
-            
-            # Return a vote with the consensus principle and amount
-            return PrincipleChoice(
-                principle=votes_for_principle[0].principle,
-                constraint_amount=most_common_amount,
-                certainty=votes_for_principle[0].certainty,
-                reasoning="Semantic consensus from group votes"
-            )
-        else:
-            self._log_info("Constraint amounts too different for semantic consensus")
-            return None
-    
-    def _check_constraint_semantic_similarity(self, amounts: List[int]) -> bool:
-        """Check if constraint amounts are semantically similar (within tolerance)."""
-        
-        if len(set(amounts)) == 1:
-            self._log_info("All constraint amounts identical")
-            return True
-        
-        # Calculate tolerance (10% of the average or minimum $1000)
-        avg_amount = sum(amounts) / len(amounts)
-        tolerance = max(1000, int(avg_amount * 0.1))
-        
-        self._log_info(f"Average amount: {avg_amount}, tolerance: ±{tolerance}")
-        
-        # Check if all amounts are within tolerance of each other
-        min_amount = min(amounts)
-        max_amount = max(amounts)
-        
-        if max_amount - min_amount <= tolerance:
-            self._log_info(f"Amounts within tolerance: {min_amount} to {max_amount} (range: {max_amount - min_amount})")
-            return True
-        else:
-            self._log_info(f"Amounts outside tolerance: {min_amount} to {max_amount} (range: {max_amount - min_amount})")
-            return False
     
     def _count_votes(self, votes: List[PrincipleChoice]) -> Dict[str, int]:
         """Count votes by principle (including constraint amounts)."""
@@ -966,40 +889,22 @@ Outcome: Failed to provide valid statement in Round {context.round_number} after
     
     def _build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for internal reasoning before public statement."""
+        language_manager = get_language_manager()
         
-        return f"""
-        GROUP DISCUSSION - Round {round_num} (Internal Reasoning)
-        
-        Discussion History:
-        {discussion_state.public_history or "No previous discussion."}
-        
-        Before making your public statement, consider internally:
-        - What is your current position on which justice principle the group should adopt?
-        - How has the discussion so far influenced your thinking?
-        - What arguments do you want to make in your public statement?
-        - Are you ready to call for a vote, or do you need more discussion?
-        
-        Provide your internal reasoning (this will not be shared with other participants).
-        """
+        return language_manager.get("prompts.phase2_internal_reasoning",
+                                   round_number=round_num,
+                                   discussion_history=discussion_state.public_history or "No previous discussion.")
     
-    def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
+    def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, internal_reasoning: str = "") -> str:
         """Build prompt for group discussion round."""
+        language_manager = get_language_manager()
         
-        return f"""
-        GROUP DISCUSSION - Round {round_num}
+        base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
+                                          round_number=round_num,
+                                          discussion_history=discussion_state.public_history or "No previous discussion.")
         
-        Discussion History:
-        {discussion_state.public_history or "No previous discussion."}
-        
-        Your task is to work with other participants to reach consensus on which justice principle 
-        the group should adopt. The group's chosen principle will determine everyone's final earnings.
-        
-        Guidelines:
-        - You may propose a vote when you think the group is ready
-        - All participants must agree to vote before voting begins
-        - Consensus requires everyone to choose the EXACT same principle (including constraint amounts)
-        
-        If no consensus is reached, final earnings will be randomly determined.
-        
-        What is your statement to the group for this round?
-        """
+        # If internal reasoning is provided, include it in the prompt
+        if internal_reasoning and internal_reasoning.strip():
+            return f"{base_prompt}\n\n=== YOUR INTERNAL REASONING ===\n{internal_reasoning}\n================================\n\nBased on your internal reasoning above, what is your statement to the group for this round?"
+        else:
+            return base_prompt

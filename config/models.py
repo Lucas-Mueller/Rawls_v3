@@ -30,6 +30,8 @@ class ExperimentConfiguration(BaseModel):
     utility_agent_model: str = Field("gpt-4.1-mini", description="Model for utility agents (parser/validator)")
     utility_agent_temperature: float = Field(0.0, ge=0.0, le=2.0, description="Temperature for utility agents")
     phase2_rounds: int = Field(10, gt=0, description="Maximum rounds for Phase 2 discussion")
+    randomize_speaking_order: bool = Field(True, description="Enable randomized speaking order in Phase 2 discussions")
+    speaking_order_strategy: str = Field("random", description="Speaking order strategy: 'random', 'fixed', or 'conversational'")
     distribution_range_phase1: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 1 distributions")
     distribution_range_phase2: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 2 distributions")
     income_class_probabilities: Optional[IncomeClassProbabilities] = Field(None, description="Income class assignment probabilities (defaults to equal if not specified)")
@@ -42,6 +44,15 @@ class ExperimentConfiguration(BaseModel):
         valid_languages = ["English", "Spanish", "Mandarin"]
         if v not in valid_languages:
             raise ValueError(f"Invalid language: {v}. Must be one of {valid_languages}")
+        return v
+    
+    @field_validator('speaking_order_strategy')
+    @classmethod
+    def validate_speaking_order_strategy(cls, v):
+        """Validate speaking order strategy is supported."""
+        valid_strategies = ["random", "fixed", "conversational"]
+        if v not in valid_strategies:
+            raise ValueError(f"Invalid speaking order strategy: {v}. Must be one of {valid_strategies}")
         return v
     
     @field_validator('distribution_range_phase1', 'distribution_range_phase2')

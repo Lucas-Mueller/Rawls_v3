@@ -1,14 +1,14 @@
-# Rawls: An AI Agent Experimentation Framework
+# Frohlich Experiment: An AI Agent Experimentation Framework
 
 ## Project Overview
 
-This project, "Rawls," is a Python-based framework for conducting experiments with AI agents. It is designed to simulate scenarios involving multiple agents to study their behavior and interactions in a controlled environment. The framework is named after the philosopher John Rawls, and its name, combined with the "Veil of Ignorance" concept, suggests a focus on fairness, social welfare, and ethical considerations in AI systems.
+This project, "Frohlich Experiment," is a Python-based framework for conducting experiments with AI agents. It is designed to simulate scenarios involving multiple agents to study their behavior and interactions in a controlled environment. The framework is named after the economist Norman Frohlich, and its name suggests a focus on experimental economics, fairness, and social welfare in AI systems.
 
-The core of the project is an `ExperimentManager` that orchestrates the execution of experiments. These experiments are divided into two phases, each managed by a dedicated manager (`Phase1Manager` and `Phase2Manager`). The framework uses a configuration-driven approach, with experiment parameters defined in YAML files.
+The core of the project is a `FrohlichExperimentManager` that orchestrates the execution of experiments. These experiments are divided into two phases, each managed by a dedicated manager (`Phase1Manager` and `Phase2Manager`). The framework uses a configuration-driven approach, with experiment parameters defined in YAML files.
 
 ## Background
 
-The project is inspired by John Rawls's "Veil of Ignorance" thought experiment. In this experiment, individuals are asked to choose principles of justice from behind a "veil of ignorance," where they do not know their own social status, class, or natural abilities. This is to ensure that the chosen principles are fair and just for all members of society.
+The project is inspired by the work of Norman Frohlich, who conducted experiments on distributive justice. These experiments involved participants choosing principles of justice from behind a "veil of ignorance," similar to John Rawls's thought experiment.
 
 This framework aims to apply this concept to the development of AI agents. By simulating a "Veil of Ignorance" scenario, the framework can be used to study how AI agents would behave and interact if they were designed to be fair and just.
 

@@ -318,6 +318,61 @@ class UtilityAgent:
         
         return None
     
+    async def detect_agreement_multilingual(self, response: str) -> bool:
+        """Simple multilingual agreement detection via utility agent."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
+        # Create a simple prompt for multilingual agreement detection
+        detection_prompt = f"""
+Analyze this response to determine if the participant agrees to conduct a vote.
+
+Response to analyze: "{response}"
+
+Consider responses in any language that indicate:
+- Agreement to vote (YES, SÍ, 是的, oui, etc.)
+- Consent to proceed with voting
+- Positive acknowledgment
+
+Ignore qualified responses like "Yes, but..." or "Yes, however..."
+
+Respond with exactly one word:
+- "AGREES" if they clearly agree to vote
+- "DISAGREES" if they decline, have reservations, or give qualified responses
+"""
+        
+        result = await Runner.run(self.parser_agent, detection_prompt)
+        return result.final_output.strip().upper() == "AGREES"
+    
+    async def detect_vote_intention_simple(self, statement: str) -> Optional[str]:
+        """Detect vote intention with minimal complexity - less permissive than current method."""
+        # Ensure utility agent is initialized
+        await self.async_init()
+        
+        detection_prompt = f"""
+Analyze this statement to determine if the participant is explicitly proposing to conduct a formal vote.
+
+Statement: "{statement}"
+
+Look for EXPLICIT vote proposals such as:
+- "I propose we vote"
+- "Let's vote on this"
+- "I call for a vote"
+- "We should vote now"
+
+IGNORE casual mentions of agreement, consensus, or deciding together unless they explicitly mention voting.
+
+Respond with exactly one word:
+- "VOTE_PROPOSED" if they explicitly propose a formal vote
+- "NO_VOTE" if they don't explicitly propose voting
+"""
+        
+        result = await Runner.run(self.parser_agent, detection_prompt)
+        
+        if result.final_output.strip().upper() == "VOTE_PROPOSED":
+            return statement  # Return original statement as proposal text
+        return None
+    
     async def re_prompt_for_constraint(self, participant_name: str, choice: PrincipleChoice) -> str:
         """Generate re-prompt message for missing constraint."""
         constraint_type = "floor" if choice.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT else "range"
