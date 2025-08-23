@@ -884,6 +884,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         return language_manager.get("prompts.phase2_internal_reasoning",
                                    round_number=round_num,
+                                   max_rounds=self.config.phase2_rounds,
                                    discussion_history=discussion_state.public_history or "No previous discussion.")
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, internal_reasoning: str = "") -> str:
@@ -892,6 +893,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
                                           round_number=round_num,
+                                          max_rounds=self.config.phase2_rounds,
                                           discussion_history=discussion_state.public_history or "No previous discussion.")
         
         # If internal reasoning is provided, include it in the prompt

@@ -14,7 +14,8 @@ from core.phase2_manager import Phase2Manager
 from utils.agent_centric_logger import AgentCentricLogger
 from experiment_agents import ParticipantAgent, UtilityAgent
 from config import ExperimentConfiguration, AgentConfiguration
-from models import ExperimentPhase, JusticePrinciple, CertaintyLevel
+from tests.integration.fixtures.experiment_fixtures import ExperimentTestFixture
+from models import ExperimentPhase, JusticePrinciple, CertaintyLevel, PrincipleRanking, RankedPrinciple
 
 
 class TestLoggingIntegration:
@@ -172,7 +173,7 @@ class TestLoggingIntegration:
     
     def test_experiment_manager_logging_integration(self):
         """Test full experiment manager integration with new logging."""
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Verify agent logger was created
         assert hasattr(manager, 'agent_logger')
@@ -224,14 +225,35 @@ class TestLoggingIntegration:
         self.logger.initialize_experiment(self.participants, self.config)
         
         # Add comprehensive test data
+        from models import PrincipleRanking, RankedPrinciple, JusticePrinciple, CertaintyLevel
+        initial_ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.VERY_SURE
+        )
+        
         self.logger.log_initial_ranking(
-            "TestAgent1", "A=1, B=2, C=3, D=4", "Very sure", "Initial memory", 0.0
+            "TestAgent1", initial_ranking, "Initial memory", 0.0
         )
         self.logger.log_detailed_explanation(
             "TestAgent1", "Understood the principles", "Post-explanation memory", 0.0
         )
+        post_explanation_ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.SURE
+        )
+        
         self.logger.log_post_explanation_ranking(
-            "TestAgent1", "A=1, B=3, C=2, D=4", "Sure", "Post-ranking memory", 0.0
+            "TestAgent1", post_explanation_ranking, "Post-ranking memory", 0.0
         )
         
         # Add demonstration rounds

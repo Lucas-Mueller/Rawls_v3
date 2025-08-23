@@ -233,7 +233,7 @@ class Phase1Manager:
         # Create round content for memory
         round_content = f"""Prompt: {ranking_prompt}
 Your Response: {text_response}
-Your Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Your Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 Outcome: Completed initial ranking of justice principles."""
         
         return parsed_ranking, round_content
@@ -427,7 +427,7 @@ Outcome: Learned how each justice principle is applied to income distributions t
         # Create round content for memory
         round_content = f"""Prompt: {post_explanation_prompt}
 Your Response: {text_response}
-Your Post-Explanation Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Your Post-Explanation Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 Outcome: Completed ranking after learning how principles apply to distributions."""
         
         return parsed_ranking, round_content
@@ -452,7 +452,7 @@ Outcome: Completed ranking after learning how principles apply to distributions.
         # Create round content for memory
         round_content = f"""Prompt: {final_ranking_prompt}
 Your Response: {text_response}
-Your Final Rankings: {parsed_ranking.dict() if hasattr(parsed_ranking, 'dict') else str(parsed_ranking)}
+Your Final Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 Outcome: Completed final ranking of justice principles after experiencing all four rounds."""
         
         return parsed_ranking, round_content

@@ -2,32 +2,60 @@
 Test runner for the Frohlich Experiment.
 
 Usage:
-    python run_tests.py [test_type]
+    python run_tests.py [test_type] [--coverage]
     
 Arguments:
     test_type: 'unit', 'integration', or 'all' (default: 'all')
+    --coverage: Run tests with coverage reporting (requires pytest-cov)
 """
 import sys
 import subprocess
 from pathlib import Path
 
 
-def run_unit_tests():
+def has_pytest():
+    """Check if pytest is available."""
+    try:
+        import pytest
+        return True
+    except ImportError:
+        return False
+
+
+def run_unit_tests(coverage=False):
     """Run unit tests."""
     print("Running unit tests...")
     test_dir = Path(__file__).parent / "tests" / "unit"
     
-    cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+    if has_pytest():
+        cmd = [sys.executable, "-m", "pytest", "-q", str(test_dir)]
+        if coverage:
+            cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    else:
+        print("Warning: pytest not available, falling back to unittest. Some tests may be skipped.")
+        if coverage:
+            print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
+        cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+    
     result = subprocess.run(cmd, cwd=Path(__file__).parent)
     return result.returncode == 0
 
 
-def run_integration_tests():
+def run_integration_tests(coverage=False):
     """Run integration tests."""
     print("Running integration tests...")
     test_dir = Path(__file__).parent / "tests" / "integration"
     
-    cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+    if has_pytest():
+        cmd = [sys.executable, "-m", "pytest", "-q", str(test_dir)]
+        if coverage:
+            cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    else:
+        print("Warning: pytest not available, falling back to unittest. Some async tests may not run properly.")
+        if coverage:
+            print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
+        cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+    
     result = subprocess.run(cmd, cwd=Path(__file__).parent)
     return result.returncode == 0
 
@@ -70,10 +98,20 @@ def run_import_test():
 
 def main():
     """Main test runner."""
-    test_type = sys.argv[1] if len(sys.argv) > 1 else "all"
+    args = sys.argv[1:]
+    test_type = "all"
+    coverage = False
+    
+    for arg in args:
+        if arg == "--coverage":
+            coverage = True
+        elif arg in ["unit", "integration", "all"]:
+            test_type = arg
     
     print("=" * 60)
     print("FROHLICH EXPERIMENT TEST RUNNER")
+    if coverage:
+        print("Running with coverage reporting")
     print("=" * 60)
     
     success = True
@@ -86,12 +124,12 @@ def main():
     print()
     
     if test_type in ["unit", "all"]:
-        if not run_unit_tests():
+        if not run_unit_tests(coverage):
             success = False
         print()
     
     if test_type in ["integration", "all"]:
-        if not run_integration_tests():
+        if not run_integration_tests(coverage):
             success = False
         print()
     

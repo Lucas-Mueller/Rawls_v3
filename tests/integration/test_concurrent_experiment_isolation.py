@@ -12,7 +12,7 @@ from core.phase2_manager import Phase2Manager
 from experiment_agents import ParticipantAgent, UtilityAgent
 
 
-class TestConcurrentExperimentIsolation(unittest.TestCase):
+class TestConcurrentExperimentIsolation(unittest.IsolatedAsyncioTestCase):
     """Test isolation between concurrent experiments."""
 
     def test_discussion_state_isolation(self):

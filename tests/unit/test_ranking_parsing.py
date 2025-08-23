@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 """
-Test script to reproduce and fix the ranking parsing issue.
+Unit tests for ranking parsing functionality.
 """
+import pytest
 import asyncio
 import sys
 import os
@@ -63,95 +63,50 @@ I am very sure about this ranking.""",
 ]
 
 
+@pytest.mark.asyncio
 async def test_ranking_parsing():
     """Test the current ranking parsing logic."""
-    print("Testing Ranking Parsing Logic")
-    print("=" * 50)
-    
     # Initialize utility agent
     utility_agent = UtilityAgent()
     
     for i, test_case in enumerate(TEST_CASES):
-        print(f"\nTest Case {i+1}: {test_case['name']}")
-        print("-" * 30)
+        # Parse the response
+        parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(test_case['response'])
         
-        try:
-            # Parse the response
-            parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(test_case['response'])
-            
-            print("Agent Response:")
-            print(test_case['response'])
-            print("\nExpected Ranking:")
-            for principle, rank in test_case['expected_ranking']:
-                print(f"  {rank}. {principle.value}")
-            print(f"Expected Certainty: {test_case['expected_certainty'].value}")
-            
-            print("\nActual Parsed Ranking:")
-            for ranked_principle in parsed_ranking.rankings:
-                print(f"  {ranked_principle.rank}. {ranked_principle.principle.value}")
-            print(f"Actual Certainty: {parsed_ranking.certainty.value}")
-            
-            # Check if parsing is correct
-            parsing_correct = True
-            
-            # Check rankings
-            for expected_principle, expected_rank in test_case['expected_ranking']:
-                found_match = False
-                for parsed_principle in parsed_ranking.rankings:
-                    if (parsed_principle.principle == expected_principle and 
-                        parsed_principle.rank == expected_rank):
-                        found_match = True
-                        break
-                if not found_match:
-                    parsing_correct = False
-                    print(f"❌ MISMATCH: Expected {expected_principle.value} at rank {expected_rank}")
-            
-            # Check certainty
-            if parsed_ranking.certainty != test_case['expected_certainty']:
-                parsing_correct = False
-                print(f"❌ CERTAINTY MISMATCH: Expected {test_case['expected_certainty'].value}, got {parsed_ranking.certainty.value}")
-            
-            if parsing_correct:
-                print("✅ PARSING CORRECT")
-            else:
-                print("❌ PARSING FAILED")
-                
-        except Exception as e:
-            print(f"❌ PARSING ERROR: {e}")
+        # Assert all rankings are correct
+        assert len(parsed_ranking.rankings) == len(test_case['expected_ranking']), \
+            f"Test case {i+1} ({test_case['name']}): Expected {len(test_case['expected_ranking'])} rankings, got {len(parsed_ranking.rankings)}"
         
-        print("\n" + "=" * 50)
+        # Check each expected ranking
+        for expected_principle, expected_rank in test_case['expected_ranking']:
+            found_match = False
+            for parsed_principle in parsed_ranking.rankings:
+                if (parsed_principle.principle == expected_principle and 
+                    parsed_principle.rank == expected_rank):
+                    found_match = True
+                    break
+            assert found_match, \
+                f"Test case {i+1} ({test_case['name']}): Expected {expected_principle.value} at rank {expected_rank}, but not found in parsed results"
+        
+        # Check certainty
+        assert parsed_ranking.certainty == test_case['expected_certainty'], \
+            f"Test case {i+1} ({test_case['name']}): Expected certainty {test_case['expected_certainty'].value}, got {parsed_ranking.certainty.value}"
 
 
+@pytest.mark.asyncio
 async def test_enhanced_parsing():
     """Test enhanced parsing with better logic."""
-    print("\nTesting Enhanced Parsing Logic")
-    print("=" * 50)
-    
-    # Test the enhanced parsing method
     utility_agent = UtilityAgent()
     
     for i, test_case in enumerate(TEST_CASES):
-        print(f"\nEnhanced Test {i+1}: {test_case['name']}")
-        print("-" * 30)
+        # Use direct pattern matching first
+        ranking_data = utility_agent._extract_ranking_direct(test_case['response'])
         
-        try:
-            # Use direct pattern matching first
-            ranking_data = utility_agent._extract_ranking_direct(test_case['response'])
-            if ranking_data:
-                print("✅ Direct pattern matching succeeded")
-                print(f"Found {len(ranking_data['rankings'])} rankings")
-                for ranking in ranking_data['rankings']:
-                    print(f"  {ranking['rank']}. {ranking['principle']}")
-                print(f"Certainty: {ranking_data['certainty']}")
-            else:
-                print("❌ Direct pattern matching failed")
-                
-        except Exception as e:
-            print(f"❌ Enhanced parsing error: {e}")
-        
-        print("\n" + "-" * 30)
+        # Assert that direct pattern matching works for our test cases
+        assert ranking_data is not None, f"Test case {i+1} ({test_case['name']}): Direct pattern matching should succeed"
+        assert len(ranking_data['rankings']) == len(test_case['expected_ranking']), \
+            f"Test case {i+1} ({test_case['name']}): Expected {len(test_case['expected_ranking'])} rankings in direct extraction"
+        assert ranking_data['certainty'] == test_case['expected_certainty'].value, \
+            f"Test case {i+1} ({test_case['name']}): Expected certainty {test_case['expected_certainty'].value} in direct extraction"
 
 
-if __name__ == "__main__":
-    asyncio.run(test_ranking_parsing())
-    asyncio.run(test_enhanced_parsing())

@@ -52,7 +52,7 @@ class TestMemoryManager(unittest.TestCase):
         
         self.assertIn("Previous memory content", prompt)
         self.assertIn("New round information", prompt)
-        self.assertIn("working memory", prompt)
+        self.assertIn("Return your complete updated memory", prompt)
     
     def test_create_memory_update_prompt_empty_memory(self):
         """Test memory update prompt creation with empty memory."""
@@ -63,7 +63,7 @@ class TestMemoryManager(unittest.TestCase):
         
         self.assertIn("(Empty)", prompt)
         self.assertIn("New round information", prompt)
-        self.assertIn("working memory", prompt)
+        self.assertIn("Return your complete updated memory", prompt)
     
     def test_prompt_agent_for_memory_update_success(self):
         """Test successful agent memory update."""

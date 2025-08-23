@@ -62,7 +62,7 @@ class RankedPrinciple(BaseModel):
 
 class PrincipleRanking(BaseModel):
     """Complete ranking of all four principles."""
-    rankings: List[RankedPrinciple] = Field(..., min_items=4, max_items=4)
+    rankings: List[RankedPrinciple] = Field(..., min_length=4, max_length=4)
     certainty: CertaintyLevel = Field(..., description="Overall certainty level for the entire ranking")
     
     @field_validator('rankings')

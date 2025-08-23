@@ -26,7 +26,7 @@ class OriginalValuesModeConfig(BaseModel):
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     language: str = Field("English", description="Language for experiment prompts and messages")
-    agents: List[AgentConfiguration] = Field(..., min_items=2, description="Participant agents")
+    agents: List[AgentConfiguration] = Field(..., min_length=2, description="Participant agents")
     utility_agent_model: str = Field("gpt-4.1-mini", description="Model for utility agents (parser/validator)")
     utility_agent_temperature: float = Field(0.0, ge=0.0, le=2.0, description="Temperature for utility agents")
     phase2_rounds: int = Field(10, gt=0, description="Maximum rounds for Phase 2 discussion")
@@ -41,6 +41,9 @@ class ExperimentConfiguration(BaseModel):
     memory_guidance_style: str = Field("narrative", description="Memory guidance style: 'narrative' or 'structured'")
     include_experiment_explanation_each_turn: bool = Field(False, description="Whether to include experiment explanation on every turn (default: only first turn per phase)")
     phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
+    
+    # Reproducibility configuration
+    seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")
     
     @field_validator('language')
     @classmethod
@@ -90,6 +93,21 @@ class ExperimentConfiguration(BaseModel):
         if len(names) != len(set(names)):
             raise ValueError("Agent names must be unique")
         return v
+    
+    def get_effective_seed(self) -> int:
+        """
+        ALWAYS return a seed for this experiment (specified or generated).
+        
+        Returns:
+            The seed to use - either the explicitly specified seed or 
+            a deterministically generated seed from configuration parameters.
+        """
+        if self.seed is not None:
+            return self.seed
+        
+        # Import here to avoid circular dependency
+        from utils.seed_manager import SeedManager
+        return SeedManager.generate_seed_from_config(self)
     
     @classmethod
     def from_yaml(cls, path: str) -> 'ExperimentConfiguration':

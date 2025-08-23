@@ -105,14 +105,14 @@ class ParticipantAgent:
         return self.agent.name
     
     async def update_memory(self, prompt: str, current_bank_balance: float = 0.0) -> str:
-        """Agent updates their own memory based on prompt."""
+        """Agent updates their own memory based on prompt using minimal context."""
         # Ensure agent is initialized
         await self.async_init()
         
-        # Create a temporary context just for memory update
+        # Create a specialized memory update context that uses minimal formatting
         temp_context = ParticipantContext(
             name=self.config.name,
-            role_description="Memory update",
+            role_description="MemoryUpdate",  # Special role for memory context detection
             bank_balance=current_bank_balance,
             memory="",
             round_number=0,
@@ -177,6 +177,15 @@ def _generate_dynamic_instructions(
     language_manager = get_language_manager()
     context = ctx.context
     
+    # Check if this is a memory update context and use minimal formatting
+    if context.role_description == "MemoryUpdate":
+        return language_manager.format_memory_context(
+            name=context.name,
+            bank_balance=context.bank_balance,
+            personality=config.personality
+        )
+    
+    # Standard context formatting for regular operations
     # Format memory for display using language manager
     memory_content = context.memory if context.memory.strip() else None
     formatted_memory = language_manager.format_memory_section(memory_content or "")

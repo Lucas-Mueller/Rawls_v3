@@ -282,8 +282,8 @@ class AgentCentricLogger:
         """Handle datetime and other non-serializable objects."""
         if isinstance(obj, datetime):
             return obj.isoformat()
-        elif hasattr(obj, 'dict'):  # Pydantic models
-            return obj.dict()
+        elif hasattr(obj, 'model_dump'):  # Pydantic models
+            return obj.model_dump()
         elif hasattr(obj, '__dict__'):
             return obj.__dict__
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")

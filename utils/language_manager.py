@@ -361,6 +361,13 @@ class LanguageManager:
                        personality=personality,
                        phase_instructions=phase_instructions)
     
+    def format_memory_context(self, name: str, bank_balance: float, personality: str) -> str:
+        """Format minimal context for memory updates only."""
+        return self.get("prompts.context_memory_update_format",
+                       name=name,
+                       bank_balance=bank_balance,
+                       personality=personality)
+    
     def format_memory_section(self, memory: str) -> str:
         """Format the memory section display."""
         if not memory or not memory.strip():

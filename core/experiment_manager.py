@@ -136,6 +136,12 @@ class FrohlichExperimentManager:
         # Ensure experiment manager is initialized
         await self.async_init()
         
+        # ALWAYS initialize reproducibility for every experiment
+        from utils.seed_manager import SeedManager
+        effective_seed = SeedManager.initialize_reproducibility(self.config)
+        seed_source = "explicit" if self.config.seed else "generated"
+        logger.info(f"Experiment seed: {effective_seed} ({seed_source})")
+        
         start_time = time.time()
         
         with trace(
@@ -215,7 +221,9 @@ class FrohlichExperimentManager:
                     timestamp=datetime.now(),
                     total_runtime=time.time() - start_time,
                     phase1_results=phase1_results,
-                    phase2_results=phase2_results
+                    phase2_results=phase2_results,
+                    seed_used=effective_seed,
+                    seed_source=seed_source
                 )
                 
                 logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")

@@ -15,6 +15,7 @@ from models import (
     CertaintyLevel, ApplicationResult, IncomeClass, GroupDiscussionResult
 )
 from core.distribution_generator import DistributionGenerator
+from core.experiment_manager import FrohlichExperimentManager
 
 
 class ExperimentTestFixture:
@@ -65,6 +66,38 @@ class ExperimentTestFixture:
             mock_agents.append(mock_agent)
         
         return mock_agents
+    
+    @staticmethod
+    def create_mocked_experiment_manager(config: ExperimentConfiguration) -> FrohlichExperimentManager:
+        """Create a FrohlichExperimentManager with properly mocked components.
+        
+        This avoids the need to call async_init() in tests by providing pre-mocked
+        utility_agent and participants that are ready for patching.
+        """
+        manager = FrohlichExperimentManager(config)
+        
+        # Create mock utility agent with all expected methods
+        mock_utility_agent = Mock(spec=UtilityAgent)
+        mock_utility_agent.parse_principle_ranking_enhanced = AsyncMock()
+        mock_utility_agent.parse_principle_choice_enhanced = AsyncMock()
+        mock_utility_agent.validate_constraint_specification = AsyncMock(return_value=True)
+        mock_utility_agent.extract_vote_from_statement = AsyncMock(return_value=None)
+        mock_utility_agent.async_init = AsyncMock()
+        
+        # Create mock participants list
+        mock_participants = []
+        for agent_config in config.agents:
+            mock_participant = Mock(spec=ParticipantAgent)
+            mock_participant.name = agent_config.name
+            mock_participant.agent = AsyncMock()
+            mock_participant.update_memory = AsyncMock(return_value="Updated memory")
+            mock_participants.append(mock_participant)
+        
+        # Override the None values with mocks
+        manager.utility_agent = mock_utility_agent
+        manager.participants = mock_participants
+        
+        return manager
     
     @staticmethod
     def create_test_distributions(num_sets: int = 4) -> List[DistributionSet]:
@@ -194,15 +227,23 @@ class ExperimentTestFixture:
     def create_test_principle_choices() -> List[PrincipleChoice]:
         """Create test principle choices for validation testing."""
         return [
-            PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_FLOOR),
-            PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_AVERAGE),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_FLOOR,
+                certainty=CertaintyLevel.SURE
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE,
+                certainty=CertaintyLevel.SURE
+            ),
             PrincipleChoice(
                 principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=15000
+                constraint_amount=15000,
+                certainty=CertaintyLevel.SURE
             ),
             PrincipleChoice(
                 principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
-                constraint_amount=20000
+                constraint_amount=20000,
+                certainty=CertaintyLevel.SURE
             )
         ]
     

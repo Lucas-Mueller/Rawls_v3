@@ -12,6 +12,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from core.experiment_manager import FrohlichExperimentManager
 from tests.integration.fixtures.experiment_fixtures import ExperimentTestFixture
 from tests.integration.utils.async_test_utils import AsyncTestUtils, TestDataGenerators
+from tests.integration.utils.test_helpers import validate_utility_agent_methods, get_utility_agent_mock_methods
 from utils.error_handling import (
     ExperimentError, MemoryError, ValidationError, AgentCommunicationError,
     ErrorSeverity, get_global_error_handler
@@ -30,6 +31,9 @@ class TestCompleteExperimentFlow:
         self.config = ExperimentTestFixture.create_minimal_config(num_agents=2)
         self.error_handler = get_global_error_handler()
         self.error_handler.clear_error_history()
+        
+        # Validate that all commonly mocked utility agent methods exist
+        validate_utility_agent_methods(get_utility_agent_mock_methods())
     
     @pytest.mark.asyncio
     async def test_minimal_experiment_success(self):
@@ -70,7 +74,7 @@ class TestCompleteExperimentFlow:
         }
         
         # Create mock experiment with predetermined responses
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Mock the agent interactions
         with patch('agents.Runner.run') as mock_runner:
@@ -160,7 +164,7 @@ class TestCompleteExperimentFlow:
             }
         }
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         with patch('agents.Runner.run') as mock_runner:
             # Flatten all responses
@@ -241,7 +245,7 @@ class TestCompleteExperimentFlow:
             }
         }
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         with patch('agents.Runner.run') as mock_runner:
             # Set up conflicting responses
@@ -348,7 +352,7 @@ class TestCompleteExperimentFlow:
             }
         }
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         with patch('agents.Runner.run') as mock_runner:
             # Set up responses
@@ -418,7 +422,7 @@ class TestCompleteExperimentFlow:
     async def test_experiment_saves_results_correctly(self):
         """Test that experiment results are saved correctly to file."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Use simplified mock for this test
         with patch('agents.Runner.run') as mock_runner, \
@@ -471,7 +475,7 @@ class TestCompleteExperimentFlow:
     async def test_experiment_error_statistics_tracking(self):
         """Test that experiment tracks and reports error statistics."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create scenario with some recoverable errors
         error_responses = ["Error response"] * 3 + ["Valid response"] * 10

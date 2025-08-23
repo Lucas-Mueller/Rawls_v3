@@ -1,25 +1,24 @@
 language: "English" 
-seed: 42
 
 agents:
   - name: "Alice"
     personality: "You are Alice a senior caring elderly lady, who is emphatic and kind."
-    model: 'gpt-4.1-nano'
+    model: 'microsoft/phi-3.5-mini-128k-instruct'
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
     personality: "You are James a young, ambitious man in his mid-20s "
-    model: "gpt-4.1-nano"
+    model: "google/gemini-2.0-flash-001"
     temperature: 0
     memory_character_limit: 25000
-    reasoning_enabled: true
+    reasoning_enabled: false
     
 
   
 
-utility_agent_model: 'gpt-4.1-nano'
+utility_agent_model: 'google/gemini-2.0-flash-001'
 utility_agent_temperature: 0.0
 
 phase2_rounds: 4

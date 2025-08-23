@@ -30,7 +30,7 @@ class TestErrorRecovery:
     async def test_memory_limit_recovery(self):
         """Test recovery from memory limit exceeded scenarios."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create responses that will initially exceed memory limits
         long_memory = "A" * 60000  # Exceeds default 50,000 limit
@@ -78,7 +78,7 @@ class TestErrorRecovery:
     async def test_agent_communication_failure_recovery(self):
         """Test recovery from agent communication failures."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create scenario with intermittent communication failures
         call_count = [0]
@@ -128,7 +128,7 @@ class TestErrorRecovery:
     async def test_validation_error_recovery(self):
         """Test recovery from principle choice validation errors."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create utility agent that initially returns invalid choices, then valid ones
         invalid_choices = [
@@ -184,7 +184,7 @@ class TestErrorRecovery:
     async def test_api_failure_graceful_degradation(self):
         """Test graceful degradation when OpenAI API fails."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Simulate complete API failure
         def api_failure(*args, **kwargs):
@@ -213,7 +213,7 @@ class TestErrorRecovery:
     async def test_partial_agent_failure_handling(self):
         """Test handling when some agents fail but others succeed."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Make first agent always fail, second agent always succeed
         def selective_failure(*args, **kwargs):
@@ -336,7 +336,7 @@ class TestErrorRecovery:
     async def test_concurrent_error_handling(self):
         """Test error handling during concurrent Phase 1 execution."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create scenario where agents fail at different times
         agent_errors = {
@@ -401,7 +401,7 @@ class TestErrorRecovery:
     async def test_error_context_preservation(self):
         """Test that error context is properly preserved through the call stack."""
         
-        manager = FrohlichExperimentManager(self.config)
+        manager = ExperimentTestFixture.create_mocked_experiment_manager(self.config)
         
         # Create specific error with rich context
         def contextual_failure(*args, **kwargs):

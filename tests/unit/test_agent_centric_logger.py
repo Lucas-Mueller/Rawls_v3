@@ -79,17 +79,29 @@ class TestAgentCentricLogger:
         """Test logging initial ranking."""
         self.logger.initialize_experiment(self.participants, self.mock_config)
         
+        # Create a proper PrincipleRanking object
+        from models import PrincipleRanking, RankedPrinciple, JusticePrinciple, CertaintyLevel
+        ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.VERY_SURE
+        )
+        
         self.logger.log_initial_ranking(
             "Agent1",
-            "Ranking: A=1, B=2, C=3, D=4",
-            "Very sure",
+            ranking,
             "Initial memory state",
             0.0
         )
         
         initial_ranking = self.logger.agent_logs["Agent1"].phase_1.initial_ranking
-        assert initial_ranking.principle_ranking_result == "Ranking: A=1, B=2, C=3, D=4"
-        assert initial_ranking.confidence_level == "Very sure"
+        assert initial_ranking.ranking_result is not None
+        assert initial_ranking.ranking_result.certainty == "very_sure"
+        assert len(initial_ranking.ranking_result.rankings) == 4
         assert initial_ranking.memory_coming_in_this_round == "Initial memory state"
         assert initial_ranking.bank_balance == 0.0
     
@@ -173,7 +185,19 @@ class TestAgentCentricLogger:
         self.logger.initialize_experiment(self.participants, self.mock_config)
         
         # Add some sample data
-        self.logger.log_initial_ranking("Agent1", "Test ranking", "Sure", "Memory", 0.0)
+        # Create a test ranking
+        from models import PrincipleRanking, RankedPrinciple, JusticePrinciple, CertaintyLevel
+        test_ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.SURE
+        )
+        
+        self.logger.log_initial_ranking("Agent1", test_ranking, "Memory", 0.0)
         self.logger.log_demonstration_round("Agent1", 1, "A", "High", 25.0, "Alt: B=20", "Mem", 0.0, 25.0)
         
         self.logger.set_general_information(
@@ -254,12 +278,9 @@ class TestMemoryStateCapture:
     
     def test_extract_confidence_from_response(self):
         """Test extracting confidence from response text."""
-        assert MemoryStateCapture.extract_confidence_from_response("I am very_sure about this") == "Very sure"
-        assert MemoryStateCapture.extract_confidence_from_response("I feel sure") == "Sure"
-        assert MemoryStateCapture.extract_confidence_from_response("I have no_opinion") == "No opinion"
-        assert MemoryStateCapture.extract_confidence_from_response("I am very unsure") == "Very unsure"
-        assert MemoryStateCapture.extract_confidence_from_response("I am unsure") == "Unsure"
-        assert MemoryStateCapture.extract_confidence_from_response("Random text") == "Not specified"
+# This method was removed as confidence is now handled by structured PrincipleRanking objects
+        # Skip this test as the method no longer exists
+        pytest.skip("Method removed - confidence now handled by PrincipleRanking objects")
     
     def test_extract_vote_intention(self):
         """Test extracting vote intention from response."""
@@ -280,7 +301,29 @@ class TestTargetStateFormat:
         from models.logging_types import (
             AgentExperimentLog, AgentPhase1Logging, AgentPhase2Logging,
             InitialRankingLog, DetailedExplanationLog, PostExplanationRankingLog,
-            FinalRankingLog, PostDiscussionLog
+            FinalRankingLog, PostDiscussionLog, PrincipleRankingResult
+        )
+        from models import PrincipleRanking, RankedPrinciple, JusticePrinciple, CertaintyLevel
+        
+        # Create proper PrincipleRanking objects
+        test_ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.SURE
+        )
+        
+        very_sure_ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ],
+            certainty=CertaintyLevel.VERY_SURE
         )
         
         agent_log = AgentExperimentLog(
@@ -291,8 +334,7 @@ class TestTargetStateFormat:
             reasoning_enabled=True,
             phase_1=AgentPhase1Logging(
                 initial_ranking=InitialRankingLog(
-                    principle_ranking_result="A=1, B=2, C=3, D=4",
-                    confidence_level="Sure",
+                    ranking_result=PrincipleRankingResult.from_principle_ranking(test_ranking),
                     memory_coming_in_this_round="Initial memory",
                     bank_balance=0.0
                 ),
@@ -302,15 +344,13 @@ class TestTargetStateFormat:
                     bank_balance=0.0
                 ),
                 ranking_2=PostExplanationRankingLog(
-                    principle_ranking_result="A=1, B=2, C=3, D=4",
-                    confidence_level="Sure", 
+                    ranking_result=PrincipleRankingResult.from_principle_ranking(test_ranking),
                     memory_coming_in_this_round="Ranking 2 memory",
                     bank_balance=0.0
                 ),
                 demonstrations=[],
                 ranking_3=FinalRankingLog(
-                    principle_ranking_result="A=1, B=2, C=3, D=4",
-                    confidence_level="Very sure",
+                    ranking_result=PrincipleRankingResult.from_principle_ranking(very_sure_ranking),
                     memory_coming_in_this_round="Final memory",
                     bank_balance=100.0
                 )
@@ -320,8 +360,7 @@ class TestTargetStateFormat:
                 post_group_discussion=PostDiscussionLog(
                     class_put_in="High",
                     payoff_received=30.0,
-                    final_ranking="A=1, B=2, C=3, D=4",
-                    confidence_level="Very sure",
+                    final_ranking=PrincipleRankingResult.from_principle_ranking(very_sure_ranking),
                     memory_coming_in_this_round="Final discussion memory",
                     bank_balance=130.0
                 )
@@ -356,7 +395,7 @@ class TestTargetStateFormat:
         assert target_format["name"] == "Test Agent"
         assert target_format["model"] == "o3-mini"
         assert target_format["temperature"] == 0.7
-        assert phase1["initial_ranking"]["confidence_level"] == "Sure"
+        assert phase1["initial_ranking"]["ranking_result"]["certainty"] == "sure"
         assert phase2["post_group_discussion"]["payoff_received"] == 30.0
 
 

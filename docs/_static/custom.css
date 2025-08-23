@@ -1,0 +1,301 @@
+/* Custom CSS for Frohlich Experiment Documentation */
+
+/* Enhanced color scheme */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #7c3aed;
+    --accent-color: #059669;
+    --warning-color: #d97706;
+    --error-color: #dc2626;
+    --surface-color: #f8fafc;
+    --text-muted: #64748b;
+}
+
+/* Improved code block styling */
+.highlight {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 1.5rem 0;
+}
+
+.highlight pre {
+    padding: 1.5rem;
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* Copy button enhancements */
+.copybtn {
+    background: var(--primary-color) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    color: white !important;
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.copybtn:hover {
+    background: var(--secondary-color) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced admonitions */
+.admonition {
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+}
+
+.admonition.note {
+    border-left-color: var(--primary-color);
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.admonition.warning {
+    border-left-color: var(--warning-color);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.admonition.tip {
+    border-left-color: var(--accent-color);
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.admonition.important {
+    border-left-color: var(--error-color);
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+/* Interactive tabs styling */
+.sphinx-tabs {
+    margin: 1.5rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sphinx-tabs-tab {
+    background: var(--surface-color);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sphinx-tabs-tab:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sphinx-tabs-tab[aria-selected="true"] {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sphinx-tabs-panel {
+    padding: 1.5rem;
+    background: white;
+}
+
+/* Enhanced navigation */
+.toctree-wrapper ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.toctree-wrapper li {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.toctree-wrapper li:hover {
+    background: var(--surface-color);
+}
+
+.toctree-wrapper a {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Mermaid diagram styling */
+.mermaid {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Code example enhancements */
+.code-example {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    overflow: hidden;
+}
+
+.code-example-header {
+    background: var(--surface-color);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.code-example-content {
+    padding: 1rem;
+}
+
+/* Interactive elements */
+.config-generator {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.config-generator h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.form-group {
+    margin: 1rem 0;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .highlight pre {
+        padding: 1rem;
+        font-size: 0.8rem;
+    }
+    
+    .sphinx-tabs-tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .config-generator {
+        padding: 1rem;
+    }
+}
+
+/* Animation utilities */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Link styling */
+a.reference.external::after {
+    content: " ↗";
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+/* Table improvements */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    padding: 1rem;
+}
+
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+tr:nth-child(even) {
+    background: var(--surface-color);
+}
+
+/* Search improvements */
+.search-results {
+    margin: 1rem 0;
+}
+
+.search-result {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background: white;
+    transition: box-shadow 0.2s ease;
+}
+
+.search-result:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Breadcrumb styling */
+.breadcrumb {
+    background: var(--surface-color);
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}

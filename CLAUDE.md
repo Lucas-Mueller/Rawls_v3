@@ -84,11 +84,19 @@ python run_tests.py unit
 # Run only integration tests  
 python run_tests.py integration
 
+# Run tests with coverage reporting (requires pytest-cov)
+python run_tests.py --coverage
+
 # Run specific test files using unittest
 python -m unittest tests.unit.test_memory_manager -v
 python -m unittest tests.integration.test_complete_experiment_flow -v
 python -m unittest tests.integration.test_error_recovery -v
 python -m unittest tests.integration.test_state_consistency -v
+
+# Run tests with pytest directly (if pytest is available)
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+pytest -m "not slow"  # Skip slow tests
 ```
 
 ### Environment Requirements
@@ -155,10 +163,13 @@ The system follows a modular, service-oriented architecture with the following *
 - **`tests/`**: Unit and integration tests with fixtures and async testing utilities
 - **`translations/`**: Multi-language support files (English, Spanish, Mandarin)
 - **`hypothesis_2_&_4/`**: Experimental condition directory with batch configs and analysis notebooks
+- **`demos/`**: Demonstration scripts and test files for specific features
+- **`docs/`**: Sphinx documentation with comprehensive API and architectural documentation
 
 ## Development Guidelines
 
 - **Testing**: Always run `python run_tests.py` before committing changes
+- **Test Configuration**: Uses pytest.ini with async support, test markers (unit/integration/slow), and coverage reporting
 - **Configuration**: All experimental parameters configurable via YAML files
 - **Dependencies**: Core dependencies are `openai-agents[litellm]`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries - avoid adding unnecessary packages
 
@@ -208,14 +219,8 @@ Each participant agent has configurable:
 ### Memory System
 - **Agent-Managed**: Agents create and update their own memory throughout the experiment
 - **Character Limit**: Default 50,000 characters (configurable via `memory_character_limit`)
-- **Complete Freedom**: Agents decide what to remember and how to structure their memory
 - **Error Handling**: 5 retry attempts if memory exceeds character limit, experiment aborts on failure
 - **Continuous**: Memory persists across Phase 1 and Phase 2 for complete experimental continuity
-
-### Data Validation
-- Income distributions validated for positive values and proper constraint specifications
-- Justice principle choices validated (principles c/d require constraint amounts)
-- All agent responses parsed and validated by dedicated utility agent
 
 ### Model Provider Support
 - **OpenAI Models**: Model strings without "/" use standard OpenAI Agents SDK
@@ -224,16 +229,7 @@ Each participant agent has configurable:
   - `OPENAI_API_KEY`: Retrieved automatically for OpenAI models - set only if needed
   - `OPENROUTER_API_KEY`: Retrieved automatically for OpenRouter models (those containing "/") - set only if needed
 - **Mixed Configurations**: Experiments can use different model providers for different agents
-- **Utility Agent Configuration**: `utility_agent_model` in config controls model for parser/validator agents
-
-### Multi-Language Support
-- **Supported Languages**: English, Spanish, and Mandarin
-- **Translation Files**: Located in `translations/` directory with language-specific prompt files
-- **Language Configuration**: Use language-specific config files (`spanish_config.yaml`, `mandarin_config.yaml`)
-- **Agent Language**: All participant agents conduct the experiment in the configured language
-- **Validation**: Utility agents parse responses in the appropriate language
 
 ### Output & Tracing
 - Results saved as timestamped JSON files: `experiment_results_YYYYMMDD_HHMMSS.json`
 - OpenAI tracing enabled: view at `https://platform.openai.com/traces`
-- Comprehensive logging with experiment summaries

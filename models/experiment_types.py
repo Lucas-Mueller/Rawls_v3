@@ -86,7 +86,7 @@ class IncomeDistribution(BaseModel):
 
 class DistributionSet(BaseModel):
     """A set of 4 income distributions for an experiment round."""
-    distributions: List[IncomeDistribution] = Field(..., min_items=4, max_items=4)
+    distributions: List[IncomeDistribution] = Field(..., min_length=4, max_length=4)
     multiplier: float = Field(..., gt=0, description="Applied to base distribution")
 
 
@@ -191,7 +191,7 @@ class ExperimentResults(BaseModel):
     phase1_results: List[Phase1Results]
     phase2_results: Phase2Results
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    # Reproducibility metadata
+    seed_used: Optional[int] = Field(None, description="Random seed used for this experiment")
+    seed_source: Optional[str] = Field(None, description="Source of seed: 'explicit' or 'generated'")
+    
