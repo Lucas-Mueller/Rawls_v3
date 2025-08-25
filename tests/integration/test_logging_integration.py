@@ -189,6 +189,8 @@ class TestLoggingIntegration:
             manager.agent_logger.set_general_information(
                 consensus_reached=False,
                 consensus_principle=None,
+                max_rounds_phase_2=5,
+                rounds_conducted_phase_2=3,
                 public_conversation="Test conversation",
                 final_vote_results={"TestAgent1": "A", "TestAgent2": "B"},
                 config_file="test_config.yaml"
@@ -281,7 +283,9 @@ class TestLoggingIntegration:
         
         self.logger.set_general_information(
             consensus_reached=True,
-            consensus_principle="Principle A", 
+            consensus_principle="Principle A",
+            max_rounds_phase_2=10,
+            rounds_conducted_phase_2=8, 
             public_conversation="TestAgent1: Let's choose A\nTestAgent2: I agree",
             final_vote_results={"TestAgent1": "Principle A", "TestAgent2": "Principle A"},
             config_file="default_config.yaml"

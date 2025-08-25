@@ -33,6 +33,8 @@ class AgentCentricLogger:
         self.agent_logs: Dict[str, AgentExperimentLog] = {}
         self.general_info: Optional[GeneralExperimentInfo] = None
         self.experiment_start_time: Optional[datetime] = None
+        self.seed_used: Optional[int] = None
+        self.seed_source: Optional[str] = None
         
     def initialize_experiment(
         self, 
@@ -86,6 +88,11 @@ class AgentCentricLogger:
                     )
                 )
             )
+    
+    def set_seed_info(self, seed_used: Optional[int], seed_source: Optional[str]):
+        """Set seed information for the experiment."""
+        self.seed_used = seed_used
+        self.seed_source = seed_source
     
     def log_initial_ranking(
         self, 
@@ -226,6 +233,8 @@ class AgentCentricLogger:
         self,
         consensus_reached: bool,
         consensus_principle: Optional[str],
+        max_rounds_phase_2: int,
+        rounds_conducted_phase_2: int,
         public_conversation: str,
         final_vote_results: Dict[str, str],
         config_file: str,
@@ -236,9 +245,12 @@ class AgentCentricLogger:
         self.general_info = GeneralExperimentInfo(
             consensus_reached=consensus_reached,
             consensus_principle=consensus_principle,
+            max_rounds_phase_2=max_rounds_phase_2,
+            rounds_conducted_phase_2=rounds_conducted_phase_2,
             public_conversation_phase_2=public_conversation,
             final_vote_results=final_vote_results,
             config_file_used=config_file,
+            seed_randomness=None,  # Will be set later via set_seed_info
             income_class_probabilities=income_class_probabilities,
             original_values_mode_enabled=original_values_mode_enabled
         )
@@ -253,8 +265,16 @@ class AgentCentricLogger:
             for agent_log in self.agent_logs.values()
         ]
         
+        # Create a copy of general_info with seed information added
+        general_info_dict = self.general_info.model_dump()
+        general_info_dict['seed_randomness'] = self.seed_used
+        general_info_dict['seed_used'] = self.seed_used  # Backward compatibility
+        general_info_dict['seed_source'] = self.seed_source
+        
+        general_info_with_seed = GeneralExperimentInfo(**general_info_dict)
+        
         return TargetStateStructure(
-            general_information=self.general_info,
+            general_information=general_info_with_seed,
             agents=agent_data
         )
     

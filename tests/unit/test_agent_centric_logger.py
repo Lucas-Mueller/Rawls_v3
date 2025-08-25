@@ -168,6 +168,8 @@ class TestAgentCentricLogger:
         self.logger.set_general_information(
             consensus_reached=True,
             consensus_principle="Principle A",
+            max_rounds_phase_2=5,
+            rounds_conducted_phase_2=3,
             public_conversation="Agent1: I like A\nAgent2: Me too",
             final_vote_results={"Agent1": "Principle A", "Agent2": "Principle A"},
             config_file="test_config.yaml"
@@ -203,6 +205,8 @@ class TestAgentCentricLogger:
         self.logger.set_general_information(
             consensus_reached=True,
             consensus_principle="Principle A",
+            max_rounds_phase_2=10,
+            rounds_conducted_phase_2=5,
             public_conversation="Test conversation",
             final_vote_results={"Agent1": "A", "Agent2": "A"},
             config_file="test.yaml"
@@ -226,6 +230,8 @@ class TestAgentCentricLogger:
         self.logger.set_general_information(
             consensus_reached=False,
             consensus_principle=None,
+            max_rounds_phase_2=8,
+            rounds_conducted_phase_2=8,
             public_conversation="No consensus reached",
             final_vote_results={"Agent1": "A", "Agent2": "B"},
             config_file="test.yaml"

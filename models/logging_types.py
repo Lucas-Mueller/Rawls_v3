@@ -179,11 +179,27 @@ class GeneralExperimentInfo(BaseModel):
     """General experiment information for target state."""
     consensus_reached: bool
     consensus_principle: Optional[str] = None
+    max_rounds_phase_2: int
+    rounds_conducted_phase_2: int
     public_conversation_phase_2: str
     final_vote_results: Dict[str, str]
     config_file_used: str
+    seed_randomness: Optional[int] = None
     income_class_probabilities: Optional[Dict[str, float]] = None
     original_values_mode_enabled: Optional[bool] = None
+    # Backward compatibility fields
+    seed_used: Optional[int] = None
+    seed_source: Optional[str] = None
+    
+    def __init__(self, **data):
+        """Initialize with backward compatibility support."""
+        # Handle seed_randomness backward compatibility
+        if 'seed_used' in data and 'seed_randomness' not in data:
+            data['seed_randomness'] = data['seed_used']
+        elif 'seed_randomness' in data and 'seed_used' not in data:
+            data['seed_used'] = data['seed_randomness']
+        
+        super().__init__(**data)
 
 
 class TargetStateStructure(BaseModel):
@@ -197,9 +213,12 @@ class TargetStateStructure(BaseModel):
             "general_information": {
                 "consensus_reached": self.general_information.consensus_reached,
                 "consensus_principle": self.general_information.consensus_principle,
+                "max_rounds_phase_2": self.general_information.max_rounds_phase_2,
+                "rounds_conducted_phase_2": self.general_information.rounds_conducted_phase_2,
                 "public_conversation_phase_2": self.general_information.public_conversation_phase_2,
                 "final_vote_results": self.general_information.final_vote_results,
                 "config_file_used": self.general_information.config_file_used,
+                "seed_randomness": self.general_information.seed_randomness,
                 "income_class_probabilities": self.general_information.income_class_probabilities,
                 "original_values_mode_enabled": self.general_information.original_values_mode_enabled
             },

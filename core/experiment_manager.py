@@ -310,6 +310,8 @@ class FrohlichExperimentManager:
                 if phase2_results.discussion_result.agreed_principle
                 else None
             ),
+            max_rounds_phase_2=self.config.phase2_rounds,
+            rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
             public_conversation=public_conversation,
             final_vote_results=final_vote_results,
             config_file="default_config.yaml",  # Could be made configurable
@@ -319,8 +321,11 @@ class FrohlichExperimentManager:
     
     def save_results(self, results: ExperimentResults, output_path: str):
         """Save experiment results to JSON file using agent-centric logging."""
+        # Add seed info to the logger before saving
+        self.agent_logger.set_seed_info(results.seed_used, results.seed_source)
         self.agent_logger.save_to_file(output_path)
         logger.info(f"Results saved to: {output_path}")
+        logger.info(f"Seed used: {results.seed_used} ({results.seed_source})")
     
     def get_experiment_summary(self, results: ExperimentResults) -> str:
         """Generate a human-readable summary of the experiment."""

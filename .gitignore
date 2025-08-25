@@ -163,7 +163,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
+knowledge_base
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
@@ -177,6 +177,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+.claude
+ 
 # Cursor  
 #  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to 
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
@@ -186,3 +188,4 @@ cython_debug/
 
 # Experiment results (archive important results separately)
 experiment_results/
+/xperiment_data
