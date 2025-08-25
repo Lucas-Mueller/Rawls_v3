@@ -323,23 +323,12 @@ class UtilityAgent:
         # Ensure utility agent is initialized
         await self.async_init()
         
-        # Create a simple prompt for multilingual agreement detection
-        detection_prompt = f"""
-Analyze this response to determine if the participant agrees to conduct a vote.
-
-Response to analyze: "{response}"
-
-Consider responses in any language that indicate:
-- Agreement to vote (YES, SÍ, 是的, oui, etc.)
-- Consent to proceed with voting
-- Positive acknowledgment
-
-Ignore qualified responses like "Yes, but..." or "Yes, however..."
-
-Respond with exactly one word:
-- "AGREES" if they clearly agree to vote
-- "DISAGREES" if they decline, have reservations, or give qualified responses
-"""
+        # Get localized prompt from language manager
+        language_manager = get_language_manager()
+        detection_prompt = language_manager.get(
+            "prompts.utility_agreement_detection_multilingual",
+            response=response
+        )
         
         result = await Runner.run(self.parser_agent, detection_prompt)
         return result.final_output.strip().upper() == "AGREES"
@@ -349,23 +338,12 @@ Respond with exactly one word:
         # Ensure utility agent is initialized
         await self.async_init()
         
-        detection_prompt = f"""
-Analyze this statement to determine if the participant is explicitly proposing to conduct a formal vote.
-
-Statement: "{statement}"
-
-Look for EXPLICIT vote proposals such as:
-- "I propose we vote"
-- "Let's vote on this"
-- "I call for a vote"
-- "We should vote now"
-
-IGNORE casual mentions of agreement, consensus, or deciding together unless they explicitly mention voting.
-
-Respond with exactly one word:
-- "VOTE_PROPOSED" if they explicitly propose a formal vote
-- "NO_VOTE" if they don't explicitly propose voting
-"""
+        # Get localized prompt from language manager
+        language_manager = get_language_manager()
+        detection_prompt = language_manager.get(
+            "prompts.utility_vote_detection_simple",
+            statement=statement
+        )
         
         result = await Runner.run(self.parser_agent, detection_prompt)
         

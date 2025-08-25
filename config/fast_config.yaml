@@ -1,4 +1,4 @@
-language: "English" ## Alternatives: English, Spanish
+language: "Mandarin" ## Alternatives: English, Spanish, Mandarin
 
 agents:
   - name: "Amartya Sen"
