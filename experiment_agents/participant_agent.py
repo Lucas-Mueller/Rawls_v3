@@ -192,7 +192,7 @@ def _generate_dynamic_instructions(
     
     # Get phase-specific instructions using language manager
     phase_instructions = _get_phase_specific_instructions_translated(
-        context.phase, context.round_number, language_manager
+        context.phase, context.round_number, language_manager, experiment_config
     )
     
     # Format everything using language manager with config-aware explanation inclusion
@@ -209,13 +209,15 @@ def _generate_dynamic_instructions(
     )
 
 
-def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_number: int, language_manager) -> str:
+def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_number: int, language_manager, experiment_config=None) -> str:
     """Get instructions specific to the current phase and round using language manager."""
     
     if phase == ExperimentPhase.PHASE_1:
         return language_manager.get_phase1_instructions(round_number)
     elif phase == ExperimentPhase.PHASE_2:
-        return language_manager.get_phase2_instructions(round_number)
+        # Pass voting detection mode to language manager for Phase 2
+        voting_mode = getattr(experiment_config, 'voting_detection_mode', 'simple') if experiment_config else 'simple'
+        return language_manager.get_phase2_instructions(round_number, voting_mode)
     else:
         return language_manager.get_prompt("fallback", "default_phase_instructions")
 

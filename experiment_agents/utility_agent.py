@@ -1089,3 +1089,36 @@ class UtilityAgent:
             return True, first_pref, warnings
         else:
             return False, None, warnings
+    
+    def check_ballot_consensus(self, ballots: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
+        """
+        Check if secret ballots reached consensus. 
+        Reuses logic from existing check_preference_consensus but for secret ballots.
+        """
+        if not ballots:
+            return False, None, ["No ballots received"]
+        
+        # Group ballots by principle and constraint amount  
+        ballot_groups = {}
+        warnings = []
+        
+        for ballot in ballots:
+            # Create key for grouping (principle + constraint amount)
+            key = (ballot.principle.value, ballot.constraint_amount)
+            
+            if key not in ballot_groups:
+                ballot_groups[key] = []
+            ballot_groups[key].append(ballot)
+            
+            # Check for missing constraint amounts
+            if (ballot.constraint_amount is None and 
+                ballot.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                   JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                warnings.append(f"Ballot missing constraint amount for {ballot.principle.value}")
+        
+        # Check for consensus (all ballots in same group)
+        if len(ballot_groups) == 1:
+            agreed_choice = list(ballot_groups.values())[0][0]  # First ballot in the single group
+            return True, agreed_choice, warnings
+        
+        return False, None, warnings

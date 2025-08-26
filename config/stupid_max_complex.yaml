@@ -1,30 +1,29 @@
-language: "English" ## Alternatives: English, Spanish
-seed: 42
+language: "English" 
 
 agents:
   - name: "Alice"
     personality: "You are an american college student."
-    model: 'gpt-4.1-mini'
+    model: "google/gemma-3-4b-it"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
-    personality: "You are James"
-    model: 'gpt-4.1-mini'
+    personality: "You are an american college student."
+    model: "google/gemma-3-4b-it"
     temperature: 0
     memory_character_limit: 25000
-    reasoning_enabled: false
-  
+    reasoning_enabled: true
+    
 
-utility_agent_model: 'gpt-4.1-mini'
+  
+voting_detection_mode: "complex"
+
+utility_agent_model: 'google/gemini-2.5-flash-lite'
 utility_agent_temperature: 0.0
 
-phase2_rounds: 5
+phase2_rounds: 4
 distribution_range_phase2: [4, 8]
-
-# Voting detection mode: "simple" (current behavior) or "complex" (new two-phase voting)
-voting_detection_mode: "complex"
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
 income_class_probabilities:

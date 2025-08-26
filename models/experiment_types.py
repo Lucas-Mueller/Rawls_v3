@@ -142,6 +142,10 @@ class GroupDiscussionState(BaseModel):
     valid_participants: Optional[List[str]] = None
     current_round_preferences: Dict[str, 'PrincipleChoice'] = Field(default_factory=dict, description="Preferences stated by participants in current round")
     
+    # Complex voting fields
+    active_vote_in_progress: bool = False
+    last_vote_result: Optional[VoteResult] = None
+    
     def add_statement(self, participant_name: str, statement: str):
         """Add statement to public history with participant validation."""
         # Validate participant if valid_participants is set

@@ -3,6 +3,7 @@ Phase 2 manager for group discussion and consensus building.
 """
 import asyncio
 import random
+import re
 from typing import List, Dict
 from agents import Agent, Runner
 
@@ -362,6 +363,24 @@ Please ensure your response contains a clear statement about your position on th
                     context, new_round=round_num
                 )
                 
+                # Check voting detection mode
+                if config.voting_detection_mode == "complex":
+                    # Try complex voting detection
+                    consensus_via_voting = await self._handle_complex_voting_mode(
+                        participant, statement, discussion_state, contexts
+                    )
+                    
+                    if consensus_via_voting and discussion_state.last_vote_result:
+                        # Return consensus result from voting
+                        return GroupDiscussionResult(
+                            consensus_reached=True,
+                            agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                            final_round=round_num,
+                            discussion_history=discussion_state.public_history,
+                            vote_history=discussion_state.vote_history
+                        )
+                
+                # Continue with existing simple mode logic (preference detection)
                 # Check for preference statement using new simple system
                 preference = await self.utility_agent.detect_preference_statement(statement)
                 
@@ -726,16 +745,224 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                                    discussion_history=discussion_state.public_history or "No previous discussion.")
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, internal_reasoning: str = "") -> str:
-        """Build prompt for group discussion round."""
+        """Build prompt for group discussion round based on voting detection mode."""
         language_manager = get_language_manager()
         
-        base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
-                                          round_number=round_num,
-                                          max_rounds=self.config.phase2_rounds,
-                                          discussion_history=discussion_state.public_history or "No previous discussion.")
+        # Use different prompts based on voting detection mode
+        if self.config.voting_detection_mode == "complex":
+            # For complex mode: allow voting proposals
+            base_prompt = language_manager.get("prompts.phase2_discussion_prompt_complex",
+                                              round_number=round_num,
+                                              max_rounds=self.config.phase2_rounds,
+                                              discussion_history=discussion_state.public_history or "No previous discussion.")
+        else:
+            # For simple mode: use preference-based consensus (FIXED to use correct prompt)
+            base_prompt = language_manager.get("prompts.phase2_discussion_prompt_simple",
+                                              round_number=round_num,
+                                              max_rounds=self.config.phase2_rounds,
+                                              discussion_history=discussion_state.public_history or "No previous discussion.")
         
         # If internal reasoning is provided, include it in the prompt
         if internal_reasoning and internal_reasoning.strip():
             return f"{base_prompt}\n\n=== YOUR INTERNAL REASONING ===\n{internal_reasoning}\n================================\n\nBased on your internal reasoning above, what is your statement to the group for this round?"
         else:
             return base_prompt
+    
+    async def _handle_complex_voting_mode(
+        self,
+        participant: 'ParticipantAgent',
+        statement: str,
+        discussion_state: GroupDiscussionState,
+        contexts: List[ParticipantContext]
+    ) -> bool:
+        """
+        Handle complex voting detection and process if needed.
+        Returns True if consensus was reached through voting, False otherwise.
+        """
+        
+        # Check if voting intention is detected using existing method
+        vote_detection_result = await self.utility_agent.detect_vote_intention_enhanced(statement)
+        
+        if vote_detection_result is None:
+            return False  # No voting intention detected
+        
+        self._log_info(f"Complex voting intention detected from {participant.name}")
+        
+        # Set active vote flag
+        discussion_state.active_vote_in_progress = True
+        
+        # Step A: Confirmation Phase
+        confirmation_success = await self._conduct_confirmation_phase(
+            participant.name, statement, contexts, discussion_state
+        )
+        
+        if not confirmation_success:
+            self._log_info("Voting confirmation failed - returning to discussion")
+            discussion_state.active_vote_in_progress = False
+            return False
+        
+        # Step B: Secret Ballot Phase
+        consensus_reached = await self._conduct_secret_ballot_phase(
+            contexts, discussion_state
+        )
+        
+        # Complete voting process
+        discussion_state.active_vote_in_progress = False
+        
+        return consensus_reached
+    
+    async def _conduct_confirmation_phase(
+        self,
+        initiator_name: str,
+        initiation_statement: str,
+        contexts: List[ParticipantContext],
+        discussion_state: GroupDiscussionState
+    ) -> bool:
+        """
+        Conduct public confirmation phase using existing agreement detection.
+        Returns True if all participants agree to vote.
+        """
+        
+        self._log_info("=== COMPLEX VOTING: CONFIRMATION PHASE ===")
+        
+        language_manager = get_language_manager()
+        
+        # Create confirmation prompt using new language manager key
+        confirmation_prompt = language_manager.get(
+            "prompts.utility_voting_confirmation_request",
+            initiation_statement=initiation_statement
+        )
+        
+        confirmations = []
+        
+        for i, context in enumerate(contexts):
+            participant = self.participants[i]
+            
+            # Get confirmation response from participant
+            result = await Runner.run(participant.agent, confirmation_prompt, context=context)
+            confirmation_response = result.final_output
+            
+            # Use existing multilingual agreement detection
+            agrees_to_vote = await self.utility_agent.detect_agreement_multilingual(confirmation_response)
+            
+            confirmations.append({
+                'participant': participant.name,
+                'response': confirmation_response,
+                'agrees': agrees_to_vote
+            })
+            
+            # Add to public history (visible to all)
+            discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+            
+            # If anyone disagrees, confirmation phase fails
+            if not agrees_to_vote:
+                self._log_info(f"{participant.name} declined voting - confirmation failed")
+                discussion_state.public_history += f"\n[VOTING RESULT] Confirmation failed - returning to discussion"
+                return False
+        
+        self._log_info("All participants agreed to vote - proceeding to secret ballot")
+        discussion_state.public_history += f"\n[VOTING RESULT] All participants agreed - proceeding to secret ballot"
+        return True
+    
+    async def _conduct_secret_ballot_phase(
+        self,
+        contexts: List[ParticipantContext],
+        discussion_state: GroupDiscussionState
+    ) -> bool:
+        """
+        Conduct secret ballot phase using existing parsing methods.
+        Returns True if consensus is reached.
+        """
+        
+        self._log_info("=== COMPLEX VOTING: SECRET BALLOT PHASE ===")
+        
+        language_manager = get_language_manager()
+        ballot_prompt = language_manager.get("prompts.utility_secret_ballot_request")
+        
+        ballots = []
+        
+        for i, context in enumerate(contexts):
+            participant = self.participants[i]
+            
+            # Get secret ballot from participant
+            result = await Runner.run(participant.agent, ballot_prompt, context=context)
+            ballot_response = result.final_output
+            
+            # Parse ballot using existing utility agent methods
+            try:
+                principle_choice = await self.utility_agent.parse_principle_choice_enhanced(ballot_response)
+                ballots.append(principle_choice)
+                self._log_info(f"Secret ballot received from {participant.name}")
+                
+            except Exception as e:
+                self._log_warning(f"Failed to parse ballot from {participant.name}: {e}")
+                # Could implement re-prompt logic here if needed
+                discussion_state.public_history += f"\n[VOTING ERROR] Failed to parse ballot - returning to discussion"
+                return False
+        
+        # Check for consensus using new method
+        consensus_reached, agreed_principle, warnings = self.utility_agent.check_ballot_consensus(ballots)
+        
+        # Handle constraint correction if needed
+        if warnings and not consensus_reached:
+            consensus_reached = await self._handle_constraint_corrections(
+                ballots, contexts, warnings, discussion_state
+            )
+            if consensus_reached:
+                # Re-check consensus after corrections
+                consensus_reached, agreed_principle, _ = self.utility_agent.check_ballot_consensus(ballots)
+        
+        # Create VoteResult using existing model and store in existing vote_history
+        vote_result = VoteResult(
+            votes=ballots,
+            consensus_reached=consensus_reached,
+            agreed_principle=agreed_principle,
+            vote_counts=self._calculate_vote_counts(ballots)
+        )
+        
+        discussion_state.last_vote_result = vote_result
+        discussion_state.vote_history.append(vote_result)  # Use existing vote_history
+        
+        if consensus_reached:
+            self._log_info(f"Consensus reached via secret ballot: {agreed_principle.principle.value}")
+            # Add to public history (aggregate result only, no individual ballots)
+            consensus_msg = f"Secret ballot consensus: {agreed_principle.principle.value}"
+            if agreed_principle.constraint_amount:
+                consensus_msg += f" (${agreed_principle.constraint_amount:,})"
+            discussion_state.public_history += f"\n[VOTING RESULT] {consensus_msg}"
+        else:
+            self._log_info("No consensus reached in secret ballot")
+            discussion_state.public_history += f"\n[VOTING RESULT] No consensus in secret ballot - discussion continues"
+        
+        return consensus_reached
+    
+    def _calculate_vote_counts(self, ballots: List[PrincipleChoice]) -> Dict[str, int]:
+        """Calculate vote counts for VoteResult."""
+        counts = {}
+        for ballot in ballots:
+            key = ballot.principle.value
+            if ballot.constraint_amount:
+                key += f" (${ballot.constraint_amount:,})"
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+    
+    async def _handle_constraint_corrections(
+        self,
+        ballots: List[PrincipleChoice],
+        contexts: List[ParticipantContext],
+        warnings: List[str],
+        discussion_state: GroupDiscussionState
+    ) -> bool:
+        """
+        Handle constraint corrections using existing memory management.
+        Returns True if corrections were successful.
+        """
+        
+        self._log_info("=== COMPLEX VOTING: CONSTRAINT CORRECTIONS ===")
+        
+        # This would implement the constraint correction loop
+        # For now, return False to indicate corrections not implemented
+        # Could be added in a future iteration
+        
+        discussion_state.public_history += f"\n[VOTING WARNING] Some ballots missing constraint amounts"
+        return False
