@@ -916,71 +916,13 @@ class UtilityAgent:
     
     async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
         """
-        Detect preference statement from participant output.
-        Returns PrincipleChoice if preference is detected, None otherwise.
+        DEPRECATED: Preference-based consensus has been removed.
+        This method now always returns None to enforce formal voting only.
+        
+        Legacy method kept for backward compatibility.
         """
-        await self.async_init()
-        
-        # Enhanced preference patterns for multiple languages
-        preference_patterns = [
-            r'my\s+preference\s+is\s+([abc]|principle\s+[abc])',
-            r'i\s+prefer\s+([abc]|principle\s+[abc])',
-            r'i\s+choose\s+([abc]|principle\s+[abc])',
-            r'i\s+support\s+([abc]|principle\s+[abc])',
-            r'preference:\s*([abc]|principle\s+[abc])',
-            r'choice:\s*([abc]|principle\s+[abc])',
-            # Spanish patterns
-            r'mi\s+preferencia\s+es\s+([abc]|principio\s+[abc])',
-            r'prefiero\s+([abc]|principio\s+[abc])',
-            r'elijo\s+([abc]|principio\s+[abc])',
-            # Mandarin patterns - both letter-based and full principle names
-            r'我的偏好是\s*([abc]|原则\s*[abc])',
-            r'我选择\s*([abc]|原则\s*[abc])',
-            r'我支持\s*([abc]|原则\s*[abc])',
-            r'我倾向于\s*([abc]|原则\s*[abc])',
-            # Full principle names in Chinese
-            r'我的偏好是\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            r'我选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            r'我支持\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            r'我倾向于\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            # Additional patterns for strong agreement/endorsement in Chinese
-            r'我认为.*应该.*选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            r'我建议.*采用\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-            r'我觉得\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入).*最好',
-            r'.*最终.*选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
-        ]
-        
-        # Check for explicit preference patterns first
-        statement_lower = statement.lower()
-        for pattern in preference_patterns:
-            matches = re.findall(pattern, statement_lower, re.IGNORECASE)
-            if matches:
-                principle_identifier = matches[0].strip()
-                principle = self._map_identifier_to_principle(principle_identifier)
-                if principle:
-                    # Extract constraint amount if needed
-                    constraint_amount = None
-                    if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                                   JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
-                        constraint_amount = self._extract_constraint_amount_flexible(statement)
-                        if constraint_amount is None:
-                            # Return incomplete preference for warning
-                            return PrincipleChoice.create_for_parsing(
-                                principle=principle,
-                                constraint_amount=None,
-                                certainty=CertaintyLevel.SURE,
-                                reasoning="Constraint amount missing"
-                            )
-                    
-                    return PrincipleChoice.create_for_parsing(
-                        principle=principle,
-                        constraint_amount=constraint_amount,
-                        certainty=CertaintyLevel.SURE,
-                        reasoning=statement
-                    )
-        
-        # Fallback to LLM-based detection
-        return await self._detect_preference_via_llm(statement)
+        # CONSENSUS CLEANUP: Always return None - no preference detection
+        return None
     
     def _map_identifier_to_principle(self, identifier: str) -> Optional[JusticePrinciple]:
         """Map principle identifier (a, b, c, d, principle a, etc.) to JusticePrinciple."""
@@ -1089,44 +1031,13 @@ class UtilityAgent:
     
     def check_preference_consensus(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
         """
-        Check if all preferences represent consensus.
+        DEPRECATED: Preference-based consensus has been removed.
+        This method now always returns no consensus to enforce formal voting only.
         
-        Returns:
-            tuple: (consensus_reached, agreed_preference, warnings)
+        Legacy method kept for backward compatibility.
         """
-        if not preferences or len(preferences) < 2:
-            return False, None, ["Not enough preferences to check consensus"]
-        
-        warnings = []
-        valid_preferences = []
-        
-        # Validate each preference
-        for i, pref in enumerate(preferences):
-            if pref.constraint_amount is None and pref.principle in [
-                JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
-            ]:
-                warnings.append(f"Agent {i+1} did not specify constraint amount for {pref.principle.value}")
-            else:
-                valid_preferences.append(pref)
-        
-        # Check consensus among valid preferences
-        if not valid_preferences:
-            return False, None, warnings
-        
-        first_pref = valid_preferences[0]
-        consensus = True
-        
-        for pref in valid_preferences[1:]:
-            if (pref.principle != first_pref.principle or 
-                pref.constraint_amount != first_pref.constraint_amount):
-                consensus = False
-                break
-        
-        if consensus:
-            return True, first_pref, warnings
-        else:
-            return False, None, warnings
+        # CONSENSUS CLEANUP: Always return no consensus - formal voting required
+        return False, None, ["Preference-based consensus disabled - formal voting required"]
     
     async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
         """

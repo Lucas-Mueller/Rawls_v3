@@ -89,7 +89,7 @@ class PostDiscussionLog(BaseRoundLog):
 class VoteRoundDetails(BaseModel):
     """Details of a single voting round."""
     round_number: int = Field(..., description="Phase 2 round when vote was triggered")
-    vote_type: str = Field(..., description="Type of vote: 'formal_vote' or 'preference_consensus'")
+    vote_type: str = Field(..., description="Type of vote: 'formal_vote' only (preference consensus removed)")
     trigger_participant: Optional[str] = Field(None, description="Agent who triggered the vote")
     trigger_statement: Optional[str] = Field(None, description="Statement that triggered the vote")
     
@@ -126,7 +126,7 @@ class VotingHistoryLog(BaseModel):
     # Summary statistics
     vote_statistics: Dict[str, Any] = Field(default_factory=dict, description="Voting statistics")
     # Contains:
-    # - preference_detections_per_round: Dict[int, int]
+    # - preference_detections_per_round: Dict[int, int] (REMOVED - preference consensus disabled)
     # - failed_parsing_attempts: int
     # - fallback_statements_during_votes: int
     # - average_consensus_round: Optional[float]

@@ -14,7 +14,7 @@ def test_voting_history_structures():
     # Test VoteRoundDetails
     vote_round = VoteRoundDetails(
         round_number=2,
-        vote_type="preference_consensus",
+        vote_type="formal_vote",
         participant_votes=[
             {
                 "participant_name": "Agent_1",
@@ -99,7 +99,7 @@ def test_agent_centric_logger():
     # Start a vote round
     logger.start_vote_round(
         round_number=2,
-        vote_type="preference_consensus"
+        vote_type="formal_vote"
     )
     print("✓ Vote round started")
     
