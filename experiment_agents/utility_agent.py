@@ -906,3 +906,186 @@ class UtilityAgent:
     def _get_format_improvement_prompt(self, response: str, parse_type: str) -> str:
         """Get prompt for improving response format."""
         return self.language_manager.get_format_improvement_prompt(response, parse_type)
+    
+    async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
+        """
+        Detect preference statement from participant output.
+        Returns PrincipleChoice if preference is detected, None otherwise.
+        """
+        await self.async_init()
+        
+        # Enhanced preference patterns for multiple languages
+        preference_patterns = [
+            r'my\s+preference\s+is\s+([abc]|principle\s+[abc])',
+            r'i\s+prefer\s+([abc]|principle\s+[abc])',
+            r'i\s+choose\s+([abc]|principle\s+[abc])',
+            r'i\s+support\s+([abc]|principle\s+[abc])',
+            r'preference:\s*([abc]|principle\s+[abc])',
+            r'choice:\s*([abc]|principle\s+[abc])',
+            # Spanish patterns
+            r'mi\s+preferencia\s+es\s+([abc]|principio\s+[abc])',
+            r'prefiero\s+([abc]|principio\s+[abc])',
+            r'elijo\s+([abc]|principio\s+[abc])',
+            # Mandarin patterns (you'll need to add these based on your translations)
+            r'我的偏好是\s*([abc]|原则\s*[abc])',
+            r'我选择\s*([abc]|原则\s*[abc])',
+        ]
+        
+        # Check for explicit preference patterns first
+        statement_lower = statement.lower()
+        for pattern in preference_patterns:
+            matches = re.findall(pattern, statement_lower, re.IGNORECASE)
+            if matches:
+                principle_identifier = matches[0].strip()
+                principle = self._map_identifier_to_principle(principle_identifier)
+                if principle:
+                    # Extract constraint amount if needed
+                    constraint_amount = None
+                    if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                   JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                        constraint_amount = self._extract_constraint_amount_flexible(statement)
+                        if constraint_amount is None:
+                            # Return incomplete preference for warning
+                            return PrincipleChoice.create_for_parsing(
+                                principle=principle,
+                                constraint_amount=None,
+                                certainty=CertaintyLevel.SURE,
+                                reasoning="Constraint amount missing"
+                            )
+                    
+                    return PrincipleChoice.create_for_parsing(
+                        principle=principle,
+                        constraint_amount=constraint_amount,
+                        certainty=CertaintyLevel.SURE,
+                        reasoning=statement
+                    )
+        
+        # Fallback to LLM-based detection
+        return await self._detect_preference_via_llm(statement)
+    
+    def _map_identifier_to_principle(self, identifier: str) -> Optional[JusticePrinciple]:
+        """Map principle identifier (a, b, c, d, principle a, etc.) to JusticePrinciple."""
+        identifier = identifier.lower().strip()
+        
+        # Remove common prefixes
+        identifier = re.sub(r'^(principle|principio|原则)\s*', '', identifier)
+        
+        mapping = {
+            'a': JusticePrinciple.MAXIMIZING_FLOOR,
+            'b': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'c': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'd': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        }
+        
+        return mapping.get(identifier)
+    
+    def _extract_constraint_amount_flexible(self, statement: str) -> Optional[int]:
+        """
+        Flexible constraint amount extraction supporting various formats:
+        14,000 | 14.000 | 14000 | $14000 | $ 14000 | 14k | etc.
+        """
+        # Multiple patterns for flexible amount parsing
+        amount_patterns = [
+            r'\$\s*(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?)',  # $14,000 or $14.000 or $ 14000
+            r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:dollars?|\$)',  # 14,000 dollars or 14000$
+            r'(\d{1,2})\s*k(?:\s|$|\.)',  # 14k
+            r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:thousand)',  # 14 thousand
+            r'(\d{1,3}(?:[.,]\d{3})*)(?!\s*[%])',  # Plain numbers (avoid percentages)
+        ]
+        
+        for pattern in amount_patterns:
+            matches = re.findall(pattern, statement, re.IGNORECASE)
+            for match in matches:
+                try:
+                    # Normalize the amount string
+                    amount_str = match.replace(',', '').replace('.', '')
+                    
+                    # Special handling for different decimal separators
+                    if '.' in match and len(match.split('.')[-1]) <= 3:
+                        # If there's a dot with 3 or fewer digits after, treat as thousands separator
+                        amount_str = match.replace('.', '')
+                    
+                    amount = float(amount_str)
+                    
+                    # Check if this is a "k" pattern
+                    if 'k' in statement.lower() and amount < 1000:
+                        amount *= 1000
+                    elif 'thousand' in statement.lower() and amount < 1000:
+                        amount *= 1000
+                    
+                    amount_int = int(amount)
+                    
+                    # Validate reasonable range
+                    if 1000 <= amount_int <= 100000:
+                        return amount_int
+                        
+                except (ValueError, TypeError):
+                    continue
+        
+        return None
+    
+    async def _detect_preference_via_llm(self, statement: str) -> Optional[PrincipleChoice]:
+        """Use LLM to detect preference when pattern matching fails."""
+        language_manager = get_language_manager()
+        
+        # Get preference detection prompt from language manager
+        detection_prompt = language_manager.get(
+            "prompts.utility_preference_detection",
+            statement=statement
+        )
+        
+        try:
+            result = await Runner.run(self.parser_agent, detection_prompt)
+            response = result.final_output.strip()
+            
+            # Parse LLM response
+            if "PREFERENCE_DETECTED:" in response:
+                preference_text = response.split("PREFERENCE_DETECTED:")[1].strip()
+                return await self.parse_principle_choice_enhanced(preference_text)
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"LLM preference detection failed: {e}")
+            return None
+    
+    def check_preference_consensus(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
+        """
+        Check if all preferences represent consensus.
+        
+        Returns:
+            tuple: (consensus_reached, agreed_preference, warnings)
+        """
+        if not preferences or len(preferences) < 2:
+            return False, None, ["Not enough preferences to check consensus"]
+        
+        warnings = []
+        valid_preferences = []
+        
+        # Validate each preference
+        for i, pref in enumerate(preferences):
+            if pref.constraint_amount is None and pref.principle in [
+                JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+            ]:
+                warnings.append(f"Agent {i+1} did not specify constraint amount for {pref.principle.value}")
+            else:
+                valid_preferences.append(pref)
+        
+        # Check consensus among valid preferences
+        if not valid_preferences:
+            return False, None, warnings
+        
+        first_pref = valid_preferences[0]
+        consensus = True
+        
+        for pref in valid_preferences[1:]:
+            if (pref.principle != first_pref.principle or 
+                pref.constraint_amount != first_pref.constraint_amount):
+                consensus = False
+                break
+        
+        if consensus:
+            return True, first_pref, warnings
+        else:
+            return False, None, warnings

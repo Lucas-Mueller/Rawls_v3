@@ -37,10 +37,6 @@ class Phase2Manager:
             "retry_attempts": 0,
             "fallback_statements": 0
         }
-        # Track last readiness status to reduce proposal spam in the same round
-        self._last_vote_readiness_round = None
-        self._last_vote_unanimous = None
-        self._last_proposer_name = None
     
     def _log_info(self, message: str):
         """Safe logging helper."""
@@ -366,73 +362,85 @@ Please ensure your response contains a clear statement about your position on th
                     context, new_round=round_num
                 )
                 
-                # Check for vote proposal using enhanced detection
-                vote_proposal_text = await self.utility_agent.detect_vote_intention_enhanced(statement)
+                # Check for preference statement using new simple system
+                preference = await self.utility_agent.detect_preference_statement(statement)
                 
-                # ADD VOTE DETECTION DEBUG LOGGING
+                # ADD PREFERENCE DETECTION DEBUG LOGGING
                 import logging
                 debug_logger = logging.getLogger(__name__)
                 
-                debug_logger.info(f"=== VOTE DETECTION DEBUG ===")
+                debug_logger.info(f"=== PREFERENCE DETECTION DEBUG ===")
                 debug_logger.info(f"Agent: {participant.name}")
                 debug_logger.info(f"Statement: {statement}")
-                debug_logger.info(f"Vote proposal detected: {vote_proposal_text is not None}")
-                if vote_proposal_text:
-                    debug_logger.info(f"Vote proposal text: {vote_proposal_text}")
+                debug_logger.info(f"Preference detected: {preference is not None}")
+                if preference:
+                    debug_logger.info(f"Preference: {preference.principle.value} with constraint: {preference.constraint_amount}")
                 else:
-                    debug_logger.info(f"No vote proposal detected")
+                    debug_logger.info(f"No preference detected")
                 
-                if vote_proposal_text:
-                    # Determine if we should announce proposal to reduce noise
-                    announce = self._should_announce_proposal(
-                        participant.name, statement, discussion_state.round_number
-                    )
-                    if announce:
-                        try:
-                            if discussion_state.statements:
-                                discussion_state.statements[-1].contains_vote_proposal = True
-                            discussion_state.public_history += f"\n[VOTE PROPOSAL] Proposed by {participant.name}"
-                        except Exception:
-                            pass
-                    debug_logger.info(f"Checking unanimous agreement...")
-                    # Check if all participants agree to vote
-                    unanimous_agreement = await self._check_unanimous_vote_agreement(
-                        discussion_state, contexts, config
-                    )
-                    debug_logger.info(f"Unanimous agreement result: {unanimous_agreement}")
-                    # Track last readiness status
-                    self._last_vote_readiness_round = discussion_state.round_number
-                    self._last_vote_unanimous = unanimous_agreement
-                    self._last_proposer_name = participant.name
+                # Collect preferences from all participants in this round
+                if preference:
+                    # Store preference for this participant
+                    if not hasattr(discussion_state, 'current_round_preferences'):
+                        discussion_state.current_round_preferences = {}
                     
-                    if unanimous_agreement:
-                        vote_result = await self._conduct_group_vote(contexts, config)
-                        discussion_state.add_vote_result(vote_result)
+                    discussion_state.current_round_preferences[participant.name] = preference
+                    
+                    # Check for missing constraint amount and issue warning
+                    if (preference.constraint_amount is None and 
+                        preference.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                        warning_msg = f"⚠️  {participant.name} did not specify constraint amount for {preference.principle.value}"
+                        discussion_state.public_history += f"\n[WARNING] {warning_msg}"
+                        self._log_warning(warning_msg)
+                    
+                    # Add preference to public history
+                    preference_display = f"{preference.principle.value}"
+                    if preference.constraint_amount:
+                        preference_display += f" (${preference.constraint_amount:,})"
+                    discussion_state.public_history += f"\n[PREFERENCE] {participant.name}: {preference_display}"
+                
+                # Check for consensus after each participant speaks
+                if hasattr(discussion_state, 'current_round_preferences'):
+                    num_participants_with_preferences = len(discussion_state.current_round_preferences)
+                    total_participants = len(self.participants)
+                    
+                    debug_logger.info(f"Preferences collected: {num_participants_with_preferences}/{total_participants}")
+                    
+                    # If all participants have stated preferences, check for consensus
+                    if num_participants_with_preferences == total_participants:
+                        preferences_list = list(discussion_state.current_round_preferences.values())
+                        consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus(preferences_list)
                         
-                        # Update all participants' memory with vote result
-                        vote_content = f"VOTE CONDUCTED: {vote_result.consensus_reached and 'Consensus reached' or 'No consensus'}"
-                        if vote_result.consensus_reached and vote_result.agreed_principle:
-                            vote_content += f" on {vote_result.agreed_principle.principle.value}"
+                        # Log warnings
+                        for warning in warnings:
+                            self._log_warning(warning)
+                            discussion_state.public_history += f"\n[WARNING] {warning}"
                         
-                        # Update each participant's memory with the vote outcome
-                        for i in range(len(contexts)):
-                            participant = self.participants[i]
-                            contexts[i].memory = await MemoryManager.prompt_agent_for_memory_update(
-                                participant, contexts[i], 
-                                f"Vote Outcome: {vote_content}"
-                            )
+                        debug_logger.info(f"Consensus check result: {consensus_reached}")
+                        if agreed_preference:
+                            debug_logger.info(f"Agreed preference: {agreed_preference.principle.value} with constraint: {agreed_preference.constraint_amount}")
                         
-                        if vote_result.consensus_reached:
+                        if consensus_reached and agreed_preference:
                             # Log validation statistics before returning
                             self._log_validation_statistics()
                             
+                            # Clear the round preferences for next potential round
+                            discussion_state.current_round_preferences.clear()
+                            
                             return GroupDiscussionResult(
                                 consensus_reached=True,
-                                agreed_principle=vote_result.agreed_principle,
+                                agreed_principle=agreed_preference,
                                 final_round=round_num,
                                 discussion_history=discussion_state.public_history,
-                                vote_history=discussion_state.vote_history
+                                vote_history=[]  # No explicit votes in new system
                             )
+                        else:
+                            # Reset preferences for next round if no consensus
+                            discussion_state.current_round_preferences.clear()
+                            consensus_msg = f"No consensus reached in round {round_num}. Discussion continues..."
+                            discussion_state.public_history += f"\n[CONSENSUS CHECK] {consensus_msg}"
+                            debug_logger.info(consensus_msg)
             
             # Update last round finisher for next round
             last_round_finisher = current_round_finisher
@@ -488,33 +496,6 @@ Please ensure your response contains a clear statement about your position on th
         
         return participant_indices
 
-    def _is_explicit_vote_proposal(self, text: str) -> bool:
-        t = text.lower()
-        explicit_patterns = [
-            "i propose we vote",
-            "let's vote",
-            "lets vote",
-            "call for a vote",
-            "time to vote",
-            "ready to vote",
-            "we should vote",
-            "proceed with a vote",
-            "conduct a vote",
-            "formal vote",
-        ]
-        return any(p in t for p in explicit_patterns)
-
-    def _should_announce_proposal(self, proposer: str, statement: str, round_num: int) -> bool:
-        # If previous readiness in this round was non-unanimous and the same proposer repeats
-        # without an explicit phrasing, suppress the proposal announcement to reduce noise.
-        if (
-            self._last_vote_readiness_round == round_num
-            and self._last_vote_unanimous is False
-            and self._last_proposer_name == proposer
-            and not self._is_explicit_vote_proposal(statement)
-        ):
-            return False
-        return True
     
     async def _get_participant_statement(
         self,
@@ -588,316 +569,13 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             language_manager = get_language_manager()
             return language_manager.get("prompts.phase2_default_constraint_specification")
     
-    async def _check_unanimous_vote_agreement(
-        self,
-        discussion_state: GroupDiscussionState,
-        contexts: List[ParticipantContext],
-        config: ExperimentConfiguration
-    ) -> bool:
-        """Check if all participants agree to conduct a vote."""
-        
-        language_manager = get_language_manager()
-        vote_agreement_prompt = language_manager.get("prompts.phase2_vote_agreement")
-        
-        agreement_tasks = []
-        for i, participant in enumerate(self.participants):
-            context = contexts[i]
-            task = asyncio.create_task(
-                Runner.run(participant.agent, vote_agreement_prompt, context=context)
-            )
-            agreement_tasks.append(task)
-        
-        responses = await asyncio.gather(*agreement_tasks)
-        
-        # ADD UNANIMOUS AGREEMENT DEBUG LOGGING
-        import logging
-        debug_logger = logging.getLogger(__name__)
-        
-        debug_logger.info(f"=== UNANIMOUS AGREEMENT DEBUG ===")
-        
-        # Use utility agent for multilingual agreement detection
-        agreement_detection_tasks = []
-        raw_texts = []
-        names = []
-        for i, response_obj in enumerate(responses):
-            participant_name = self.participants[i].name
-            response_text = response_obj.final_output
-            names.append(participant_name)
-            raw_texts.append(response_text)
-            debug_logger.info(f"{participant_name} response: '{response_text}'")
-            agreement_detection_tasks.append(asyncio.create_task(
-                self.utility_agent.detect_agreement_multilingual(response_text)
-            ))
-
-        agreement_bools = await asyncio.gather(*agreement_detection_tasks)
-        for name, agrees in zip(names, agreement_bools):
-            debug_logger.info(f"{name} -> Agrees to vote: {agrees}")
-
-        # Publicly record vote readiness
-        readiness_pairs = [f"{n}: {'YES' if a else 'NO'}" for n, a in zip(names, agreement_bools)]
-        unanimous = all(agreement_bools)
-        try:
-            discussion_state.public_history += f"\n[VOTE READINESS] " + ", ".join(readiness_pairs) + f" (Unanimous: {'True' if unanimous else 'False'})"
-        except Exception:
-            pass
-
-        debug_logger.info(f"All agreements: {agreement_bools}")
-        debug_logger.info(f"Unanimous result: {unanimous}")
-        return unanimous
-    
-    async def _conduct_group_vote(
-        self, 
-        contexts: List[ParticipantContext],
-        config: ExperimentConfiguration
-    ) -> VoteResult:
-        """Conduct secret ballot voting."""
-        
-        self._log_info("=== CONDUCTING GROUP VOTE ===")
-        self._log_info(f"Number of participants: {len(self.participants)}")
-        for participant in self.participants:
-            self._log_info(f"  Participant: {participant.name}")
-        
-        voting_tasks = []
-        for i, participant in enumerate(self.participants):
-            context = contexts[i]
-            agent_config = config.agents[i]
-            task = asyncio.create_task(
-                self._get_participant_vote(participant, context, agent_config)
-            )
-            voting_tasks.append(task)
-        
-        votes = await asyncio.gather(*voting_tasks)
-        
-        # Validate votes and check for consensus with proper validation
-        self._log_info("=== VOTE VALIDATION AND PREPARATION ===")
-        validated_votes = []
-        
-        for i, vote in enumerate(votes):
-            participant_name = self.participants[i].name
-            self._log_info(f"Processing vote from {participant_name}")
-            self._log_info(f"  Principle: {vote.principle.value}")
-            self._log_info(f"  Constraint amount: {vote.constraint_amount}")
-            
-            try:
-                # Attempt to validate for voting
-                validated_vote = vote.validate_for_voting()
-                validated_votes.append(validated_vote)
-                self._log_info(f"  ✅ Valid vote from {participant_name}")
-                
-            except ValueError as validation_error:
-                self._log_info(f"  ❌ Invalid vote from {participant_name}: {str(validation_error)}")
-                
-                # Re-prompt for missing/invalid constraint with recursion limits
-                try:
-                    corrected_vote = await self._re_prompt_for_valid_vote(
-                        self.participants[i], contexts[i], vote, config.agents[i], 
-                        max_retries=3, current_retry=0
-                    )
-                    
-                    # Validate corrected vote before adding
-                    try:
-                        validated_corrected = corrected_vote.validate_for_voting()
-                        validated_votes.append(validated_corrected)
-                        self._log_info(f"  ✅ Corrected vote from {participant_name} is valid")
-                        
-                    except ValueError as revalidation_error:
-                        # Final fallback with default constraint
-                        self._log_warning(f"  ⚠️ Corrected vote still invalid, using default constraint")
-                        default_constraint = self._get_default_constraint(vote.principle)
-                        
-                        fallback_vote = PrincipleChoice.create_for_parsing(
-                            principle=vote.principle,
-                            constraint_amount=default_constraint,
-                            certainty=CertaintyLevel.UNSURE,
-                            reasoning=f"Default constraint applied due to validation failure: {str(revalidation_error)}"
-                        )
-                        
-                        validated_fallback = fallback_vote.validate_for_voting()
-                        validated_votes.append(validated_fallback)
-                        self._log_warning(f"  🔧 Using fallback vote with default constraint ${default_constraint}")
-                        
-                except Exception as retry_error:
-                    # Ultimate fallback - use default principle
-                    self._log_warning(f"  🚨 Re-prompting failed: {str(retry_error)}, using safe default")
-                    
-                    safe_vote = PrincipleChoice.create_for_parsing(
-                        principle=JusticePrinciple.MAXIMIZING_AVERAGE,  # Safe choice - no constraint needed
-                        constraint_amount=None,
-                        certainty=CertaintyLevel.UNSURE,
-                        reasoning=f"Safe default due to validation failure: {str(retry_error)}"
-                    )
-                    
-                    validated_votes.append(safe_vote.validate_for_voting())
-                    self._log_warning(f"  🛡️ Using safe default principle for {participant_name}")
-        
-        self._log_info(f"=== FINAL VALIDATION SUMMARY ===")
-        self._log_info(f"Total votes processed: {len(votes)}")
-        self._log_info(f"Validated votes: {len(validated_votes)}")
-        
-        # Use validated votes for consensus
-        valid_votes = validated_votes
-        
-        # Check for consensus (exact matching only - no tolerance)
-        consensus_principle = self._check_exact_consensus(valid_votes)
-        
-        # Additional logging for vote result
-        self._log_info("=== VOTE RESULT SUMMARY ===")
-        self._log_info(f"Consensus reached: {consensus_principle is not None}")
-        self._log_info(f"Vote counts: {self._count_votes(valid_votes)}")
-        if consensus_principle:
-            self._log_info(f"Agreed principle: {consensus_principle.principle.value} with constraint: {consensus_principle.constraint_amount}")
-        
-        return VoteResult(
-            votes=valid_votes,
-            consensus_reached=consensus_principle is not None,
-            agreed_principle=consensus_principle,
-            vote_counts=self._count_votes(valid_votes)
-        )
-    
-    async def _get_participant_vote(
-        self,
-        participant: ParticipantAgent, 
-        context: ParticipantContext,
-        agent_config: AgentConfiguration
-    ) -> PrincipleChoice:
-        """Get a participant's vote in secret ballot."""
-        
-        language_manager = get_language_manager()
-        voting_prompt = language_manager.get("prompts.phase2_secret_ballot_vote")
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, voting_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        vote_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
-        
-        # Validate the constraint amount if needed
-        if not vote_choice.is_valid_constraint():
-            # Re-prompt for valid constraint amount
-            vote_choice = await self._re_prompt_for_valid_vote(
-                participant, context, vote_choice, agent_config
-            )
-        
-        return vote_choice
-    
-    def _get_default_constraint(self, principle: JusticePrinciple) -> int:
-        """Get default constraint amount for a principle."""
-        if principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
-            return 10000  # $10,000 default floor constraint
-        elif principle == JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT:
-            return 20000  # $20,000 default range constraint
-        return 0  # Non-constraint principles
-    
-    async def _re_prompt_for_valid_vote(
-        self,
-        participant: ParticipantAgent,
-        context: ParticipantContext, 
-        invalid_vote: PrincipleChoice,
-        agent_config: AgentConfiguration,
-        max_retries: int = 3,
-        current_retry: int = 0
-    ) -> PrincipleChoice:
-        """Re-prompt participant for valid vote with recursion limits."""
-        
-        if current_retry >= max_retries:
-            self._log_warning(f"Maximum retries ({max_retries}) exceeded for {participant.name}")
-            # Return vote with default constraint
-            default_constraint = self._get_default_constraint(invalid_vote.principle)
-            return PrincipleChoice.create_for_parsing(
-                principle=invalid_vote.principle,
-                constraint_amount=default_constraint,
-                certainty=CertaintyLevel.UNSURE,
-                reasoning=f"Default constraint applied after {max_retries} failed attempts"
-            )
-        
-        self._log_info(f"Re-prompting {participant.name} (attempt {current_retry + 1}/{max_retries})")
-        
-        retry_prompt = await self.utility_agent.re_prompt_for_constraint(
-            participant.name, invalid_vote
-        )
-        
-        # Get participant response
-        result = await Runner.run(participant.agent, retry_prompt, context=context)
-        retry_text = result.final_output
-        
-        # Update memory with constraint re-prompt experience
-        try:
-            retry_memory_content = f"Vote constraint re-prompt: {retry_prompt}\nMy response: {retry_text}"
-            updated_memory = await participant.update_memory(retry_memory_content, context.bank_balance)
-            context.memory = updated_memory
-            self._log_info(f"Updated {participant.name} memory after vote constraint retry")
-        except Exception as e:
-            self._log_warning(f"Failed to update memory after vote constraint retry for {participant.name}: {e}")
-        
-        # Parse the corrected response
-        parsed_vote = await self.utility_agent.parse_principle_choice_enhanced(retry_text)
-        
-        # Check if the corrected vote is now valid
-        if parsed_vote.is_valid_constraint():
-            self._log_info(f"✅ Valid constraint received from {participant.name} on retry {current_retry + 1}")
-            return parsed_vote
-        else:
-            # Recursive retry with incremented counter
-            self._log_info(f"❌ Retry {current_retry + 1} failed for {participant.name}, retrying...")
-            return await self._re_prompt_for_valid_vote(
-                participant, context, parsed_vote, agent_config, 
-                max_retries, current_retry + 1
-            )
-    
-    def _check_exact_consensus(self, votes: List[PrincipleChoice]) -> PrincipleChoice:
-        """Check if all votes are exactly identical (including constraint amounts)."""
-        
-        if not votes:
-            self._log_warning("No votes provided for consensus check")
-            return None
-        
-        # Log all votes for comparison
-        self._log_info("=== VOTE COMPARISON ANALYSIS ===")
-        self._log_info(f"Total votes: {len(votes)}")
-        
-        for i, vote in enumerate(votes):
-            self._log_info(f"Vote {i+1}: principle={vote.principle.value}, constraint_amount={vote.constraint_amount}, certainty={vote.certainty}")
-            if vote.reasoning:
-                self._log_info(f"Vote {i+1} reasoning excerpt: {vote.reasoning[:100]}...")
-        
-        first_vote = votes[0]
-        self._log_info(f"Reference vote (first): principle={first_vote.principle.value}, constraint_amount={first_vote.constraint_amount}")
-        
-        # Check each vote against the first
-        consensus_failed = False
-        for i, vote in enumerate(votes[1:], 1):
-            principle_match = vote.principle == first_vote.principle
-            constraint_match = vote.constraint_amount == first_vote.constraint_amount
-            
-            self._log_info(f"Vote {i+1} vs Reference: principle_match={principle_match}, constraint_match={constraint_match}")
-            
-            if not principle_match:
-                self._log_warning(f"CONSENSUS FAILURE: Vote {i+1} principle mismatch - '{vote.principle.value}' != '{first_vote.principle.value}'")
-                consensus_failed = True
-            
-            if not constraint_match:
-                self._log_warning(f"CONSENSUS FAILURE: Vote {i+1} constraint mismatch - {vote.constraint_amount} != {first_vote.constraint_amount}")
-                consensus_failed = True
-        
-        if consensus_failed:
-            self._log_info("=== CONSENSUS RESULT: FAILED ===")
-            return None
-        else:
-            self._log_info("=== CONSENSUS RESULT: SUCCESS ===")
-            self._log_info(f"Agreed principle: {first_vote.principle.value} with constraint: {first_vote.constraint_amount}")
-            return first_vote
     
     
-    def _count_votes(self, votes: List[PrincipleChoice]) -> Dict[str, int]:
-        """Count votes by principle (including constraint amounts)."""
-        vote_counts = {}
-        for vote in votes:
-            key = vote.principle.value
-            if vote.constraint_amount:
-                key += f"_${vote.constraint_amount}"
-            vote_counts[key] = vote_counts.get(key, 0) + 1
-        return vote_counts
+    
+    
+    
+    
+    
     
     async def _apply_group_principle_and_calculate_payoffs(
         self,

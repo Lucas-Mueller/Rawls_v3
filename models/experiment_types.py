@@ -140,6 +140,7 @@ class GroupDiscussionState(BaseModel):
     public_history: str = ""
     experiment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     valid_participants: Optional[List[str]] = None
+    current_round_preferences: Dict[str, 'PrincipleChoice'] = Field(default_factory=dict, description="Preferences stated by participants in current round")
     
     def add_statement(self, participant_name: str, statement: str):
         """Add statement to public history with participant validation."""
