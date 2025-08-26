@@ -319,36 +319,150 @@ class UtilityAgent:
         return None
     
     async def detect_agreement_multilingual(self, response: str) -> bool:
-        """Simple multilingual agreement detection via utility agent."""
-        # Ensure utility agent is initialized
+        """Multilingual agreement detection with context-aware negation handling.
+
+        Rules:
+        - Decisive agreement tokens (YES/I AGREE/LET'S VOTE/etc.) return True unless there is an explicit refusal.
+        - Words like "NO" are NOT treated as refusal if part of domain phrases (e.g., "NO CONSTRAINTS").
+        - If both agreement and ambiguous negation cues appear, defer to LLM fallback.
+        """
         await self.async_init()
-        
-        # Get localized prompt from language manager
+
+        text = response.strip()
+        normalized = text.upper()
+
+        # Agreement tokens (broad but decisive)
+        agreement_tokens = [
+            "YES", "I AGREE", "AGREED", "LET'S VOTE", "LETS VOTE", "READY TO VOTE",
+            "LET'S PROCEED", "LETS PROCEED", "LET'S DO IT", "LETS DO IT",
+            "SOUNDS GOOD", "THAT WORKS", "FINE WITH ME"
+        ]
+
+        # Explicit refusal patterns (word-boundary, short-window negations)
+        refusal_regexes = [
+            r"\bNO\b\s*(,|\.|$)",
+            r"\bNO\b\s+(THANKS|NOT|NEED|TIME|VOTE|LATER|WAIT)",
+            r"\bNOT\s+READY\b",
+            r"\bNOT\s+YET\b",
+            r"\bNEED\s+MORE\b",
+            r"\bHOLD\s+ON\b",
+            r"\bI\s+DISAGREE\b",
+        ]
+
+        # Domain phrases that must NOT flip agreement
+        domain_exceptions = [
+            r"\bNO\s+CONSTRAINTS?\b",
+            r"\bNO\s+RANGE\b",
+            r"\bNO\s+FLOOR\b",
+        ]
+
+        has_agree = any(tok in normalized for tok in agreement_tokens)
+
+        # If text mentions "NO" but only in domain exceptions, do not treat as refusal
+        mentions_no = " NO" in f" {normalized}" or normalized.startswith("NO")
+        only_domain_no = False
+        if mentions_no:
+            only_domain_no = any(re.search(p, normalized) for p in domain_exceptions) and not any(
+                re.search(rx, normalized) for rx in refusal_regexes
+            )
+
+        # Immediate decision: clear agreement without explicit refusal
+        if has_agree and (not mentions_no or only_domain_no):
+            logger.info("Direct agreement detected (decisive tokens, no explicit refusal)")
+            return True
+
+        # Check explicit refusal
+        if any(re.search(rx, normalized) for rx in refusal_regexes):
+            logger.info("Direct refusal detected via explicit patterns")
+            return False
+
+        # If ambiguous (e.g., both agree tokens and some non-exception NO), defer to LLM fallback
         language_manager = get_language_manager()
         detection_prompt = language_manager.get(
-            "prompts.utility_agreement_detection_multilingual",
+            "prompts.utility_agreement_detection_enhanced",
             response=response
         )
-        
+
         result = await Runner.run(self.parser_agent, detection_prompt)
-        return result.final_output.strip().upper() == "AGREES"
+        llm_response = result.final_output.strip().upper()
+        agrees = any(indicator in llm_response for indicator in ["AGREES", "AGREE", "YES"])
+        logger.info(f"LLM agreement analysis: {llm_response} -> {agrees}")
+        return agrees
     
-    async def detect_vote_intention_simple(self, statement: str) -> Optional[str]:
-        """Detect vote intention with minimal complexity - less permissive than current method."""
-        # Ensure utility agent is initialized
+    
+    async def detect_vote_intention_enhanced(self, statement: str) -> Optional[str]:
+        """Enhanced vote detection with robust pattern matching and semantic fallback."""
         await self.async_init()
+
+        # First: Direct pattern matching for explicit vote phrases only
+        vote_indicators = [
+            r"\bi propose we vote\b",
+            r"\blet'?s vote\b",
+            r"\bcall for a vote\b",
+            r"\btime to vote\b",
+            r"\bready to vote\b",
+            r"\bwe should vote\b",
+            r"\bproceed with.*vote\b",
+            r"\bconduct.*vote\b",
+            r"\bformal.*vote\b",
+            r"\bvote:?\s*i\b",  # "VOTE: I formally propose..."
+            r"\bvoting request\b"
+        ]
+
+        # Exclude patterns that are NOT vote proposals
+        exclusion_patterns = [
+            r"\bshould we vote\?",                 # Questions
+            r"\bwhat.*think",                      # What do you think?
+            r"\bi'?m not sure",                    # Uncertainty
+            r"\bneed more(\s+discussion)?\b",      # Need more discussion
+            r"\bmore discussion\b",
+            r"\blet me think\b",                   # Thinking statements
+            r"\bi think we need\b",                # Need more discussion
+            r"\bbefore (we )?moving to a vote\b",  # Hedged meta mentions
+            r"\bbefore (we )?vote\b",
+            r"\bnot\s+ready(\s+to\s+vote)?\b",
+            r"\bnot\s+yet\b",
+            r"\bwait\b|\bhold on\b",
+            r"\blater\b",
+            r"\bprefer to discuss\b|\bneed to discuss\b",
+        ]
         
-        # Get localized prompt from language manager
+        statement_lower = statement.lower()
+        
+        # Check for exclusion patterns first
+        for pattern in exclusion_patterns:
+            if re.search(pattern, statement_lower):
+                logger.info(f"Vote NOT detected due to exclusion pattern: {pattern}")
+                return None
+        
+        # Check for explicit vote indicators
+        for pattern in vote_indicators:
+            if re.search(pattern, statement_lower):
+                logger.info(f"Vote detected via direct pattern: {pattern}")
+                return statement  # Direct pattern match found
+        
+        # Fallback: LLM-based semantic analysis (stricter acceptance)
         language_manager = get_language_manager()
         detection_prompt = language_manager.get(
-            "prompts.utility_vote_detection_simple",
+            "prompts.utility_vote_detection_enhanced",
             statement=statement
         )
-        
+
         result = await Runner.run(self.parser_agent, detection_prompt)
-        
-        if result.final_output.strip().upper() == "VOTE_PROPOSED":
-            return statement  # Return original statement as proposal text
+        response = result.final_output.strip().upper()
+
+        # Accept only explicit detection tokens; avoid overly broad matches like "YES" or "VOTING"
+        voting_indicators = [
+            "VOTING_INTENT_DETECTED",
+            "VOTE_DETECTED",
+            "VOTE DETECTED",
+            "EXPLICIT_VOTE_INTENT",
+        ]
+        if any(indicator in response for indicator in voting_indicators):
+            logger.info(f"Vote detected via LLM analysis: {response}")
+            return statement
+
+        logger.info(f"No vote detected. LLM response: {response}")
         return None
     
     async def re_prompt_for_constraint(self, participant_name: str, choice: PrincipleChoice) -> str:
@@ -482,7 +596,7 @@ class UtilityAgent:
         }
     
     def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
-        """Create PrincipleChoice object from extracted data."""
+        """Create PrincipleChoice object from extracted data using parsing mode."""
         principle = JusticePrinciple(data['principle'])
         constraint_amount = data.get('constraint_amount')
         
@@ -494,11 +608,12 @@ class UtilityAgent:
             reasoning = data.get('reasoning', '')
             constraint_amount = self._extract_constraint_amount_robust(reasoning, principle.value)
         
-        # Validate constraint amount before creating PrincipleChoice
-        if (constraint_amount is not None and constraint_amount <= 0):
-            constraint_amount = None  # Set to None to trigger retry logic
+        # Validate constraint amount range
+        if constraint_amount is not None and constraint_amount <= 0:
+            constraint_amount = None  # Set to None for retry logic
         
-        return PrincipleChoice(
+        # Create in parsing mode to avoid validation during creation
+        return PrincipleChoice.create_for_parsing(
             principle=principle,
             constraint_amount=constraint_amount,
             certainty=CertaintyLevel(data['certainty']),
@@ -721,29 +836,16 @@ class UtilityAgent:
                         if constraint_amount is not None and constraint_amount <= 0:
                             constraint_amount = None
                     
-                    # For constraint principles with None constraint, use a temporary bypass
-                    if ('constraint' in principle_key and constraint_amount is None):
-                        # Create with temporary valid constraint that will pass Pydantic validation
-                        temp_constraint = 1  # Temporary positive value to pass Pydantic validation
-                        choice = PrincipleChoice(
-                            principle=JusticePrinciple(principle_key),
-                            constraint_amount=temp_constraint,
-                            certainty=CertaintyLevel.SURE,
-                            reasoning=response
-                        )
-                        # Override with None after creation to trigger retry logic
-                        choice.constraint_amount = None
-                        return choice
-                    else:
-                        return PrincipleChoice(
-                            principle=JusticePrinciple(principle_key),
-                            constraint_amount=constraint_amount,
-                            certainty=CertaintyLevel.SURE,
-                            reasoning=response
-                        )
+                    # Create using parsing mode - no validation bypass needed
+                    return PrincipleChoice.create_for_parsing(
+                        principle=JusticePrinciple(principle_key),
+                        constraint_amount=constraint_amount,
+                        certainty=CertaintyLevel.SURE,
+                        reasoning=response
+                    )
             
-            # Ultimate fallback - default choice
-            return PrincipleChoice(
+            # Ultimate fallback - default choice using parsing mode
+            return PrincipleChoice.create_for_parsing(
                 principle=JusticePrinciple.MAXIMIZING_AVERAGE,
                 constraint_amount=None,
                 certainty=CertaintyLevel.UNSURE,

@@ -335,8 +335,21 @@ class MemoryStateCapture:
     def extract_vote_intention(response_text: str) -> str:
         """Extract vote initiation intention from response."""
         response_lower = response_text.lower()
-        
-        if any(phrase in response_lower for phrase in ["call for vote", "vote now", "let's vote", "initiate vote"]):
+        # Only detect when explicit voting language is present; avoid domain phrases like "no constraints"
+        vote_positive = [
+            "i propose we vote",
+            "let's vote",
+            "lets vote",
+            "vote now",
+            "call for a vote",
+            "time to vote",
+            "we should vote",
+            "proceed with a vote",
+        ]
+        vote_negative_context = [
+            "should we vote?",
+            "no constraints",  # domain phrase, not a refusal
+        ]
+        if any(p in response_lower for p in vote_positive) and not any(n in response_lower for n in vote_negative_context):
             return "Yes"
-        else:
-            return "No"
+        return "No"

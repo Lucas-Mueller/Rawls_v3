@@ -284,6 +284,10 @@ Outcome: Learned how each justice principle is applied to income distributions t
         retry_count = 0
         
         while not await self.utility_agent.validate_constraint_specification(parsed_choice) and retry_count < max_retries:
+            # Log constraint re-prompting attempt
+            self._log_info(f"Constraint validation failed for {participant.name} - attempt {retry_count + 1}/{max_retries + 1}")
+            self._log_info(f"Principle: {parsed_choice.principle.value}, Constraint: {parsed_choice.constraint_amount}")
+            
             # Re-prompt for valid constraint
             retry_prompt = await self.utility_agent.re_prompt_for_constraint(
                 participant.name, parsed_choice
@@ -291,6 +295,15 @@ Outcome: Learned how each justice principle is applied to income distributions t
             
             retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
             retry_text = retry_result.final_output
+            
+            # Update memory with constraint re-prompt experience
+            try:
+                retry_memory_content = f"Constraint re-prompt: {retry_prompt}\nMy response: {retry_text}"
+                updated_memory = await participant.update_memory(retry_memory_content, context.bank_balance)
+                context.memory = updated_memory
+                self._log_info(f"Updated {participant.name} memory after constraint retry {retry_count + 1}")
+            except Exception as e:
+                self._log_warning(f"Failed to update memory after constraint retry for {participant.name}: {e}")
             
             # Parse retry response using enhanced parsing
             parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(retry_text)

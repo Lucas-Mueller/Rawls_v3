@@ -30,28 +30,41 @@ class PrincipleChoice(BaseModel):
     certainty: CertaintyLevel
     reasoning: Optional[str] = Field(None, description="Participant's reasoning")
     
-    @model_validator(mode='after')
-    def validate_constraint_amount(self):
-        """Validate that constraint principles have constraint amounts."""
-        if self.principle in [
-            JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-            JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
-        ]:
-            if self.constraint_amount is None:
-                raise ValueError(f"Constraint amount required for principle {self.principle}")
-            if self.constraint_amount <= 0:
-                raise ValueError("Constraint amount must be positive")
-        return self
+    # Disable validation by default for parsing
+    model_config = {"validate_assignment": False, "arbitrary_types_allowed": True}
     
     def is_valid_constraint(self) -> bool:
-        """Check if constraint amount is valid. Returns True if valid."""
+        """Check if constraint amount is valid for voting."""
         if self.principle in [
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
         ]:
-            if self.constraint_amount is None or self.constraint_amount <= 0:
-                return False
-        return True
+            return self.constraint_amount is not None and self.constraint_amount > 0
+        return True  # Non-constraint principles are always valid
+    
+    def validate_for_voting(self) -> 'PrincipleChoice':
+        """Validate and return a copy suitable for voting."""
+        if not self.is_valid_constraint():
+            raise ValueError(f"Invalid constraint for voting: principle={self.principle.value}, constraint={self.constraint_amount}")
+        
+        # Return self since validation passed
+        return self
+    
+    @classmethod
+    def create_for_parsing(
+        cls,
+        principle: JusticePrinciple,
+        constraint_amount: Optional[int] = None,
+        certainty: CertaintyLevel = CertaintyLevel.SURE,
+        reasoning: Optional[str] = None
+    ) -> 'PrincipleChoice':
+        """Create PrincipleChoice for parsing (no validation constraints)."""
+        return cls(
+            principle=principle,
+            constraint_amount=constraint_amount,
+            certainty=certainty,
+            reasoning=reasoning
+        )
 
 
 class RankedPrinciple(BaseModel):

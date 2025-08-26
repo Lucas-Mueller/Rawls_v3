@@ -157,117 +157,38 @@ async def _check_unanimous_vote_agreement(self, discussion_state, contexts, conf
 3. **Over-Engineered Process**: The two-phase detection (proposal → agreement check) adds unnecessary complexity
 4. **No Convergence Detection**: The system doesn't detect when agents have reached stable agreement over multiple rounds
 
-## Proposed Solutions
+## Proposed Solution: Enhanced Prompt Engineering
 
-### Solution 1: Enhanced Pattern Matching
-Replace pure LLM detection with reliable regex-based pattern matching as the primary detection method:
+The most targeted and low-risk solution is to replace the failing detection prompt with a more generous, robust one. This addresses the root cause without requiring code changes.
 
-```python
-def _detect_vote_patterns(self, statement: str) -> bool:
-    """Rule-based vote detection as primary method."""
-    vote_patterns = [
-        r'I propose we vote',
-        r'Let\'s vote',
-        r'I call for a vote',
-        r'We should vote',
-        r'Time to vote',
-        r'Ready to vote',
-        r'propose.*vote',
-        r'vote.*on.*\$\d+',  # Vote with specific constraint
-        r'proceed.*vote',
-        r'finalize.*vote',
-        r'move.*to.*vote',
-        r'vote.*now',
-    ]
-    
-    statement_lower = statement.lower()
-    return any(re.search(pattern, statement_lower, re.IGNORECASE) for pattern in vote_patterns)
+### Current Failing Prompt Analysis
 
-async def detect_vote_intention_enhanced(self, statement: str) -> Optional[str]:
-    """Enhanced vote detection with pattern matching primary, LLM fallback."""
-    
-    # Primary detection: Pattern matching
-    if self._detect_vote_patterns(statement):
-        return statement
-    
-    # Fallback: Enhanced LLM detection with improved prompt
-    detection_prompt = self.language_manager.get(
-        "prompts.utility_vote_detection_enhanced",
-        statement=statement
-    )
-    result = await Runner.run(self.parser_agent, detection_prompt)
-    
-    if result.final_output.strip().upper() == "VOTE_DETECTED":
-        return statement
-    return None
-```
-
-**Benefits**:
-- **Reliability**: Regex patterns catch obvious cases that LLMs might miss
-- **Speed**: Pattern matching is faster than LLM calls
-- **Predictability**: Deterministic behavior for clear vote proposals
-- **Fallback**: Still uses LLM for edge cases pattern matching might miss
-
-### Solution 2: Simplified Consensus Logic
-
-Replace the complex two-phase process (detect proposal → check agreement → vote) with a streamlined approach:
-
-**Current Process**:
-```
-Agent Statement → Vote Detection → Unanimous Agreement Check → Conduct Vote
-                      ↓ (fails)
-                  Continue Discussion
-```
-
-**Proposed Process**:
-```
-Agent Statement → Enhanced Vote Detection → Conduct Vote Immediately
-```
-
-**Implementation**:
-```python
-async def _check_voting_readiness(self, discussion_state, contexts) -> bool:
-    """Simplified check: if someone proposes a vote explicitly, proceed."""
-    last_statement = discussion_state.public_history[-1] if discussion_state.public_history else ""
-    
-    # If current statement contains vote proposal, we're ready
-    vote_detected = await self.utility_agent.detect_vote_intention_enhanced(last_statement)
-    return vote_detected is not None
-
-# In main discussion loop:
-if await self._check_voting_readiness(discussion_state, contexts):
-    # Skip unanimous agreement check - proceed directly to vote
-    vote_result = await self._conduct_group_vote(contexts, config)
-    discussion_state.add_vote_result(vote_result)
-    
-    if vote_result.consensus_reached:
-        return GroupDiscussionResult(
-            consensus_reached=True,
-            agreed_principle=vote_result.agreed_principle,
-            final_round=round_num,
-            discussion_history=discussion_state.public_history,
-            vote_history=discussion_state.vote_history
-        )
-```
-
-**Benefits**:
-- **Fewer Failure Points**: Eliminates the unanimous agreement check that can fail
-- **More Responsive**: Immediately acts on vote proposals
-- **Simpler Logic**: Easier to debug and maintain
-- **Faster Resolution**: Reduces unnecessary rounds
-
-### Solution 3: Enhanced Prompt Engineering
-
-Replace the failing prompt with a more generous, robust detection prompt:
-
-**Current Failing Prompt**:
+**Current Prompt** (`utility_vote_detection_simple`):
 ```json
-"utility_vote_detection_simple": "IGNORE casual mentions of agreement, consensus, or deciding together unless they explicitly mention voting. Respond with exactly one word: VOTE_PROPOSED or NO_VOTE"
+"Analyze this statement to determine if the participant is explicitly proposing to conduct a formal vote.
+Statement: \"{statement}\"
+Look for EXPLICIT vote proposals such as:
+- \"I propose we vote\"
+- \"Let's vote on this\"  
+- \"I call for a vote\"
+- \"We should vote now\"
+IGNORE casual mentions of agreement, consensus, or deciding together unless they explicitly mention voting.
+Respond with exactly one word:
+- \"VOTE_PROPOSED\" if they explicitly propose a formal vote
+- \"NO_VOTE\" if they don't explicitly propose voting"
 ```
 
-**Proposed Enhanced Prompt**:
+**Problems with Current Prompt**:
+1. **Contradictory Instructions**: Lists "I propose we vote" as an example but still fails to detect it
+2. **Over-Restrictive**: The "IGNORE" clause may cause over-filtering
+3. **Ambiguous Language**: "explicitly" and "formal vote" create confusion
+4. **Limited Examples**: Only provides 4 basic examples
+
+### Enhanced Prompt Solution
+
+**New Prompt** (`utility_vote_detection_enhanced`):
 ```json
-"utility_vote_detection_enhanced": "Analyze this statement for ANY indication the participant wants to initiate voting.
+"Analyze this statement for ANY indication the participant wants to initiate voting.
 
 Statement: \"{statement}\"
 
@@ -286,44 +207,41 @@ Examples that should be detected:
 - \"Therefore, I propose we vote\"
 - \"Ready to vote on this\"
 - \"Let's finalize with a vote\"
+- \"We should proceed with a vote\"
+- \"Time to vote on this\"
 
 Respond EXACTLY:
 - \"VOTE_DETECTED\" if they want to initiate voting
 - \"NO_VOTE\" otherwise"
 ```
 
-**Benefits**:
-- **More Examples**: Provides specific examples that should be caught
-- **Generous Detection**: Explicitly instructs to be generous rather than restrictive
-- **Intent Focus**: Emphasizes detecting intent rather than exact phrase matching
-- **Clear Instructions**: Removes confusing "IGNORE" clauses that might cause over-filtering
+### Key Improvements
+
+1. **Generous Detection**: Explicitly instructs to be generous rather than restrictive
+2. **Intent Focus**: Emphasizes detecting intent rather than exact phrase matching
+3. **More Examples**: Provides 7 specific examples including the exact phrase from the failed experiment
+4. **Clear Categories**: Organizes detection into 4 clear categories of voting intent
+5. **Removes Confusion**: Eliminates the problematic "IGNORE" clause
+6. **Updated Response Format**: Changes from "VOTE_PROPOSED" to "VOTE_DETECTED" for clarity
 
 ## Implementation Plan
 
-### Immediate Implementation (High Priority)
-Focus on the three core solutions that directly address the failure:
+### Single Implementation Step (Minimal Risk)
+Replace the failing prompt with the enhanced version across all supported languages:
 
-1. **Replace `detect_vote_intention_simple` method** with `detect_vote_intention_enhanced` using pattern matching + LLM fallback
-   - **File**: `experiment_agents/utility_agent.py`
-   - **Method**: Replace lines 336-352
-   - **Risk**: Low (maintains same interface)
-
-2. **Update vote detection prompt** with enhanced generous detection
-   - **File**: `translations/english_prompts.json`
+1. **Update vote detection prompt** in all language files
+   - **Files**: 
+     - `translations/english_prompts.json`
+     - `translations/spanish_prompts.json` 
+     - `translations/mandarin_prompts.json`
    - **Key**: Replace `utility_vote_detection_simple` with `utility_vote_detection_enhanced`
-   - **Risk**: Low (only improves detection)
-
-3. **Simplify consensus flow** by removing unanimous agreement check
-   - **File**: `core/phase2_manager.py`
-   - **Lines**: Modify 379-390 to skip agreement verification
-   - **Risk**: Medium (changes core logic but simplifies it)
+   - **Risk**: Very Low (only improves detection, no code changes)
 
 ### Implementation Steps
-1. Add pattern matching method to `UtilityAgent` class
-2. Replace `detect_vote_intention_simple` with enhanced version
-3. Update English prompts with new detection prompt
-4. Modify Phase 2 manager to skip unanimous agreement check
-5. Test with failed experiment scenario to verify fix
+1. Translate the enhanced English prompt to Spanish and Mandarin using DeepL
+2. Update all three language files with the new prompt
+3. Update the utility agent code to call the new prompt key
+4. Test with failed experiment scenario to verify fix
 
 ## Expected Outcomes
 
