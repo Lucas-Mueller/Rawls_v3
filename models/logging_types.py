@@ -82,6 +82,54 @@ class PostDiscussionLog(BaseRoundLog):
     class_put_in: str
     payoff_received: float
     final_ranking: PrincipleRankingResult
+    final_vote: Optional[str] = Field(None, description="Final vote cast by this agent")
+    vote_timestamp: Optional[str] = Field(None, description="Timestamp when vote was cast")
+
+
+class VoteRoundDetails(BaseModel):
+    """Details of a single voting round."""
+    round_number: int = Field(..., description="Phase 2 round when vote was triggered")
+    vote_type: str = Field(..., description="Type of vote: 'formal_vote' or 'preference_consensus'")
+    trigger_participant: Optional[str] = Field(None, description="Agent who triggered the vote")
+    trigger_statement: Optional[str] = Field(None, description="Statement that triggered the vote")
+    
+    # Vote participation details
+    participant_votes: List[Dict[str, Any]] = Field(default_factory=list, description="Individual vote details")
+    # Each participant_vote contains:
+    # - participant_name: str
+    # - raw_response: str (exact agent output)
+    # - assessed_choice: str (system's interpretation)
+    # - constraint_amount: Optional[float]
+    # - vote_timestamp: str
+    # - parsing_success: bool
+    
+    # Vote outcome
+    consensus_reached: bool = Field(False, description="Whether consensus was achieved")
+    agreed_principle: Optional[str] = Field(None, description="Principle if consensus reached")
+    agreed_constraint: Optional[float] = Field(None, description="Constraint amount if applicable")
+    vote_counts: Dict[str, int] = Field(default_factory=dict, description="Vote distribution")
+    
+    # Process details
+    confirmation_phase_occurred: bool = Field(False, description="Whether confirmation phase occurred")
+    confirmation_results: Optional[List[Dict[str, Any]]] = Field(None, description="Confirmation responses if complex mode")
+    warnings: List[str] = Field(default_factory=list, description="System warnings during vote processing")
+
+
+class VotingHistoryLog(BaseModel):
+    """Complete voting history for the experiment."""
+    voting_detection_mode: str = Field(..., description="Mode used: 'simple' or 'complex'")
+    total_vote_attempts: int = Field(0, description="Total number of vote attempts")
+    successful_votes: int = Field(0, description="Number of votes that reached consensus")
+    
+    vote_rounds: List[VoteRoundDetails] = Field(default_factory=list, description="Details of each vote round")
+    
+    # Summary statistics
+    vote_statistics: Dict[str, Any] = Field(default_factory=dict, description="Voting statistics")
+    # Contains:
+    # - preference_detections_per_round: Dict[int, int]
+    # - failed_parsing_attempts: int
+    # - fallback_statements_during_votes: int
+    # - average_consensus_round: Optional[float]
 
 
 class AgentPhase1Logging(BaseModel):
@@ -168,6 +216,8 @@ class AgentExperimentLog(BaseModel):
                     "class_put_in": self.phase_2.post_group_discussion.class_put_in,
                     "payoff_received": self.phase_2.post_group_discussion.payoff_received,
                     "final_ranking": self.phase_2.post_group_discussion.final_ranking.model_dump(),
+                    "final_vote": self.phase_2.post_group_discussion.final_vote,
+                    "vote_timestamp": self.phase_2.post_group_discussion.vote_timestamp,
                     "memory_coming_in_this_round": self.phase_2.post_group_discussion.memory_coming_in_this_round,
                     "bank_balance": self.phase_2.post_group_discussion.bank_balance
                 }
@@ -203,13 +253,14 @@ class GeneralExperimentInfo(BaseModel):
 
 
 class TargetStateStructure(BaseModel):
-    """Complete target state structure."""
+    """Complete target state structure with voting history."""
     general_information: GeneralExperimentInfo
     agents: List[Dict[str, Any]]  # Agent logs in target format
+    voting_history: Optional[VotingHistoryLog] = None  # NEW: Third category
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "general_information": {
                 "consensus_reached": self.general_information.consensus_reached,
                 "consensus_principle": self.general_information.consensus_principle,
@@ -224,3 +275,31 @@ class TargetStateStructure(BaseModel):
             },
             "agents": self.agents
         }
+        
+        # Add voting history if present
+        if self.voting_history:
+            result["voting_history"] = {
+                "voting_detection_mode": self.voting_history.voting_detection_mode,
+                "total_vote_attempts": self.voting_history.total_vote_attempts,
+                "successful_votes": self.voting_history.successful_votes,
+                "vote_rounds": [
+                    {
+                        "round_number": vote_round.round_number,
+                        "vote_type": vote_round.vote_type,
+                        "trigger_participant": vote_round.trigger_participant,
+                        "trigger_statement": vote_round.trigger_statement,
+                        "participant_votes": vote_round.participant_votes,
+                        "consensus_reached": vote_round.consensus_reached,
+                        "agreed_principle": vote_round.agreed_principle,
+                        "agreed_constraint": vote_round.agreed_constraint,
+                        "vote_counts": vote_round.vote_counts,
+                        "confirmation_phase_occurred": vote_round.confirmation_phase_occurred,
+                        "confirmation_results": vote_round.confirmation_results,
+                        "warnings": vote_round.warnings
+                    }
+                    for vote_round in self.voting_history.vote_rounds
+                ],
+                "vote_statistics": self.voting_history.vote_statistics
+            }
+        
+        return result

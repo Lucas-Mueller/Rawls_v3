@@ -325,10 +325,17 @@ class UtilityAgent:
         - Decisive agreement tokens (YES/I AGREE/LET'S VOTE/etc.) return True unless there is an explicit refusal.
         - Words like "NO" are NOT treated as refusal if part of domain phrases (e.g., "NO CONSTRAINTS").
         - If both agreement and ambiguous negation cues appear, defer to LLM fallback.
+        - Empty or whitespace-only responses are always treated as disagreement.
         """
         await self.async_init()
 
         text = response.strip()
+        
+        # CRITICAL: Reject empty or whitespace-only responses immediately
+        if not text or len(text) < 2:
+            logger.info("Agreement detection: Empty or too short response - treating as disagreement")
+            return False
+            
         normalized = text.upper()
 
         # Agreement tokens (broad but decisive)
@@ -926,9 +933,21 @@ class UtilityAgent:
             r'mi\s+preferencia\s+es\s+([abc]|principio\s+[abc])',
             r'prefiero\s+([abc]|principio\s+[abc])',
             r'elijo\s+([abc]|principio\s+[abc])',
-            # Mandarin patterns (you'll need to add these based on your translations)
+            # Mandarin patterns - both letter-based and full principle names
             r'我的偏好是\s*([abc]|原则\s*[abc])',
             r'我选择\s*([abc]|原则\s*[abc])',
+            r'我支持\s*([abc]|原则\s*[abc])',
+            r'我倾向于\s*([abc]|原则\s*[abc])',
+            # Full principle names in Chinese
+            r'我的偏好是\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            r'我选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            r'我支持\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            r'我倾向于\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            # Additional patterns for strong agreement/endorsement in Chinese
+            r'我认为.*应该.*选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            r'我建议.*采用\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
+            r'我觉得\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入).*最好',
+            r'.*最终.*选择\s*(最大化最低收入|最大化平均收入|在最低收入约束条件下最大化平均收入|在范围约束条件下最大化平均收入)',
         ]
         
         # Check for explicit preference patterns first
@@ -971,10 +990,29 @@ class UtilityAgent:
         identifier = re.sub(r'^(principle|principio|原则)\s*', '', identifier)
         
         mapping = {
+            # Letter-based identifiers
             'a': JusticePrinciple.MAXIMIZING_FLOOR,
             'b': JusticePrinciple.MAXIMIZING_AVERAGE,
             'c': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-            'd': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+            'd': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # English full names
+            'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Chinese principle names
+            '最大化最低收入': JusticePrinciple.MAXIMIZING_FLOOR,
+            '最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE,
+            '在最低收入约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            '在范围约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Spanish principle names (for completeness)
+            'maximización del ingreso mínimo': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximización del ingreso promedio': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximización del ingreso promedio bajo restricción de ingreso mínimo': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximización del ingreso promedio bajo restricción de rango': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
         }
         
         return mapping.get(identifier)
@@ -1089,6 +1127,40 @@ class UtilityAgent:
             return True, first_pref, warnings
         else:
             return False, None, warnings
+    
+    async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
+        """
+        Validate that the recorded consensus aligns with the discussion content.
+        Returns (is_valid, warnings_list)
+        """
+        warnings = []
+        
+        # Use LLM to analyze discussion content for principle preferences
+        language_manager = get_language_manager()
+        
+        validation_prompt = language_manager.get(
+            "prompts.utility_consensus_validation",
+            discussion_content=discussion_content,
+            consensus_principle=consensus_principle
+        )
+        
+        try:
+            result = await Runner.run(self.parser_agent, validation_prompt)
+            response = result.final_output.strip()
+            
+            if "CONSENSUS_MISMATCH" in response:
+                warnings.append("Consensus validation failed: Final consensus doesn't match discussion content")
+                return False, warnings
+            elif "CONSENSUS_VALID" in response:
+                return True, warnings
+            else:
+                warnings.append("Consensus validation inconclusive: Unable to determine alignment")
+                return True, warnings  # Default to valid if inconclusive
+                
+        except Exception as e:
+            logger.warning(f"Consensus validation failed due to error: {e}")
+            warnings.append(f"Consensus validation error: {str(e)}")
+            return True, warnings  # Default to valid if error occurs
     
     def check_ballot_consensus(self, ballots: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
         """

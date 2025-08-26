@@ -212,6 +212,10 @@ Please ensure your response contains a clear statement about your position on th
         # Store logger for use in consensus methods
         self.logger = logger
         
+        # Initialize voting history tracking if logger is provided
+        if logger:
+            logger.initialize_voting_history(config.voting_detection_mode)
+        
         # CRITICAL: Initialize participants with CONTINUOUS memory from Phase 1
         participant_contexts = self._initialize_phase2_contexts(phase1_results, config)
         
@@ -286,6 +290,9 @@ Please ensure your response contains a clear statement about your position on th
             # Track who finishes this round (last speaker)
             current_round_finisher = speaking_order[-1]
             
+            # Track participants who spoke in this round for logging consistency validation
+            round_participants_logged = set()
+            
             for speaking_order_position, participant_idx in enumerate(speaking_order):
                 participant = self.participants[participant_idx]
                 context = contexts[participant_idx]
@@ -337,6 +344,9 @@ Please ensure your response contains a clear statement about your position on th
                         memory_before,
                         balance_before
                     )
+                    
+                    # Track that this participant was logged for this round
+                    round_participants_logged.add(participant.name)
                 
                 # Create delta-focused round content
                 from utils.memory_content import build_phase2_delta
@@ -362,6 +372,12 @@ Please ensure your response contains a clear statement about your position on th
                 contexts[participant_idx] = update_participant_context(
                     context, new_round=round_num
                 )
+                
+                # CRITICAL: Skip consensus mechanisms if agent failed to respond properly
+                if is_fallback:
+                    self._log_warning(f"Skipping consensus processing for {participant.name} due to agent failure")
+                    # Continue to next participant without processing vote/preference detection
+                    continue
                 
                 # Check voting detection mode
                 if config.voting_detection_mode == "complex":
@@ -428,6 +444,23 @@ Please ensure your response contains a clear statement about your position on th
                     
                     # If all participants have stated preferences, check for consensus
                     if num_participants_with_preferences == total_participants:
+                        # Start vote round tracking for preference consensus
+                        if logger:
+                            logger.start_vote_round(
+                                round_number=round_num,
+                                vote_type="preference_consensus"
+                            )
+                            
+                            # Log each participant's preference as a "vote"
+                            for participant_name, preference in discussion_state.current_round_preferences.items():
+                                logger.log_vote_response(
+                                    participant_name=participant_name,
+                                    raw_response=f"Preference: {preference.principle.value}",
+                                    assessed_choice=preference.principle.value,
+                                    constraint_amount=preference.constraint_amount,
+                                    parsing_success=True
+                                )
+                        
                         preferences_list = list(discussion_state.current_round_preferences.values())
                         consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus(preferences_list)
                         
@@ -439,6 +472,23 @@ Please ensure your response contains a clear statement about your position on th
                         debug_logger.info(f"Consensus check result: {consensus_reached}")
                         if agreed_preference:
                             debug_logger.info(f"Agreed preference: {agreed_preference.principle.value} with constraint: {agreed_preference.constraint_amount}")
+                        
+                        # Complete vote round
+                        if logger:
+                            vote_counts = {}
+                            for pref in preferences_list:
+                                key = pref.principle.value
+                                if pref.constraint_amount:
+                                    key += f" (${pref.constraint_amount:,})"
+                                vote_counts[key] = vote_counts.get(key, 0) + 1
+                            
+                            logger.complete_vote_round(
+                                consensus_reached=consensus_reached,
+                                agreed_principle=agreed_preference.principle.value if agreed_preference else None,
+                                agreed_constraint=agreed_preference.constraint_amount if agreed_preference else None,
+                                vote_counts=vote_counts,
+                                warnings=warnings
+                            )
                         
                         if consensus_reached and agreed_preference:
                             # Log validation statistics before returning
@@ -460,6 +510,21 @@ Please ensure your response contains a clear statement about your position on th
                             consensus_msg = f"No consensus reached in round {round_num}. Discussion continues..."
                             discussion_state.public_history += f"\n[CONSENSUS CHECK] {consensus_msg}"
                             debug_logger.info(consensus_msg)
+            
+            # Validate round logging consistency
+            if logger:
+                expected_participants = {participant.name for participant in self.participants}
+                if round_participants_logged != expected_participants:
+                    missing_participants = expected_participants - round_participants_logged
+                    extra_participants = round_participants_logged - expected_participants
+                    
+                    self._log_warning(f"Round {round_num} logging inconsistency:")
+                    if missing_participants:
+                        self._log_warning(f"  Missing logs for: {missing_participants}")
+                    if extra_participants:
+                        self._log_warning(f"  Extra logs for: {extra_participants}")
+                else:
+                    self._log_info(f"Round {round_num} logging consistent: {len(round_participants_logged)} participants")
             
             # Update last round finisher for next round
             last_round_finisher = current_round_finisher
@@ -714,19 +779,8 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
     ) -> PrincipleRanking:
         """Get participant's final principle ranking after Phase 2."""
         
-        final_ranking_prompt = """
-        After participating in both Phase 1 (individual experience) and Phase 2 (group discussion), 
-        please provide your final ranking of the four justice principles from best (1) to worst (4).
-        
-        Reflect on:
-        - Your Phase 1 experiences with applying the principles
-        - The group discussion and different perspectives you heard
-        - The final outcome and your earnings
-        - How your understanding of the principles has evolved
-        
-        Provide your final ranking with an overall certainty level for the entire ranking and explain how the complete experiment 
-        influenced your final preferences.
-        """
+        language_manager = get_language_manager()
+        final_ranking_prompt = language_manager.get("prompts.phase2_final_ranking_prompt")
         
         # Always use text responses, parse with enhanced utility agent
         result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
@@ -788,6 +842,15 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         self._log_info(f"Complex voting intention detected from {participant.name}")
         
+        # Start vote round tracking
+        if self.logger:
+            self.logger.start_vote_round(
+                round_number=discussion_state.round_number,
+                vote_type="formal_vote",
+                trigger_participant=participant.name,
+                trigger_statement=statement
+            )
+        
         # Set active vote flag
         discussion_state.active_vote_in_progress = True
         
@@ -798,6 +861,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         if not confirmation_success:
             self._log_info("Voting confirmation failed - returning to discussion")
+            # Complete failed vote round
+            if self.logger:
+                self.logger.complete_vote_round(
+                    consensus_reached=False,
+                    warnings=["Confirmation phase failed"]
+                )
             discussion_state.active_vote_in_progress = False
             return False
         
@@ -805,6 +874,16 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         consensus_reached = await self._conduct_secret_ballot_phase(
             contexts, discussion_state
         )
+        
+        # Complete vote round with results
+        if self.logger and discussion_state.last_vote_result:
+            vote_result = discussion_state.last_vote_result
+            self.logger.complete_vote_round(
+                consensus_reached=vote_result.consensus_reached,
+                agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
+                agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None,
+                vote_counts=vote_result.vote_counts
+            )
         
         # Complete voting process
         discussion_state.active_vote_in_progress = False
@@ -842,6 +921,14 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             result = await Runner.run(participant.agent, confirmation_prompt, context=context)
             confirmation_response = result.final_output
             
+            # CRITICAL: Check if response is a fallback statement (agent failure)
+            is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
+            if is_fallback:
+                self._log_warning(f"Fallback response detected for {participant.name} - voting confirmation failed")
+                discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+                discussion_state.public_history += f"\n[VOTING RESULT] Agent failure detected - confirmation failed"
+                return False
+            
             # Use existing multilingual agreement detection
             agrees_to_vote = await self.utility_agent.detect_agreement_multilingual(confirmation_response)
             
@@ -862,6 +949,11 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         self._log_info("All participants agreed to vote - proceeding to secret ballot")
         discussion_state.public_history += f"\n[VOTING RESULT] All participants agreed - proceeding to secret ballot"
+        
+        # Log confirmation results
+        if self.logger:
+            self.logger.log_confirmation_phase(confirmations)
+        
         return True
     
     async def _conduct_secret_ballot_phase(
@@ -894,8 +986,28 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                 ballots.append(principle_choice)
                 self._log_info(f"Secret ballot received from {participant.name}")
                 
+                # Log the vote response
+                if self.logger:
+                    self.logger.log_vote_response(
+                        participant_name=participant.name,
+                        raw_response=ballot_response,
+                        assessed_choice=principle_choice.principle.value,
+                        constraint_amount=principle_choice.constraint_amount,
+                        parsing_success=True
+                    )
+                
             except Exception as e:
                 self._log_warning(f"Failed to parse ballot from {participant.name}: {e}")
+                
+                # Log failed parsing
+                if self.logger:
+                    self.logger.log_vote_response(
+                        participant_name=participant.name,
+                        raw_response=ballot_response,
+                        assessed_choice="PARSING_FAILED",
+                        parsing_success=False
+                    )
+                
                 # Could implement re-prompt logic here if needed
                 discussion_state.public_history += f"\n[VOTING ERROR] Failed to parse ballot - returning to discussion"
                 return False

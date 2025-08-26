@@ -13,7 +13,7 @@ from models.logging_types import (
     InitialRankingLog, DetailedExplanationLog, PostExplanationRankingLog,
     DemonstrationRoundLog, FinalRankingLog, DiscussionRoundLog,
     PostDiscussionLog, GeneralExperimentInfo, TargetStateStructure,
-    PrincipleRankingResult
+    PrincipleRankingResult, VotingHistoryLog, VoteRoundDetails
 )
 from models.principle_types import PrincipleRanking
 from config import ExperimentConfiguration
@@ -35,6 +35,9 @@ class AgentCentricLogger:
         self.experiment_start_time: Optional[datetime] = None
         self.seed_used: Optional[int] = None
         self.seed_source: Optional[str] = None
+        # NEW: Voting history tracking
+        self.voting_history: Optional[VotingHistoryLog] = None
+        self.current_vote_round: Optional[VoteRoundDetails] = None
         
     def initialize_experiment(
         self, 
@@ -216,7 +219,9 @@ class AgentCentricLogger:
         payoff: float,
         ranking: PrincipleRanking,
         memory_state: str,
-        bank_balance: float
+        bank_balance: float,
+        final_vote: Optional[str] = None,
+        vote_timestamp: Optional[str] = None
     ):
         """Log post-discussion state in Phase 2."""
         if agent_name in self.agent_logs:
@@ -226,8 +231,21 @@ class AgentCentricLogger:
                 payoff_received=payoff,
                 final_ranking=ranking_result,
                 memory_coming_in_this_round=memory_state,
-                bank_balance=bank_balance
+                bank_balance=bank_balance,
+                final_vote=final_vote,
+                vote_timestamp=vote_timestamp
             )
+    
+    def update_agent_votes(
+        self,
+        agent_votes: Dict[str, str],
+        vote_timestamps: Dict[str, Optional[str]]
+    ):
+        """Update final vote information for all agents."""
+        for agent_name in agent_votes:
+            if agent_name in self.agent_logs and self.agent_logs[agent_name].phase_2.post_group_discussion:
+                self.agent_logs[agent_name].phase_2.post_group_discussion.final_vote = agent_votes[agent_name]
+                self.agent_logs[agent_name].phase_2.post_group_discussion.vote_timestamp = vote_timestamps[agent_name]
     
     def set_general_information(
         self,
@@ -255,6 +273,94 @@ class AgentCentricLogger:
             original_values_mode_enabled=original_values_mode_enabled
         )
     
+    def initialize_voting_history(self, voting_detection_mode: str):
+        """Initialize voting history tracking."""
+        self.voting_history = VotingHistoryLog(
+            voting_detection_mode=voting_detection_mode,
+            total_vote_attempts=0,
+            successful_votes=0
+        )
+    
+    def start_vote_round(
+        self, 
+        round_number: int, 
+        vote_type: str,
+        trigger_participant: Optional[str] = None,
+        trigger_statement: Optional[str] = None
+    ):
+        """Start tracking a new vote round."""
+        if not self.voting_history:
+            raise ValueError("Voting history not initialized")
+        
+        self.current_vote_round = VoteRoundDetails(
+            round_number=round_number,
+            vote_type=vote_type,
+            trigger_participant=trigger_participant,
+            trigger_statement=trigger_statement,
+            participant_votes=[],
+            consensus_reached=False
+        )
+        self.voting_history.total_vote_attempts += 1
+    
+    def log_vote_response(
+        self,
+        participant_name: str,
+        raw_response: str,
+        assessed_choice: str,
+        constraint_amount: Optional[float] = None,
+        parsing_success: bool = True,
+        vote_timestamp: Optional[str] = None
+    ):
+        """Log individual participant vote response."""
+        if not self.current_vote_round:
+            raise ValueError("No active vote round")
+        
+        vote_detail = {
+            "participant_name": participant_name,
+            "raw_response": raw_response,
+            "assessed_choice": assessed_choice,
+            "constraint_amount": constraint_amount,
+            "vote_timestamp": vote_timestamp or datetime.now().isoformat(),
+            "parsing_success": parsing_success
+        }
+        
+        self.current_vote_round.participant_votes.append(vote_detail)
+    
+    def log_confirmation_phase(
+        self,
+        confirmation_results: List[Dict[str, Any]]
+    ):
+        """Log confirmation phase results."""
+        if not self.current_vote_round:
+            raise ValueError("No active vote round")
+        
+        self.current_vote_round.confirmation_phase_occurred = True
+        self.current_vote_round.confirmation_results = confirmation_results
+    
+    def complete_vote_round(
+        self,
+        consensus_reached: bool,
+        agreed_principle: Optional[str] = None,
+        agreed_constraint: Optional[float] = None,
+        vote_counts: Optional[Dict[str, int]] = None,
+        warnings: Optional[List[str]] = None
+    ):
+        """Complete and store the current vote round."""
+        if not self.current_vote_round or not self.voting_history:
+            raise ValueError("No active vote round or voting history")
+        
+        self.current_vote_round.consensus_reached = consensus_reached
+        self.current_vote_round.agreed_principle = agreed_principle
+        self.current_vote_round.agreed_constraint = agreed_constraint
+        self.current_vote_round.vote_counts = vote_counts or {}
+        self.current_vote_round.warnings = warnings or []
+        
+        if consensus_reached:
+            self.voting_history.successful_votes += 1
+        
+        self.voting_history.vote_rounds.append(self.current_vote_round)
+        self.current_vote_round = None
+    
     def generate_target_state(self) -> TargetStateStructure:
         """Generate the complete target state structure."""
         if not self.general_info:
@@ -275,7 +381,8 @@ class AgentCentricLogger:
         
         return TargetStateStructure(
             general_information=general_info_with_seed,
-            agents=agent_data
+            agents=agent_data,
+            voting_history=self.voting_history
         )
     
     def save_to_file(self, output_path: str):

@@ -3,6 +3,7 @@ Justice principle types and related models for the Frohlich Experiment.
 """
 from enum import Enum
 from typing import Optional, List, Dict
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -112,3 +113,4 @@ class VoteResult(BaseModel):
     consensus_reached: bool
     agreed_principle: Optional[PrincipleChoice] = None
     vote_counts: Dict[str, int] = Field(default_factory=dict)
+    timestamp: Optional[datetime] = Field(default_factory=datetime.now)

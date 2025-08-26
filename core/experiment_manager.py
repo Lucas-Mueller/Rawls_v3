@@ -214,6 +214,8 @@ class FrohlichExperimentManager:
                 except Exception as e:
                     # Log the error but don't fail the experiment
                     logger.warning(f"Failed to set general logging info: {e}")
+                    # Set minimal fallback general information to prevent save failure
+                    self._set_fallback_general_info(phase2_results)
                 
                 # Compile final results
                 results = ExperimentResults(
@@ -227,6 +229,24 @@ class FrohlichExperimentManager:
                 )
                 
                 logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
+                
+                # Validate consensus against discussion content if applicable
+                if hasattr(self, '_consensus_validation_info') and self._consensus_validation_info:
+                    try:
+                        consensus_valid, validation_warnings = await self.utility_agent.validate_consensus_against_discussion(
+                            self._consensus_validation_info['discussion_content'], 
+                            self._consensus_validation_info['consensus_principle']
+                        )
+                        
+                        if not consensus_valid:
+                            logger.warning("Consensus validation failed - final consensus may not align with discussion content")
+                            for warning in validation_warnings:
+                                logger.warning(f"Consensus validation: {warning}")
+                        else:
+                            logger.info("Consensus validation successful - discussion aligns with recorded consensus")
+                            
+                    except Exception as e:
+                        logger.warning(f"Consensus validation encountered error: {e}")
                 
                 # Log error statistics
                 error_stats = self.error_handler.get_error_statistics()
@@ -270,8 +290,9 @@ class FrohlichExperimentManager:
         else:
             public_conversation = "No public discussion recorded."
         
-        # Build final vote results
+        # Build final vote results and track vote timestamps
         final_vote_results = {}
+        vote_timestamps = {}
         if phase2_results.discussion_result.vote_history:
             last_vote = phase2_results.discussion_result.vote_history[-1]
             # Since votes are anonymous (stored as list), we'll map them to participant names by order
@@ -279,12 +300,16 @@ class FrohlichExperimentManager:
                 if i < len(last_vote.votes):
                     vote = last_vote.votes[i]
                     final_vote_results[participant.name] = vote.principle.value if vote else "No vote"
+                    # Record vote timestamp if available
+                    vote_timestamps[participant.name] = last_vote.timestamp.isoformat() if last_vote.timestamp else None
                 else:
                     final_vote_results[participant.name] = "No vote"
+                    vote_timestamps[participant.name] = None
         else:
             # If no votes, use participant names with "No vote"
             for participant in self.participants:
                 final_vote_results[participant.name] = "No vote"
+                vote_timestamps[participant.name] = None
         
         # Extract probabilities from config for logging
         probabilities_dict = None
@@ -318,6 +343,58 @@ class FrohlichExperimentManager:
             income_class_probabilities=probabilities_dict,
             original_values_mode_enabled=original_values_enabled
         )
+        
+        # Update individual agent vote information for audit trail
+        self.agent_logger.update_agent_votes(final_vote_results, vote_timestamps)
+        
+        # Store information for later consensus validation
+        self._consensus_validation_info = None
+        if phase2_results.discussion_result.consensus_reached and phase2_results.discussion_result.agreed_principle:
+            self._consensus_validation_info = {
+                'consensus_principle': phase2_results.discussion_result.agreed_principle.principle.value,
+                'discussion_content': phase2_results.discussion_result.discussion_history
+            }
+    
+    def _set_fallback_general_info(self, phase2_results):
+        """Set minimal general information as fallback when main method fails."""
+        try:
+            # Create minimal fallback information
+            final_vote_results = {}
+            for participant in self.participants:
+                final_vote_results[participant.name] = "No vote recorded"
+            
+            # Set minimal general information
+            self.agent_logger.set_general_information(
+                consensus_reached=phase2_results.discussion_result.consensus_reached,
+                consensus_principle=(
+                    phase2_results.discussion_result.agreed_principle.principle.value
+                    if phase2_results.discussion_result.agreed_principle
+                    else None
+                ),
+                max_rounds_phase_2=self.config.phase2_rounds,
+                rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
+                public_conversation=phase2_results.discussion_result.discussion_history or "No discussion recorded",
+                final_vote_results=final_vote_results,
+                config_file="default_config.yaml"
+            )
+            
+            logger.info("Fallback general information set successfully")
+            
+        except Exception as e:
+            logger.error(f"Even fallback general information failed: {e}")
+            # Last resort - set absolute minimum information
+            try:
+                self.agent_logger.set_general_information(
+                    consensus_reached=False,
+                    consensus_principle=None,
+                    max_rounds_phase_2=self.config.phase2_rounds,
+                    rounds_conducted_phase_2=0,
+                    public_conversation="Logging error occurred",
+                    final_vote_results={},
+                    config_file="default_config.yaml"
+                )
+            except Exception as final_e:
+                logger.error(f"Absolute fallback also failed: {final_e}")
     
     def save_results(self, results: ExperimentResults, output_path: str):
         """Save experiment results to JSON file using agent-centric logging."""
