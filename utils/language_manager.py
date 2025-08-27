@@ -240,13 +240,15 @@ class LanguageManager:
             return self.get("prompts.phase2_discussion_prompt_complex", 
                            round_number=round_number,
                            max_rounds=5,  # Default max rounds
-                           discussion_history="")
+                           discussion_history="",
+                           group_participants="")
         else:
             # Use simple voting prompt for consistency
             return self.get("prompts.phase2_discussion_prompt_simple", 
                            round_number=round_number,
                            max_rounds=5,  # Default max rounds  
-                           discussion_history="")
+                           discussion_history="",
+                           group_participants="")
     
     def get_parser_instructions(self) -> str:
         """Get utility agent parser instructions."""

@@ -116,6 +116,9 @@
     "phase2_counterfactual_insights_worst_same": "- Peor alternativa: Las ganancias actuales coinciden con el peor resultado posible",
     "phase2_consensus_reached": "El grupo llegó a un consenso sobre {principle}",
     "phase2_no_consensus": "El grupo no llegó a consenso. Las ganancias se asignaron aleatoriamente",
+    "phase2_voting_no_consensus_principle_disagreement": "Sin consenso - los agentes votaron por diferentes principios de justicia - la discusión continúa",
+    "phase2_voting_no_consensus_constraint_disagreement": "Sin consenso - los agentes estuvieron de acuerdo en {principle_name} pero no en las cantidades de restricción - la discusión continúa",
+    "phase2_voting_no_consensus_mixed_disagreement": "Sin consenso - desacuerdo mixto sobre principios y restricciones - la discusión continúa",
     "fallback_default_phase_instructions": "No hay instrucciones específicas para la fase/ronda actual."
   }
 }

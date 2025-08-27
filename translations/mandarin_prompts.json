@@ -116,6 +116,9 @@
     "phase2_counterfactual_insights_worst_same": "- 最差替代方案：当前收入与最差可能结果一致",
     "phase2_consensus_reached": "小组就{principle}达成共识",
     "phase2_no_consensus": "小组未达成共识。收入随机分配",
+    "phase2_voting_no_consensus_principle_disagreement": "未达成共识 - 代理人投票支持不同的正义原则 - 讨论继续",
+    "phase2_voting_no_consensus_constraint_disagreement": "未达成共识 - 代理人就{principle_name}达成一致，但在约束金额上存在分歧 - 讨论继续",
+    "phase2_voting_no_consensus_mixed_disagreement": "未达成共识 - 在原则和约束上存在混合分歧 - 讨论继续",
     "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。"
   }
 }

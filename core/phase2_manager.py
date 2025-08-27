@@ -1098,19 +1098,34 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         """Build prompt for group discussion round based on voting detection mode."""
         language_manager = get_language_manager()
         
+        # Generate dynamic participant information
+        num_participants = len(self.participants)
+        participant_names = [participant.name for participant in self.participants]
+        
+        if num_participants == 1:
+            group_participants = f"The current group consists of 1 participant: {participant_names[0]}"
+        elif num_participants == 2:
+            group_participants = f"The current group consists of 2 participants: {participant_names[0]} and {participant_names[1]}"
+        else:
+            # For 3 or more participants: "Name1, Name2, and Name3"
+            names_except_last = ", ".join(participant_names[:-1])
+            group_participants = f"The current group consists of {num_participants} participants: {names_except_last}, and {participant_names[-1]}"
+        
         # Use different prompts based on voting detection mode
         if self.config.voting_detection_mode == "complex":
             # For complex mode: allow voting proposals
             base_prompt = language_manager.get("prompts.phase2_discussion_prompt_complex",
                                               round_number=round_num,
                                               max_rounds=self.config.phase2_rounds,
-                                              discussion_history=discussion_state.public_history or "No previous discussion.")
+                                              discussion_history=discussion_state.public_history or "No previous discussion.",
+                                              group_participants=group_participants)
         else:
             # For simple mode: use preference-based consensus (FIXED to use correct prompt)
             base_prompt = language_manager.get("prompts.phase2_discussion_prompt_simple",
                                               round_number=round_num,
                                               max_rounds=self.config.phase2_rounds,
-                                              discussion_history=discussion_state.public_history or "No previous discussion.")
+                                              discussion_history=discussion_state.public_history or "No previous discussion.",
+                                              group_participants=group_participants)
         
         # If internal reasoning is provided, include it in the prompt
         if internal_reasoning and internal_reasoning.strip():
@@ -1396,7 +1411,9 @@ Outcome: Vote recorded (secret ballot - results pending)"""
             discussion_state.public_history += f"\n[VOTING RESULT] {consensus_msg}"
         else:
             self._log_info("No consensus reached in secret ballot")
-            discussion_state.public_history += f"\n[VOTING RESULT] No consensus in secret ballot - discussion continues"
+            # Analyze disagreement type and provide specific feedback
+            disagreement_message = self._analyze_ballot_disagreement(ballots)
+            discussion_state.public_history += f"\n[VOTING RESULT] {disagreement_message}"
         
         return consensus_reached
     
@@ -1409,6 +1426,66 @@ Outcome: Vote recorded (secret ballot - results pending)"""
                 key += f" (${ballot.constraint_amount:,})"
             counts[key] = counts.get(key, 0) + 1
         return counts
+    
+    def _analyze_ballot_disagreement(self, ballots: List[PrincipleChoice]) -> str:
+        """
+        Analyze the nature of disagreement in failed ballot consensus.
+        
+        Returns a localized message describing the specific type of disagreement:
+        - Principle disagreement: agents voted for different principles
+        - Constraint disagreement: agents agreed on principle but differed on constraint amounts
+        - Mixed disagreement: combination of principle and constraint disagreements
+        
+        Args:
+            ballots: List of ballot choices from all participants
+            
+        Returns:
+            Localized announcement message describing the disagreement type
+        """
+        from utils.language_manager import get_language_manager
+        language_manager = get_language_manager()
+        
+        if not ballots:
+            # Fallback to generic message if no ballots
+            return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
+        
+        # Group ballots by principle only (ignoring constraint amounts)
+        principle_groups = {}
+        for ballot in ballots:
+            principle = ballot.principle.value
+            if principle not in principle_groups:
+                principle_groups[principle] = []
+            principle_groups[principle].append(ballot)
+        
+        # Analyze disagreement patterns
+        if len(principle_groups) == 1:
+            # All agents agreed on the same principle but disagreed on constraints
+            principle_name = list(principle_groups.keys())[0]
+            
+            # Get display name for the agreed principle
+            principle_display_names = {
+                "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
+                "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
+                "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
+                "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
+            }
+            
+            principle_display_name = principle_display_names.get(principle_name, principle_name)
+            
+            return language_manager.get(
+                "prompts.phase2_voting_no_consensus_constraint_disagreement",
+                principle_name=principle_display_name
+            )
+            
+        elif len(principle_groups) == len(ballots):
+            # Every agent voted for a different principle - complete principle disagreement
+            return language_manager.get("prompts.phase2_voting_no_consensus_principle_disagreement")
+            
+        else:
+            # Mixed situation: some agents agreed on principles, others disagreed
+            # This could happen when there are multiple small groups with principle agreement
+            # but disagreement between groups
+            return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
     
     async def _handle_constraint_corrections(
         self,
