@@ -399,8 +399,9 @@ class UtilityAgent:
         """Enhanced vote detection with robust pattern matching and semantic fallback."""
         await self.async_init()
 
-        # First: Direct pattern matching for explicit vote phrases only
+        # First: Direct pattern matching for explicit vote phrases and natural decision language
         vote_indicators = [
+            # English explicit voting phrases
             r"\bi propose we vote\b",
             r"\blet'?s vote\b",
             r"\bcall for a vote\b",
@@ -411,7 +412,34 @@ class UtilityAgent:
             r"\bconduct.*vote\b",
             r"\bformal.*vote\b",
             r"\bvote:?\s*i\b",  # "VOTE: I formally propose..."
-            r"\bvoting request\b"
+            r"\bvoting request\b",
+            
+            # Chinese explicit voting phrases (from prompts)
+            r"我们投票吧",
+            r"我认为我们应该投票",
+            r"让我们对此投票",
+            r"准备投票",
+            r"我提议投票",
+            r"投票时间",
+            r"开始投票",
+            r"进行投票",
+            
+            # Natural decision/consensus language (Chinese)
+            r"我们需要做决定",
+            r"让我们达成共识",
+            r"我们都同意.*我们可以确定",
+            r"大家都同意.*我们选择",
+            r"达成一致.*确定",
+            r"我们确定.*这个原则",
+            r"最终确定.*原则",
+            r"我们的选择是",
+            
+            # Natural decision language (English)  
+            r"\bwe need to decide\b",
+            r"\blet'?s finalize\b",
+            r"\bwe all agree.*let'?s confirm\b",
+            r"\bready to decide\b",
+            r"\bmake our final decision\b"
         ]
 
         # Exclude patterns that are NOT vote proposals
@@ -772,90 +800,68 @@ class UtilityAgent:
         return None
     
     def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
-        """Parse structured LLM response for principle choice."""
+        """Parse simplified LLM response format: PRINCIPLE: [a/b/c/d] | CONSTRAINT: [amount] | CERTAINTY: [level]"""
         import re
         try:
-            # Look for structured response format
-            if "PRINCIPLE_DETECTED:" in llm_response:
-                content = llm_response.split("PRINCIPLE_DETECTED:")[1].strip()
-                
-                # Extract principle
-                principle = None
-                principle_map = {
-                    # Order matters! Check longer, more specific patterns first
-                    "maximizing_average_floor_constraint": "maximizing_average_floor_constraint",
-                    "maximizing_average_range_constraint": "maximizing_average_range_constraint",
-                    "maximizing_floor": "maximizing_floor",
-                    "maximizing_average": "maximizing_average",
-                    "principle c": "maximizing_average_floor_constraint", 
-                    "principle d": "maximizing_average_range_constraint",
-                    "principle a": "maximizing_floor",
-                    "principle b": "maximizing_average",
-                    "option c": "maximizing_average_floor_constraint",
-                    "option d": "maximizing_average_range_constraint",
-                    "option a": "maximizing_floor",
-                    "option b": "maximizing_average",
-                    "c": "maximizing_average_floor_constraint",
-                    "d": "maximizing_average_range_constraint",
-                    "a": "maximizing_floor",
-                    "b": "maximizing_average"
-                }
-                
-                content_lower = content.lower()
-                for key, value in principle_map.items():
-                    if key in content_lower:
-                        principle = value
-                        break
-                
-                if not principle:
-                    return None
-                
-                # Extract constraint amount if applicable
-                constraint_amount = None
-                if 'constraint' in principle:
-                    # Look for dollar amounts
-                    amount_matches = re.findall(r'[\$]?(\d{1,6}(?:,\d{3})*|\d{4,6})', content)
-                    if amount_matches:
-                        try:
-                            constraint_amount = int(amount_matches[0].replace(',', ''))
-                            if constraint_amount <= 0:
-                                constraint_amount = None
-                        except ValueError:
-                            pass
-                
-                # Extract confidence (0.0-1.0)
-                confidence = 0.8  # Default confidence
-                confidence_matches = re.findall(r'confidence[:\s]*([0-9]\.[0-9]+)', content_lower)
-                if confidence_matches:
+            # Look for the new simplified format
+            response_lower = llm_response.lower()
+            
+            # Extract principle (a/b/c/d)
+            principle_match = re.search(r'(?:principle|原则|principio)[:：]\s*([a-d])', response_lower, re.IGNORECASE)
+            if not principle_match:
+                return None
+            
+            principle_letter = principle_match.group(1).lower()
+            
+            # Map letters to principle names
+            principle_map = {
+                'a': 'maximizing_floor',
+                'b': 'maximizing_average', 
+                'c': 'maximizing_average_floor_constraint',
+                'd': 'maximizing_average_range_constraint'
+            }
+            
+            principle = principle_map.get(principle_letter)
+            if not principle:
+                return None
+            
+            # Extract constraint amount
+            constraint_amount = None
+            constraint_match = re.search(r'(?:constraint|约束|restriccion)[:：]\s*(\d+|none|无|ninguna)', response_lower, re.IGNORECASE)
+            if constraint_match:
+                constraint_text = constraint_match.group(1).lower()
+                if constraint_text not in ['none', '无', 'ninguna']:
                     try:
-                        confidence = float(confidence_matches[0])
-                        confidence = max(0.0, min(1.0, confidence))  # Clamp to 0-1
+                        constraint_amount = int(constraint_text)
+                        if constraint_amount <= 0:
+                            constraint_amount = None
                     except ValueError:
                         pass
-                
-                # Extract certainty level
-                certainty = 'sure'  # Default
-                if any(word in content_lower for word in ['very_unsure', 'very unsure']):
-                    certainty = 'very_unsure'
-                elif any(word in content_lower for word in ['unsure', 'uncertain']):
-                    certainty = 'unsure'
-                elif any(word in content_lower for word in ['no_opinion', 'no opinion']):
-                    certainty = 'no_opinion'
-                elif any(word in content_lower for word in ['very_sure', 'very sure']):
-                    certainty = 'very_sure'
-                
-                return {
-                    'principle': principle,
-                    'constraint_amount': constraint_amount,
-                    'certainty': certainty,
-                    'confidence': confidence,
-                    'reasoning': llm_response
+            
+            # Extract certainty
+            certainty = 'sure'  # Default
+            certainty_match = re.search(r'(?:certainty|确定性|certeza)[:：]\s*(very_unsure|很不确定|muy_inseguro|unsure|不确定|inseguro|sure|确定|seguro|very_sure|很确定|muy_seguro)', response_lower, re.IGNORECASE)
+            if certainty_match:
+                certainty_text = certainty_match.group(1).lower()
+                # Map multilingual certainty levels to English
+                certainty_map = {
+                    'very_unsure': 'very_unsure', '很不确定': 'very_unsure', 'muy_inseguro': 'very_unsure',
+                    'unsure': 'unsure', '不确定': 'unsure', 'inseguro': 'unsure',
+                    'sure': 'sure', '确定': 'sure', 'seguro': 'sure',
+                    'very_sure': 'very_sure', '很确定': 'very_sure', 'muy_seguro': 'very_sure'
                 }
-                
-            return None
+                certainty = certainty_map.get(certainty_text, 'sure')
+            
+            return {
+                'principle': principle,
+                'constraint_amount': constraint_amount,
+                'certainty': certainty,
+                'confidence': 0.9,  # High confidence for simplified format
+                'reasoning': llm_response
+            }
             
         except Exception as e:
-            logger.warning(f"Failed to parse LLM principle response: {e}")
+            logger.warning(f"Failed to parse simplified LLM principle response: {e}")
             return None
     
     async def parse_preference_statement_llm(self, statement: str) -> Optional[PrincipleChoice]:

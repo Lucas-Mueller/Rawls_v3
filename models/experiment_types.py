@@ -145,6 +145,7 @@ class GroupDiscussionState(BaseModel):
     # Complex voting fields
     active_vote_in_progress: bool = False
     last_vote_result: Optional[VoteResult] = None
+    vote_triggered: bool = False  # Track if voting has been initiated (prevents reminder messages)
     
     def add_statement(self, participant_name: str, statement: str):
         """Add statement to public history with participant validation."""

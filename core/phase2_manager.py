@@ -435,7 +435,7 @@ Please ensure your response contains a clear statement about your position on th
                 # Log discussion round
                 if logger:
                     vote_intention = MemoryStateCapture.extract_vote_intention(statement)
-                    favored_principle = self._extract_favored_principle(statement)
+                    favored_principle = await self._extract_favored_principle(statement)
                     
                     logger.log_discussion_round(
                         participant.name,
@@ -534,6 +534,9 @@ Please ensure your response contains a clear statement about your position on th
                                 if consensus_reached:
                                     self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
                                     
+                                    # Mark that voting/consensus has been triggered (prevents reminder messages)
+                                    discussion_state.vote_triggered = True
+                                    
                                     # Add consensus message to discussion history
                                     consensus_msg = f"[CONSENSUS] Preference-based consensus reached: {agreed_preference.principle.value}"
                                     if agreed_preference.constraint_amount:
@@ -577,6 +580,12 @@ Please ensure your response contains a clear statement about your position on th
             
             # Update last round finisher for next round
             last_round_finisher = current_round_finisher
+            
+            # Add voting reminder after round 3 if no vote has been triggered
+            if round_num == 3 and not hasattr(discussion_state, 'vote_triggered'):
+                voting_reminder = self._get_voting_reminder_message()
+                discussion_state.public_history += f"\n\n[系统提醒] {voting_reminder}"
+                self._log_info("Added voting reminder after round 3 - no voting attempts detected")
         
         # No consensus reached
         # Log validation statistics before returning
@@ -723,21 +732,46 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                 fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
                 return fallback_statement, internal_reasoning
     
-    def _extract_favored_principle(self, statement: str) -> str:
-        """Extract favored principle from participant statement."""
-        statement_lower = statement.lower()
+    def _get_voting_reminder_message(self) -> str:
+        """Get voting reminder message in appropriate language."""
+        language_manager = get_language_manager()
         
-        if any(phrase in statement_lower for phrase in ["principle a", "maximizing floor", "floor income"]):
-            return "Principle A"
-        elif any(phrase in statement_lower for phrase in ["principle b", "maximizing average", "average income"]):
-            return "Principle B"
-        elif any(phrase in statement_lower for phrase in ["principle c", "floor constraint", "average with floor"]):
-            return "Principle C"
-        elif any(phrase in statement_lower for phrase in ["principle d", "range constraint", "average with range"]):
-            return "Principle D"
-        else:
+        # Check current language to provide appropriate reminder
+        current_language = getattr(language_manager, 'current_language', 'mandarin')
+        
+        if current_language == 'mandarin':
+            return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。说出'我们投票吧'或'我认为我们应该投票'来开始投票程序。"
+        elif current_language == 'spanish':
+            return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Digan 'Votemos' o 'Creo que deberíamos votar' para iniciar el proceso de votación."
+        else:  # English
+            return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Say 'Let's vote' or 'I think we should vote' to begin the voting process."
+    
+    async def _extract_favored_principle(self, statement: str) -> str:
+        """Extract favored principle from participant statement using multilingual parsing."""
+        try:
+            # First, check for exact Chinese phrase matches to avoid LLM parsing issues
+            chinese_mappings = {
+                "在最低收入约束条件下最大化平均收入": "maximizing_average_floor_constraint",
+                "在范围约束条件下最大化平均收入": "maximizing_average_range_constraint", 
+                "最大化最低收入": "maximizing_floor",
+                "最大化平均收入": "maximizing_average"
+            }
+            
+            for chinese_term, principle in chinese_mappings.items():
+                if chinese_term in statement:
+                    self._log_info(f"Direct Chinese mapping found: {chinese_term} -> {principle}")
+                    return principle
+            
+            # Use the utility agent for robust multilingual parsing
+            parsed = await self.utility_agent.parse_principle_choice_enhanced(statement)
+            # Return the canonical principle key (e.g., "maximizing_floor")
+            return parsed.principle.value
+        except Exception as e:
+            # Log the error for debugging
+            self._log_warning(f"Failed to extract principle from statement: {str(e)}")
+            # Return a specific unspecified key instead of reusing constraint specification
             language_manager = get_language_manager()
-            return language_manager.get("prompts.phase2_default_constraint_specification")
+            return language_manager.get("prompts.phase2_favored_principle_unspecified")
     
     
     
@@ -1109,6 +1143,9 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
         self._log_info(f"Complex voting intention detected from {participant.name}")
         
+        # Mark that voting has been triggered (prevents reminder messages)
+        discussion_state.vote_triggered = True
+        
         # Set voting flag to prevent concurrent votes
         self._voting_in_progress = True
         
@@ -1222,6 +1259,19 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             # Add to public history (visible to all)
             discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
             
+            # Update participant memory with their confirmation response
+            confirmation_content = f"""Voting Confirmation Round {discussion_state.round_number}:
+You were asked if you agree to proceed with voting on justice principles.
+Your response: {confirmation_response}
+Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vote'}"""
+            
+            # Extract configuration for memory guidance
+            memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+            
+            context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, confirmation_content, memory_guidance_style=memory_guidance_style
+            )
+            
             # If anyone disagrees, confirmation phase fails
             if not agrees_to_vote:
                 self._log_info(f"{participant.name} declined voting - confirmation failed")
@@ -1273,6 +1323,20 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 principle_choice = await self.utility_agent.parse_principle_choice_enhanced(ballot_response)
                 ballots.append(principle_choice)
                 self._log_info(f"Secret ballot received from {participant.name}")
+                
+                # Update participant memory with their ballot choice
+                ballot_content = f"""Secret Ballot Vote Round {discussion_state.round_number}:
+You cast a secret ballot for a justice principle.
+Your vote: {principle_choice.principle.value}
+{f'With constraint: ${principle_choice.constraint_amount:,}' if principle_choice.constraint_amount else 'No specific constraint amount'}
+Outcome: Vote recorded (secret ballot - results pending)"""
+                
+                # Extract configuration for memory guidance
+                memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+                
+                context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                    participant, context, ballot_content, memory_guidance_style=memory_guidance_style
+                )
                 
                 # Log the vote response
                 if self.logger:

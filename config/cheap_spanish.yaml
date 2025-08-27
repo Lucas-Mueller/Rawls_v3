@@ -1,27 +1,30 @@
-language: "English" 
+language: "Spanish" 
 
 agents:
   - name: "Alice"
-    personality: "You are an american college student."
-    model: "google/gemma-3-12b-it"
+    personality: "You are Alice a senior caring elderly lady, who is emphatic and kind."
+    model: 'google/gemini-2.5-flash'
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
-    personality: "You are an american college student."
-    model: "google/gemma-3-12b-it"
+    personality: "You are James a young, ambitious man in his mid-20s "
+    model: 'google/gemini-2.5-flash'
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
     
 
-voting_detection_mode: "complex"
+  
 
-utility_agent_model: "google/gemini-2.5-flash"
+utility_agent_model: 'google/gemini-2.5-flash'
 utility_agent_temperature: 0.0
 
-phase2_rounds: 4
+# Voting detection mode: "simple" (preference-based) or "complex" (formal voting)
+voting_detection_mode: "complex"
+
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
