@@ -23,17 +23,13 @@ agents:
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
-  - name: "Comrade Stalin"
-    personality: "You are a communist and care for the poor." 
-    memory_character_limit: 25000
-    reasoning_enabled: true
-    temperature: 0
+
     
 
 utility_agent_model: 'gpt-4.1-mini'
 utility_agent_temperature: 0.0
 
-phase2_rounds: 5
+phase2_rounds: 6
 distribution_range_phase2: [4, 8]
 
 # Voting detection mode: "simple" (current behavior) or "complex" (new two-phase voting)
