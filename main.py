@@ -72,6 +72,25 @@ async def main():
         # Validate configuration
         logger.info(f"Configuration loaded: {len(config.agents)} participants, {config.phase2_rounds} max rounds")
         logger.info(f"  Utility agent model: {config.utility_agent_model}")
+        logger.info(f"  Voting detection mode: {config.voting_detection_mode}")
+        
+        # Validate voting detection mode configuration
+        if config.voting_detection_mode not in ["simple", "complex"]:
+            logger.error(f"Invalid voting_detection_mode: {config.voting_detection_mode}. Must be 'simple' or 'complex'")
+            sys.exit(1)
+        
+        # Check for mode/prompt alignment
+        language_manager = get_language_manager()
+        if config.voting_detection_mode == "simple":
+            logger.info("✅ SIMPLE MODE: Using preference-based consensus detection")
+            logger.info("   • Agents will state preferences using 'My preference is [principle]'")
+            logger.info("   • Consensus reached when all participants state matching preferences")
+        else:
+            logger.info("✅ COMPLEX MODE: Using formal voting with confirmation and secret ballot")
+            logger.info("   • Agents can call for votes using 'Let's vote' or similar")
+            logger.info("   • Voting requires confirmation from all participants")
+            logger.info("   • Consensus reached via unanimous secret ballot")
+        
         for agent in config.agents:
             logger.info(f"  - {agent.name}: {agent.model} (temp={agent.temperature})")
         

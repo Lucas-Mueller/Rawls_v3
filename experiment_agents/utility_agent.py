@@ -490,41 +490,79 @@ class UtilityAgent:
         )
     
     def _compile_principle_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for principle detection with comprehensive coverage."""
+        """Compile regex patterns for principle detection with comprehensive coverage and fixed false matches."""
         return {
             # Order matters - more specific patterns first to avoid false matches
+            # FIXED: Better letter-based detection and "no constraints" handling
+            
+            # Letter-based patterns (most explicit) - checked first
+            'maximizing_floor_letter': re.compile(
+                r'\b(?:principle|option)\s*a\b(?!.*\b(?:with|constraint)\s+(?!no\b|zero\b|without\b))', 
+                re.IGNORECASE
+            ),
+            'maximizing_average_letter': re.compile(
+                r'\b(?:principle|option)\s*b\b(?!.*\b(?:with|constraint)\s+(?!no\b|zero\b|without\b))', 
+                re.IGNORECASE
+            ),
+            'maximizing_average_floor_constraint_letter': re.compile(
+                r'\b(?:principle|option)\s*c\b', 
+                re.IGNORECASE
+            ),
+            'maximizing_average_range_constraint_letter': re.compile(
+                r'\b(?:principle|option)\s*d\b', 
+                re.IGNORECASE
+            ),
+            
+            # Constraint patterns - must have actual constraint amounts or explicit "with constraint"
             'maximizing_average_floor_constraint': re.compile(
-                r'(?:maximizing?.*?(?:average.*?(?:income\s+)?with.*?floor|average.*?floor).*?constraint|'
-                r'average.*?(?:income\s+)?with.*?floor.*?constraint|'
-                r'average.*?floor.*?constraint|'
-                r'floor.*?constraint.*?average|'
-                r'average.*?with.*?floor|'  # Added shorter version
-                r'floor.*?constraint(?!.*range)|'  # Floor constraint but not range
-                r'option\s*[(\[]?c[)\]]?)', 
+                r'(?:'
+                # Explicit "with floor constraint" or "with a floor constraint" + amount
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:with|including).*?floor.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
+                r'average.*?(?:with|including).*?floor.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
+                # Floor constraint followed by amount
+                r'floor\s+constraint\s+(?:of\s+)?\$?[0-9,]+|'
+                # "constraint of $X" patterns
+                r'(?:with|including)\s+(?:a\s+)?floor\s+constraint\s+of\s+\$?[0-9,]+'
+                r')', 
                 re.IGNORECASE
             ),
             'maximizing_average_range_constraint': re.compile(
-                r'(?:maximizing?.*?(?:average.*?(?:income\s+)?with.*?range|average.*?range).*?constraint|'
-                r'average.*?(?:income\s+)?with.*?range.*?constraint|'
-                r'average.*?range.*?constraint|'
-                r'range.*?constraint.*?average|'
-                r'average.*?with.*?range|'  # Added shorter version
-                r'range.*?constraint(?!.*floor)|'  # Range constraint but not floor
-                r'option\s*[(\[]?d[)\]]?)', 
+                r'(?:'
+                # Explicit "with range constraint" + amount
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:with|including).*?range.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
+                r'average.*?(?:with|including).*?range.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
+                # Range constraint followed by amount  
+                r'range\s+constraint\s+(?:of\s+)?\$?[0-9,]+|'
+                # "constraint of $X" patterns
+                r'(?:with|including)\s+(?:a\s+)?range\s+constraint\s+of\s+\$?[0-9,]+'
+                r')', 
                 re.IGNORECASE
             ),
+            
+            # Simple maximizing patterns - must NOT have constraint language
             'maximizing_floor': re.compile(
-                r'(?:maximizing?.*?(?:the\s+)?floor(?!\s+constraint)(?:\s+income)?|'
-                r'floor(?!\s+constraint).*?(?:income|maximization)|'
-                r'(?:the\s+)?floor(?!\s+constraint)(?!.*(?:with|constraint|range))|'
-                r'option\s*[(\[]?a[)\]]?)(?!.*constraint)', 
+                r'(?:'
+                # "maximizing floor" variants - reject if constraint language present
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?floor(?:\s+income)?(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?(?:minimum|lowest)(?:\s+income)?(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
+                # Floor income variants - reject constraint language
+                r'floor\s+income(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
+                # Handle "no constraints" explicitly for floor
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?floor.*?(?:no|zero|without).*?constraint|'
+                r'floor.*?(?:no|zero|without).*?constraint'
+                r')(?!.*\b(?:with|including)\s+(?!no\b|zero\b|without\b))', 
                 re.IGNORECASE
             ),
             'maximizing_average': re.compile(
-                r'(?:maximizing?.*?(?:the\s+)?average(?!\s+(?:with|floor|range)|.*?constraint)(?:\s+income)?|'
-                r'average(?!\s+(?:with|floor|range)|.*?constraint).*?(?:income|maximization)|'
-                r'(?:the\s+)?average(?!\s+(?:with|floor|range))(?!.*(?:constraint|floor|range|with))|'
-                r'option\s*[(\[]?b[)\]]?)(?!.*(?:constraint|floor|range|with))', 
+                r'(?:'
+                # "maximizing average" variants - reject if constraint language present
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?average(?:\s+income)?(?!.*\b(?:with|floor|range|constraint)\s+(?!no\b|zero\b|without\b))|'
+                # Average income variants - reject constraint language
+                r'average\s+income(?!.*\b(?:with|floor|range|constraint)\s+(?!no\b|zero\b|without\b))|'
+                # Handle "no constraints" explicitly for average
+                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:no|zero|without).*?constraint|'
+                r'average.*?(?:no|zero|without).*?constraint'
+                r')(?!.*\b(?:with|including|floor|range|constraint)\s+(?!no\b|zero\b|without\b))', 
                 re.IGNORECASE
             )
         }
@@ -570,14 +608,33 @@ class UtilityAgent:
                 response = f"Original response: {response}\n\nPlease clearly state your principle choice."
     
     def _extract_principle_choice_direct(self, response: str) -> Optional[Dict[str, Any]]:
-        """Direct pattern matching for principle choice."""
+        """Direct pattern matching for principle choice with improved ordering."""
         
-        # Find principle
+        # Find principle using the same logic as _extract_principle_from_text
         principle = None
-        for principle_key, pattern in self._principle_patterns.items():
-            if pattern.search(response):
-                principle = principle_key
+        
+        # Check letter-based patterns first (most specific)
+        for principle_name, pattern in self._principle_patterns.items():
+            if '_letter' in principle_name and pattern.search(response):
+                # Map letter pattern names to actual principle names
+                principle = principle_name.replace('_letter', '')
                 break
+        
+        # Then check constraint patterns (require explicit constraint amounts)
+        if not principle:
+            constraint_patterns = ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']
+            for principle_name in constraint_patterns:
+                if self._principle_patterns[principle_name].search(response):
+                    principle = principle_name
+                    break
+        
+        # Finally check simple patterns
+        if not principle:
+            simple_patterns = ['maximizing_floor', 'maximizing_average']
+            for principle_name in simple_patterns:
+                if self._principle_patterns[principle_name].search(response):
+                    principle = principle_name
+                    break
         
         if not principle:
             return None
@@ -720,11 +777,11 @@ class UtilityAgent:
         # Pattern 1: Direct amount matching with various formats (including negative detection)
         amount_patterns = [
             r'(-?\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" or "-20k" format first
-            r'\$?(-?\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20,000, -20,000, or $-20,000
-            r'(-?\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20k, -20k or 20 thousand
-            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # floor of $20,000 or $-20,000
-            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # constraint of $20,000
-            r'with\s*(?:a\s*)?floor\s*(?:of|at)?\s*\$?(-?\d{1,3}(?:,\d{3})*)', # with a floor of $20,000
+            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20000, $20,000, -20,000, or $-20,000 (longer patterns first)
+            r'(-?\d{4,6}|\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20000k, 20k, -20k, or 20 thousand
+            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # floor of $20000 or $20,000
+            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # constraint of $20000 or $20,000
+            r'with\s*(?:a\s*)?(?:floor|range)\s*(?:of|at)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # with a floor of $20000
         ]
         
         for pattern in amount_patterns:
@@ -735,7 +792,7 @@ class UtilityAgent:
                     amount = float(amount_str)
                     
                     # Check if this is a "k" pattern (first pattern in our list)
-                    if pattern == r'(\d{1,2})\s*k(?:\s|$)':
+                    if pattern == r'(-?\d{1,2})\s*k(?:\s|$)':
                         amount *= 1000
                     elif re.search(r'\b' + re.escape(match) + r'\s*(?:k|thousand)', response, re.IGNORECASE):
                         amount *= 1000
@@ -751,10 +808,10 @@ class UtilityAgent:
         
         # Pattern 2: Contextual amount extraction (look for numbers near constraint keywords)
         constraint_context_patterns = [
-            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(-?\d{1,3}(?:,\d{3})*)',
-            r'\$?(-?\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
-            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(-?\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
-            r'\$?(-?\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
+            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)',
+            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
+            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
+            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
         ]
         
         for pattern in constraint_context_patterns:
@@ -916,13 +973,91 @@ class UtilityAgent:
     
     async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
         """
-        DEPRECATED: Preference-based consensus has been removed.
-        This method now always returns None to enforce formal voting only.
+        Detect preference statements in participant responses for SIMPLE MODE only.
+        This method is re-enabled specifically for simple mode consensus detection.
         
-        Legacy method kept for backward compatibility.
+        Args:
+            statement: The participant's statement to analyze
+            
+        Returns:
+            PrincipleChoice if preference is detected, None otherwise
         """
-        # CONSENSUS CLEANUP: Always return None - no preference detection
-        return None
+        await self.async_init()
+        
+        # Enhanced preference detection patterns
+        preference_patterns = [
+            r'\bmy\s+preference\s+is\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
+            r'\bi\s+prefer\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
+            r'\bi\s+choose\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
+            r'\bi\s+support\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
+            r'\bpreference:\s*([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
+            r'\bchoice:\s*([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?'
+        ]
+        
+        statement_lower = statement.lower().strip()
+        
+        # Try pattern matching first
+        for pattern in preference_patterns:
+            matches = re.findall(pattern, statement_lower)
+            if matches:
+                match = matches[0]
+                principle_text = match[0] if isinstance(match, tuple) else match
+                constraint_amount = None
+                
+                if isinstance(match, tuple) and len(match) > 1 and match[1]:
+                    try:
+                        constraint_amount = int(match[1].replace(',', ''))
+                    except (ValueError, AttributeError):
+                        pass
+                
+                # Map principle text to JusticePrinciple
+                principle = self._extract_principle_from_text(principle_text)
+                if principle:
+                    return PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint_amount,
+                        certainty=CertaintyLevel.NO_OPINION,  # Default certainty
+                        reasoning="Preference detected via pattern matching"
+                    )
+        
+        # Fallback to LLM-based detection if patterns fail
+        try:
+            language_manager = get_language_manager()
+            detection_prompt = language_manager.get(
+                "prompts.utility_preference_detection",
+                statement=statement
+            )
+            
+            result = await Runner.run(self.parser_agent, detection_prompt)
+            response = result.final_output.strip().upper()
+            
+            if "PREFERENCE_DETECTED:" in response:
+                # Parse the LLM response to extract principle choice
+                preference_text = response.split("PREFERENCE_DETECTED:")[1].strip()
+                principle = self._extract_principle_from_text(preference_text)
+                
+                if principle:
+                    # Extract constraint amount if present
+                    constraint_match = re.search(r'\$?([0-9,]+)', preference_text)
+                    constraint_amount = None
+                    if constraint_match:
+                        try:
+                            constraint_amount = int(constraint_match.group(1).replace(',', ''))
+                        except ValueError:
+                            pass
+                    
+                    return PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint_amount,
+                        certainty=CertaintyLevel.NO_OPINION,
+                        reasoning="Preference detected via LLM analysis"
+                    )
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"LLM preference detection failed: {e}")
+            return None
     
     def _map_identifier_to_principle(self, identifier: str) -> Optional[JusticePrinciple]:
         """Map principle identifier (a, b, c, d, principle a, etc.) to JusticePrinciple."""
@@ -958,6 +1093,40 @@ class UtilityAgent:
         }
         
         return mapping.get(identifier)
+    
+    def _extract_principle_from_text(self, principle_text: str) -> Optional[JusticePrinciple]:
+        """
+        Extract JusticePrinciple from text using comprehensive pattern matching.
+        This method reuses existing principle patterns with improved logic.
+        """
+        principle_text = principle_text.lower().strip()
+        
+        # First try the letter-based mapping
+        mapped_principle = self._map_identifier_to_principle(principle_text)
+        if mapped_principle:
+            return mapped_principle
+        
+        # Then try pattern matching against the compiled patterns
+        # Check letter-based patterns first (most specific)
+        for principle_name, pattern in self._principle_patterns.items():
+            if '_letter' in principle_name and pattern.search(principle_text):
+                # Map letter pattern names to actual principle names
+                base_name = principle_name.replace('_letter', '')
+                return JusticePrinciple(base_name)
+        
+        # Then check constraint patterns (require explicit constraint amounts)
+        constraint_patterns = ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']
+        for principle_name in constraint_patterns:
+            if self._principle_patterns[principle_name].search(principle_text):
+                return JusticePrinciple(principle_name)
+        
+        # Finally check simple patterns
+        simple_patterns = ['maximizing_floor', 'maximizing_average']
+        for principle_name in simple_patterns:
+            if self._principle_patterns[principle_name].search(principle_text):
+                return JusticePrinciple(principle_name)
+        
+        return None
     
     def _extract_constraint_amount_flexible(self, statement: str) -> Optional[int]:
         """
@@ -1031,13 +1200,52 @@ class UtilityAgent:
     
     def check_preference_consensus(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
         """
-        DEPRECATED: Preference-based consensus has been removed.
-        This method now always returns no consensus to enforce formal voting only.
+        DEPRECATED: This method is deprecated. Use check_preference_consensus_simple_mode() instead.
+        This method now always returns no consensus to enforce mode separation.
         
         Legacy method kept for backward compatibility.
         """
-        # CONSENSUS CLEANUP: Always return no consensus - formal voting required
-        return False, None, ["Preference-based consensus disabled - formal voting required"]
+        # CONSENSUS CLEANUP: Always return no consensus - use mode-specific methods
+        return False, None, ["Use check_preference_consensus_simple_mode() for simple mode or check_ballot_consensus() for complex mode"]
+    
+    def check_preference_consensus_simple_mode(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
+        """
+        Check if preference statements reached consensus in SIMPLE MODE ONLY.
+        This method is specifically isolated for simple mode operation.
+        
+        Args:
+            preferences: List of participant preference choices
+            
+        Returns:
+            Tuple of (consensus_reached, agreed_choice, warnings)
+        """
+        if not preferences:
+            return False, None, ["No preferences received"]
+        
+        # Group preferences by principle and constraint amount (same logic as ballot consensus)
+        preference_groups = {}
+        warnings = []
+        
+        for preference in preferences:
+            # Create key for grouping (principle + constraint amount)
+            key = (preference.principle.value, preference.constraint_amount)
+            
+            if key not in preference_groups:
+                preference_groups[key] = []
+            preference_groups[key].append(preference)
+            
+            # Check for missing constraint amounts
+            if (preference.constraint_amount is None and 
+                preference.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                       JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                warnings.append(f"Preference missing constraint amount for {preference.principle.value}")
+        
+        # Check for consensus (all preferences in same group)
+        if len(preference_groups) == 1:
+            agreed_choice = list(preference_groups.values())[0][0]  # First preference in the single group
+            return True, agreed_choice, warnings
+        
+        return False, None, warnings
     
     async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
         """

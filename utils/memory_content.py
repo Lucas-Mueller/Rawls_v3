@@ -216,3 +216,104 @@ def extract_counterfactual_highlights(
             highlights.append(f"{worst_alt}: -{diff:.0f}")
     
     return highlights[:max_highlights]
+
+
+def build_phase2_detailed_delta(
+    participant_name: str,
+    final_earnings: float,
+    assigned_class: str,
+    alternative_earnings: Dict[str, float],
+    consensus_reached: bool,
+    agreed_principle: Optional[str] = None,
+    constraint_amount: Optional[int] = None
+) -> str:
+    """
+    Build detailed Phase 2 results delta for memory content.
+    Matches Phase 1 level of detail with class assignment and counterfactual analysis.
+    
+    Args:
+        participant_name: Name of the participant
+        final_earnings: Final earnings from Phase 2
+        assigned_class: Assigned income class
+        alternative_earnings: Earnings under each principle
+        consensus_reached: Whether group consensus was reached
+        agreed_principle: Principle agreed upon (if consensus reached)
+        constraint_amount: Constraint amount if applicable
+        
+    Returns:
+        Detailed Phase 2 results summary for memory
+    """
+    delta_parts = []
+    
+    # Base result
+    if consensus_reached:
+        consensus_info = f"Group consensus: {agreed_principle}"
+        if constraint_amount:
+            consensus_info += f" (${constraint_amount:,})"
+        delta_parts.append(consensus_info)
+    else:
+        delta_parts.append("No consensus - random assignment")
+    
+    # Personal outcome
+    delta_parts.append(f"Class: {assigned_class}, Earnings: ${final_earnings:.2f}")
+    
+    # Counterfactual highlights
+    if alternative_earnings:
+        highlights = extract_counterfactual_highlights(
+            alternative_earnings, final_earnings, max_highlights=2
+        )
+        if highlights:
+            delta_parts.append(f"Alternatives: {', '.join(highlights)}")
+    
+    return " | ".join(delta_parts)
+
+
+def extract_phase2_counterfactual_insights(
+    alternative_earnings: Dict[str, float],
+    actual_earnings: float,
+    principle_display_names: Dict[str, str]
+) -> Dict[str, str]:
+    """
+    Extract detailed counterfactual insights for Phase 2 results.
+    
+    Args:
+        alternative_earnings: Dictionary of alternative earnings by principle key
+        actual_earnings: Actual earnings received
+        principle_display_names: Mapping of principle keys to display names
+        
+    Returns:
+        Dictionary with 'best' and 'worst' insight messages
+    """
+    insights = {}
+    
+    if not alternative_earnings:
+        return insights
+    
+    best_earnings = max(alternative_earnings.values())
+    worst_earnings = min(alternative_earnings.values())
+    
+    # Find which principles gave best/worst outcomes
+    best_principle = next(k for k, v in alternative_earnings.items() if v == best_earnings)
+    worst_principle = next(k for k, v in alternative_earnings.items() if v == worst_earnings)
+    
+    best_principle_name = principle_display_names.get(best_principle, best_principle)
+    worst_principle_name = principle_display_names.get(worst_principle, worst_principle)
+    
+    best_diff = best_earnings - actual_earnings
+    worst_diff = actual_earnings - worst_earnings
+    
+    # Best alternative insight
+    if best_diff > 0:
+        insights['best'] = f"Best alternative: Would have earned ${best_diff:.2f} more under {best_principle_name}"
+    elif best_diff == 0:
+        insights['best'] = "Best alternative: Current earnings match the best possible outcome"
+    else:
+        insights['best'] = "Best alternative: All other principles would have yielded less"
+    
+    # Worst alternative insight
+    if worst_diff > 0:
+        insights['worst'] = f"Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle_name}"
+    elif worst_diff == 0:
+        insights['worst'] = "Worst alternative: Current earnings match the worst possible outcome"
+    
+    return insights

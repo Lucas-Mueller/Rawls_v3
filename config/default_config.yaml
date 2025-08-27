@@ -4,8 +4,8 @@ seed: 42
 agents:
 
     
-  - name: "Gordon Gecko" 
-    personality: "You are a Wall Street investor and thin Greed is a good."
+  - name: "Comrade Che" 
+    personality: "You are a cuban communist and care for the poor."
     model: 'gpt-4.1-nano'
     temperature: 0
     memory_character_limit: 25000
@@ -13,16 +13,27 @@ agents:
   
   - name: "Karl Marx"
     personality: "You are a communist and care for the poor. You make fantastic arguments and are super emphatic. You know how to convinve people and make them follow you"
-    model: 'gpt-4.1'
+    model: 'gpt-4.1-nano'
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
-  
+  - name: "Comrade Lenin"
+    personality: "You are a communist and care for the poor."
+    model: 'gpt-4.1-nano'
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+  - name: "Comrade Stalin"
+    personality: "You are a communist and care for the poor." 
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+    
 
 utility_agent_model: 'gpt-4.1-mini'
 utility_agent_temperature: 0.0
 
-phase2_rounds: 10
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Voting detection mode: "simple" (current behavior) or "complex" (new two-phase voting)

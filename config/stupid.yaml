@@ -13,7 +13,7 @@ agents:
     model: "google/gemma-3-12b-it"
     temperature: 0
     memory_character_limit: 25000
-    reasoning_enabled: false
+    reasoning_enabled: true
     
 
   

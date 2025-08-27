@@ -23,6 +23,24 @@ class OriginalValuesModeConfig(BaseModel):
     enabled: bool = Field(default=False, description="Enable original values mode for Phase 1 (automatically uses Sample for explanations, cycles A-D for rounds 1-4)")
 
 
+class Phase2TransparencyConfig(BaseModel):
+    """Configuration for Phase 2 enhanced transparency features."""
+    enabled: bool = Field(default=True, description="Enable enhanced transparency in Phase 2 (class assignments and counterfactuals)")
+    detail_level: str = Field("full", description="Detail level: 'basic', 'enhanced', or 'full'")
+    include_counterfactuals: bool = Field(default=True, description="Show alternative earnings under all principles")
+    include_class_assignment: bool = Field(default=True, description="Show assigned income class")
+    include_insights: bool = Field(default=True, description="Show best/worst alternative insights")
+    
+    @field_validator('detail_level')
+    @classmethod
+    def validate_detail_level(cls, v):
+        """Validate detail level is supported."""
+        valid_levels = ["basic", "enhanced", "full"]
+        if v not in valid_levels:
+            raise ValueError(f"Invalid detail level: {v}. Must be one of {valid_levels}")
+        return v
+
+
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     language: str = Field("English", description="Language for experiment prompts and messages")
@@ -36,6 +54,7 @@ class ExperimentConfiguration(BaseModel):
     distribution_range_phase2: Tuple[float, float] = Field((0.5, 2.0), description="Multiplier range for Phase 2 distributions")
     income_class_probabilities: Optional[IncomeClassProbabilities] = Field(None, description="Income class assignment probabilities (defaults to equal if not specified)")
     original_values_mode: Optional[OriginalValuesModeConfig] = Field(None, description="Original values mode configuration")
+    phase2_enhanced_transparency: Optional[Phase2TransparencyConfig] = Field(None, description="Phase 2 enhanced transparency configuration")
     
     # Memory optimization config options
     memory_guidance_style: str = Field("narrative", description="Memory guidance style: 'narrative' or 'structured'")

@@ -4,7 +4,7 @@ Phase 2 manager for group discussion and consensus building.
 import asyncio
 import random
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 from agents import Agent, Runner
 
 from models import (
@@ -225,13 +225,13 @@ Please ensure your response contains a clear statement about your position on th
         )
         
         # Apply chosen principle and calculate payoffs
-        payoff_results, assigned_classes = await self._apply_group_principle_and_calculate_payoffs(
+        payoff_results, assigned_classes, alternative_earnings_by_agent = await self._apply_group_principle_and_calculate_payoffs(
             discussion_result, config
         )
         
         # Final individual rankings
         final_rankings = await self._collect_final_rankings(
-            participant_contexts, discussion_result, payoff_results, assigned_classes, config, logger
+            participant_contexts, discussion_result, payoff_results, assigned_classes, alternative_earnings_by_agent, config, logger
         )
         
         return Phase2Results(
@@ -284,6 +284,10 @@ Please ensure your response contains a clear statement about your position on th
         
         for round_num in range(1, config.phase2_rounds + 1):
             discussion_state.round_number = round_num
+            
+            # Initialize preference tracking for simple mode (reset each round)
+            if config.voting_detection_mode == "simple":
+                self._current_round_preferences = {}
             
             # Generate speaking order based on configuration
             speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_finisher)
@@ -396,8 +400,53 @@ Please ensure your response contains a clear statement about your position on th
                             vote_history=discussion_state.vote_history
                         )
                 
-                # Continue with discussion-only mode - no automatic consensus detection
-                # Preference detection removed - only formal voting can reach consensus
+                elif config.voting_detection_mode == "simple":
+                    # Simple mode: Try preference detection for consensus
+                    preference = await self.utility_agent.detect_preference_statement(statement)
+                    
+                    if preference:
+                        # Store preference in local round tracking (not in discussion_state)
+                        if not hasattr(self, '_current_round_preferences'):
+                            self._current_round_preferences = {}
+                        self._current_round_preferences[participant.name] = preference
+                        
+                        self._log_info(f"[PREFERENCE] {participant.name}: {preference.principle.value}")
+                        
+                        # Check if all participants have stated preferences
+                        if len(self._current_round_preferences) == len(self.participants):
+                            preferences_list = list(self._current_round_preferences.values())
+                            consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus_simple_mode(preferences_list)
+                            
+                            if warnings:
+                                for warning in warnings:
+                                    self._log_warning(f"Preference consensus warning: {warning}")
+                            
+                            if consensus_reached:
+                                self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
+                                
+                                # Add consensus message to discussion history
+                                consensus_msg = f"[CONSENSUS] Preference-based consensus reached: {agreed_preference.principle.value}"
+                                if agreed_preference.constraint_amount:
+                                    consensus_msg += f" with constraint of ${agreed_preference.constraint_amount:,}"
+                                
+                                if discussion_state.public_history:
+                                    discussion_state.public_history += f"\n\n{consensus_msg}"
+                                else:
+                                    discussion_state.public_history = consensus_msg
+                                
+                                # Return consensus result
+                                return GroupDiscussionResult(
+                                    consensus_reached=True,
+                                    agreed_principle=agreed_preference,
+                                    final_round=round_num,
+                                    discussion_history=discussion_state.public_history,
+                                    vote_history=discussion_state.vote_history
+                                )
+                            
+                            # Clear preferences for next round if no consensus
+                            self._current_round_preferences = {}
+                
+                # Continue with discussion if no consensus mechanism applies
             
             # Validate round logging consistency
             if logger:
@@ -553,11 +602,11 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         self,
         discussion_result: GroupDiscussionResult,
         config: ExperimentConfiguration
-    ) -> tuple[Dict[str, float], Dict[str, str]]:
+    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]]]:
         """Apply chosen principle or random assignment if no consensus.
         
         Returns:
-            tuple: (payoffs dict, assigned_classes dict)
+            tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict)
         """
         
         # Generate new distribution set for Phase 2 payoffs
@@ -567,9 +616,14 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         
         payoffs = {}
         assigned_classes = {}
+        consensus_principle = None
+        constraint_amount = None
         
         if discussion_result.consensus_reached and discussion_result.agreed_principle:
             # Apply agreed principle
+            consensus_principle = discussion_result.agreed_principle
+            constraint_amount = consensus_principle.constraint_amount
+            
             chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
                 distribution_set.distributions, discussion_result.agreed_principle, config.income_class_probabilities
             )
@@ -587,7 +641,157 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                 payoffs[participant.name] = earnings
                 assigned_classes[participant.name] = str(assigned_class)
         
-        return payoffs, assigned_classes
+        # Calculate counterfactual earnings for transparency
+        alternative_earnings_by_agent = await self._calculate_phase2_counterfactuals(
+            distribution_set, assigned_classes, consensus_principle, constraint_amount
+        )
+        
+        return payoffs, assigned_classes, alternative_earnings_by_agent
+    
+    async def _calculate_phase2_counterfactuals(
+        self,
+        distribution_set,
+        assigned_classes: Dict[str, str],
+        consensus_principle: Optional[PrincipleChoice] = None,
+        constraint_amount: Optional[int] = None
+    ) -> Dict[str, Dict[str, float]]:
+        """
+        Calculate what each agent would earn under all four principles
+        using their assigned income class from Phase 2.
+        
+        Args:
+            distribution_set: The distribution set generated for Phase 2
+            assigned_classes: Dict mapping participant names to their assigned income classes
+            consensus_principle: The principle chosen by consensus (if any)
+            constraint_amount: The constraint amount used (if any)
+            
+        Returns:
+            Dict[agent_name, Dict[principle_key, earnings]]
+        """
+        from models import JusticePrinciple, PrincipleChoice, IncomeClass
+        
+        alternative_earnings_by_agent = {}
+        
+        for participant_name, class_str in assigned_classes.items():
+            # Convert string back to enum - handle different formats
+            if class_str.startswith('IncomeClass.'):
+                # Handle enum string representation like 'IncomeClass.high'
+                enum_value = class_str.split('.')[1].lower()
+            else:
+                # Handle direct value like 'high' or 'MEDIUM HIGH' 
+                enum_value = class_str.lower().replace(' ', '_')
+            
+            assigned_class = IncomeClass(enum_value)
+            
+            # Use the same method as Phase 1 for calculating counterfactuals
+            alternative_earnings = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+                distribution_set.distributions,
+                assigned_class,
+                constraint_amount
+            )
+            
+            alternative_earnings_by_agent[participant_name] = alternative_earnings
+            
+        return alternative_earnings_by_agent
+    
+    async def _build_phase2_detailed_results(
+        self,
+        participant_name: str,
+        final_earnings: float,
+        assigned_class: str,
+        alternative_earnings: Dict[str, float],
+        consensus_result: GroupDiscussionResult
+    ) -> str:
+        """
+        Build detailed Phase 2 results matching Phase 1 transparency level.
+        Includes class assignment and full counterfactual analysis.
+        """
+        from utils.language_manager import get_language_manager
+        language_manager = get_language_manager()
+        
+        # Build consensus status message
+        if consensus_result.consensus_reached:
+            consensus_status = f"Group reached consensus on {consensus_result.agreed_principle.principle.value}"
+            if consensus_result.agreed_principle.constraint_amount:
+                consensus_status += f" (${consensus_result.agreed_principle.constraint_amount:,})"
+        else:
+            consensus_status = "Group did not reach consensus. Earnings were randomly assigned"
+        
+        # Format the class name for display
+        class_display_map = {
+            "very_high": "VERY HIGH",
+            "high": "HIGH",
+            "medium": "MEDIUM",
+            "low": "LOW",
+            "very_low": "VERY LOW"
+        }
+        formatted_class = class_display_map.get(assigned_class.lower(), assigned_class)
+        
+        # Build the header
+        result_content = f"""PHASE 2 FINAL RESULTS
+
+Consensus Status: {consensus_status}
+Your Income Class Assignment: {formatted_class}
+Your Earnings: ${final_earnings:.2f}
+
+COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
+        
+        # Get principle display names
+        principle_display_names = {
+            "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
+            "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
+            "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
+            "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
+        }
+        
+        # Add table header
+        result_content += """
+┌─────────────────────────────────────────┬──────────┬──────────┐
+│ Justice Principle                       │ Income   │ Earnings │
+├─────────────────────────────────────────┼──────────┼──────────┤"""
+        
+        # Add each principle's earnings
+        for principle_key, alt_earnings in alternative_earnings.items():
+            principle_name = principle_display_names.get(principle_key, principle_key)
+            # Calculate income from earnings (reverse the payoff calculation)
+            alt_income = int(alt_earnings * 10000)  # Convert earnings back to income
+            
+            result_content += f"\n│ {principle_name:<39} │ ${alt_income:,}".ljust(9) + f" │ ${alt_earnings:.2f}".ljust(8) + " │"
+        
+        # Close the table
+        result_content += "\n└─────────────────────────────────────────┴──────────┴──────────┘"
+        
+        # Add key insights
+        if alternative_earnings:
+            current_earnings = final_earnings
+            best_earnings = max(alternative_earnings.values())
+            worst_earnings = min(alternative_earnings.values())
+            
+            # Find which principles gave best/worst outcomes
+            best_principle = next(k for k, v in alternative_earnings.items() if v == best_earnings)
+            worst_principle = next(k for k, v in alternative_earnings.items() if v == worst_earnings)
+            
+            best_principle_name = principle_display_names.get(best_principle, best_principle)
+            worst_principle_name = principle_display_names.get(worst_principle, worst_principle)
+            
+            best_diff = best_earnings - current_earnings
+            worst_diff = current_earnings - worst_earnings
+            
+            result_content += f"\n\nKey Insights:"
+            
+            if best_diff > 0:
+                result_content += f"\n- Best alternative: Would have earned ${best_diff:.2f} more under {best_principle_name}"
+            elif best_diff == 0:
+                result_content += f"\n- Best alternative: Current earnings match the best possible outcome"
+            else:
+                result_content += f"\n- Best alternative: All other principles would have yielded less"
+                
+            if worst_diff > 0:
+                result_content += f"\n- Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle_name}"
+            elif worst_diff == 0:
+                result_content += f"\n- Worst alternative: Current earnings match the worst possible outcome"
+        
+        return result_content
     
     async def _collect_final_rankings(
         self,
@@ -595,6 +799,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         discussion_result: GroupDiscussionResult,
         payoff_results: Dict[str, float],
         assigned_classes: Dict[str, str],
+        alternative_earnings_by_agent: Dict[str, Dict[str, float]],
         config: ExperimentConfiguration,
         logger: AgentCentricLogger = None
     ) -> Dict[str, PrincipleRanking]:
@@ -606,14 +811,34 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             context = contexts[i]
             agent_config = config.agents[i]
             
-            # Update context with final results using agent-managed memory
+            # Update context with final results using agent-managed memory - Enhanced transparency
             final_earnings = payoff_results[participant.name]
-            result_content = f"FINAL RESULTS: Phase 2 earnings: ${final_earnings:.2f}. "
+            assigned_class = assigned_classes[participant.name]
+            alternative_earnings = alternative_earnings_by_agent[participant.name]
             
-            if discussion_result.consensus_reached:
-                result_content += f"Group reached consensus on {discussion_result.agreed_principle.principle.value}."
+            # Check transparency configuration
+            transparency_config = getattr(config, 'phase2_enhanced_transparency', None)
+            use_enhanced_transparency = (
+                transparency_config is None or  # Default to enhanced if not configured
+                (transparency_config and transparency_config.enabled)
+            )
+            
+            if use_enhanced_transparency:
+                # Build detailed results matching Phase 1 transparency level
+                result_content = await self._build_phase2_detailed_results(
+                    participant.name,
+                    final_earnings,
+                    assigned_class,
+                    alternative_earnings,
+                    discussion_result
+                )
             else:
-                result_content += "Group did not reach consensus. Earnings were randomly assigned."
+                # Use basic results (original behavior)
+                result_content = f"FINAL RESULTS: Phase 2 earnings: ${final_earnings:.2f}. "
+                if discussion_result.consensus_reached:
+                    result_content += f"Group reached consensus on {discussion_result.agreed_principle.principle.value}."
+                else:
+                    result_content += "Group did not reach consensus. Earnings were randomly assigned."
             
             # Update memory with agent
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
