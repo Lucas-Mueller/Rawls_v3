@@ -100,7 +100,7 @@ async def test_enhanced_parsing():
     
     for i, test_case in enumerate(TEST_CASES):
         # Use direct pattern matching first
-        ranking_data = utility_agent._extract_ranking_direct(test_case['response'])
+        ranking_data = await utility_agent._extract_ranking_direct(test_case['response'])
         
         # Assert that direct pattern matching works for our test cases
         assert ranking_data is not None, f"Test case {i+1} ({test_case['name']}): Direct pattern matching should succeed"

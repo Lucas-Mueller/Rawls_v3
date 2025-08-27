@@ -38,7 +38,8 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         
         for input_text in problematic_inputs:
             with self.subTest(input_text=input_text):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                # Use async test runner for LLM-based parsing
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], 'maximizing_floor', 
                                f"Should parse as maximizing_floor, got {choice_data['principle']} for: {input_text}")
@@ -58,7 +59,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         
         for input_text, expected_principle in test_cases:
             with self.subTest(input_text=input_text):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], expected_principle,
                                f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
@@ -82,7 +83,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # Test "no constraints" cases
         for input_text, expected_principle in no_constraints_cases:
             with self.subTest(input_text=input_text, case_type="no_constraints"):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], expected_principle,
                                f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
@@ -90,7 +91,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # Test "with constraints" cases  
         for input_text, expected_principle in with_constraints_cases:
             with self.subTest(input_text=input_text, case_type="with_constraints"):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], expected_principle,
                                f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
@@ -106,7 +107,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         
         for input_text, expected_amount in constraint_cases:
             with self.subTest(input_text=input_text):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['constraint_amount'], expected_amount,
                                f"Expected constraint amount {expected_amount}, got {choice_data['constraint_amount']} for: {input_text}")
@@ -125,7 +126,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         
         for input_text, expected_principle in mixed_cases:
             with self.subTest(input_text=input_text):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], expected_principle,
                                f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
@@ -149,7 +150,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         
         for input_text, expected_principle in edge_cases:
             with self.subTest(input_text=input_text):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
                 self.assertEqual(choice_data['principle'], expected_principle,
                                f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
@@ -157,7 +158,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # Test informal cases (may or may not be detected - that's okay)
         for input_text in informal_cases:
             with self.subTest(input_text=input_text, test_type="informal"):
-                choice_data = self.utility_agent._extract_principle_choice_direct(input_text)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
                 # It's okay if these don't get detected since they're very informal
                 if choice_data:
                     # If detected, should be a simple principle (not constraint)
@@ -187,7 +188,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # All discussion phrases should indicate floor income preference (not constraint version)
         for phrase in discussion_phrases:
             with self.subTest(phrase=phrase, context="discussion"):
-                choice_data = self.utility_agent._extract_principle_choice_direct(phrase)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(phrase))
                 if choice_data:  # Some discussion phrases might not match patterns, which is ok
                     self.assertEqual(choice_data['principle'], 'maximizing_floor',
                                    f"Discussion phrase incorrectly parsed as {choice_data['principle']}: {phrase}")
@@ -195,7 +196,7 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # All ballot phrases MUST be parsed correctly as maximizing_floor
         for phrase in ballot_phrases:
             with self.subTest(phrase=phrase, context="ballot"):
-                choice_data = self.utility_agent._extract_principle_choice_direct(phrase)
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(phrase))
                 self.assertIsNotNone(choice_data, f"Ballot phrase should be parsed: {phrase}")
                 self.assertEqual(choice_data['principle'], 'maximizing_floor',
                                f"CRITICAL: Ballot phrase incorrectly parsed as {choice_data['principle']}: {phrase}")

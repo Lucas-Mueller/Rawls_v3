@@ -42,9 +42,7 @@ class UtilityAgent:
         self.validator_agent = None
         self._initialization_complete = False
         
-        # Enhanced parsing patterns
-        self._principle_patterns = self._compile_principle_patterns()
-        self._certainty_patterns = self._compile_certainty_patterns()
+        # Enhanced parsing patterns (keeping only ranking patterns)
         self._ranking_patterns = self._compile_ranking_patterns()
         
     async def async_init(self):
@@ -489,94 +487,7 @@ class UtilityAgent:
             constraint_type=constraint_type
         )
     
-    def _compile_principle_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for principle detection with comprehensive coverage and fixed false matches."""
-        return {
-            # Order matters - more specific patterns first to avoid false matches
-            # FIXED: Better letter-based detection and "no constraints" handling
-            
-            # Letter-based patterns (most explicit) - checked first
-            'maximizing_floor_letter': re.compile(
-                r'\b(?:principle|option)\s*a\b(?!.*\b(?:with|constraint)\s+(?!no\b|zero\b|without\b))', 
-                re.IGNORECASE
-            ),
-            'maximizing_average_letter': re.compile(
-                r'\b(?:principle|option)\s*b\b(?!.*\b(?:with|constraint)\s+(?!no\b|zero\b|without\b))', 
-                re.IGNORECASE
-            ),
-            'maximizing_average_floor_constraint_letter': re.compile(
-                r'\b(?:principle|option)\s*c\b', 
-                re.IGNORECASE
-            ),
-            'maximizing_average_range_constraint_letter': re.compile(
-                r'\b(?:principle|option)\s*d\b', 
-                re.IGNORECASE
-            ),
-            
-            # Constraint patterns - must have actual constraint amounts or explicit "with constraint"
-            'maximizing_average_floor_constraint': re.compile(
-                r'(?:'
-                # Explicit "with floor constraint" or "with a floor constraint" + amount
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:with|including).*?floor.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
-                r'average.*?(?:with|including).*?floor.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
-                # Floor constraint followed by amount
-                r'floor\s+constraint\s+(?:of\s+)?\$?[0-9,]+|'
-                # "constraint of $X" patterns
-                r'(?:with|including)\s+(?:a\s+)?floor\s+constraint\s+of\s+\$?[0-9,]+'
-                r')', 
-                re.IGNORECASE
-            ),
-            'maximizing_average_range_constraint': re.compile(
-                r'(?:'
-                # Explicit "with range constraint" + amount
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:with|including).*?range.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
-                r'average.*?(?:with|including).*?range.*?constraint.*?(?:\$?[0-9,]+|of\s+\$?[0-9,]+)|'
-                # Range constraint followed by amount  
-                r'range\s+constraint\s+(?:of\s+)?\$?[0-9,]+|'
-                # "constraint of $X" patterns
-                r'(?:with|including)\s+(?:a\s+)?range\s+constraint\s+of\s+\$?[0-9,]+'
-                r')', 
-                re.IGNORECASE
-            ),
-            
-            # Simple maximizing patterns - must NOT have constraint language
-            'maximizing_floor': re.compile(
-                r'(?:'
-                # "maximizing floor" variants - reject if constraint language present
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?floor(?:\s+income)?(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?(?:minimum|lowest)(?:\s+income)?(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
-                # Floor income variants - reject constraint language
-                r'floor\s+income(?!.*\bwith\s+(?!no\b|zero\b|without\b))|'
-                # Handle "no constraints" explicitly for floor
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?floor.*?(?:no|zero|without).*?constraint|'
-                r'floor.*?(?:no|zero|without).*?constraint'
-                r')(?!.*\b(?:with|including)\s+(?!no\b|zero\b|without\b))', 
-                re.IGNORECASE
-            ),
-            'maximizing_average': re.compile(
-                r'(?:'
-                # "maximizing average" variants - reject if constraint language present
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?average(?:\s+income)?(?!.*\b(?:with|floor|range|constraint)\s+(?!no\b|zero\b|without\b))|'
-                # Average income variants - reject constraint language
-                r'average\s+income(?!.*\b(?:with|floor|range|constraint)\s+(?!no\b|zero\b|without\b))|'
-                # Handle "no constraints" explicitly for average
-                r'(?:maximizing?|maximize)\s+(?:the\s+)?average.*?(?:no|zero|without).*?constraint|'
-                r'average.*?(?:no|zero|without).*?constraint'
-                r')(?!.*\b(?:with|including|floor|range|constraint)\s+(?!no\b|zero\b|without\b))', 
-                re.IGNORECASE
-            )
-        }
     
-    def _compile_certainty_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for certainty level detection - order matters!"""
-        return {
-            # More specific patterns first to avoid false matches
-            'very_sure': re.compile(r'very\s+sure|extremely\s+confident|highly\s+certain|completely\s+sure', re.IGNORECASE),
-            'very_unsure': re.compile(r'very\s+unsure|extremely\s+uncertain|highly\s+uncertain', re.IGNORECASE),
-            'sure': re.compile(r'(?<!very\s)(?<!extremely\s)(?<!highly\s)sure|confident|certain', re.IGNORECASE),
-            'unsure': re.compile(r'(?<!very\s)(?<!extremely\s)(?<!highly\s)unsure|uncertain|not\s+confident', re.IGNORECASE),
-            'no_opinion': re.compile(r'no\s+opinion|neutral|indifferent|no\s+preference', re.IGNORECASE)
-        }
     
     def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
         """Compile regex patterns for ranking detection."""
@@ -587,16 +498,22 @@ class UtilityAgent:
         }
     
     async def parse_principle_choice_enhanced(self, response: str, max_retries: int = 3) -> PrincipleChoice:
-        """Enhanced parsing for principle choice with retry logic."""
+        """Enhanced parsing for principle choice using LLM-based parsing (replaces regex)."""
         
         for attempt in range(max_retries):
             try:
-                # First try direct pattern matching
-                choice_data = self._extract_principle_choice_direct(response)
+                # Use new LLM-based parsing instead of regex
+                choice_data = await self.parse_principle_choice_llm(response)
                 if choice_data:
-                    return self._create_principle_choice(choice_data)
+                    # Convert LLM response to PrincipleChoice
+                    return PrincipleChoice.create_for_parsing(
+                        principle=JusticePrinciple(choice_data['principle']),
+                        constraint_amount=choice_data.get('constraint_amount'),
+                        certainty=CertaintyLevel(choice_data['certainty']),
+                        reasoning=choice_data.get('reasoning', response)
+                    )
                 
-                # Fallback to agent-based parsing
+                # Fallback to original agent-based parsing if LLM parsing fails
                 return await self.parse_principle_choice(response)
                 
             except Exception as e:
@@ -607,57 +524,6 @@ class UtilityAgent:
                 # Add clarifying context for retry
                 response = f"Original response: {response}\n\nPlease clearly state your principle choice."
     
-    def _extract_principle_choice_direct(self, response: str) -> Optional[Dict[str, Any]]:
-        """Direct pattern matching for principle choice with improved ordering."""
-        
-        # Find principle using the same logic as _extract_principle_from_text
-        principle = None
-        
-        # Check letter-based patterns first (most specific)
-        for principle_name, pattern in self._principle_patterns.items():
-            if '_letter' in principle_name and pattern.search(response):
-                # Map letter pattern names to actual principle names
-                principle = principle_name.replace('_letter', '')
-                break
-        
-        # Then check constraint patterns (require explicit constraint amounts)
-        if not principle:
-            constraint_patterns = ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']
-            for principle_name in constraint_patterns:
-                if self._principle_patterns[principle_name].search(response):
-                    principle = principle_name
-                    break
-        
-        # Finally check simple patterns
-        if not principle:
-            simple_patterns = ['maximizing_floor', 'maximizing_average']
-            for principle_name in simple_patterns:
-                if self._principle_patterns[principle_name].search(response):
-                    principle = principle_name
-                    break
-        
-        if not principle:
-            return None
-        
-        # Find constraint amount if needed
-        constraint_amount = None
-        if 'constraint' in principle:
-            # Enhanced constraint amount parsing with multiple patterns
-            constraint_amount = self._extract_constraint_amount_robust(response, principle)
-        
-        # Find certainty
-        certainty = 'sure'  # default
-        for certainty_key, pattern in self._certainty_patterns.items():
-            if pattern.search(response):
-                certainty = certainty_key
-                break
-        
-        return {
-            'principle': principle,
-            'constraint_amount': constraint_amount,
-            'certainty': certainty,
-            'reasoning': response  # Full response as reasoning
-        }
     
     def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
         """Create PrincipleChoice object from extracted data using parsing mode."""
@@ -690,7 +556,7 @@ class UtilityAgent:
         for attempt in range(max_retries):
             try:
                 # First try direct pattern matching
-                ranking_data = self._extract_ranking_direct(response)
+                ranking_data = await self._extract_ranking_direct(response)
                 if ranking_data and len(ranking_data['rankings']) == 4:
                     return self._create_principle_ranking(ranking_data)
                 
@@ -705,8 +571,8 @@ class UtilityAgent:
                 # Add clarifying context for retry
                 response = f"Original response: {response}\n\nPlease provide a complete ranking of all 4 principles from 1-4."
     
-    def _extract_ranking_direct(self, response: str) -> Optional[Dict[str, Any]]:
-        """Direct pattern matching for principle ranking."""
+    async def _extract_ranking_direct(self, response: str) -> Optional[Dict[str, Any]]:
+        """Direct pattern matching for principle ranking using LLM-based parsing."""
         
         rankings = []
         
@@ -715,19 +581,24 @@ class UtilityAgent:
         
         if len(ranking_matches) >= 4:
             for rank_num, rank_text in ranking_matches[:4]:
-                principle = self._identify_principle_in_text(rank_text.strip())
+                principle = await self._identify_principle_in_text(rank_text.strip())
                 if principle:
                     rankings.append({
                         'principle': principle,
                         'rank': int(rank_num)
                     })
         
-        # Find overall certainty
+        # Find overall certainty - use simple heuristic
         certainty = 'sure'  # default
-        for certainty_key, pattern in self._certainty_patterns.items():
-            if pattern.search(response):
-                certainty = certainty_key
-                break
+        response_lower = response.lower()
+        if any(word in response_lower for word in ['very unsure', 'extremely uncertain']):
+            certainty = 'very_unsure'
+        elif any(word in response_lower for word in ['unsure', 'uncertain', 'not sure']):
+            certainty = 'unsure'  
+        elif any(word in response_lower for word in ['no opinion', 'neutral', 'indifferent']):
+            certainty = 'no_opinion'
+        elif any(word in response_lower for word in ['very sure', 'very confident', 'extremely confident']):
+            certainty = 'very_sure'
         
         if len(rankings) == 4:
             return {
@@ -737,23 +608,28 @@ class UtilityAgent:
         
         return None
     
-    def _identify_principle_in_text(self, text: str) -> Optional[str]:
-        """Identify which principle is mentioned in text - focus on beginning of text."""
+    async def _identify_principle_in_text(self, text: str) -> Optional[str]:
+        """Identify which principle is mentioned in text using LLM-based parsing."""
         # Focus on the first part of the text to avoid confusion from later mentions
         # Take first sentence or first 200 characters, whichever is shorter
         first_sentence = text.split(':')[0] if ':' in text else text.split('.')[0]
         focus_text = first_sentence[:200].strip()
         
-        # The patterns are ordered from most specific to least specific
-        # This ensures we match the correct principle even when text could match multiple patterns
-        for principle_key, pattern in self._principle_patterns.items():
-            if pattern.search(focus_text):
-                return principle_key
+        # Try LLM-based parsing on focused text first
+        try:
+            choice_data = await self.parse_principle_choice_llm(focus_text, max_retries=1)
+            if choice_data:
+                return choice_data['principle']
+        except Exception:
+            pass
         
-        # Fallback to full text if focus text doesn't match
-        for principle_key, pattern in self._principle_patterns.items():
-            if pattern.search(text):
-                return principle_key
+        # Fallback to full text LLM parsing if focus text doesn't work
+        try:
+            choice_data = await self.parse_principle_choice_llm(text, max_retries=1)
+            if choice_data:
+                return choice_data['principle']
+        except Exception:
+            pass
                 
         return None
     
@@ -771,142 +647,24 @@ class UtilityAgent:
             certainty=CertaintyLevel(data.get('certainty', 'sure'))
         )
     
-    def _extract_constraint_amount_robust(self, response: str, principle: str) -> Optional[int]:
-        """Enhanced constraint amount extraction with multiple patterns and fuzzy matching."""
-        
-        # Pattern 1: Direct amount matching with various formats (including negative detection)
-        amount_patterns = [
-            r'(-?\d{1,2})\s*k(?:\s|$)',  # Handle simple "20k" or "-20k" format first
-            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)\s*(?:dollars?)?',  # $20000, $20,000, -20,000, or $-20,000 (longer patterns first)
-            r'(-?\d{4,6}|\d{1,3}(?:,\d{3})*)\s*(?:k|thousand)',    # 20000k, 20k, -20k, or 20 thousand
-            r'floor\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # floor of $20000 or $20,000
-            r'constraint\s*(?:of|at|set\s*at|=)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # constraint of $20000 or $20,000
-            r'with\s*(?:a\s*)?(?:floor|range)\s*(?:of|at)?\s*\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)', # with a floor of $20000
-        ]
-        
-        for pattern in amount_patterns:
-            matches = re.findall(pattern, response, re.IGNORECASE)
-            for match in matches:
-                try:
-                    amount_str = match.replace(',', '')
-                    amount = float(amount_str)
-                    
-                    # Check if this is a "k" pattern (first pattern in our list)
-                    if pattern == r'(-?\d{1,2})\s*k(?:\s|$)':
-                        amount *= 1000
-                    elif re.search(r'\b' + re.escape(match) + r'\s*(?:k|thousand)', response, re.IGNORECASE):
-                        amount *= 1000
-                    
-                    # Convert to int and validate
-                    amount_int = int(amount)
-                    # Return None for invalid values to trigger retry logic
-                    if amount_int <= 0:
-                        continue
-                    return amount_int
-                except (ValueError, TypeError):
-                    continue
-        
-        # Pattern 2: Contextual amount extraction (look for numbers near constraint keywords)
-        constraint_context_patterns = [
-            r'(?:floor|constraint|minimum|limit)[\s\w]*?\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)',
-            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)[\s\w]*?(?:floor|constraint|minimum|limit)',
-            r'(?:principle|option)\s*[(\[]?[cd][)\]]?.*?\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*)',  # principle c/d with amount
-            r'\$?(-?\d{4,6}|\d{1,3}(?:,\d{3})*).*?(?:principle|option)\s*[(\[]?[cd][)\]]?',  # amount with principle c/d
-        ]
-        
-        for pattern in constraint_context_patterns:
-            matches = re.findall(pattern, response, re.IGNORECASE)
-            for match in matches:
-                try:
-                    amount = int(match.replace(',', ''))
-                    # Reasonable range check (between $1,000 and $100,000) and positive
-                    if 1000 <= amount <= 100000:
-                        return amount
-                except (ValueError, TypeError):
-                    continue
-        
-        # Pattern 3: Fallback to abstract constraint parsing
-        return self._parse_abstract_constraint(response, principle)
     
-    def _parse_abstract_constraint(self, response: str, principle: str) -> Optional[int]:
-        """Parse abstract constraint descriptions like 'practical maximum'."""
-        response_lower = response.lower()
-        
-        # First check for negative numbers - if found, return None to trigger retry
-        import re
-        negative_patterns = [
-            r'-\s*\$?\d+',  # -$1000 or -1000
-            r'\$\s*-\s*\d+',  # $-1000
-            r'negative\s+\d+',  # negative 1000
-        ]
-        for pattern in negative_patterns:
-            if re.search(pattern, response_lower):
-                return None  # Trigger retry for negative values
-        
-        # Look for abstract constraint terms
-        if any(term in response_lower for term in [
-            'practical maximum', 'practical max', 'highest possible',
-            'maximum possible', 'as high as possible', 'optimal level',
-            'best level', 'sweet spot'
-        ]):
-            # For practical maximum constraints, use a reasonable default
-            if 'floor' in principle:
-                return 10000  # $10,000 default floor constraint
-            elif 'range' in principle:
-                return 20000  # $20,000 default range constraint
-        
-        # Look for relative constraint terms  
-        if any(term in response_lower for term in [
-            'reasonable', 'moderate', 'middle', 'balanced'
-        ]):
-            if 'floor' in principle:
-                return 8000   # $8,000 moderate floor
-            elif 'range' in principle:
-                return 15000  # $15,000 moderate range
-        
-        # Look for high/low terms
-        if any(term in response_lower for term in ['high', 'strong', 'substantial']):
-            if 'floor' in principle:
-                return 12000  # $12,000 high floor
-            elif 'range' in principle:
-                return 25000  # $25,000 high range
-        
-        if any(term in response_lower for term in ['low', 'minimal', 'basic']):
-            if 'floor' in principle:
-                return 5000   # $5,000 low floor
-            elif 'range' in principle:
-                return 10000  # $10,000 low range
-        
-        # Default fallback for constraint principles
-        if 'floor' in principle:
-            return 10000  # Default $10,000 floor
-        elif 'range' in principle:
-            return 20000  # Default $20,000 range
-        
-        return None
 
     async def _parse_with_fallback(self, response: str, parse_type: str) -> Any:
-        """Fallback parsing with more permissive approach."""
+        """Fallback parsing with more permissive approach using LLM instead of regex."""
         
         if parse_type == 'principle_choice':
-            # Create a basic choice if we can identify any principle
-            for principle_key, pattern in self._principle_patterns.items():
-                if pattern.search(response):
-                    # Get constraint amount for constraint principles
-                    constraint_amount = None
-                    if 'constraint' in principle_key:
-                        constraint_amount = self._extract_constraint_amount_robust(response, principle_key)
-                        # Validate constraint amount - if invalid, set to None to trigger retry
-                        if constraint_amount is not None and constraint_amount <= 0:
-                            constraint_amount = None
-                    
-                    # Create using parsing mode - no validation bypass needed
+            # Try LLM-based parsing as fallback
+            try:
+                choice_data = await self.parse_principle_choice_llm(response, max_retries=1)
+                if choice_data:
                     return PrincipleChoice.create_for_parsing(
-                        principle=JusticePrinciple(principle_key),
-                        constraint_amount=constraint_amount,
-                        certainty=CertaintyLevel.SURE,
+                        principle=JusticePrinciple(choice_data['principle']),
+                        constraint_amount=choice_data.get('constraint_amount'),
+                        certainty=CertaintyLevel(choice_data['certainty']),
                         reasoning=response
                     )
+            except Exception:
+                pass
             
             # Ultimate fallback - default choice using parsing mode
             return PrincipleChoice.create_for_parsing(
@@ -971,6 +729,259 @@ class UtilityAgent:
         """Get prompt for improving response format."""
         return self.language_manager.get_format_improvement_prompt(response, parse_type)
     
+    # ========================================
+    # NEW LLM-BASED PARSING METHODS
+    # ========================================
+    
+    async def parse_principle_choice_llm(self, response: str, max_retries: int = 3) -> Optional[Dict[str, Any]]:
+        """
+        Parse principle choice using LLM instead of regex patterns.
+        This replaces the messy regex-based _extract_principle_choice_direct method.
+        
+        Args:
+            response: The participant's response to analyze
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            Dict with principle, constraint_amount, certainty, confidence, or None if parsing fails
+        """
+        await self.async_init()
+        
+        for attempt in range(max_retries):
+            try:
+                # Get the LLM parsing prompt
+                parsing_prompt = self.language_manager.get(
+                    "prompts.utility_llm_parse_principle_choice",
+                    response=response,
+                    attempt=attempt + 1
+                )
+                
+                result = await Runner.run(self.parser_agent, parsing_prompt)
+                response_text = result.final_output.strip()
+                
+                # Parse structured LLM response
+                parsed_data = self._parse_llm_principle_response(response_text)
+                if parsed_data:
+                    return parsed_data
+                    
+            except Exception as e:
+                logger.warning(f"LLM principle parsing failed (attempt {attempt + 1}): {e}")
+                if attempt == max_retries - 1:
+                    return None
+                    
+        return None
+    
+    def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
+        """Parse structured LLM response for principle choice."""
+        import re
+        try:
+            # Look for structured response format
+            if "PRINCIPLE_DETECTED:" in llm_response:
+                content = llm_response.split("PRINCIPLE_DETECTED:")[1].strip()
+                
+                # Extract principle
+                principle = None
+                principle_map = {
+                    # Order matters! Check longer, more specific patterns first
+                    "maximizing_average_floor_constraint": "maximizing_average_floor_constraint",
+                    "maximizing_average_range_constraint": "maximizing_average_range_constraint",
+                    "maximizing_floor": "maximizing_floor",
+                    "maximizing_average": "maximizing_average",
+                    "principle c": "maximizing_average_floor_constraint", 
+                    "principle d": "maximizing_average_range_constraint",
+                    "principle a": "maximizing_floor",
+                    "principle b": "maximizing_average",
+                    "option c": "maximizing_average_floor_constraint",
+                    "option d": "maximizing_average_range_constraint",
+                    "option a": "maximizing_floor",
+                    "option b": "maximizing_average",
+                    "c": "maximizing_average_floor_constraint",
+                    "d": "maximizing_average_range_constraint",
+                    "a": "maximizing_floor",
+                    "b": "maximizing_average"
+                }
+                
+                content_lower = content.lower()
+                for key, value in principle_map.items():
+                    if key in content_lower:
+                        principle = value
+                        break
+                
+                if not principle:
+                    return None
+                
+                # Extract constraint amount if applicable
+                constraint_amount = None
+                if 'constraint' in principle:
+                    # Look for dollar amounts
+                    amount_matches = re.findall(r'[\$]?(\d{1,6}(?:,\d{3})*|\d{4,6})', content)
+                    if amount_matches:
+                        try:
+                            constraint_amount = int(amount_matches[0].replace(',', ''))
+                            if constraint_amount <= 0:
+                                constraint_amount = None
+                        except ValueError:
+                            pass
+                
+                # Extract confidence (0.0-1.0)
+                confidence = 0.8  # Default confidence
+                confidence_matches = re.findall(r'confidence[:\s]*([0-9]\.[0-9]+)', content_lower)
+                if confidence_matches:
+                    try:
+                        confidence = float(confidence_matches[0])
+                        confidence = max(0.0, min(1.0, confidence))  # Clamp to 0-1
+                    except ValueError:
+                        pass
+                
+                # Extract certainty level
+                certainty = 'sure'  # Default
+                if any(word in content_lower for word in ['very_unsure', 'very unsure']):
+                    certainty = 'very_unsure'
+                elif any(word in content_lower for word in ['unsure', 'uncertain']):
+                    certainty = 'unsure'
+                elif any(word in content_lower for word in ['no_opinion', 'no opinion']):
+                    certainty = 'no_opinion'
+                elif any(word in content_lower for word in ['very_sure', 'very sure']):
+                    certainty = 'very_sure'
+                
+                return {
+                    'principle': principle,
+                    'constraint_amount': constraint_amount,
+                    'certainty': certainty,
+                    'confidence': confidence,
+                    'reasoning': llm_response
+                }
+                
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse LLM principle response: {e}")
+            return None
+    
+    async def parse_preference_statement_llm(self, statement: str) -> Optional[PrincipleChoice]:
+        """
+        Parse preference statements for SIMPLE MODE using LLM instead of regex.
+        This replaces regex-based preference detection.
+        
+        Args:
+            statement: The participant's statement to analyze
+            
+        Returns:
+            PrincipleChoice if preference is detected, None otherwise
+        """
+        await self.async_init()
+        
+        try:
+            # Get the LLM preference detection prompt
+            detection_prompt = self.language_manager.get(
+                "prompts.utility_llm_parse_preference_statement",
+                statement=statement
+            )
+            
+            result = await Runner.run(self.parser_agent, detection_prompt)
+            response_text = result.final_output.strip()
+            
+            # Parse LLM response
+            if "PREFERENCE_DETECTED:" in response_text:
+                preference_content = response_text.split("PREFERENCE_DETECTED:")[1].strip()
+                
+                # Use the principle choice parser to extract details
+                parsed_data = self._parse_llm_principle_response(f"PRINCIPLE_DETECTED: {preference_content}")
+                if parsed_data:
+                    return PrincipleChoice.create_for_parsing(
+                        principle=JusticePrinciple(parsed_data['principle']),
+                        constraint_amount=parsed_data.get('constraint_amount'),
+                        certainty=CertaintyLevel(parsed_data['certainty']),
+                        reasoning=f"Preference detected via LLM: {preference_content}"
+                    )
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"LLM preference detection failed: {e}")
+            return None
+    
+    async def parse_vote_intention_llm(self, statement: str) -> Optional[str]:
+        """
+        Parse vote intention for COMPLEX MODE using LLM instead of regex.
+        This replaces regex-based voting detection.
+        
+        Args:
+            statement: The participant's statement to analyze
+            
+        Returns:
+            Vote intention description if detected, None otherwise
+        """
+        await self.async_init()
+        
+        try:
+            # Get the LLM vote detection prompt
+            detection_prompt = self.language_manager.get(
+                "prompts.utility_llm_parse_vote_intention", 
+                statement=statement
+            )
+            
+            result = await Runner.run(self.parser_agent, detection_prompt)
+            response_text = result.final_output.strip()
+            
+            # Parse LLM response
+            if "VOTE_INTENTION_DETECTED:" in response_text:
+                vote_content = response_text.split("VOTE_INTENTION_DETECTED:")[1].strip()
+                return vote_content
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"LLM vote intention detection failed: {e}")
+            return None
+    
+    async def parse_constraint_amount_llm(self, response: str, principle: str) -> Optional[int]:
+        """
+        Parse constraint amounts using LLM instead of complex regex patterns.
+        This replaces _extract_constraint_amount_robust method.
+        
+        Args:
+            response: The participant's response containing constraint amount
+            principle: The principle type (for context)
+            
+        Returns:
+            Constraint amount in dollars, or None if not found/invalid
+        """
+        await self.async_init()
+        
+        try:
+            # Get the LLM constraint parsing prompt
+            parsing_prompt = self.language_manager.get(
+                "prompts.utility_llm_parse_constraint_amount",
+                response=response,
+                principle=principle
+            )
+            
+            result = await Runner.run(self.parser_agent, parsing_prompt)
+            response_text = result.final_output.strip()
+            
+            # Parse LLM response
+            if "CONSTRAINT_AMOUNT:" in response_text:
+                amount_text = response_text.split("CONSTRAINT_AMOUNT:")[1].strip()
+                
+                # Extract numeric value
+                import re
+                amount_matches = re.findall(r'(\d{1,6}(?:,\d{3})*|\d{4,6})', amount_text)
+                if amount_matches:
+                    try:
+                        amount = int(amount_matches[0].replace(',', ''))
+                        # Validate reasonable range (between $1,000 and $100,000)
+                        if 1000 <= amount <= 100000:
+                            return amount
+                    except ValueError:
+                        pass
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"LLM constraint amount parsing failed: {e}")
+            return None
+    
     async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
         """
         Detect preference statements in participant responses for SIMPLE MODE only.
@@ -1011,7 +1022,7 @@ class UtilityAgent:
                         pass
                 
                 # Map principle text to JusticePrinciple
-                principle = self._extract_principle_from_text(principle_text)
+                principle = await self._extract_principle_from_text(principle_text)
                 if principle:
                     return PrincipleChoice(
                         principle=principle,
@@ -1034,7 +1045,7 @@ class UtilityAgent:
             if "PREFERENCE_DETECTED:" in response:
                 # Parse the LLM response to extract principle choice
                 preference_text = response.split("PREFERENCE_DETECTED:")[1].strip()
-                principle = self._extract_principle_from_text(preference_text)
+                principle = await self._extract_principle_from_text(preference_text)
                 
                 if principle:
                     # Extract constraint amount if present
@@ -1094,37 +1105,25 @@ class UtilityAgent:
         
         return mapping.get(identifier)
     
-    def _extract_principle_from_text(self, principle_text: str) -> Optional[JusticePrinciple]:
+    async def _extract_principle_from_text(self, principle_text: str) -> Optional[JusticePrinciple]:
         """
-        Extract JusticePrinciple from text using comprehensive pattern matching.
-        This method reuses existing principle patterns with improved logic.
+        Extract JusticePrinciple from text using LLM-based parsing instead of regex.
+        This replaces the old regex-based pattern matching approach.
         """
         principle_text = principle_text.lower().strip()
         
-        # First try the letter-based mapping
+        # First try the letter-based mapping (still useful for simple cases)
         mapped_principle = self._map_identifier_to_principle(principle_text)
         if mapped_principle:
             return mapped_principle
         
-        # Then try pattern matching against the compiled patterns
-        # Check letter-based patterns first (most specific)
-        for principle_name, pattern in self._principle_patterns.items():
-            if '_letter' in principle_name and pattern.search(principle_text):
-                # Map letter pattern names to actual principle names
-                base_name = principle_name.replace('_letter', '')
-                return JusticePrinciple(base_name)
-        
-        # Then check constraint patterns (require explicit constraint amounts)
-        constraint_patterns = ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']
-        for principle_name in constraint_patterns:
-            if self._principle_patterns[principle_name].search(principle_text):
-                return JusticePrinciple(principle_name)
-        
-        # Finally check simple patterns
-        simple_patterns = ['maximizing_floor', 'maximizing_average']
-        for principle_name in simple_patterns:
-            if self._principle_patterns[principle_name].search(principle_text):
-                return JusticePrinciple(principle_name)
+        # Use LLM parsing for more complex text analysis
+        try:
+            choice_data = await self.parse_principle_choice_llm(principle_text, max_retries=1)
+            if choice_data:
+                return JusticePrinciple(choice_data['principle'])
+        except Exception:
+            pass
         
         return None
     
