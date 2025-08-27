@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 from pydantic import BaseModel, Field, field_validator
 from models.experiment_types import IncomeClassProbabilities
+from .phase2_settings import Phase2Settings
 
 
 class AgentConfiguration(BaseModel):
@@ -66,6 +67,9 @@ class ExperimentConfiguration(BaseModel):
     
     # Reproducibility configuration
     seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")
+    
+    # Phase 2 specific settings
+    phase2_settings: Optional[Phase2Settings] = Field(None, description="Phase 2 specific configuration settings")
     
     @field_validator('language')
     @classmethod

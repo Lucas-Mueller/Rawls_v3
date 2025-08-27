@@ -4,6 +4,7 @@ Phase 2 manager for group discussion and consensus building.
 import asyncio
 import random
 import re
+import time
 from typing import List, Dict, Optional
 from agents import Agent, Runner
 
@@ -14,6 +15,7 @@ from models import (
     JusticePrinciple, CertaintyLevel
 )
 from config import ExperimentConfiguration, AgentConfiguration
+from config.phase2_settings import Phase2Settings
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
@@ -31,12 +33,21 @@ class Phase2Manager:
         self.config = experiment_config
         self.logger = None  # Will be set in run_phase2
         self.error_handler = ExperimentErrorHandler()
+        
+        # Load Phase 2 settings
+        self.settings = experiment_config.phase2_settings if experiment_config and experiment_config.phase2_settings else Phase2Settings.get_default()
+        
+        # Add consensus lock for thread safety
+        self._consensus_lock = asyncio.Lock()
+        self._voting_in_progress = False
+        
         self.validation_stats = {
             "total_statement_requests": 0,
             "successful_statements": 0,
             "failed_validations": 0,
             "retry_attempts": 0,
-            "fallback_statements": 0
+            "fallback_statements": 0,
+            "quarantined_responses": 0
         }
     
     def _log_info(self, message: str):
@@ -51,7 +62,7 @@ class Phase2Manager:
     
     def _validate_statement(self, statement: str, participant_name: str) -> bool:
         """
-        Validate that a statement is non-empty and meaningful.
+        Validate that a statement is non-empty and meaningful with language awareness.
         
         Args:
             statement: The statement to validate
@@ -67,13 +78,20 @@ class Phase2Manager:
         if not statement.strip():
             self._log_warning(f"Whitespace-only statement received from {participant_name}")
             return False
-            
-        # Check for minimum meaningful content (at least 10 characters after stripping)
-        if len(statement.strip()) < 10:
-            self._log_warning(f"Statement too short from {participant_name}: '{statement.strip()}'")
+        
+        # Get language-appropriate minimum length
+        language = self.config.language if self.config else "English"
+        min_length = self.settings.get_min_statement_length(language)
+        
+        # Count actual characters (handle multi-byte characters properly)
+        statement_length = len(statement.strip())
+        
+        # Check for minimum meaningful content 
+        if statement_length < min_length:
+            self._log_warning(f"Statement too short from {participant_name}: '{statement.strip()[:50]}...' ({statement_length} chars, min: {min_length})")
             return False
             
-        self._log_info(f"Valid statement received from {participant_name} ({len(statement.strip())} characters)")
+        self._log_info(f"Valid statement received from {participant_name} ({statement_length} characters, language: {language})")
         return True
     
     def _log_validation_statistics(self):
@@ -106,10 +124,10 @@ class Phase2Manager:
         discussion_state: GroupDiscussionState,
         agent_config: AgentConfiguration,
         internal_reasoning: str = "",
-        max_retries: int = 3
+        max_retries: int = None
     ) -> tuple[str, str]:
         """
-        Get participant statement with retry logic for empty responses.
+        Get participant statement with retry logic, timeout, and exponential backoff.
         
         Args:
             participant: The participant agent
@@ -117,7 +135,7 @@ class Phase2Manager:
             discussion_state: Current discussion state
             agent_config: Agent configuration
             internal_reasoning: Internal reasoning to include in prompt (if reasoning enabled)
-            max_retries: Maximum number of retry attempts
+            max_retries: Maximum number of retry attempts (uses settings if not specified)
             
         Returns:
             tuple: (statement, round_content)
@@ -125,16 +143,34 @@ class Phase2Manager:
         Raises:
             AgentCommunicationError: If all retry attempts fail
         """
+        if max_retries is None:
+            max_retries = self.settings.max_statement_retries
+            
         discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number, internal_reasoning)
         self.validation_stats["total_statement_requests"] += 1
+        
+        backoff_delay = 1.0  # Initial backoff delay in seconds
         
         for attempt in range(max_retries):
             try:
                 self._log_info(f"Getting statement from {participant.name} (attempt {attempt + 1}/{max_retries})")
                 
-                # Get statement from agent
-                result = await Runner.run(participant.agent, discussion_prompt, context=context)
-                statement = result.final_output
+                # Add exponential backoff for retries
+                if attempt > 0:
+                    await asyncio.sleep(backoff_delay)
+                    backoff_delay *= self.settings.retry_backoff_factor
+                    self._log_info(f"Waited {backoff_delay:.1f}s before retry")
+                
+                # Get statement from agent with timeout
+                try:
+                    result = await asyncio.wait_for(
+                        Runner.run(participant.agent, discussion_prompt, context=context),
+                        timeout=self.settings.statement_timeout_seconds
+                    )
+                    statement = result.final_output
+                except asyncio.TimeoutError:
+                    self._log_warning(f"Timeout waiting for {participant.name} after {self.settings.statement_timeout_seconds}s")
+                    statement = ""  # Treat timeout as empty response
                 
                 # Validate the statement
                 if self._validate_statement(statement, participant.name):
@@ -240,26 +276,77 @@ Please ensure your response contains a clear statement about your position on th
             final_rankings=final_rankings
         )
     
+    def _validate_and_sanitize_memory(self, memory: str, character_limit: int, participant_name: str) -> str:
+        """
+        Validate and sanitize memory for safe Phase 2 initialization.
+        
+        Args:
+            memory: Raw memory string from Phase 1
+            character_limit: Maximum allowed characters
+            participant_name: Name of participant for logging
+            
+        Returns:
+            Sanitized memory string
+        """
+        # Check if memory is None or corrupted
+        if memory is None:
+            self._log_warning(f"Null memory detected for {participant_name}, initializing empty")
+            return ""
+        
+        # Ensure string type
+        if not isinstance(memory, str):
+            self._log_warning(f"Non-string memory detected for {participant_name}, converting")
+            try:
+                memory = str(memory)
+            except Exception as e:
+                self._log_warning(f"Failed to convert memory for {participant_name}: {e}")
+                return ""
+        
+        # Check character limit
+        if len(memory) > character_limit:
+            self._log_warning(f"Memory exceeds limit for {participant_name}: {len(memory)} > {character_limit}")
+            if self.settings.memory_validation_strict:
+                # Truncate to fit within limit
+                memory = memory[:character_limit - 100]  # Leave some buffer
+                memory += "\n[Memory truncated for Phase 2 initialization]"
+        
+        # Remove any null bytes or control characters that could cause issues
+        memory = memory.replace('\x00', '')
+        memory = ''.join(char for char in memory if ord(char) >= 32 or char in '\n\r\t')
+        
+        return memory
+    
     def _initialize_phase2_contexts(
         self, 
         phase1_results: List[Phase1Results],
         config: ExperimentConfiguration
     ) -> List[ParticipantContext]:
         """
-        CRITICAL: Transfer complete Phase 1 memory to Phase 2 contexts
+        CRITICAL: Transfer complete Phase 1 memory to Phase 2 contexts with validation
         This ensures continuous memory across experimental phases
         """
         phase2_contexts = []
         
+        # Validate we have matching number of results and configs
+        if len(phase1_results) != len(config.agents):
+            self._log_warning(f"Mismatch: {len(phase1_results)} Phase 1 results but {len(config.agents)} agent configs")
+        
         for i, phase1_result in enumerate(phase1_results):
             agent_config = config.agents[i]
             
-            # Create Phase 2 context with continuous memory - no automatic transition
+            # Validate and sanitize memory before transfer
+            validated_memory = self._validate_and_sanitize_memory(
+                phase1_result.final_memory_state,
+                agent_config.memory_character_limit,
+                phase1_result.participant_name
+            )
+            
+            # Create Phase 2 context with validated memory
             phase2_context = ParticipantContext(
                 name=phase1_result.participant_name,
                 role_description=agent_config.personality,
                 bank_balance=phase1_result.total_earnings,  # Carry forward earnings
-                memory=phase1_result.final_memory_state,  # CONTINUOUS MEMORY FROM PHASE 1
+                memory=validated_memory,  # VALIDATED MEMORY FROM PHASE 1
                 round_number=0,  # Reset for Phase 2
                 phase=ExperimentPhase.PHASE_2,
                 memory_character_limit=agent_config.memory_character_limit
@@ -317,20 +404,33 @@ Please ensure your response contains a clear statement about your position on th
                     participant, context, discussion_state, agent_config
                 )
                 
+                # Check if response is quarantined
+                is_quarantined = statement.startswith("__QUARANTINED__")
+                if is_quarantined:
+                    # Remove quarantine marker for display
+                    statement = statement.replace("__QUARANTINED__", "")
+                    self._log_warning(f"QUARANTINED RESPONSE for {participant.name} in round {round_num}")
+                    self.validation_stats["quarantined_responses"] += 1
+                
                 # Log statement validation results
-                is_fallback = statement.startswith(f"[{participant.name} failed to provide")
+                is_fallback = statement.startswith(f"[{participant.name} failed to provide") or is_quarantined
                 self._log_info(f"=== STATEMENT RECEIVED FROM {participant.name} ===")
                 self._log_info(f"Statement length: {len(statement)} characters")
-                self._log_info(f"Is fallback statement: {is_fallback}")
-                if is_fallback:
-                    self._log_warning(f"FALLBACK STATEMENT USED for {participant.name} in round {round_num}")
+                self._log_info(f"Is fallback/quarantined: {is_fallback}")
                 
-                # Log first 100 characters of statement for debugging
-                statement_preview = statement[:100] + "..." if len(statement) > 100 else statement
+                # Log preview for debugging (use settings for length)
+                preview_length = self.settings.log_statement_preview_length
+                statement_preview = statement[:preview_length] + "..." if len(statement) > preview_length else statement
                 self._log_info(f"Statement preview: {statement_preview}")
                 
-                # Add statement and mark vote proposals when detected later
-                discussion_state.add_statement(participant.name, statement)
+                # Add statement to discussion (quarantined responses get neutral message)
+                if not is_quarantined or not self.settings.quarantine_failed_responses:
+                    discussion_state.add_statement(participant.name, statement)
+                else:
+                    # Add neutral message that doesn't reveal failure
+                    language_manager = get_language_manager()
+                    neutral_msg = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
+                    discussion_state.add_statement(participant.name, neutral_msg)
                 
                 # Log discussion round
                 if logger:
@@ -383,68 +483,80 @@ Please ensure your response contains a clear statement about your position on th
                     # Continue to next participant without processing vote/preference detection
                     continue
                 
-                # Check voting detection mode
-                if config.voting_detection_mode == "complex":
-                    # Try complex voting detection
-                    consensus_via_voting = await self._handle_complex_voting_mode(
-                        participant, statement, discussion_state, contexts
-                    )
+                # CONSENSUS DETECTION WITH PROPER LOCKING
+                async with self._consensus_lock:
+                    # Check if consensus already reached (could happen in concurrent scenarios)
+                    if hasattr(discussion_state, '_consensus_reached') and discussion_state._consensus_reached:
+                        self._log_info("Consensus already reached, skipping further detection")
+                        return discussion_state._consensus_result
                     
-                    if consensus_via_voting and discussion_state.last_vote_result:
-                        # Return consensus result from voting
-                        return GroupDiscussionResult(
-                            consensus_reached=True,
-                            agreed_principle=discussion_state.last_vote_result.agreed_principle,
-                            final_round=round_num,
-                            discussion_history=discussion_state.public_history,
-                            vote_history=discussion_state.vote_history
-                        )
-                
-                elif config.voting_detection_mode == "simple":
-                    # Simple mode: Try preference detection for consensus
-                    preference = await self.utility_agent.detect_preference_statement(statement)
-                    
-                    if preference:
-                        # Store preference in local round tracking (not in discussion_state)
-                        if not hasattr(self, '_current_round_preferences'):
-                            self._current_round_preferences = {}
-                        self._current_round_preferences[participant.name] = preference
-                        
-                        self._log_info(f"[PREFERENCE] {participant.name}: {preference.principle.value}")
-                        
-                        # Check if all participants have stated preferences
-                        if len(self._current_round_preferences) == len(self.participants):
-                            preferences_list = list(self._current_round_preferences.values())
-                            consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus_simple_mode(preferences_list)
+                    # Check voting detection mode
+                    if config.voting_detection_mode == "complex":
+                        # Try complex voting detection only if not already voting
+                        if not self._voting_in_progress:
+                            consensus_via_voting = await self._handle_complex_voting_mode(
+                                participant, statement, discussion_state, contexts
+                            )
                             
-                            if warnings:
-                                for warning in warnings:
-                                    self._log_warning(f"Preference consensus warning: {warning}")
-                            
-                            if consensus_reached:
-                                self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
-                                
-                                # Add consensus message to discussion history
-                                consensus_msg = f"[CONSENSUS] Preference-based consensus reached: {agreed_preference.principle.value}"
-                                if agreed_preference.constraint_amount:
-                                    consensus_msg += f" with constraint of ${agreed_preference.constraint_amount:,}"
-                                
-                                if discussion_state.public_history:
-                                    discussion_state.public_history += f"\n\n{consensus_msg}"
-                                else:
-                                    discussion_state.public_history = consensus_msg
-                                
-                                # Return consensus result
-                                return GroupDiscussionResult(
+                            if consensus_via_voting and discussion_state.last_vote_result:
+                                # Mark consensus as reached to prevent race conditions
+                                discussion_state._consensus_reached = True
+                                discussion_state._consensus_result = GroupDiscussionResult(
                                     consensus_reached=True,
-                                    agreed_principle=agreed_preference,
+                                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
                                     final_round=round_num,
                                     discussion_history=discussion_state.public_history,
                                     vote_history=discussion_state.vote_history
                                 )
+                                return discussion_state._consensus_result
+                    
+                    elif config.voting_detection_mode == "simple":
+                        # Simple mode: Try preference detection for consensus
+                        preference = await self.utility_agent.detect_preference_statement(statement)
+                        
+                        if preference:
+                            # Store preference in local round tracking (not in discussion_state)
+                            if not hasattr(self, '_current_round_preferences'):
+                                self._current_round_preferences = {}
+                            self._current_round_preferences[participant.name] = preference
                             
-                            # Clear preferences for next round if no consensus
-                            self._current_round_preferences = {}
+                            self._log_info(f"[PREFERENCE] {participant.name}: {preference.principle.value}")
+                            
+                            # Check if all participants have stated preferences
+                            if len(self._current_round_preferences) == len(self.participants):
+                                preferences_list = list(self._current_round_preferences.values())
+                                consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus_simple_mode(preferences_list)
+                                
+                                if warnings:
+                                    for warning in warnings:
+                                        self._log_warning(f"Preference consensus warning: {warning}")
+                                
+                                if consensus_reached:
+                                    self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
+                                    
+                                    # Add consensus message to discussion history
+                                    consensus_msg = f"[CONSENSUS] Preference-based consensus reached: {agreed_preference.principle.value}"
+                                    if agreed_preference.constraint_amount:
+                                        consensus_msg += f" with constraint of ${agreed_preference.constraint_amount:,}"
+                                    
+                                    if discussion_state.public_history:
+                                        discussion_state.public_history += f"\n\n{consensus_msg}"
+                                    else:
+                                        discussion_state.public_history = consensus_msg
+                                    
+                                    # Mark consensus as reached to prevent race conditions
+                                    discussion_state._consensus_reached = True
+                                    discussion_state._consensus_result = GroupDiscussionResult(
+                                        consensus_reached=True,
+                                        agreed_principle=agreed_preference,
+                                        final_round=round_num,
+                                        discussion_history=discussion_state.public_history,
+                                        vote_history=discussion_state.vote_history
+                                    )
+                                    return discussion_state._consensus_result
+                                
+                                # Clear preferences for next round if no consensus
+                                self._current_round_preferences = {}
                 
                 # Continue with discussion if no consensus mechanism applies
             
@@ -490,30 +602,59 @@ Please ensure your response contains a clear statement about your position on th
         the next round cannot start with Agent X.
         """
         participant_indices = list(range(len(contexts)))
+        num_participants = len(participant_indices)
+        
+        # Validate minimum participants
+        if num_participants < self.settings.min_agents_for_experiment:
+            self._log_warning(f"Only {num_participants} agents, below minimum of {self.settings.min_agents_for_experiment}")
+            # Continue anyway but log warning
         
         if not config.randomize_speaking_order or config.speaking_order_strategy == "fixed":
-            # Fixed order: same sequence every round
+            # Fixed order: same sequence every round, but apply rotation for small groups
+            if last_round_finisher is not None and num_participants > 1:
+                # Rotate the list to avoid same finisher-starter pattern
+                rotation_amount = (round_num - 1) % num_participants
+                participant_indices = participant_indices[rotation_amount:] + participant_indices[:rotation_amount]
             return participant_indices
         
         if config.speaking_order_strategy == "random":
             # Random behavior with finisher restriction
             random.shuffle(participant_indices)
             
-            # If this isn't the first round, ensure different starter (can't be previous round's finisher)
-            if last_round_finisher is not None and participant_indices[0] == last_round_finisher:
-                # Swap first and second elements
-                if len(participant_indices) > 1:
-                    participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
+            # Apply finisher restriction for all group sizes
+            if last_round_finisher is not None and num_participants > 1:
+                # Find position of last finisher in new order
+                if participant_indices[0] == last_round_finisher:
+                    if num_participants == 2:
+                        # For 2 agents, just swap them
+                        participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
+                    else:
+                        # For larger groups, find a non-adjacent position
+                        # Move the last finisher to middle of the list
+                        mid_position = num_participants // 2
+                        participant_indices[0], participant_indices[mid_position] = participant_indices[mid_position], participant_indices[0]
         
         elif config.speaking_order_strategy == "conversational":
-            # For future implementation - currently defaults to random
-            # Could implement conversation-driven order based on discussion state
-            random.shuffle(participant_indices)
-            
-            # Still avoid previous round's finisher starting next round
-            if last_round_finisher is not None and participant_indices[0] == last_round_finisher:
-                if len(participant_indices) > 1:
-                    participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
+            # Enhanced conversational order based on discussion flow
+            if last_round_finisher is not None and num_participants > 2:
+                # Start with someone who hasn't spoken recently
+                # Create weighted selection excluding last finisher
+                weights = [1.0] * num_participants
+                weights[last_round_finisher] = 0.0  # Exclude last finisher from starting
+                
+                # Weighted random selection for first speaker
+                import numpy as np
+                probabilities = np.array(weights) / sum(weights)
+                first_speaker = np.random.choice(participant_indices, p=probabilities)
+                
+                # Remove first speaker and shuffle rest
+                remaining = [i for i in participant_indices if i != first_speaker]
+                random.shuffle(remaining)
+                
+                participant_indices = [first_speaker] + remaining
+            else:
+                # Fallback to random for first round or small groups
+                random.shuffle(participant_indices)
         
         return participant_indices
 
@@ -565,14 +706,22 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             return statement, internal_reasoning
             
         except AgentCommunicationError as e:
-            # Log the error and use fallback statement
+            # Log the error
             self._log_warning(f"Agent communication error for {participant.name}: {str(e)}")
             self.validation_stats["fallback_statements"] += 1
             
-            # Provide a fallback statement indicating the issue
-            fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
-            
-            return fallback_statement, internal_reasoning
+            # Quarantine failed responses if enabled
+            if self.settings.quarantine_failed_responses:
+                self.validation_stats["quarantined_responses"] += 1
+                # Return a neutral statement that doesn't contaminate discussion
+                language_manager = get_language_manager()
+                neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
+                # Mark as quarantined internally
+                return f"__QUARANTINED__{neutral_statement}", internal_reasoning
+            else:
+                # Legacy behavior: include failure message (not recommended)
+                fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
+                return fallback_statement, internal_reasoning
     
     def _extract_favored_principle(self, statement: str) -> str:
         """Extract favored principle from participant statement."""
@@ -947,6 +1096,11 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         Returns True if consensus was reached through voting, False otherwise.
         """
         
+        # Ensure we're not already in a voting process (prevent double voting)
+        if self._voting_in_progress:
+            self._log_info("Voting already in progress, skipping new vote detection")
+            return False
+        
         # Check if voting intention is detected using existing method
         vote_detection_result = await self.utility_agent.detect_vote_intention_enhanced(statement)
         
@@ -955,38 +1109,45 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
         self._log_info(f"Complex voting intention detected from {participant.name}")
         
-        # Start vote round tracking
-        if self.logger:
-            self.logger.start_vote_round(
-                round_number=discussion_state.round_number,
-                vote_type="formal_vote",
-                trigger_participant=participant.name,
-                trigger_statement=statement
-            )
+        # Set voting flag to prevent concurrent votes
+        self._voting_in_progress = True
         
-        # Set active vote flag
-        discussion_state.active_vote_in_progress = True
-        
-        # Step A: Confirmation Phase
-        confirmation_success = await self._conduct_confirmation_phase(
-            participant.name, statement, contexts, discussion_state
-        )
-        
-        if not confirmation_success:
-            self._log_info("Voting confirmation failed - returning to discussion")
-            # Complete failed vote round
+        try:
+            # Start vote round tracking
             if self.logger:
-                self.logger.complete_vote_round(
-                    consensus_reached=False,
-                    warnings=["Confirmation phase failed"]
+                self.logger.start_vote_round(
+                    round_number=discussion_state.round_number,
+                    vote_type="formal_vote",
+                    trigger_participant=participant.name,
+                    trigger_statement=statement
                 )
+            
+            # Set active vote flag
+            discussion_state.active_vote_in_progress = True
+            
+            # Step A: Confirmation Phase with timeout
+            confirmation_success = await self._conduct_confirmation_phase(
+                participant.name, statement, contexts, discussion_state
+            )
+            
+            if not confirmation_success:
+                self._log_info("Voting confirmation failed - returning to discussion")
+                # Complete failed vote round
+                if self.logger:
+                    self.logger.complete_vote_round(
+                        consensus_reached=False,
+                        warnings=["Confirmation phase failed"]
+                    )
+                return False
+            
+            # Step B: Secret Ballot Phase
+            consensus_reached = await self._conduct_secret_ballot_phase(
+                contexts, discussion_state
+            )
+        finally:
+            # Always reset voting flags
+            self._voting_in_progress = False
             discussion_state.active_vote_in_progress = False
-            return False
-        
-        # Step B: Secret Ballot Phase
-        consensus_reached = await self._conduct_secret_ballot_phase(
-            contexts, discussion_state
-        )
         
         # Complete vote round with results
         if self.logger and discussion_state.last_vote_result:
@@ -1030,9 +1191,16 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         for i, context in enumerate(contexts):
             participant = self.participants[i]
             
-            # Get confirmation response from participant
-            result = await Runner.run(participant.agent, confirmation_prompt, context=context)
-            confirmation_response = result.final_output
+            # Get confirmation response from participant with timeout
+            try:
+                result = await asyncio.wait_for(
+                    Runner.run(participant.agent, confirmation_prompt, context=context),
+                    timeout=self.settings.confirmation_timeout_seconds
+                )
+                confirmation_response = result.final_output
+            except asyncio.TimeoutError:
+                self._log_warning(f"Timeout waiting for confirmation from {participant.name}")
+                confirmation_response = f"[{participant.name} timed out during confirmation]"
             
             # CRITICAL: Check if response is a fallback statement (agent failure)
             is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
@@ -1089,9 +1257,16 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         for i, context in enumerate(contexts):
             participant = self.participants[i]
             
-            # Get secret ballot from participant
-            result = await Runner.run(participant.agent, ballot_prompt, context=context)
-            ballot_response = result.final_output
+            # Get secret ballot from participant with timeout
+            try:
+                result = await asyncio.wait_for(
+                    Runner.run(participant.agent, ballot_prompt, context=context),
+                    timeout=self.settings.ballot_timeout_seconds
+                )
+                ballot_response = result.final_output
+            except asyncio.TimeoutError:
+                self._log_warning(f"Timeout waiting for ballot from {participant.name}")
+                ballot_response = f"[{participant.name} timed out during ballot]"
             
             # Parse ballot using existing utility agent methods
             try:
