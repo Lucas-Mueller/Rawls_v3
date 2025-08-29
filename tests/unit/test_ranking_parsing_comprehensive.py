@@ -176,45 +176,45 @@ class TestParsingVulnerabilities(unittest.TestCase):
     async def test_problematic_inputs(self):
         """Test inputs that should cause parsing errors or misidentification."""
         
-        # Test cases that should parse as maximizing_floor (principle A) but might not
+        # Test cases that should parse as maximizing_floor (maximizing the floor income) but might not
         floor_inputs = [
-            "My ballot choice is principle a with no additional constraints",
-            "I choose principle a with no constraints", 
+            "My ballot choice is maximizing the floor income with no additional constraints",
+            "I choose maximizing the floor income with no constraints", 
             "My choice is maximizing the floor income with no constraints",
-            "Principle a - maximizing floor income, no constraints needed",
-            "I vote for principle a without any constraint",
-            "My ballot: principle a (maximizing floor) - no constraint amounts",
+            "maximizing the floor income - maximizing floor income, no constraints needed",
+            "I vote for maximizing the floor income without any constraint",
+            "My ballot: maximizing the floor income (maximizing floor) - no constraint amounts",
             "Choice: maximizing floor income, constraint: none",
             "I choose to maximize the floor income with zero constraints"
         ]
         
-        # Test cases that should parse as maximizing_average (principle B) but might not
+        # Test cases that should parse as maximizing_average (maximizing the average income) but might not
         average_inputs = [
-            "My ballot choice is principle b with no constraints",
-            "I choose principle b - maximizing average income",
+            "My ballot choice is maximizing the average income with no constraints",
+            "I choose maximizing the average income - maximizing average income",
             "My choice is maximizing the average income only", 
-            "Principle b without constraints",
+            "maximizing the average income without constraints",
             "I vote for maximizing average income with no additional conditions"
         ]
         
-        # Test cases that should parse as maximizing_average_floor_constraint (principle C)
+        # Test cases that should parse as maximizing_average_floor_constraint (maximizing the average income with a floor constraint)
         floor_constraint_inputs = [
-            "My ballot choice is principle c with a floor constraint of $15000",
+            "My ballot choice is maximizing the average income with a floor constraint of $15000",
             "I choose maximizing average with floor constraint of $20,000",
-            "Principle c: maximizing average income with floor constraint $18000"
+            "maximizing the average income with a floor constraint: maximizing average income with floor constraint $18000"
         ]
         
-        # Test cases that should parse as maximizing_average_range_constraint (principle D)  
+        # Test cases that should parse as maximizing_average_range_constraint (maximizing the average income with a range constraint)  
         range_constraint_inputs = [
-            "My ballot choice is principle d with range constraint of $25000",
+            "My ballot choice is maximizing the average income with a range constraint of $25000",
             "I choose maximizing average with range constraint of $30,000",
-            "Principle d: maximizing average income with range constraint $22000"
+            "maximizing the average income with a range constraint: maximizing average income with range constraint $22000"
         ]
         
-        await self._test_category("Floor Income (Principle A)", floor_inputs, JusticePrinciple.MAXIMIZING_FLOOR)
-        await self._test_category("Average Income (Principle B)", average_inputs, JusticePrinciple.MAXIMIZING_AVERAGE)  
-        await self._test_category("Average with Floor Constraint (Principle C)", floor_constraint_inputs, JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT)
-        await self._test_category("Average with Range Constraint (Principle D)", range_constraint_inputs, JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT)
+        await self._test_category("Floor Income (maximizing the floor income)", floor_inputs, JusticePrinciple.MAXIMIZING_FLOOR)
+        await self._test_category("Average Income (maximizing the average income)", average_inputs, JusticePrinciple.MAXIMIZING_AVERAGE)  
+        await self._test_category("Average with Floor Constraint (maximizing the average income with a floor constraint)", floor_constraint_inputs, JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT)
+        await self._test_category("Average with Range Constraint (maximizing the average income with a range constraint)", range_constraint_inputs, JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT)
         
     async def _test_category(self, category_name: str, inputs: list, expected_principle: JusticePrinciple):
         """Test a category of inputs."""
@@ -247,10 +247,10 @@ class TestParsingVulnerabilities(unittest.TestCase):
         
         # Problematic test cases that have caused issues
         test_cases = [
-            ("principle a with no additional constraints", "maximizing_floor"),
-            ("My ballot choice is principle a with no constraints", "maximizing_floor"),  
+            ("maximizing the floor income with no additional constraints", "maximizing_floor"),
+            ("My ballot choice is maximizing the floor income with no constraints", "maximizing_floor"),  
             ("I choose maximizing the floor income with no constraints", "maximizing_floor"),
-            ("principle c with a floor constraint of $15000", "maximizing_average_floor_constraint"),
+            ("maximizing the average income with a floor constraint with a floor constraint of $15000", "maximizing_average_floor_constraint"),
             ("maximizing average with floor constraint of $20000", "maximizing_average_floor_constraint"),
         ]
         
@@ -270,13 +270,13 @@ class TestParsingVulnerabilities(unittest.TestCase):
     async def test_constraint_amount_extraction_vulnerabilities(self):
         """Test constraint amount extraction for potential vulnerabilities."""
         constraint_test_cases = [
-            ("principle c with floor constraint of $10", 10),
-            ("principle c with floor constraint of $13,000", 13000),
+            ("maximizing the average income with a floor constraint of $10", 10),
+            ("maximizing the average income with a floor constraint of $13,000", 13000),
             ("maximizing average with floor constraint of $25000", 25000),
-            ("principle d with range constraint of $30,000", 30000),
+            ("maximizing the average income with a range constraint of $30,000", 30000),
             # Edge cases that might cause parsing issues
-            ("principle c with floor constraint of 5000", 5000),  # No dollar sign
-            ("principle c with floor constraint of $5,000.00", 5000),  # Decimal
+            ("maximizing the average income with a floor constraint with floor constraint of 5000", 5000),  # No dollar sign
+            ("maximizing the average income with a floor constraint of $5,000.00", 5000),  # Decimal
         ]
         
         for test_input, expected_amount in constraint_test_cases:

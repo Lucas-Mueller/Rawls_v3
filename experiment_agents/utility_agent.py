@@ -352,6 +352,11 @@ class UtilityAgent:
             r"\bNEED\s+MORE\b",
             r"\bHOLD\s+ON\b",
             r"\bI\s+DISAGREE\b",
+            # Chinese disagreement patterns
+            r"不，我不同意",
+            r"不同意",
+            r"不，不",
+            r"我不同意",
         ]
 
         # Domain phrases that must NOT flip agreement
@@ -363,23 +368,33 @@ class UtilityAgent:
 
         has_agree = any(tok in normalized for tok in agreement_tokens)
 
-        # If text mentions "NO" but only in domain exceptions, do not treat as refusal
-        mentions_no = " NO" in f" {normalized}" or normalized.startswith("NO")
+        # Check for refusal patterns (English "NO" and Chinese "不")
+        mentions_refusal = (" NO" in f" {normalized}" or normalized.startswith("NO") or 
+                          "不" in text)  # Check original text for Chinese characters
         only_domain_no = False
-        if mentions_no:
+        if mentions_refusal:
+            # Check if it's only domain exceptions and not explicit refusal
             only_domain_no = any(re.search(p, normalized) for p in domain_exceptions) and not any(
-                re.search(rx, normalized) for rx in refusal_regexes
+                re.search(rx, text) for rx in refusal_regexes  # Check against original text for Chinese
             )
 
         # Immediate decision: clear agreement without explicit refusal
-        if has_agree and (not mentions_no or only_domain_no):
+        if has_agree and (not mentions_refusal or only_domain_no):
             logger.info("Direct agreement detected (decisive tokens, no explicit refusal)")
             return True
 
-        # Check explicit refusal
-        if any(re.search(rx, normalized) for rx in refusal_regexes):
-            logger.info("Direct refusal detected via explicit patterns")
-            return False
+        # Check explicit refusal - use appropriate text for each pattern
+        for rx in refusal_regexes:
+            # Chinese patterns should be checked against original text
+            if any(chinese_char in rx for chinese_char in ['不', '我', '同意']):
+                if re.search(rx, text):
+                    logger.info(f"Direct refusal detected via Chinese pattern: {rx}")
+                    return False
+            # English patterns against normalized text
+            else:
+                if re.search(rx, normalized):
+                    logger.info(f"Direct refusal detected via English pattern: {rx}")
+                    return False
 
         # If ambiguous (e.g., both agree tokens and some non-exception NO), defer to LLM fallback
         language_manager = get_language_manager()
@@ -396,106 +411,74 @@ class UtilityAgent:
     
     
     async def detect_vote_intention_enhanced(self, statement: str) -> Optional[str]:
-        """Enhanced vote detection with robust pattern matching and semantic fallback."""
+        """
+        Enhanced vote detection using LLM-first approach for natural language understanding.
+        Detects when participants want to trigger formal voting in discussions.
+        """
         await self.async_init()
 
-        # First: Direct pattern matching for explicit vote phrases and natural decision language
-        vote_indicators = [
-            # English explicit voting phrases
-            r"\bi propose we vote\b",
+        # PRIMARY: LLM-based vote intention detection
+        try:
+            # Specialized prompt for vote intention detection
+            vote_detection_prompt = f"""
+Analyze this statement to determine if the speaker is making a DEFINITIVE PROPOSAL to start voting or decision-making RIGHT NOW:
+
+Statement: "{statement}"
+
+VOTE_INTENTION examples (definitive proposals):
+- "Let's vote" (direct command)
+- "I propose we vote" (explicit proposal)  
+- "Time to vote" (decisive timing)
+- "Should we vote?" (seeking immediate agreement)
+- "Voting is the next step" (clear progression to action)
+- "Time for the vote" (clear timing signal)
+
+NOT VOTE_INTENTION examples (possibilities, conditionals, uncertainties):
+- "Maybe we should vote" (uncertainty - maybe)
+- "We could vote now" (possibility - could)
+- "Voting would be good" (conditional - would)
+- "When should we vote?" (timing question)
+- "What do you think about voting?" (opinion question)
+- "Let's think about voting" (discussion, not action)
+
+Critical distinction: Only detect DEFINITIVE PROPOSALS for immediate action, not possibilities or discussions about voting.
+
+If this is a definitive proposal to start voting NOW, respond with:
+VOTE_INTENTION_DETECTED
+
+If this expresses possibility, uncertainty, or is asking questions about voting, respond with:
+NO_VOTE_INTENTION
+
+Response:"""
+
+            result = await Runner.run(self.parser_agent, vote_detection_prompt)
+            response = result.final_output.strip()
+            
+            if "VOTE_INTENTION_DETECTED" in response:
+                logger.info(f"Vote intention detected via LLM analysis: {statement}")
+                return statement
+            else:
+                logger.info(f"No vote intention detected via LLM: {statement}")
+                
+        except Exception as e:
+            logger.warning(f"LLM vote detection failed: {e}")
+        
+        # FALLBACK: Simple patterns for obvious cases only
+        obvious_vote_patterns = [
             r"\blet'?s vote\b",
-            r"\bcall for a vote\b",
-            r"\btime to vote\b",
+            r"\btime to vote\b", 
+            r"\bi propose we vote\b",
             r"\bready to vote\b",
-            r"\bwe should vote\b",
-            r"\bproceed with.*vote\b",
-            r"\bconduct.*vote\b",
-            r"\bformal.*vote\b",
-            r"\bvote:?\s*i\b",  # "VOTE: I formally propose..."
-            r"\bvoting request\b",
-            
-            # Chinese explicit voting phrases (from prompts)
-            r"我们投票吧",
-            r"我认为我们应该投票",
-            r"让我们对此投票",
-            r"准备投票",
-            r"我提议投票",
-            r"投票时间",
-            r"开始投票",
-            r"进行投票",
-            
-            # Natural decision/consensus language (Chinese)
-            r"我们需要做决定",
-            r"让我们达成共识",
-            r"我们都同意.*我们可以确定",
-            r"大家都同意.*我们选择",
-            r"达成一致.*确定",
-            r"我们确定.*这个原则",
-            r"最终确定.*原则",
-            r"我们的选择是",
-            
-            # Natural decision language (English)  
-            r"\bwe need to decide\b",
-            r"\blet'?s finalize\b",
-            r"\bwe all agree.*let'?s confirm\b",
-            r"\bready to decide\b",
-            r"\bmake our final decision\b"
-        ]
-
-        # Exclude patterns that are NOT vote proposals
-        exclusion_patterns = [
-            r"\bshould we vote\?",                 # Questions
-            r"\bwhat.*think",                      # What do you think?
-            r"\bi'?m not sure",                    # Uncertainty
-            r"\bneed more(\s+discussion)?\b",      # Need more discussion
-            r"\bmore discussion\b",
-            r"\blet me think\b",                   # Thinking statements
-            r"\bi think we need\b",                # Need more discussion
-            r"\bbefore (we )?moving to a vote\b",  # Hedged meta mentions
-            r"\bbefore (we )?vote\b",
-            r"\bnot\s+ready(\s+to\s+vote)?\b",
-            r"\bnot\s+yet\b",
-            r"\bwait\b|\bhold on\b",
-            r"\blater\b",
-            r"\bprefer to discuss\b|\bneed to discuss\b",
+            r"\bcall for a vote\b",
         ]
         
-        statement_lower = statement.lower()
-        
-        # Check for exclusion patterns first
-        for pattern in exclusion_patterns:
+        statement_lower = statement.lower().strip()
+        for pattern in obvious_vote_patterns:
             if re.search(pattern, statement_lower):
-                logger.info(f"Vote NOT detected due to exclusion pattern: {pattern}")
-                return None
+                logger.info(f"Vote detected via obvious pattern: {pattern}")
+                return statement
         
-        # Check for explicit vote indicators
-        for pattern in vote_indicators:
-            if re.search(pattern, statement_lower):
-                logger.info(f"Vote detected via direct pattern: {pattern}")
-                return statement  # Direct pattern match found
-        
-        # Fallback: LLM-based semantic analysis (stricter acceptance)
-        language_manager = get_language_manager()
-        detection_prompt = language_manager.get(
-            "prompts.utility_vote_detection_enhanced",
-            statement=statement
-        )
-
-        result = await Runner.run(self.parser_agent, detection_prompt)
-        response = result.final_output.strip().upper()
-
-        # Accept only explicit detection tokens; avoid overly broad matches like "YES" or "VOTING"
-        voting_indicators = [
-            "VOTING_INTENT_DETECTED",
-            "VOTE_DETECTED",
-            "VOTE DETECTED",
-            "EXPLICIT_VOTE_INTENT",
-        ]
-        if any(indicator in response for indicator in voting_indicators):
-            logger.info(f"Vote detected via LLM analysis: {response}")
-            return statement
-
-        logger.info(f"No vote detected. LLM response: {response}")
+        # No vote intention detected
         return None
     
     async def re_prompt_for_constraint(self, participant_name: str, choice: PrincipleChoice) -> str:
@@ -823,7 +806,7 @@ class UtilityAgent:
                 logger.warning(f"Missing required fields in JSON response: {parsed_json}")
                 return None
             
-            # Validate principle value - support both full names and letters
+            # Validate principle value - support full names only (NO LETTERS)
             principle_input = parsed_json['principle'].lower().strip()
             
             # Direct validation for canonical names (no mapping needed)
@@ -839,11 +822,7 @@ class UtilityAgent:
             else:
                 # Map variations and legacy letters to canonical names
                 principle_variations = {
-                    # Legacy letters (backward compatibility)
-                    'a': 'maximizing_floor',
-                    'b': 'maximizing_average', 
-                    'c': 'maximizing_average_floor_constraint',
-                    'd': 'maximizing_average_range_constraint',
+                    # Full principle names only - NO LETTERS SUPPORTED
                     
                     # Common variations
                     'maximizing_floor_income': 'maximizing_floor',
@@ -1049,7 +1028,7 @@ class UtilityAgent:
     async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
         """
         Detect preference statements in participant responses for SIMPLE MODE only.
-        This method is re-enabled specifically for simple mode consensus detection.
+        Uses LLM-first approach for better natural language understanding.
         
         Args:
             statement: The participant's statement to analyze
@@ -1059,67 +1038,58 @@ class UtilityAgent:
         """
         await self.async_init()
         
-        # Enhanced preference detection patterns
-        preference_patterns = [
-            r'\bmy\s+preference\s+is\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
-            r'\bi\s+prefer\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
-            r'\bi\s+choose\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
-            r'\bi\s+support\s+([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
-            r'\bpreference:\s*([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?',
-            r'\bchoice:\s*([a-d]|principle\s+[a-d]|maximizing[^.]*?)(?:\s+with\s+(?:a\s+)?(?:floor|range)\s+constraint\s+of\s+\$?([0-9,]+))?'
-        ]
-        
-        statement_lower = statement.lower().strip()
-        
-        # Try pattern matching first
-        for pattern in preference_patterns:
-            matches = re.findall(pattern, statement_lower)
-            if matches:
-                match = matches[0]
-                principle_text = match[0] if isinstance(match, tuple) else match
-                constraint_amount = None
-                
-                if isinstance(match, tuple) and len(match) > 1 and match[1]:
-                    try:
-                        constraint_amount = int(match[1].replace(',', ''))
-                    except (ValueError, AttributeError):
-                        pass
-                
-                # Map principle text to JusticePrinciple
-                principle = await self._extract_principle_from_text(principle_text)
-                if principle:
-                    return PrincipleChoice(
-                        principle=principle,
-                        constraint_amount=constraint_amount,
-                        certainty=CertaintyLevel.NO_OPINION,  # Default certainty
-                        reasoning="Preference detected via pattern matching"
-                    )
-        
-        # Fallback to LLM-based detection if patterns fail
+        # PRIMARY: LLM-based detection for natural language understanding
         try:
             language_manager = get_language_manager()
-            detection_prompt = language_manager.get(
-                "prompts.utility_preference_detection",
-                statement=statement
-            )
             
-            result = await Runner.run(self.parser_agent, detection_prompt)
-            response = result.final_output.strip().upper()
+            # Enhanced prompt for preference detection with constraint extraction
+            enhanced_prompt = f"""
+Analyze this statement for preference expressions about justice principles:
+
+Statement: "{statement}"
+
+Detect preference for these EXACT principles (FULL NAMES ONLY):
+- "maximizing floor" or "maximizing floor income" = Maximizing the floor income
+- "maximizing average" or "maximizing average income" = Maximizing the average income
+- "floor constraint" or "minimum income" = Maximizing average with floor constraint  
+- "range constraint" or "income gap" = Maximizing average with range constraint
+
+CRITICAL: 
+- If it mentions "floor constraint" or "minimum income", identify as floor constraint principle
+- If it mentions "range constraint" or "income gap", identify as range constraint principle
+- Focus on full principle names and natural language descriptions
+
+Examples:
+- "My choice is maximizing average" → PREFERENCE_DETECTED: maximizing_average
+- "I prefer floor constraint with $18,500" → PREFERENCE_DETECTED: maximizing_average_floor_constraint $18,500
+- "Preference: range constraint" → PREFERENCE_DETECTED: maximizing_average_range_constraint
+- "I support maximizing floor income" → PREFERENCE_DETECTED: maximizing_floor
+
+If clear preference detected, respond with:
+PREFERENCE_DETECTED: [full_principle_name] [amount if any]
+
+If no clear preference, respond with:
+NO_PREFERENCE_DETECTED
+
+Response:"""
+
+            result = await Runner.run(self.parser_agent, enhanced_prompt)
+            response = result.final_output.strip()
             
             if "PREFERENCE_DETECTED:" in response:
-                # Parse the LLM response to extract principle choice
+                # Parse the LLM response
                 preference_text = response.split("PREFERENCE_DETECTED:")[1].strip()
-                principle = await self._extract_principle_from_text(preference_text)
+                
+                # Extract principle using unified method
+                principle = self._map_identifier_to_principle(preference_text)
+                if not principle:
+                    principle = await self._extract_principle_from_text(preference_text)
                 
                 if principle:
-                    # Extract constraint amount if present
-                    constraint_match = re.search(r'\$?([0-9,]+)', preference_text)
-                    constraint_amount = None
-                    if constraint_match:
-                        try:
-                            constraint_amount = int(constraint_match.group(1).replace(',', ''))
-                        except ValueError:
-                            pass
+                    # Extract constraint amount using unified method
+                    constraint_amount = self._extract_constraint_amount_flexible(preference_text)
+                    if not constraint_amount:
+                        constraint_amount = self._extract_constraint_amount_flexible(statement)
                     
                     return PrincipleChoice(
                         principle=principle,
@@ -1127,32 +1097,52 @@ class UtilityAgent:
                         certainty=CertaintyLevel.NO_OPINION,
                         reasoning="Preference detected via LLM analysis"
                     )
-            
-            return None
-            
+        
         except Exception as e:
             logger.warning(f"LLM preference detection failed: {e}")
-            return None
+        
+        # FALLBACK: Full-name patterns only - NO LETTER SUPPORT
+        full_name_patterns = [
+            (r'\b(?:maximizing|maximize)\s+(?:the\s+)?floor(?:\s+income)?\b', 'maximizing_floor'),
+            (r'\b(?:maximizing|maximize)\s+(?:the\s+)?average(?:\s+income)?\b', 'maximizing_average'),
+            (r'\bfloor\s+constraint\b', 'maximizing_average_floor_constraint'),
+            (r'\brange\s+constraint\b', 'maximizing_average_range_constraint'),
+            (r'\bminimum\s+income\b', 'maximizing_average_floor_constraint'),
+            (r'\bincome\s+gap\b', 'maximizing_average_range_constraint'),
+        ]
+        
+        statement_lower = statement.lower().strip()
+        for pattern, principle_name in full_name_patterns:
+            match = re.search(pattern, statement_lower)
+            if match:
+                principle = self._map_identifier_to_principle(principle_name)
+                if principle:
+                    constraint_amount = self._extract_constraint_amount_flexible(statement)
+                    return PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=constraint_amount,
+                        certainty=CertaintyLevel.NO_OPINION,
+                        reasoning="Preference detected via simple pattern matching"
+                    )
+        
+        # No preference detected
+        return None
     
     def _map_identifier_to_principle(self, identifier: str) -> Optional[JusticePrinciple]:
-        """Map principle identifier (a, b, c, d, principle a, etc.) to JusticePrinciple."""
+        """Map principle identifier to JusticePrinciple. Supports full names and legacy letters."""
         identifier = identifier.lower().strip()
         
         # Remove common prefixes
         identifier = re.sub(r'^(principle|principio|原则)\s*', '', identifier)
         
         mapping = {
-            # Letter-based identifiers
-            'a': JusticePrinciple.MAXIMIZING_FLOOR,
-            'b': JusticePrinciple.MAXIMIZING_AVERAGE,
-            'c': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-            'd': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
-            
-            # English full names
+            # English full names ONLY - NO LETTERS SUPPORTED
             'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing_floor_income': JusticePrinciple.MAXIMIZING_FLOOR,
             'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
             'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            'floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             
             # Chinese principle names
             '最大化最低收入': JusticePrinciple.MAXIMIZING_FLOOR,
@@ -1176,7 +1166,7 @@ class UtilityAgent:
         """
         principle_text = principle_text.lower().strip()
         
-        # First try the letter-based mapping (still useful for simple cases)
+        # Try full-name mapping only - NO LETTERS SUPPORTED
         mapped_principle = self._map_identifier_to_principle(principle_text)
         if mapped_principle:
             return mapped_principle
@@ -1196,26 +1186,32 @@ class UtilityAgent:
         Flexible constraint amount extraction supporting various formats:
         14,000 | 14.000 | 14000 | $14000 | $ 14000 | 14k | etc.
         """
-        # Multiple patterns for flexible amount parsing
+        # Skip negative numbers entirely
+        if '-' in statement:
+            return None
+            
+        # Multiple patterns for flexible amount parsing including space separators
         amount_patterns = [
-            r'\$\s*(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?)',  # $14,000 or $14.000 or $ 14000
-            r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:dollars?|\$)',  # 14,000 dollars or 14000$
+            r'\$\s*(\d{1,6}(?:[.,\s]\d{3})*)',  # $14,000 or $14000 or $15 000
+            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:dollars?|\$)',  # 14,000 dollars or 14000$ or 15 000$
             r'(\d{1,2})\s*k(?:\s|$|\.)',  # 14k
-            r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:thousand)',  # 14 thousand
-            r'(\d{1,3}(?:[.,]\d{3})*)(?!\s*[%])',  # Plain numbers (avoid percentages)
+            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:thousand)',  # 14 thousand or 15 000 thousand
+            r'(\d{3,6})(?!\s*[%])',  # Plain numbers 3-6 digits (avoid percentages)
         ]
         
         for pattern in amount_patterns:
             matches = re.findall(pattern, statement, re.IGNORECASE)
             for match in matches:
                 try:
-                    # Normalize the amount string
-                    amount_str = match.replace(',', '').replace('.', '')
-                    
-                    # Special handling for different decimal separators
-                    if '.' in match and len(match.split('.')[-1]) <= 3:
-                        # If there's a dot with 3 or fewer digits after, treat as thousands separator
-                        amount_str = match.replace('.', '')
+                    # Handle thousand separators: commas, dots (European), spaces
+                    if (',' in match or 
+                        ('.' in match and len(match.split('.')[-1]) == 3) or
+                        ' ' in match):
+                        # Has thousand separators: 15,000 or 15.000 or 15 000
+                        amount_str = match.replace(',', '').replace('.', '').replace(' ', '')
+                    else:
+                        # Plain number: 15000 - no processing needed
+                        amount_str = match.replace(',', '').replace('.', '').replace(' ', '')
                     
                     amount = float(amount_str)
                     

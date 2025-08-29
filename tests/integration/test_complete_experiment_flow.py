@@ -45,10 +45,10 @@ class TestCompleteExperimentFlow:
                 "initial_ranking": ["1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: sure"],
                 "post_explanation_ranking": ["1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure"],
                 "principle_applications": [
-                    "I choose principle a (maximizing the floor). I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
-                    "I choose principle a (maximizing the floor). I am very sure about this choice.",
-                    "I choose principle a (maximizing the floor). I am sure about this choice."
+                    "I choose maximizing the floor income (maximizing the floor). I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
+                    "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice.",
+                    "I choose maximizing the floor income (maximizing the floor). I am sure about this choice."
                 ],
                 "final_ranking": ["1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure"],
                 "discussion_statements": [
@@ -60,10 +60,10 @@ class TestCompleteExperimentFlow:
                 "initial_ranking": ["1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: sure"],
                 "post_explanation_ranking": ["1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: sure"],
                 "principle_applications": [
-                    "I choose principle b (maximizing the average). I am sure about this choice.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
-                    "I choose principle b (maximizing the average). I am very sure about this choice.",
-                    "I choose principle b (maximizing the average). I am sure about this choice."
+                    "I choose maximizing the average income (maximizing the average). I am sure about this choice.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
+                    "I choose maximizing the average income (maximizing the average). I am very sure about this choice.",
+                    "I choose maximizing the average income (maximizing the average). I am sure about this choice."
                 ],
                 "final_ranking": ["1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: very_sure"],
                 "discussion_statements": [
@@ -324,10 +324,10 @@ class TestCompleteExperimentFlow:
                 "initial_ranking": ["1. Maximizing average with floor constraint, 2. Maximizing the floor income, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: sure"],
                 "post_explanation_ranking": ["1. Maximizing average with floor constraint, 2. Maximizing the floor income, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure"],
                 "principle_applications": [
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $14,000. I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice."
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $14,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice."
                 ],
                 "final_ranking": ["1. Maximizing average with floor constraint, 2. Maximizing the floor income, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure"],
                 "discussion_statements": [
@@ -339,10 +339,10 @@ class TestCompleteExperimentFlow:
                 "initial_ranking": ["1. Maximizing average with range constraint, 2. Maximizing average income, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: sure"],
                 "post_explanation_ranking": ["1. Maximizing average with floor constraint, 2. Maximizing average with range constraint, 3. Maximizing average income, 4. Maximizing the floor income. Overall certainty: sure"],
                 "principle_applications": [
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice."
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice."
                 ],
                 "final_ranking": ["1. Maximizing average with floor constraint, 2. Maximizing average with range constraint, 3. Maximizing average income, 4. Maximizing the floor income. Overall certainty: very_sure"],
                 "discussion_statements": [
@@ -368,7 +368,7 @@ class TestCompleteExperimentFlow:
                 try:
                     mock_result.final_output = next(response_iter)
                 except StopIteration:
-                    mock_result.final_output = "I choose principle c with constraint $15,000"
+                    mock_result.final_output = "I choose maximizing the average income with a floor constraint with constraint $15,000"
                 return mock_result
             
             mock_runner.side_effect = mock_agent_response

@@ -178,6 +178,10 @@ knowledge_base
 .pypirc
 
 .claude
+
+CLAUDE.MD
+GEMINI.MD
+AGENTS.MD
  
 # Cursor  
 #  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to 

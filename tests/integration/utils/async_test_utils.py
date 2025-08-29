@@ -304,22 +304,22 @@ class TestDataGenerators:
         """Generate principle choice responses based on preference."""
         preferences = {
             "floor": [
-                "I choose principle a (maximizing the floor). I am sure about this choice.",
-                "I choose principle a (maximizing the floor). I am very sure about this choice.",
-                "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
-                "I choose principle a (maximizing the floor). I am very sure about this choice."
+                "I choose maximizing the floor income (maximizing the floor). I am sure about this choice.",
+                "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice.",
+                "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
+                "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice."
             ],
             "average": [
-                "I choose principle b (maximizing the average). I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am very sure about this choice.",
-                "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am very sure about this choice."
+                "I choose maximizing the average income (maximizing the average). I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am very sure about this choice.",
+                "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am very sure about this choice."
             ],
             "mixed": [
-                "I choose principle a (maximizing the floor). I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am sure about this choice.",
-                "I choose principle c (maximizing average with floor constraint) with a constraint of $16,000. I am unsure about this choice.",
-                "I choose principle d (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice."
+                "I choose maximizing the floor income (maximizing the floor). I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am sure about this choice.",
+                "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $16,000. I am unsure about this choice.",
+                "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice."
             ]
         }
         

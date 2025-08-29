@@ -112,7 +112,7 @@ class TestAgentCentricLogger:
         self.logger.log_demonstration_round(
             "Agent1",
             1,  # round_number
-            "Principle A",
+            "maximizing the floor income",
             "High",
             25.0,  # payoff
             "B: $20, C: $22, D: $18",
@@ -126,7 +126,7 @@ class TestAgentCentricLogger:
         
         demo = demonstrations[0]
         assert demo.number_demonstration_round == 1
-        assert demo.choice_principal == "Principle A"
+        assert demo.choice_principal == "maximizing the floor income"
         assert demo.class_put_in == "High"
         assert demo.payoff_received == 25.0
         assert demo.payoff_if_other_principles == "B: $20, C: $22, D: $18"
@@ -143,9 +143,9 @@ class TestAgentCentricLogger:
             1,  # round_number
             1,  # speaking_order
             "I think we should choose A",
-            "I propose principle A",
+            "I propose maximizing the floor income",
             "Yes",  # initiate_vote
-            "Principle A",
+            "maximizing the floor income",
             "Memory before discussion",
             100.0
         )
@@ -157,9 +157,9 @@ class TestAgentCentricLogger:
         assert round_log.number_discussion_round == 1
         assert round_log.speaking_order == 1
         assert round_log.internal_reasoning == "I think we should choose A"
-        assert round_log.public_message == "I propose principle A"
+        assert round_log.public_message == "I propose maximizing the floor income"
         assert round_log.initiate_vote == "Yes"
-        assert round_log.favored_principle == "Principle A"
+        assert round_log.favored_principle == "maximizing the floor income"
         assert round_log.memory_coming_in_this_round == "Memory before discussion"
         assert round_log.bank_balance == 100.0
     
@@ -167,19 +167,19 @@ class TestAgentCentricLogger:
         """Test setting general experiment information."""
         self.logger.set_general_information(
             consensus_reached=True,
-            consensus_principle="Principle A",
+            consensus_principle="maximizing the floor income",
             max_rounds_phase_2=5,
             rounds_conducted_phase_2=3,
             public_conversation="Agent1: I like A\nAgent2: Me too",
-            final_vote_results={"Agent1": "Principle A", "Agent2": "Principle A"},
+            final_vote_results={"Agent1": "maximizing the floor income", "Agent2": "maximizing the floor income"},
             config_file="test_config.yaml"
         )
         
         assert self.logger.general_info is not None
         assert self.logger.general_info.consensus_reached == True
-        assert self.logger.general_info.consensus_principle == "Principle A"
+        assert self.logger.general_info.consensus_principle == "maximizing the floor income"
         assert "Agent1: I like A" in self.logger.general_info.public_conversation_phase_2
-        assert self.logger.general_info.final_vote_results["Agent1"] == "Principle A"
+        assert self.logger.general_info.final_vote_results["Agent1"] == "maximizing the floor income"
         assert self.logger.general_info.config_file_used == "test_config.yaml"
     
     def test_generate_target_state(self):
@@ -204,7 +204,7 @@ class TestAgentCentricLogger:
         
         self.logger.set_general_information(
             consensus_reached=True,
-            consensus_principle="Principle A",
+            consensus_principle="maximizing the floor income",
             max_rounds_phase_2=10,
             rounds_conducted_phase_2=5,
             public_conversation="Test conversation",

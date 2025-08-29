@@ -75,158 +75,157 @@ class Phase1Manager:
     ) -> Phase1Results:
         """Run complete Phase 1 for a single participant."""
         
-        with trace(f"Phase 1: {participant.name}", trace_id=f"trace_phase1_{participant.name.lower().replace(' ', '_')}"):
-            # 1.1 Initial Principle Ranking
-            context.round_number = 0
-            initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
+        # 1.1 Initial Principle Ranking
+        context.round_number = 0
+        initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
+        
+        # Log initial ranking with current memory state
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_initial_ranking(
+                participant.name,
+                initial_ranking,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style
+        )
+        context = update_participant_context(context, new_round=context.round_number)
+        
+        # 1.2 Detailed Explanation (informational only)
+        context.round_number = -1  # Special round for learning
+        explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config, config)
+        
+        # Log detailed explanation
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_detailed_explanation(
+                participant.name,
+                explanation_content,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style
+        )
+        context = update_participant_context(context, new_round=context.round_number)
+        
+        # 1.2b Post-explanation ranking
+        context.round_number = 0  # Reset to 0 for second ranking
+        post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
+            participant, context, agent_config
+        )
+        
+        # Log post-explanation ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_post_explanation_ranking(
+                participant.name,
+                post_explanation_ranking,
+                memory_before,
+                balance_before
+            )
+        
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style
+        )
+        context = update_participant_context(context, new_round=context.round_number)
+        
+        # 1.3 Repeated Application (4 rounds)
+        application_results = []
+        for round_num in range(1, 5):
+            context.round_number = round_num
             
-            # Log initial ranking with current memory state
+            # Capture state before round
+            balance_before = context.bank_balance
+            memory_before = context.memory
+            
+            # Generate or retrieve distribution for this round
+            if config.original_values_mode and config.original_values_mode.enabled:
+                # Use predefined distributions from original values mode
+                # Round 1 -> Situation A, Round 2 -> Situation B, etc.
+                distribution_set = DistributionGenerator.get_original_values_distribution(round_num)
+            else:
+                # Generate dynamic distribution (existing behavior)
+                distribution_set = DistributionGenerator.generate_dynamic_distribution(
+                    config.distribution_range_phase1
+                )
+            
+            result, round_content = await self._step_1_3_principle_application(
+                participant, context, distribution_set, round_num, agent_config, config
+            )
+            application_results.append(result)
+            
+            # Log demonstration round
             if logger:
-                memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-                logger.log_initial_ranking(
+                alternative_payoffs = MemoryStateCapture.format_alternative_payoffs(result.alternative_earnings)
+                logger.log_demonstration_round(
                     participant.name,
-                    initial_ranking,
+                    round_num,
+                    result.principle_choice.principle.value,
+                    result.assigned_income_class.value,
+                    result.earnings,
+                    alternative_payoffs,
                     memory_before,
-                    balance_before
+                    balance_before,
+                    balance_before + result.earnings
                 )
             
             # Update memory with agent using new guidance style
-            memory_guidance_style = config.memory_guidance_style if config else "narrative"
+            from config import ExperimentConfiguration
+            config_obj: ExperimentConfiguration = config
+            memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
+            
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, ranking_content, memory_guidance_style=memory_guidance_style
-            )
-            context = update_participant_context(context, new_round=context.round_number)
-            
-            # 1.2 Detailed Explanation (informational only)
-            context.round_number = -1  # Special round for learning
-            explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config, config)
-            
-            # Log detailed explanation
-            if logger:
-                memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-                logger.log_detailed_explanation(
-                    participant.name,
-                    explanation_content,
-                    memory_before,
-                    balance_before
-                )
-            
-            # Update memory with agent using new guidance style
-            memory_guidance_style = config.memory_guidance_style if config else "narrative"
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, explanation_content, memory_guidance_style=memory_guidance_style
-            )
-            context = update_participant_context(context, new_round=context.round_number)
-            
-            # 1.2b Post-explanation ranking
-            context.round_number = 0  # Reset to 0 for second ranking
-            post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
-                participant, context, agent_config
+                participant, context, round_content, memory_guidance_style=memory_guidance_style
             )
             
-            # Log post-explanation ranking
-            if logger:
-                memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-                logger.log_post_explanation_ranking(
-                    participant.name,
-                    post_explanation_ranking,
-                    memory_before,
-                    balance_before
-                )
-            
-            # Update memory with agent using new guidance style
-            memory_guidance_style = config.memory_guidance_style if config else "narrative"
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style
+            # Update context with earnings
+            context = update_participant_context(
+                context,
+                balance_change=result.earnings,
+                new_round=round_num
             )
-            context = update_participant_context(context, new_round=context.round_number)
-            
-            # 1.3 Repeated Application (4 rounds)
-            application_results = []
-            for round_num in range(1, 5):
-                context.round_number = round_num
-                
-                # Capture state before round
-                balance_before = context.bank_balance
-                memory_before = context.memory
-                
-                # Generate or retrieve distribution for this round
-                if config.original_values_mode and config.original_values_mode.enabled:
-                    # Use predefined distributions from original values mode
-                    # Round 1 -> Situation A, Round 2 -> Situation B, etc.
-                    distribution_set = DistributionGenerator.get_original_values_distribution(round_num)
-                else:
-                    # Generate dynamic distribution (existing behavior)
-                    distribution_set = DistributionGenerator.generate_dynamic_distribution(
-                        config.distribution_range_phase1
-                    )
-                
-                result, round_content = await self._step_1_3_principle_application(
-                    participant, context, distribution_set, round_num, agent_config, config
-                )
-                application_results.append(result)
-                
-                # Log demonstration round
-                if logger:
-                    alternative_payoffs = MemoryStateCapture.format_alternative_payoffs(result.alternative_earnings)
-                    logger.log_demonstration_round(
-                        participant.name,
-                        round_num,
-                        result.principle_choice.principle.value,
-                        result.assigned_income_class.value,
-                        result.earnings,
-                        alternative_payoffs,
-                        memory_before,
-                        balance_before,
-                        balance_before + result.earnings
-                    )
-                
-                # Update memory with agent using new guidance style
-                from config import ExperimentConfiguration
-                config_obj: ExperimentConfiguration = config
-                memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
-                
-                context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, round_content, memory_guidance_style=memory_guidance_style
-                )
-                
-                # Update context with earnings
-                context = update_participant_context(
-                    context,
-                    balance_change=result.earnings,
-                    new_round=round_num
-                )
-            
-            # 1.4 Final Ranking
-            context.round_number = 5
-            final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
-            
-            # Log final ranking
-            if logger:
-                memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
-                logger.log_final_ranking(
-                    participant.name,
-                    final_ranking,
-                    memory_before,
-                    balance_before
-                )
-            
-            # Update memory with agent using new guidance style
-            memory_guidance_style = config.memory_guidance_style if config else "narrative"
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, final_content, memory_guidance_style=memory_guidance_style
+        
+        # 1.4 Final Ranking
+        context.round_number = 5
+        final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
+        
+        # Log final ranking
+        if logger:
+            memory_before, balance_before = MemoryStateCapture.capture_pre_round_state(context.memory, context.bank_balance)
+            logger.log_final_ranking(
+                participant.name,
+                final_ranking,
+                memory_before,
+                balance_before
             )
-            context = update_participant_context(context, new_round=context.round_number)
-            
-            return Phase1Results(
-                participant_name=participant.name,
-                initial_ranking=initial_ranking,
-                post_explanation_ranking=post_explanation_ranking,
-                application_results=application_results,
-                final_ranking=final_ranking,
-                total_earnings=context.bank_balance,
-                final_memory_state=context.memory  # CRITICAL: Preserve memory for Phase 2
-            )
+        
+        # Update memory with agent using new guidance style
+        memory_guidance_style = config.memory_guidance_style if config else "narrative"
+        context.memory = await MemoryManager.prompt_agent_for_memory_update(
+            participant, context, final_content, memory_guidance_style=memory_guidance_style
+        )
+        context = update_participant_context(context, new_round=context.round_number)
+        
+        return Phase1Results(
+            participant_name=participant.name,
+            initial_ranking=initial_ranking,
+            post_explanation_ranking=post_explanation_ranking,
+            application_results=application_results,
+            final_ranking=final_ranking,
+            total_earnings=context.bank_balance,
+            final_memory_state=context.memory  # CRITICAL: Preserve memory for Phase 2
+        )
     
     async def _step_1_1_initial_ranking(
         self, 

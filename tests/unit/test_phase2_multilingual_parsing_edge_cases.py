@@ -110,12 +110,12 @@ class TestMultilingualParsingEdgeCases(unittest.TestCase):
         domain_exception_cases = [
             # Should be treated as agreement despite containing "NO"
             {
-                "statement": "YES, principle a with NO CONSTRAINTS",
+                "statement": "YES, maximizing the floor income with NO CONSTRAINTS",
                 "expected": True,
                 "description": "NO CONSTRAINTS should not trigger disagreement"
             },
             {
-                "statement": "I agree with principle b, NO additional constraint needed",
+                "statement": "I agree with maximizing the average income, NO additional constraint needed",
                 "expected": True, 
                 "description": "NO additional constraint should not trigger disagreement"
             },

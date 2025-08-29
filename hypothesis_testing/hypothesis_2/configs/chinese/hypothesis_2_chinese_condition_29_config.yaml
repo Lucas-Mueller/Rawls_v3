@@ -1,0 +1,42 @@
+language: English
+seed: 989487579
+agents:
+- name: Agent_0
+  personality: You are a college student
+  model: qwen/qwen3-30b-a3b-instruct-2507
+  temperature: 1.0349270793800027
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_1
+  personality: You are a college student
+  model: qwen/qwen3-30b-a3b-instruct-2507
+  temperature: 1.0349270793800027
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_2
+  personality: You are a college student
+  model: qwen/qwen3-235b-a22b-thinking-2507
+  temperature: 1.0349270793800027
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_3
+  personality: You are a college student
+  model: deepseek/deepseek-chat-v3.1
+  temperature: 1.0349270793800027
+  memory_character_limit: 25000
+  reasoning_enabled: true
+utility_agent_model: google/gemini-2.5-flash
+utility_agent_temperature: 0.0
+phase2_rounds: 10
+distribution_range_phase2:
+- 2
+- 6
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.1
+  medium: 0.5
+  medium_low: 0.25
+  low: 0.1
+original_values_mode:
+  enabled: true
+voting_detection_mode: complex

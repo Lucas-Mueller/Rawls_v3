@@ -261,7 +261,7 @@ class TestLoggingIntegration:
         # Add demonstration rounds
         for i in range(1, 5):
             self.logger.log_demonstration_round(
-                "TestAgent1", i, "Principle A", "High", 25.0, 
+                "TestAgent1", i, "maximizing the floor income", "High", 25.0, 
                 "B: $20, C: $22, D: $18", f"Round {i} memory", 
                 (i-1)*25.0, i*25.0
             )
@@ -272,7 +272,7 @@ class TestLoggingIntegration:
         
         # Add discussion rounds
         self.logger.log_discussion_round(
-            "TestAgent1", 1, 1, "I think A is best", "Let's choose A", "No", "Principle A",
+            "TestAgent1", 1, 1, "I think A is best", "Let's choose A", "No", "maximizing the floor income",
             "Discussion memory", 100.0
         )
         
@@ -283,11 +283,11 @@ class TestLoggingIntegration:
         
         self.logger.set_general_information(
             consensus_reached=True,
-            consensus_principle="Principle A",
+            consensus_principle="maximizing the floor income",
             max_rounds_phase_2=10,
             rounds_conducted_phase_2=8, 
             public_conversation="TestAgent1: Let's choose A\nTestAgent2: I agree",
-            final_vote_results={"TestAgent1": "Principle A", "TestAgent2": "Principle A"},
+            final_vote_results={"TestAgent1": "maximizing the floor income", "TestAgent2": "maximizing the floor income"},
             config_file="default_config.yaml"
         )
         

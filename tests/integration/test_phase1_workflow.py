@@ -159,7 +159,7 @@ class TestPhase1Workflow(unittest.TestCase):
         try:
             # Test cases: (statement, should_detect_vote)
             test_cases = [
-                ("I propose we vote on principle A", True),
+                ("I propose we vote on maximizing the floor income", True),
                 ("Let's vote now", True),
                 ("Ready to vote", True),
                 ("Time to vote", True),
@@ -168,7 +168,7 @@ class TestPhase1Workflow(unittest.TestCase):
                 ("I think we need more discussion", False),
                 ("What do you think about this principle?", False),
                 ("I'm not sure yet", False),
-                ("VOTE: I formally propose principle C", True),
+                ("VOTE: I formally propose maximizing the average income with a floor constraint", True),
                 ("Let me think about this more", False),
             ]
             

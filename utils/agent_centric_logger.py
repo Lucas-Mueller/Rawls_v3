@@ -439,10 +439,20 @@ class MemoryStateCapture:
     # Removed extract_confidence_from_response - no longer needed with structured data
     
     @staticmethod
-    def extract_vote_intention(response_text: str) -> str:
-        """Extract vote initiation intention from response."""
+    async def extract_vote_intention(response_text: str, utility_agent=None) -> str:
+        """Extract vote initiation intention from response using enhanced detection."""
+        if utility_agent is not None:
+            # Use the enhanced vote detection from utility agent for consistency
+            try:
+                vote_result = await utility_agent.detect_vote_intention_enhanced(response_text)
+                return "Yes" if vote_result is not None else "No"
+            except Exception as e:
+                # Fallback to basic detection if utility agent fails
+                import logging
+                logging.getLogger(__name__).warning(f"Enhanced vote detection failed, using fallback: {e}")
+        
+        # Fallback: Basic pattern matching (preserved for backward compatibility)
         response_lower = response_text.lower()
-        # Only detect when explicit voting language is present; avoid domain phrases like "no constraints"
         vote_positive = [
             "i propose we vote",
             "let's vote",

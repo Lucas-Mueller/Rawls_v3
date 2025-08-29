@@ -76,6 +76,7 @@ class TestPhase2QuarantineBehavior:
             participant = MagicMock(spec=ParticipantAgent)
             participant.name = f"TestAgent{i+1}"
             participant.agent = MagicMock()
+            participant.reasoning_enabled = False
             participants.append(participant)
         return participants
     

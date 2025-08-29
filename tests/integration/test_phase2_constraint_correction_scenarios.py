@@ -84,13 +84,9 @@ class TestPhase2ConstraintCorrectionScenarios:
     
     @pytest.fixture
     def mock_utility_agent(self):
-        """Create mock utility agent."""
-        utility_agent = MagicMock(spec=UtilityAgent)
-        
-        # Mock constraint correction method
-        utility_agent.re_prompt_for_constraint = AsyncMock()
-        
-        return utility_agent
+        """Create real utility agent for integration testing."""
+        # Use real utility agent for integration testing
+        return UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
     
     @pytest.fixture
     def mock_contexts(self):

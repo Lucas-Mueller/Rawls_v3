@@ -140,10 +140,10 @@ class ExperimentTestFixture:
                 "initial_ranking": ["I rank the principles as follows: 1. Maximizing the floor income (Best), 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint (Worst). Overall certainty: sure. I believe protecting the worst-off is most important."],
                 "post_explanation_ranking": ["After seeing the examples, I maintain my ranking: 1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure. The examples reinforced my belief in protecting the vulnerable."],
                 "principle_applications": [
-                    "I choose principle a (maximizing the floor). I am sure about this choice because it helps the worst-off people the most.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protection.",
-                    "I choose principle a (maximizing the floor). I am very sure about this choice after seeing how it protects vulnerable people.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice as it provides good balance."
+                    "I choose maximizing the floor income (maximizing the floor). I am sure about this choice because it helps the worst-off people the most.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protection.",
+                    "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice after seeing how it protects vulnerable people.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice as it provides good balance."
                 ],
                 "final_ranking": ["My final ranking remains: 1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure. My experience confirmed that protecting the worst-off should be the priority."],
                 "discussion_statements": [
@@ -156,10 +156,10 @@ class ExperimentTestFixture:
                 "initial_ranking": ["My ranking: 1. Maximizing average income (Best), 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income (Worst). Overall certainty: sure. Efficiency should be our primary concern."],
                 "post_explanation_ranking": ["After the explanation: 1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: sure. The examples showed how average maximization creates the most total wealth."],
                 "principle_applications": [
-                    "I choose principle b (maximizing the average). I am sure about this choice because it creates the most total wealth for society.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice as it maintains efficiency while limiting inequality.",
-                    "I choose principle b (maximizing the average). I am very sure about this choice as efficiency is paramount.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $18,000. I am sure this balances efficiency with fairness."
+                    "I choose maximizing the average income (maximizing the average). I am sure about this choice because it creates the most total wealth for society.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice as it maintains efficiency while limiting inequality.",
+                    "I choose maximizing the average income (maximizing the average). I am very sure about this choice as efficiency is paramount.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $18,000. I am sure this balances efficiency with fairness."
                 ],
                 "final_ranking": ["Final ranking: 1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: very_sure. My experience showed that efficiency creates the most benefit overall."],
                 "discussion_statements": [

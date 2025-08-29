@@ -28,7 +28,7 @@ class TestMultilingualAgentParsing(unittest.TestCase):
         set_global_language(SupportedLanguage.ENGLISH)
         
         test_cases = [
-            ("I choose principle a", "maximizing_floor"),
+            ("I choose maximizing the floor income", "maximizing_floor"),
             ("My preference is maximizing_average", "maximizing_average"),
             ("I select maximizing floor income", "maximizing_floor"),
             ("My choice is maximizing the average income", "maximizing_average"),
@@ -52,9 +52,9 @@ class TestMultilingualAgentParsing(unittest.TestCase):
         set_global_language(SupportedLanguage.SPANISH)
         
         test_cases = [
-            ("Mi elección es el principio a", "maximizing_floor"),
+            ("Mi elección es el maximización del ingreso mínimo", "maximizing_floor"),
             ("Prefiero maximizar_promedio", "maximizing_average"),
-            ("Mi elección de boleta es principio c con restricción de mínimo de $10000", "maximizing_average_floor_constraint"),
+            ("Mi elección de boleta es maximización del ingreso promedio bajo restricción de ingreso mínimo con restricción de mínimo de $10000", "maximizing_average_floor_constraint"),
             ("Elijo maximizar el ingreso promedio", "maximizing_average"),
         ]
         
@@ -75,7 +75,7 @@ class TestMultilingualAgentParsing(unittest.TestCase):
         set_global_language(SupportedLanguage.MANDARIN)
         
         test_cases = [
-            ("我选择原则a", "maximizing_floor"),
+            ("我选择最大化最低收入", "maximizing_floor"),
             ("我偏好最大化平均", "maximizing_average"),
             ("我选择最大化底线收入", "maximizing_floor"),
             ("我的选择是最大化平均收入", "maximizing_average"),
@@ -113,9 +113,9 @@ class TestMultilingualAgentParsing(unittest.TestCase):
                 
                 # Test basic parsing works
                 simple_statements = {
-                    "english": "I choose principle a",
-                    "spanish": "Mi elección es el principio a", 
-                    "mandarin": "我选择原则a"
+                    "english": "I choose maximizing the floor income",
+                    "spanish": "Mi elección es el maximización del ingreso mínimo", 
+                    "mandarin": "我选择最大化最低收入"
                 }
                 
                 statement = simple_statements[lang_string]

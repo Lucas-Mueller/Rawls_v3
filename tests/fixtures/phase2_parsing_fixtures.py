@@ -85,12 +85,12 @@ NEGATIVE_VOTE_STATEMENTS = {
 BALLOT_STATEMENTS = {
     "valid_ballots": [
         {
-            "statement": "My ballot choice is principle a",
+            "statement": "My ballot choice is maximizing floor income",
             "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
             "expected_constraint": None
         },
         {
-            "statement": "I choose principle c with floor constraint of $15,000",
+            "statement": "I choose maximizing average income with floor constraint of $15,000",
             "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             "expected_constraint": 15000
         },
@@ -107,7 +107,7 @@ BALLOT_STATEMENTS = {
     ],
     "problematic_ballots": [
         {
-            "statement": "principle a with no additional constraints",
+            "statement": "maximizing floor income with no additional constraints",
             "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
             "expected_constraint": None,
             "description": "Critical vulnerability case"
@@ -121,11 +121,147 @@ BALLOT_STATEMENTS = {
     ]
 }
 
-# Multilingual preference statements
+# Comprehensive Chinese ballot statements  
+CHINESE_BALLOT_STATEMENTS = {
+    "valid_ballots": [
+        {
+            "statement": "我选择最大化最低收入",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Full principle name"
+        },
+        {
+            "statement": "我选择最大化平均收入",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "expected_constraint": None,
+            "description": "Full average principle name"
+        },
+        {
+            "statement": "我选择在最低收入约束条件下最大化平均收入，约束条件是15000元",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "expected_constraint": 15000,
+            "description": "Full floor constraint principle with Yuan word"
+        },
+        {
+            "statement": "我选择在范围约束条件下最大化平均收入，约束为18千",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "expected_constraint": 18000,
+            "description": "Full range constraint with thousands format"
+        }
+    ],
+    "critical_vulnerability_cases": [
+        {
+            "statement": "最大化最低收入没有额外约束条件",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Chinese equivalent of critical vulnerability case"
+        },
+        {
+            "statement": "我的投票选择是最大化最低收入，没有任何约束",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Extended Chinese vulnerability case"
+        },
+        {
+            "statement": "我选择最大化最低收入，无约束条件",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Full name vulnerability case"
+        }
+    ]
+}
+
+# Comprehensive Spanish ballot statements
+SPANISH_BALLOT_STATEMENTS = {
+    "valid_ballots": [
+        {
+            "statement": "Elijo la maximización del ingreso mínimo",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Full principle name"
+        },
+        {
+            "statement": "Elijo la maximización del ingreso promedio",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "expected_constraint": None,
+            "description": "Full average principle name"
+        },
+        {
+            "statement": "Mi elección es maximización del ingreso promedio bajo restricción de ingreso mínimo con restricción de 15.000 euros",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "expected_constraint": 15000,
+            "description": "Full floor constraint principle with European format"
+        },
+        {
+            "statement": "Elijo maximización del ingreso promedio bajo restricción de rango con restricción de 18k euros",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "expected_constraint": 18000,
+            "description": "Full range constraint with k format"
+        }
+    ],
+    "critical_vulnerability_cases": [
+        {
+            "statement": "maximización del ingreso mínimo sin restricciones adicionales",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Spanish equivalent of critical vulnerability case"
+        },
+        {
+            "statement": "Mi elección de voto es maximización del ingreso mínimo sin ninguna restricción",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Extended Spanish vulnerability case"
+        },
+        {
+            "statement": "Elijo maximización del ingreso mínimo sin condiciones restrictivas",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+            "expected_constraint": None,
+            "description": "Full name Spanish vulnerability case"
+        }
+    ]
+}
+
+# Language-specific constraint amount formats
+LANGUAGE_SPECIFIC_CONSTRAINTS = {
+    "chinese": [
+        # Various Yuan formats
+        ("约束为¥15,000", 15000, "Yuan with comma separator"),
+        ("约束条件是15000元", 15000, "Yuan with Chinese character"),  
+        ("约束为¥15000", 15000, "Yuan without separator"),
+        ("约束是15千", 15000, "Chinese thousands format"),
+        ("约束条件¥18,500", 18500, "Yuan with decimal thousands"),
+        ("约束为14k", 14000, "Chinese k format"),
+        # More traditional Chinese number expressions
+        ("约束为一万五千", 15000, "Traditional Chinese number words"),
+        ("约束条件是2万", 20000, "Chinese wan (10,000) format")
+    ],
+    "spanish": [
+        # Various Euro formats  
+        ("con restricción de €15,000", 15000, "Euro with comma separator"),
+        ("restricción de 15.000 euros", 15000, "European dot separator with word"),
+        ("con restricción €15000", 15000, "Euro without separator"),
+        ("restricción de €18,500", 18500, "Euro with decimal thousands"),
+        ("con restricción de 15k euros", 15000, "Spanish k format with euros"),
+        ("restricción €14.500", 14500, "Euro European format"),
+        # Alternative Spanish formats
+        ("restricción de quince mil euros", 15000, "Spanish number words"),
+        ("con límite de €20000", 20000, "Spanish limit terminology")
+    ],
+    "english": [
+        # Standard US formats for comparison
+        ("constraint of $15,000", 15000, "US dollar with comma"),
+        ("constraint $15000", 15000, "US dollar without comma"),
+        ("with $15k constraint", 15000, "US k format"),
+        ("constraint of 15 thousand", 15000, "US number words"),
+        ("$18,500 constraint", 18500, "US decimal thousands")
+    ]
+}
+
+# Multilingual preference statements - Comprehensive coverage
 PREFERENCE_STATEMENTS = {
     "english": [
         {
-            "statement": "My preference is principle a",
+            "statement": "My preference is maximizing floor income",
             "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
         },
         {
@@ -133,9 +269,22 @@ PREFERENCE_STATEMENTS = {
             "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
         },
         {
-            "statement": "I choose principle c with $15,000 constraint", 
+            "statement": "I choose maximizing average income with floor constraint of $15,000", 
             "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             "expected_constraint": 15000
+        },
+        {
+            "statement": "I support maximizing average income with range constraint of $20,000",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "expected_constraint": 20000
+        },
+        {
+            "statement": "Preference: maximizing floor income",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
+        },
+        {
+            "statement": "Choice: maximizing average income without constraints",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
         }
     ],
     "chinese": [
@@ -144,8 +293,50 @@ PREFERENCE_STATEMENTS = {
             "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
         },
         {
+            "statement": "我的选择是最大化平均收入",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
+        },
+        {
             "statement": "我选择在最低收入约束条件下最大化平均收入",
             "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
+        },
+        {
+            "statement": "我支持在范围约束条件下最大化平均收入",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        },
+        {
+            "statement": "偏好：最大化最低收入",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
+        },
+        {
+            "statement": "选择：最大化平均收入无约束条件",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
+        }
+    ],
+    "spanish": [
+        {
+            "statement": "Mi preferencia es la maximización del ingreso mínimo",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
+        },
+        {
+            "statement": "Mi elección es la maximización del ingreso promedio",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
+        },
+        {
+            "statement": "Elijo maximización del ingreso promedio bajo restricción de ingreso mínimo",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
+        },
+        {
+            "statement": "Apoyo maximización del ingreso promedio bajo restricción de rango",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+        },
+        {
+            "statement": "Preferencia: maximización del ingreso mínimo",
+            "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
+        },
+        {
+            "statement": "Elección: maximización del ingreso promedio sin restricciones",
+            "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE
         }
     ]
 }
@@ -160,7 +351,7 @@ AGREEMENT_STATEMENTS = {
             "Agreed",
             "I'm in favor",
             "Count me in",
-            "Yes, principle a with NO CONSTRAINTS"  # Domain exception test
+            "Yes, maximizing floor income with NO CONSTRAINTS"  # Domain exception test
         ],
         "chinese": [
             "是的，我同意",
@@ -517,5 +708,8 @@ create_principle_choice = Phase2ParsingFixtures.create_principle_choice
 VOTE_POSITIVE = POSITIVE_VOTE_STATEMENTS
 VOTE_NEGATIVE = NEGATIVE_VOTE_STATEMENTS
 BALLOTS = BALLOT_STATEMENTS
+CHINESE_BALLOTS = CHINESE_BALLOT_STATEMENTS
+SPANISH_BALLOTS = SPANISH_BALLOT_STATEMENTS
+CONSTRAINTS = LANGUAGE_SPECIFIC_CONSTRAINTS
 PREFERENCES = PREFERENCE_STATEMENTS
 AGREEMENTS = AGREEMENT_STATEMENTS

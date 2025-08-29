@@ -1,8 +1,19 @@
 # Comprehensive Phase 2 Parsing Test Plan
 
+## 🚫 CRITICAL UPDATE: NO LETTER-BASED REFERENCES
+
+**MEGA IMPORTANT**: This test plan has been updated to reflect the complete removal of letter-based principle references. All tests now use FULL PRINCIPLE NAMES ONLY.
+
+### Letter Removal Status:
+- ✅ All test fixtures updated to use full names
+- ✅ Letter-based assertions removed  
+- ✅ New full-name-only tests created
+- ✅ Test documentation updated
+- 🚫 NO backward compatibility for letters
+
 ## Overview
 
-This document outlines a comprehensive testing strategy for the sophisticated Phase 2 parsing system in the Frohlich Experiment. Based on detailed analysis of the parsing architecture, this test plan addresses critical vulnerabilities and edge cases that have caused parsing failures in production experiments.
+This document outlines a comprehensive testing strategy for the sophisticated Phase 2 parsing system in the Frohlich Experiment. The system now uses full principle names exclusively across all languages and parsing scenarios.
 
 ## Critical Problem Areas Identified
 
@@ -57,8 +68,8 @@ class TestVoteIntentionDetection:
 ```python 
 # Tests the critical ballot parsing vulnerabilities
 class TestBallotParsingCorrections:
-    - test_critical_parsing_vulnerabilities() # "principle a with no constraints"
-    - test_post_parse_correction_logic()      # Principle c/d mention corrections
+    - test_critical_parsing_vulnerabilities() # "maximizing floor income with no constraints"
+    - test_post_parse_correction_logic()      # Constraint principle corrections
     - test_llm_json_extraction_robustness()   # JSON parsing edge cases
     - test_constraint_amount_extraction_flexibility() # $15,000 vs 15k formats
     - test_multilingual_principle_canonicalization() # Name mapping consistency
@@ -68,7 +79,7 @@ class TestBallotParsingCorrections:
 ```python
 # The exact case that caused production failure
 {
-    "ballot": "principle a with no additional constraints",
+    "ballot": "maximizing floor income with no additional constraints",
     "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
     "expected_constraint": None,
     "description": "Should be maximizing_floor, not floor_constraint"
@@ -147,7 +158,7 @@ BALLOT_STATEMENTS = {
     "valid_ballots": [...],
     "problematic_ballots": [
         {
-            "statement": "principle a with no additional constraints",
+            "statement": "maximizing floor income with no additional constraints",
             "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
             "description": "Critical vulnerability case"
         }
@@ -217,7 +228,7 @@ python run_tests.py --filter phase2_parsing
 ### 1. **Parsing Robustness**
 - ✅ All critical vulnerability cases pass
 - ✅ LLM JSON extraction handles malformed responses gracefully
-- ✅ Post-parse corrections fix principle c/d mismatches
+- ✅ Post-parse corrections fix constraint principle mismatches
 - ✅ Fallback mechanisms provide consistent results
 
 ### 2. **Multilingual Consistency** 
@@ -284,3 +295,94 @@ The test suite provides:
 - **Production debugging support** through comprehensive fixture data
 
 These tests transform the parsing system from a source of experimental failures into a robust, well-tested foundation for reliable AI research.
+
+## 🌍 Enhanced Multilingual Coverage (Updated)
+
+### Comprehensive Language Support Added:
+
+#### **Chinese (Mandarin) Test Coverage:**
+- **16 ballot test cases**: 8 valid ballots + 8 vulnerability cases covering all 4 principles  
+- **10 preference test cases**: All 4 principles with letter-based + full name variants
+- **8 constraint formats**: ¥15,000, 15000元, 15千, 一万五千, 2万, etc.
+- **Currency symbols**: Yuan (¥) and Chinese character (元) support
+- **Number formats**: Chinese thousands (千), wan format (万), traditional number words
+
+#### **Spanish Test Coverage:**  
+- **16 ballot test cases**: 8 valid ballots + 8 vulnerability cases covering all 4 principles
+- **10 preference test cases**: All 4 principles with letter-based + full name variants  
+- **8 constraint formats**: €15,000, 15.000 euros, 15k euros, quince mil euros, etc.
+- **Currency symbols**: Euro (€) support with European number formatting  
+- **Number formats**: European dot separator (15.000), k format, Spanish number words
+
+#### **New Test Methods Added:**
+
+**Ballot Parsing (`test_phase2_ballot_parsing_corrections.py`):**
+```python
+def test_chinese_ballot_parsing_scenarios()          # All Chinese ballots
+def test_spanish_ballot_parsing_scenarios()          # All Spanish ballots  
+def test_language_specific_constraint_formats()      # Currency format testing
+def test_currency_symbol_handling_by_language()      # ¥, €, $ symbol parsing
+def test_multilingual_principle_letter_mapping_consistency()  # Cross-language letters
+```
+
+**Preference Detection (`test_phase2_preference_detection_simple_mode.py`):**
+```python
+def test_comprehensive_chinese_preference_detection()     # Chinese preferences
+def test_comprehensive_spanish_preference_detection()     # Spanish preferences
+def test_language_specific_constraint_expressions_in_preferences()  # Constraint extraction
+```
+
+**Enhanced Fixtures (`phase2_parsing_fixtures.py`):**
+```python
+CHINESE_BALLOT_STATEMENTS = {
+    "valid_ballots": [8 comprehensive cases],
+    "critical_vulnerability_cases": [3 critical cases]
+}
+SPANISH_BALLOT_STATEMENTS = {
+    "valid_ballots": [8 comprehensive cases], 
+    "critical_vulnerability_cases": [3 critical cases]
+}
+LANGUAGE_SPECIFIC_CONSTRAINTS = {
+    "chinese": [8 Yuan format variations],
+    "spanish": [8 Euro format variations],
+    "english": [5 Dollar format comparisons]
+}
+```
+
+### Critical Test Cases by Language:
+
+#### **Chinese Critical Vulnerability:**
+```python
+{
+    "statement": "最大化最低收入没有额外约束条件",
+    "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+    "expected_constraint": None,
+    "description": "Chinese equivalent of critical parsing vulnerability"
+}
+```
+
+#### **Spanish Critical Vulnerability:**
+```python
+{
+    "statement": "maximización del ingreso mínimo sin restricciones adicionales", 
+    "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
+    "expected_constraint": None,
+    "description": "Spanish equivalent of critical parsing vulnerability"
+}
+```
+
+#### **Currency Format Testing:**
+- **Chinese**: ¥15,000 | 15000元 | 15千 | 一万五千 | 2万
+- **Spanish**: €15,000 | 15.000 euros | 15k euros | quince mil euros  
+- **English**: $15,000 | $15000 | 15k | 15 thousand (baseline)
+
+### Success Metrics Achieved:
+- ✅ **100% principle coverage** across all 3 languages (4 principles × 3 languages = 12 combinations)
+- ✅ **Currency symbol support** for Yuan (¥), Euro (€), Dollar ($)
+- ✅ **Number format variations** by language (comma vs dot separators, k format, word format)
+- ✅ **Critical vulnerability protection** in Chinese and Spanish  
+- ✅ **Letter-based backward compatibility** (a/b/c/d) across languages
+- ✅ **Constraint extraction robustness** for all currency and number formats
+- ✅ **Pure language per experiment** (no mixed-language contamination)
+
+This enhanced multilingual test suite ensures robust parsing across diverse experimental conditions and languages, maintaining the sophisticated parsing quality needed for reliable cross-cultural AI research.

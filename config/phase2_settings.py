@@ -96,6 +96,24 @@ class Phase2Settings(BaseModel):
         description="Minimum number of agents required for valid experiment"
     )
     
+    # Constraint correction settings
+    constraint_correction_enabled: bool = Field(
+        default=True,
+        description="Enable constraint correction for principles C and D"
+    )
+    constraint_correction_timeout_seconds: int = Field(
+        default=30,
+        ge=10,
+        le=120,
+        description="Timeout for constraint correction attempts"
+    )
+    max_constraint_correction_attempts: int = Field(
+        default=2,
+        ge=1,
+        le=5,
+        description="Maximum attempts for constraint correction"
+    )
+    
     # Logging settings
     log_statement_preview_length: int = Field(
         default=100,

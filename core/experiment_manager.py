@@ -161,47 +161,49 @@ class FrohlichExperimentManager:
                 # Initialize agent-centric logging
                 self.agent_logger.initialize_experiment(self.participants, self.config)
                 
-                # Phase 1: Individual familiarization (parallel)
-                logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
-                
-                try:
-                    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
-                except Exception as e:
-                    raise ExperimentLogicError(
-                        f"Phase 1 execution failed: {str(e)}",
-                        ErrorSeverity.FATAL,
-                        {
-                            "experiment_id": self.experiment_id,
-                            "phase": "phase_1",
-                            "participants_count": len(self.participants),
-                            "phase1_error": str(e)
-                        },
-                        cause=e
-                    )
-                
-                logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
-                for result in phase1_results:
-                    logger.info(f"{result.participant_name}: ${result.total_earnings:.2f} earned")
-                
-                # Phase 2: Group discussion (sequential)  
-                logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
-                
-                try:
-                    phase2_results = await self.phase2_manager.run_phase2(
-                        self.config, phase1_results, self.agent_logger
-                    )
-                except Exception as e:
-                    raise ExperimentLogicError(
-                        f"Phase 2 execution failed: {str(e)}",
-                        ErrorSeverity.FATAL,
-                        {
-                            "experiment_id": self.experiment_id,
-                            "phase": "phase_2",
-                            "phase1_completed": True,
-                            "phase2_error": str(e)
-                        },
-                        cause=e
-                    )
+                # All participant operations in single trace
+                with trace("All Participants", trace_id="trace_all_participants"):
+                    # Phase 1: Individual familiarization (parallel)
+                    logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
+                    
+                    try:
+                        phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
+                    except Exception as e:
+                        raise ExperimentLogicError(
+                            f"Phase 1 execution failed: {str(e)}",
+                            ErrorSeverity.FATAL,
+                            {
+                                "experiment_id": self.experiment_id,
+                                "phase": "phase_1",
+                                "participants_count": len(self.participants),
+                                "phase1_error": str(e)
+                            },
+                            cause=e
+                        )
+                    
+                    logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
+                    for result in phase1_results:
+                        logger.info(f"{result.participant_name}: ${result.total_earnings:.2f} earned")
+                    
+                    # Phase 2: Group discussion (sequential)  
+                    logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
+                    
+                    try:
+                        phase2_results = await self.phase2_manager.run_phase2(
+                            self.config, phase1_results, self.agent_logger
+                        )
+                    except Exception as e:
+                        raise ExperimentLogicError(
+                            f"Phase 2 execution failed: {str(e)}",
+                            ErrorSeverity.FATAL,
+                            {
+                                "experiment_id": self.experiment_id,
+                                "phase": "phase_2",
+                                "phase1_completed": True,
+                                "phase2_error": str(e)
+                            },
+                            cause=e
+                        )
                 
                 if phase2_results.discussion_result.consensus_reached:
                     # Use English principle name for system logging

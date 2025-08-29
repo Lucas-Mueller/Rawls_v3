@@ -2,11 +2,11 @@
 Unit tests for ballot parsing vulnerability fixes.
 
 This test module specifically tests the parsing improvements made to fix
-the critical issue where "principle a with no additional constraints" was
+the critical issue where "maximizing the floor income with no additional constraints" was
 incorrectly parsed as maximizing_average_floor_constraint instead of maximizing_floor.
 
 These tests ensure that the parsing system correctly handles:
-1. Letter-based principle references (principle a, b, c, d)
+1. Letter-based principle references (maximizing the floor income, b, c, d)
 2. "No constraints" language vs. actual constraint specifications
 3. Ambiguous phrasing that previously caused false matches
 4. Order of pattern matching to prevent regression
@@ -29,11 +29,11 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         """Test the specific case from experiment_results_20250827_091903.json."""
         # These are the exact phrases that caused the parsing failure
         problematic_inputs = [
-            "principle a with no additional constraints",
-            "My ballot choice is principle a with no constraints", 
-            "I choose principle a without any constraint",
+            "maximizing the floor income with no additional constraints",
+            "My ballot choice is maximizing the floor income with no constraints", 
+            "I choose maximizing the floor income without any constraint",
             "My choice is maximizing the floor income with no constraints",
-            "Principle a - maximizing floor income, no constraints needed"
+            "maximizing the floor income - maximizing floor income, no constraints needed"
         ]
         
         for input_text in problematic_inputs:
@@ -47,13 +47,13 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
     def test_letter_based_principle_detection(self):
         """Test that letter-based principle references work correctly."""
         test_cases = [
-            ("principle a", "maximizing_floor"),
+            ("maximizing the floor income", "maximizing_floor"),
             ("option a", "maximizing_floor"),
-            ("principle b", "maximizing_average"),
+            ("maximizing the average income", "maximizing_average"),
             ("option b", "maximizing_average"),
-            ("principle c", "maximizing_average_floor_constraint"),
+            ("maximizing the average income with a floor constraint", "maximizing_average_floor_constraint"),
             ("option c", "maximizing_average_floor_constraint"),
-            ("principle d", "maximizing_average_range_constraint"),
+            ("maximizing the average income with a range constraint", "maximizing_average_range_constraint"),
             ("option d", "maximizing_average_range_constraint"),
         ]
         
@@ -99,9 +99,9 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
     def test_constraint_amount_extraction(self):
         """Test that constraint amounts are correctly extracted."""
         constraint_cases = [
-            ("principle c with floor constraint of $15000", 15000),
+            ("maximizing the average income with a floor constraint of $15000", 15000),
             ("maximizing average with floor constraint of $20,000", 20000),
-            ("principle d with range constraint of 25000", 25000),
+            ("maximizing the average income with a range constraint with range constraint of 25000", 25000),
             ("average with range constraint of $30,000", 30000)
         ]
         
@@ -117,11 +117,11 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         # Letter patterns should take priority over text patterns
         mixed_cases = [
             # Even with confusing text, letter patterns should win
-            ("I choose principle a but also like maximizing average", "maximizing_floor"),
-            ("My choice is principle b even though floor income matters", "maximizing_average"),
+            ("I choose maximizing the floor income but also like maximizing average", "maximizing_floor"),
+            ("My choice is maximizing the average income even though floor income matters", "maximizing_average"),
             # Constraint patterns should only match with actual constraints
-            ("principle c with floor constraint of $15000", "maximizing_average_floor_constraint"),  
-            ("principle c with no floor constraints", "maximizing_average_floor_constraint"),  # Letter pattern wins
+            ("maximizing the average income with a floor constraint of $15000", "maximizing_average_floor_constraint"),  
+            ("maximizing the average income with a floor constraint with no floor constraints", "maximizing_average_floor_constraint"),  # Letter pattern wins
         ]
         
         for input_text, expected_principle in mixed_cases:
@@ -191,11 +191,11 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
     def test_spanish_ballot_parsing(self):
         """Test Spanish ballot parsing functionality."""
         spanish_cases = [
-            ("Mi elección de boleta es principio c con restricción de mínimo de $10000", 
+            ("Mi elección de boleta es maximización del ingreso promedio bajo restricción de ingreso mínimo con restricción de mínimo de $10000", 
              "maximizing_average_floor_constraint"),
-            ("principio c con restricción de mínimo de $15000", 
+            ("maximización del ingreso promedio bajo restricción de ingreso mínimo con restricción de mínimo de $15000", 
              "maximizing_average_floor_constraint"),
-            ("Mi elección es el principio a", 
+            ("Mi elección es el maximización del ingreso mínimo", 
              "maximizing_floor"),
             ("Prefiero maximizar promedio", 
              "maximizing_average"),
@@ -213,10 +213,10 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         """Test comprehensive constraint amount extraction scenarios."""
         constraint_cases = [
             # Various formatting styles
-            ("My ballot choice is principle c with a floor constraint of $10", 10),
-            ("My ballot choice is principle c with a floor constraint of $13,000", 13000),
-            ("principle c with a floor constraint of $100", 100),
-            ("principle d with a range constraint of $20000", 20000),
+            ("My ballot choice is maximizing the average income with a floor constraint of $10", 10),
+            ("My ballot choice is maximizing the average income with a floor constraint of $13,000", 13000),
+            ("maximizing the average income with a floor constraint with a floor constraint of $100", 100),
+            ("maximizing the average income with a range constraint with a range constraint of $20000", 20000),
             ("maximizing average with floor constraint of $25000", 25000),
             # Complex phrasing
             ("My ballot choice is Maximizing the average income with a floor constraint with a floor constraint of $13,000", 13000),
@@ -245,9 +245,9 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
         ]
         
         ballot_phrases = [
-            "principle a with no additional constraints",
+            "maximizing the floor income with no additional constraints",
             "maximizing floor income with no constraints", 
-            "my choice is principle a without constraints",
+            "my choice is maximizing the floor income without constraints",
             "I choose maximizing the floor income with zero constraints"
         ]
         

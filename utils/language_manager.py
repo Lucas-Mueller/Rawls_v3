@@ -145,8 +145,9 @@ class LanguageManager:
                     format_kwargs["principle_list_detailed"] = self.get_principle_list_formatted("detailed")
                 if "{principle_list_simple}" in current:
                     format_kwargs["principle_list_simple"] = self.get_principle_list_formatted("simple")  
+                # DEPRECATED - principle_list_letters template is deprecated, use names_only
                 if "{principle_list_letters}" in current:
-                    format_kwargs["principle_list_letters"] = self.get_principle_list_formatted("letters_only")
+                    format_kwargs["principle_list_letters"] = self.get_principle_list_formatted("names_only")
             
             # Format template if kwargs provided or if templates were substituted
             if format_kwargs:
@@ -394,7 +395,7 @@ class LanguageManager:
         Get formatted list of justice principles.
         
         Args:
-            list_type: Type of list formatting ("detailed", "simple", "letters_only")
+            list_type: Type of list formatting ("detailed", "simple", "names_only", "letters_only" [deprecated])
             
         Returns:
             Formatted list of justice principles
@@ -407,18 +408,22 @@ class LanguageManager:
 4. **{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average income while keeping the gap between richest and poorest within a specified limit"""
             
         elif list_type == "simple":
-            # For application choices
-            return f"""(a) **{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income
-(b) **{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
-(c) **{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average while ensuring minimum income
-(d) **{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average while limiting income gap"""
+            # For application choices - NO LETTERS
+            return f"""**{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income
+**{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
+**{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average while ensuring minimum income (specify amount)
+**{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average while limiting income gap (specify amount)"""
             
         elif list_type == "letters_only":
-            # For voting prompts
-            return f"""(a) {self.get("common.principle_names.maximizing_floor").lower()}
-(b) {self.get("common.principle_names.maximizing_average").lower()}  
-(c) {self.get("common.principle_names.maximizing_average_floor_constraint").lower()}
-(d) {self.get("common.principle_names.maximizing_average_range_constraint").lower()}"""
+            # DEPRECATED - For backward compatibility only, use names_only instead
+            return self.get_principle_list_formatted("names_only")
+            
+        elif list_type == "names_only":
+            # For voting prompts - just names, no letters
+            return f"""{self.get("common.principle_names.maximizing_floor")}
+{self.get("common.principle_names.maximizing_average")}  
+{self.get("common.principle_names.maximizing_average_floor_constraint")}
+{self.get("common.principle_names.maximizing_average_range_constraint")}"""
             
         else:
             raise ValueError(f"Unknown list_type: {list_type}")

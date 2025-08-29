@@ -1,5 +1,7 @@
 language: "English" 
 
+seed: 420
+
 agents:
   - name: "Alice"
     personality: "You are an american college student."
@@ -21,7 +23,7 @@ voting_detection_mode: "complex"
 utility_agent_model: "google/gemini-2.5-flash"
 utility_agent_temperature: 0.0
 
-phase2_rounds: 6
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)

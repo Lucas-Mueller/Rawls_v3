@@ -3,13 +3,13 @@ Comprehensive unit tests for Phase 2 ballot parsing with post-parse corrections.
 
 Tests the sophisticated ballot parsing logic that handles:
 1. LLM JSON parsing with fallback mechanisms
-2. Post-parse correction logic for principle c/d mentions
+2. Post-parse correction logic for constraint principle mentions
 3. Constraint amount extraction and validation
 4. Multilingual principle canonicalization
 5. Ballot consensus checking with detailed disagreement analysis
 
 Critical parsing vulnerabilities tested:
-- "principle a with no additional constraints" -> maximizing_floor (not floor_constraint)
+- "maximizing floor income with no additional constraints" -> maximizing_floor (not floor_constraint)
 - LLM JSON extraction brittleness 
 - Constraint correction scenarios
 - Principle name canonicalization across languages
@@ -23,6 +23,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from experiment_agents.utility_agent import UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
 from utils.error_handling import ValidationError
+from tests.fixtures.phase2_parsing_fixtures import (
+    CHINESE_BALLOTS, SPANISH_BALLOTS, CONSTRAINTS
+)
 
 
 class TestBallotParsingCorrections(unittest.TestCase):
@@ -43,19 +46,19 @@ class TestBallotParsingCorrections(unittest.TestCase):
         # The exact case from experiment_results_20250827_091903.json
         critical_cases = [
             {
-                "ballot": "principle a with no additional constraints",
+                "ballot": "maximizing floor income with no additional constraints",
                 "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
                 "expected_constraint": None,
-                "description": "principle a + no constraints should be maximizing_floor"
+                "description": "maximizing floor + no constraints should be maximizing_floor"
             },
             {
-                "ballot": "My ballot choice is principle a with no constraints", 
+                "ballot": "My ballot choice is maximizing floor income with no constraints", 
                 "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
                 "expected_constraint": None,
                 "description": "Extended form should still be maximizing_floor"
             },
             {
-                "ballot": "I choose principle a without any constraint",
+                "ballot": "I choose maximizing floor income without any constraint",
                 "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR,
                 "expected_constraint": None,
                 "description": "Alternative phrasing should be maximizing_floor"
@@ -73,20 +76,20 @@ class TestBallotParsingCorrections(unittest.TestCase):
                                f"Wrong constraint for '{case['ballot']}': got {result.constraint_amount}")
     
     def test_post_parse_correction_logic(self):
-        """Test post-parse correction for principle c/d mentions."""
+        """Test post-parse correction for constraint principle mentions."""
         
         correction_cases = [
             {
-                "ballot": "I vote for principle c with $15000 constraint",
+                "ballot": "I vote for floor constraint with $15000 minimum income",
                 "raw_principle": "maximizing_average",  # What LLM might parse incorrectly
-                "mentions": "principle c",
+                "mentions": "floor constraint",
                 "expected_corrected": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
                 "expected_constraint": 15000
             },
             {
-                "ballot": "My choice is principle d with range constraint of $20000",
+                "ballot": "My choice is range constraint with income gap of $20000",
                 "raw_principle": "maximizing_average", 
-                "mentions": "principle d",
+                "mentions": "range constraint",
                 "expected_corrected": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
                 "expected_constraint": 20000
             },
@@ -314,14 +317,136 @@ class TestBallotParsingCorrections(unittest.TestCase):
                 self.assertEqual(is_valid, expected_valid,
                                f"Validation failed for {principle.value} with constraint {constraint}")
     
+    def test_chinese_ballot_parsing_scenarios(self):
+        """Test comprehensive Chinese ballot parsing scenarios."""
+        
+        # Test all Chinese valid ballots
+        for ballot_case in CHINESE_BALLOTS["valid_ballots"]:
+            with self.subTest(description=ballot_case["description"]):
+                result = asyncio.run(self._parse_ballot(ballot_case["statement"]))
+                
+                self.assertIsNotNone(result, f"Failed to parse Chinese ballot: '{ballot_case['statement']}'")
+                self.assertEqual(result.principle, ballot_case["expected_principle"],
+                               f"Wrong principle for Chinese ballot '{ballot_case['statement']}': got {result.principle.value}")
+                self.assertEqual(result.constraint_amount, ballot_case["expected_constraint"],
+                               f"Wrong constraint for Chinese ballot '{ballot_case['statement']}': got {result.constraint_amount}")
+        
+        # Test Chinese critical vulnerability cases
+        for vulnerability_case in CHINESE_BALLOTS["critical_vulnerability_cases"]:
+            with self.subTest(description=vulnerability_case["description"]):
+                result = asyncio.run(self._parse_ballot(vulnerability_case["statement"]))
+                
+                self.assertIsNotNone(result, f"Failed to parse Chinese vulnerability case: '{vulnerability_case['statement']}'")
+                self.assertEqual(result.principle, vulnerability_case["expected_principle"],
+                               f"Chinese vulnerability case failed: expected {vulnerability_case['expected_principle'].value}, got {result.principle.value}")
+                self.assertEqual(result.constraint_amount, vulnerability_case["expected_constraint"],
+                               f"Chinese vulnerability case constraint failed: expected {vulnerability_case['expected_constraint']}, got {result.constraint_amount}")
+    
+    def test_spanish_ballot_parsing_scenarios(self):
+        """Test comprehensive Spanish ballot parsing scenarios."""
+        
+        # Test all Spanish valid ballots
+        for ballot_case in SPANISH_BALLOTS["valid_ballots"]:
+            with self.subTest(description=ballot_case["description"]):
+                result = asyncio.run(self._parse_ballot(ballot_case["statement"]))
+                
+                self.assertIsNotNone(result, f"Failed to parse Spanish ballot: '{ballot_case['statement']}'")
+                self.assertEqual(result.principle, ballot_case["expected_principle"],
+                               f"Wrong principle for Spanish ballot '{ballot_case['statement']}': got {result.principle.value}")
+                self.assertEqual(result.constraint_amount, ballot_case["expected_constraint"],
+                               f"Wrong constraint for Spanish ballot '{ballot_case['statement']}': got {result.constraint_amount}")
+        
+        # Test Spanish critical vulnerability cases
+        for vulnerability_case in SPANISH_BALLOTS["critical_vulnerability_cases"]:
+            with self.subTest(description=vulnerability_case["description"]):
+                result = asyncio.run(self._parse_ballot(vulnerability_case["statement"]))
+                
+                self.assertIsNotNone(result, f"Failed to parse Spanish vulnerability case: '{vulnerability_case['statement']}'")
+                self.assertEqual(result.principle, vulnerability_case["expected_principle"],
+                               f"Spanish vulnerability case failed: expected {vulnerability_case['expected_principle'].value}, got {result.principle.value}")
+                self.assertEqual(result.constraint_amount, vulnerability_case["expected_constraint"],
+                               f"Spanish vulnerability case constraint failed: expected {vulnerability_case['expected_constraint']}, got {result.constraint_amount}")
+    
+    def test_language_specific_constraint_formats(self):
+        """Test constraint amount parsing in different languages and formats."""
+        
+        # Test Chinese constraint formats
+        for constraint_text, expected_amount, description in CONSTRAINTS["chinese"]:
+            with self.subTest(description=f"Chinese: {description}"):
+                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                
+                if extracted_amount is not None:  # Some formats might not be supported yet
+                    self.assertEqual(extracted_amount, expected_amount,
+                                   f"Chinese constraint parsing failed for '{constraint_text}': got {extracted_amount}, expected {expected_amount}")
+        
+        # Test Spanish constraint formats
+        for constraint_text, expected_amount, description in CONSTRAINTS["spanish"]:
+            with self.subTest(description=f"Spanish: {description}"):
+                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                
+                if extracted_amount is not None:  # Some formats might not be supported yet
+                    self.assertEqual(extracted_amount, expected_amount,
+                                   f"Spanish constraint parsing failed for '{constraint_text}': got {extracted_amount}, expected {expected_amount}")
+        
+        # Test English constraint formats for comparison
+        for constraint_text, expected_amount, description in CONSTRAINTS["english"]:
+            with self.subTest(description=f"English: {description}"):
+                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                
+                self.assertEqual(extracted_amount, expected_amount,
+                               f"English constraint parsing failed for '{constraint_text}': got {extracted_amount}, expected {expected_amount}")
+    
+    def test_currency_symbol_handling_by_language(self):
+        """Test that currency symbols are properly handled by language context."""
+        
+        currency_test_cases = [
+            # Chinese - Yuan symbol
+            {
+                "text": "约束为¥15,000",
+                "expected_amount": 15000,
+                "language": "Chinese",
+                "symbol": "¥"
+            },
+            # Spanish - Euro symbol
+            {
+                "text": "restricción de €15,000",
+                "expected_amount": 15000,
+                "language": "Spanish", 
+                "symbol": "€"
+            },
+            # English - Dollar symbol
+            {
+                "text": "constraint of $15,000",
+                "expected_amount": 15000,
+                "language": "English",
+                "symbol": "$"
+            },
+            # Spanish - European number format
+            {
+                "text": "restricción €15.000",
+                "expected_amount": 15000,
+                "language": "Spanish (European format)",
+                "symbol": "€"
+            }
+        ]
+        
+        for case in currency_test_cases:
+            with self.subTest(language=case["language"], symbol=case["symbol"]):
+                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(case["text"])
+                
+                if extracted_amount is not None:
+                    self.assertEqual(extracted_amount, case["expected_amount"],
+                                   f"{case['language']} currency parsing failed for '{case['text']}'")
+    
+    
     def test_fallback_parsing_mechanisms(self):
         """Test fallback parsing when primary methods fail."""
         
         # Test cases where LLM parsing might fail and fallbacks are needed
         fallback_cases = [
-            "principle a",  # Simple case
+            "maximizing the floor income",  # Simple case
             "I choose maximizing floor income",  # Natural language
-            "My ballot is for principle c with $15000",  # Letter + constraint
+            "My ballot is for maximizing the average income with a floor constraint of $15000",  # Letter + constraint
         ]
         
         for ballot in fallback_cases:

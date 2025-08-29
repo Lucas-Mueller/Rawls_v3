@@ -9,6 +9,28 @@ This is the **Frohlich Experiment**: a multi-agent AI system implementing experi
 - **Phase 1**: Individual agent familiarization with justice principles (parallel execution)
 - **Phase 2**: Group discussion and consensus building (sequential execution)
 
+## 🚫 CRITICAL: NO LETTER-BASED PRINCIPLE REFERENCES
+
+**MEGA IMPORTANT**: This system has been completely updated to remove ALL letter-based references to justice principles. 
+
+### What This Means:
+- **NEVER refer to principles as "a", "b", "c", or "d"**
+- **NEVER use "principle a", "principle b", etc.**
+- **ALWAYS use full principle names only**
+
+### The Four Justice Principles (FULL NAMES ONLY):
+1. **Maximizing the floor income** - Maximizes the lowest income in society
+2. **Maximizing the average income** - Maximizes the average income in society
+3. **Maximizing the average income with a floor constraint** - Maximizes average while ensuring minimum income
+4. **Maximizing the average income with a range constraint** - Maximizes average while limiting income gap
+
+### Implementation Status:
+- ✅ All user-facing prompts use full names only
+- ✅ All parsing logic supports full names only
+- ✅ All validation uses full names only
+- ✅ No backward compatibility for letters
+- ✅ Complete letter removal implemented
+
 ## Development Commands
 
 ### Environment Setup

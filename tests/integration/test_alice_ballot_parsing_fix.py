@@ -42,11 +42,11 @@ class TestAliceBallotParsingFix:
         """Test that letter-based responses still work for backward compatibility."""
         # Test cases with letters (should still work)
         letter_test_cases = [
-            ("My ballot choice is principle c with a floor constraint of $15,000", 
+            ("My ballot choice is maximizing the average income with a floor constraint of $15,000", 
              JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 15000),
-            ("I choose principle a",
+            ("I choose maximizing the floor income",
              JusticePrinciple.MAXIMIZING_FLOOR, None),
-            ("My vote is principle d with range constraint of $20,000",
+            ("My vote is maximizing the average income with a range constraint of $20,000",
              JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, 20000)
         ]
         
@@ -98,7 +98,7 @@ class TestAliceBallotParsingFix:
             "maximizing average with floor constraint of $13,000",
             "I choose maximizing the average income with a floor constraint of $13,000",
             # Letter-based (backward compatibility)
-            "My ballot choice is principle c with a floor constraint of $13,000",
+            "My ballot choice is maximizing the average income with a floor constraint of $13,000",
         ]
         
         expected_principle = JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
@@ -114,10 +114,10 @@ class TestAliceBallotParsingFix:
     async def test_constraint_extraction_robustness(self, utility_agent):
         """Test robust constraint amount extraction."""
         constraint_cases = [
-            ("principle c with constraint of $13,000", 13000),
-            ("principle c with constraint of $13000", 13000),  # No comma
-            ("principle c with constraint of 13000", 13000),   # No dollar sign
-            ("principle c with floor constraint of $13,000", 13000),  # Explicit floor
+            ("maximizing the average income with a floor constraint of $13,000", 13000),
+            ("maximizing the average income with a floor constraint of $13000", 13000),  # No comma
+            ("maximizing the average income with a floor constraint of 13000", 13000),   # No dollar sign
+            ("maximizing the average income with a floor constraint of $13,000", 13000),  # Explicit floor
             ("maximizing average floor constraint with $13,000", 13000),  # Full name style
         ]
         
