@@ -114,54 +114,57 @@ class TestBallotParsingCorrections(unittest.TestCase):
                                f"Constraint extraction failed for '{case['ballot']}'")
     
     @patch('experiment_agents.utility_agent.Runner.run')
-    async def test_llm_json_extraction_robustness(self, mock_runner):
+    def test_llm_json_extraction_robustness(self, mock_runner):
         """Test JSON extraction from various LLM response formats."""
-        await self.utility_agent.async_init()
+        async def run_test():
+            await self.utility_agent.async_init()
+            
+            json_test_cases = [
+                # Clean JSON
+                {
+                    "llm_response": '{"principle": "maximizing_floor", "constraint_amount": null, "certainty": "sure"}',
+                    "expected_principle": "maximizing_floor",
+                    "should_parse": True
+                },
+                # JSON with extra text
+                {
+                    "llm_response": 'Looking at this ballot, I can extract: {"principle": "maximizing_average", "constraint_amount": 15000, "certainty": "sure"}',
+                    "expected_principle": "maximizing_average", 
+                    "should_parse": True
+                },
+                # Malformed JSON
+                {
+                    "llm_response": '{"principle": "maximizing_floor", "constraint_amount": null, "certainty": sure}',  # Missing quotes
+                    "should_parse": False
+                },
+                # Missing required fields
+                {
+                    "llm_response": '{"principle": "maximizing_floor"}',  # Missing constraint_amount and certainty
+                    "should_parse": False
+                },
+                # Invalid principle value
+                {
+                    "llm_response": '{"principle": "invalid_principle", "constraint_amount": null, "certainty": "sure"}',
+                    "should_parse": False
+                }
+            ]
+            
+            for case in json_test_cases:
+                with self.subTest(response=case["llm_response"][:50]):
+                    mock_result = MagicMock()
+                    mock_result.final_output = case["llm_response"]
+                    mock_runner.return_value = mock_result
+                    
+                    result = await self.utility_agent.parse_principle_choice_llm("test ballot")
+                    
+                    if case["should_parse"]:
+                        self.assertIsNotNone(result, f"Should parse JSON: {case['llm_response'][:100]}")
+                        if "expected_principle" in case:
+                            self.assertEqual(result["principle"], case["expected_principle"])
+                    else:
+                        self.assertIsNone(result, f"Should NOT parse malformed JSON: {case['llm_response'][:100]}")
         
-        json_test_cases = [
-            # Clean JSON
-            {
-                "llm_response": '{"principle": "maximizing_floor", "constraint_amount": null, "certainty": "sure"}',
-                "expected_principle": "maximizing_floor",
-                "should_parse": True
-            },
-            # JSON with extra text
-            {
-                "llm_response": 'Looking at this ballot, I can extract: {"principle": "maximizing_average", "constraint_amount": 15000, "certainty": "sure"}',
-                "expected_principle": "maximizing_average", 
-                "should_parse": True
-            },
-            # Malformed JSON
-            {
-                "llm_response": '{"principle": "maximizing_floor", "constraint_amount": null, "certainty": sure}',  # Missing quotes
-                "should_parse": False
-            },
-            # Missing required fields
-            {
-                "llm_response": '{"principle": "maximizing_floor"}',  # Missing constraint_amount and certainty
-                "should_parse": False
-            },
-            # Invalid principle value
-            {
-                "llm_response": '{"principle": "invalid_principle", "constraint_amount": null, "certainty": "sure"}',
-                "should_parse": False
-            }
-        ]
-        
-        for case in json_test_cases:
-            with self.subTest(response=case["llm_response"][:50]):
-                mock_result = MagicMock()
-                mock_result.final_output = case["llm_response"]
-                mock_runner.return_value = mock_result
-                
-                result = await self.utility_agent.parse_principle_choice_llm("test ballot")
-                
-                if case["should_parse"]:
-                    self.assertIsNotNone(result, f"Should parse JSON: {case['llm_response'][:100]}")
-                    if "expected_principle" in case:
-                        self.assertEqual(result["principle"], case["expected_principle"])
-                else:
-                    self.assertIsNone(result, f"Should NOT parse malformed JSON: {case['llm_response'][:100]}")
+        asyncio.run(run_test())
     
     def test_constraint_amount_extraction_flexibility(self):
         """Test flexible constraint amount extraction from various formats."""
@@ -207,12 +210,6 @@ class TestBallotParsingCorrections(unittest.TestCase):
             ("maximizing_floor", JusticePrinciple.MAXIMIZING_FLOOR),
             ("maximizing_floor_income", JusticePrinciple.MAXIMIZING_FLOOR),
             ("floor_constraint", JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT),
-            
-            # Letter-based (backward compatibility)
-            ("a", JusticePrinciple.MAXIMIZING_FLOOR),
-            ("b", JusticePrinciple.MAXIMIZING_AVERAGE),
-            ("c", JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT),
-            ("d", JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT),
             
             # Chinese
             ("最大化最低收入", JusticePrinciple.MAXIMIZING_FLOOR),

@@ -138,8 +138,7 @@ OPENROUTER_API_KEY=your_openrouter_key_here
 # View experiment results and logs
 ls experiment_results_*.json
 
-# Results include trace URLs for debugging agent interactions at:
-# https://platform.openai.com/traces
+# View experiment results and logs
 ```
 
 ## System Architecture
@@ -150,7 +149,6 @@ The system follows a modular, service-oriented architecture with the following *
 - **Async/Await**: Full async implementation for efficient parallel execution in Phase 1
 - **Agent-Managed Memory**: Agents maintain configurable memory (default 50,000 characters) that they update themselves after each step
 - **Validation System**: Built-in validation for agent responses, especially constraint specifications
-- **Tracing Integration**: Uses OpenAI Agents SDK tracing with one trace per experiment run
 
 ### Core Components
 
@@ -173,7 +171,7 @@ The system follows a modular, service-oriented architecture with the following *
 - **`main.py`**: Single entry point with command-line argument parsing
 - **`config/`**: YAML-based configuration system with Pydantic models
 - **`core/`**: Experiment orchestration and phase management
-  - `experiment_manager.py`: Main coordinator with OpenAI SDK tracing
+  - `experiment_manager.py`: Main coordinator for experiment orchestration
   - `phase1_manager.py`, `phase2_manager.py`: Phase-specific execution logic
   - `distribution_generator.py`: Dynamic income distribution creation
   - `original_values_data.py`: Predefined distribution situations for experimental consistency
@@ -225,7 +223,7 @@ original_values_mode:
 ### Experiment Flow
 1. **Phase 1** (parallel): Individual agents familiarize with justice principles through 4 rounds of applications
 2. **Phase 2** (sequential): Group discussion with random speaking order, voting mechanism, and consensus building  
-3. **Results**: Complete JSON output with agent-centric logging and OpenAI trace links
+3. **Results**: Complete JSON output with agent-centric logging
 
 ### Agent Configuration
 Each participant agent has configurable:
@@ -252,6 +250,5 @@ Each participant agent has configurable:
   - `OPENROUTER_API_KEY`: Retrieved automatically for OpenRouter models (those containing "/") - set only if needed
 - **Mixed Configurations**: Experiments can use different model providers for different agents
 
-### Output & Tracing
+### Output
 - Results saved as timestamped JSON files: `experiment_results_YYYYMMDD_HHMMSS.json`
-- OpenAI tracing enabled: view at `https://platform.openai.com/traces`

@@ -15,6 +15,8 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
+# OpenAI Agents SDK tracing is enabled for experiment tracking
+
 from config import ExperimentConfiguration
 from core.experiment_manager import FrohlichExperimentManager
 from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
@@ -119,7 +121,15 @@ async def main():
         print("\n" + summary)
         
         logger.info(f"\nDetailed results saved to: {output_path}")
-        logger.info(f"View traces at: https://platform.openai.com/traces")
+        
+        # Display trace link if available
+        trace_id = experiment_manager.get_trace_id()
+        if trace_id:
+            trace_url = f"https://platform.openai.com/traces/{trace_id}"
+            print(f"\n🔗 Trace: {trace_url}")
+            logger.info(f"Trace available at: {trace_url}")
+        else:
+            logger.info("No trace ID available for this experiment")
         
     except KeyboardInterrupt:
         logger.info("Experiment interrupted by user")

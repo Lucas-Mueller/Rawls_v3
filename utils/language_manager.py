@@ -151,9 +151,11 @@ class LanguageManager:
             
             # Format template if kwargs provided or if templates were substituted
             if format_kwargs:
-                return current.format(**format_kwargs)
+                formatted_result = current.format(**format_kwargs)
             else:
-                return current
+                formatted_result = current
+            
+            return formatted_result
                 
         except KeyError as e:
             raise KeyError(
@@ -523,3 +525,4 @@ def validate_translation_files(translations_dir: str = "translations") -> bool:
     except Exception as e:
         logger.error(f"Translation validation failed: {e}")
         return False
+

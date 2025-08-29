@@ -10,7 +10,20 @@ Arguments:
 """
 import sys
 import subprocess
+import os
 from pathlib import Path
+
+# Disable OpenAI Agents SDK tracing for all test execution
+os.environ['OPENAI_AGENTS_DISABLE_TRACING'] = '1'
+os.environ['OPENAI_DISABLE_TRACING'] = 'true'
+
+# Also disable programmatically if agents module is available
+try:
+    from agents import set_tracing_disabled
+    set_tracing_disabled(True)
+except ImportError:
+    # If agents module not available during import, just continue
+    pass
 
 
 def has_pytest():

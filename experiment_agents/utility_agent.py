@@ -6,7 +6,7 @@ import logging
 import re
 import os
 from typing import Optional, Dict, Any, List
-from agents import Agent, Runner, AgentOutputSchema
+from agents import Agent, Runner, AgentOutputSchema, set_tracing_disabled
 
 from models import (
     PrincipleChoice, PrincipleRanking, VoteProposal, JusticePrinciple,
@@ -24,10 +24,24 @@ from utils.language_manager import get_language_manager, get_english_principle_n
 logger = logging.getLogger(__name__)
 
 
+async def run_without_tracing(agent, prompt, context=None):
+    """Run agent without tracing to prevent utility agent operations from being traced."""
+    # Temporarily disable tracing
+    set_tracing_disabled(True)
+    try:
+        result = await Runner.run(agent, prompt, context=context)
+        return result
+    finally:
+        # Re-enable tracing
+        set_tracing_disabled(False)
+
+
 class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
+    
     def __init__(self, utility_model: str = None, temperature: float = 0.0):
+        
         # Use environment variable or default for utility agents
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
@@ -50,8 +64,14 @@ class UtilityAgent:
         if self._initialization_complete:
             return
         
+        # Save current tracing state
+        tracing_was_disabled = False
         try:
-            logger.info(f"Creating utility agents with model: {self.utility_model}")
+            # Temporarily disable tracing for utility agent creation
+            set_tracing_disabled(True)
+            tracing_was_disabled = True
+            
+            logger.info(f"Creating utility agents with model: {self.utility_model} (tracing disabled)")
             
             # Create parser agent with dynamic temperature detection
             parser_kwargs = {
@@ -88,6 +108,10 @@ class UtilityAgent:
         except Exception as e:
             logger.error(f"❌ Failed to initialize utility agents: {e}")
             raise e
+        finally:
+            # Re-enable tracing for participant agents
+            if tracing_was_disabled:
+                set_tracing_disabled(False)
             
     def _log_temperature_status(self):
         """Log temperature detection status for utility agent."""
@@ -123,7 +147,7 @@ class UtilityAgent:
         parse_prompt = self.language_manager.get_principle_choice_parsing_prompt(response)
         
         try:
-            result = await Runner.run(self.parser_agent, parse_prompt)
+            result = await run_without_tracing(self.parser_agent, parse_prompt)
             parsed_result = result.final_output
             
             if not parsed_result.success:
@@ -181,7 +205,7 @@ class UtilityAgent:
         parse_prompt = self.language_manager.get_principle_ranking_parsing_prompt(response)
         
         try:
-            result = await Runner.run(self.parser_agent, parse_prompt)
+            result = await run_without_tracing(self.parser_agent, parse_prompt)
             parsed_result = result.final_output
             
             if not parsed_result.success:
@@ -304,7 +328,7 @@ class UtilityAgent:
         
         detection_prompt = self.language_manager.get_vote_detection_prompt(statement)
         
-        result = await Runner.run(self.parser_agent, detection_prompt)
+        result = await run_without_tracing(self.parser_agent, detection_prompt)
         response_text = result.final_output.strip()
         
         if response_text.startswith("VOTE_PROPOSAL:"):
@@ -403,7 +427,7 @@ class UtilityAgent:
             response=response
         )
 
-        result = await Runner.run(self.parser_agent, detection_prompt)
+        result = await run_without_tracing(self.parser_agent, detection_prompt)
         llm_response = result.final_output.strip().upper()
         agrees = any(indicator in llm_response for indicator in ["AGREES", "AGREE", "YES"])
         logger.info(f"LLM agreement analysis: {llm_response} -> {agrees}")
@@ -412,64 +436,104 @@ class UtilityAgent:
     
     async def detect_vote_intention_enhanced(self, statement: str) -> Optional[str]:
         """
-        Enhanced vote detection using LLM-first approach for natural language understanding.
+        Enhanced vote detection using LLM-first approach with exclusion patterns.
         Detects when participants want to trigger formal voting in discussions.
         """
         await self.async_init()
 
+        statement_lower = statement.lower().strip()
+        
+        # FIRST: Apply exclusion patterns that prevent false positives
+        exclusion_patterns = [
+            r"\bshould we vote\s+(later|tomorrow|next)\b",  # Future timing
+            r"\bdo you think we should vote\b",             # Opinion questions
+            r"\bwhen should we vote\b",                     # Timing questions  
+            r"\bhow should we vote\b",                      # Method questions
+            r"\bwhat if we vote\b",                         # Hypothetical
+            r"\bnot ready to vote\b",                       # Explicit rejection
+            r"\bneed more discussion\b",                    # Discussion priority
+            r"\bwe need to discuss more\b",                 # Discussion priority
+            r"\bbefore we vote\b",                          # Conditional timing
+            r"\bafter we vote\b",                           # Future reference
+            r"\bif we vote\b",                              # Conditional
+            r"\bunless we vote\b",                          # Conditional
+            r"\bwe voted\b",                                # Past reference
+            r"\bwill vote\b",                               # Future reference
+            r"\bmight vote\b",                              # Uncertain future
+            r"\bmaybe we should vote\b",                    # Uncertainty
+            r"\bwe could vote\b",                           # Possibility
+            r"\bvoting would be good\b",                    # Conditional
+        ]
+        
+        # Return early if exclusion patterns match
+        for pattern in exclusion_patterns:
+            if re.search(pattern, statement_lower):
+                logger.info(f"Vote intention excluded by pattern: {pattern}")
+                return None
+
         # PRIMARY: LLM-based vote intention detection
         try:
-            # Specialized prompt for vote intention detection
+            # Improved prompt for vote intention detection with broader scope
             vote_detection_prompt = f"""
-Analyze this statement to determine if the speaker is making a DEFINITIVE PROPOSAL to start voting or decision-making RIGHT NOW:
+Analyze this statement to determine if the speaker is expressing intention or readiness to proceed with voting or decision-making.
 
 Statement: "{statement}"
 
-VOTE_INTENTION examples (definitive proposals):
-- "Let's vote" (direct command)
-- "I propose we vote" (explicit proposal)  
-- "Time to vote" (decisive timing)
-- "Should we vote?" (seeking immediate agreement)
-- "Voting is the next step" (clear progression to action)
-- "Time for the vote" (clear timing signal)
+DETECT VOTE_INTENTION when the speaker:
+1. PROPOSES voting/decision action: "Let's vote", "I propose we vote", "We should vote now"
+2. SIGNALS READINESS for voting: "Ready to vote", "Time to vote", "Time for the vote"
+3. INDICATES SEQUENCE/TIMING: "Voting is the next step", "Now we vote", "Let's move to voting"
+4. SEEKS AGREEMENT to vote: "Should we vote?", "Can we vote now?"
+5. DECLARES DECISION PHASE: "Time to decide", "Let's make our decision", "Ready to decide"
 
-NOT VOTE_INTENTION examples (possibilities, conditionals, uncertainties):
-- "Maybe we should vote" (uncertainty - maybe)
-- "We could vote now" (possibility - could)
-- "Voting would be good" (conditional - would)
-- "When should we vote?" (timing question)
-- "What do you think about voting?" (opinion question)
-- "Let's think about voting" (discussion, not action)
+DO NOT DETECT when the speaker:
+- Asks WHEN/HOW to vote without proposing action: "When should we vote?", "How should we vote?"
+- Expresses UNCERTAINTY: "Maybe we should vote", "We might vote", "We could vote"
+- Refers to PAST/FUTURE without immediate intent: "We voted before", "We will vote later"
+- Seeks MORE DISCUSSION: "We need more discussion", "Let's think about voting"
+- Makes CONDITIONAL statements: "If we vote", "Unless we vote"
 
-Critical distinction: Only detect DEFINITIVE PROPOSALS for immediate action, not possibilities or discussions about voting.
+EXAMPLES:
+✓ "Let's vote" → VOTE_INTENTION_DETECTED
+✓ "Time for the vote" → VOTE_INTENTION_DETECTED  
+✓ "Voting is the next step" → VOTE_INTENTION_DETECTED
+✓ "Should we vote?" → VOTE_INTENTION_DETECTED
+✓ "Ready to decide" → VOTE_INTENTION_DETECTED
+✗ "Maybe we should vote" → NO_VOTE_INTENTION
+✗ "When should we vote?" → NO_VOTE_INTENTION
+✗ "We need more discussion" → NO_VOTE_INTENTION
+✗ "Random unrelated statement" → NO_VOTE_INTENTION
 
-If this is a definitive proposal to start voting NOW, respond with:
+Response format - respond with EXACTLY one of these:
 VOTE_INTENTION_DETECTED
-
-If this expresses possibility, uncertainty, or is asking questions about voting, respond with:
 NO_VOTE_INTENTION
 
 Response:"""
 
-            result = await Runner.run(self.parser_agent, vote_detection_prompt)
+            result = await run_without_tracing(self.parser_agent, vote_detection_prompt)
             response = result.final_output.strip()
             
-            if "VOTE_INTENTION_DETECTED" in response:
+            # Parse response - trust the LLM's analysis
+            if response == "VOTE_INTENTION_DETECTED" or (response.startswith("VOTE_DETECTED") and not response.startswith("NO_VOTE_DETECTED")):
                 logger.info(f"Vote intention detected via LLM analysis: {statement}")
                 return statement
-            else:
+            elif response == "NO_VOTE_INTENTION" or response.startswith("NO_VOTE_DETECTED"):
                 logger.info(f"No vote intention detected via LLM: {statement}")
+                return None
+            else:
+                # Log unexpected response and treat as no detection
+                logger.warning(f"Unexpected LLM vote detection response: '{response}' - treating as NO_VOTE_INTENTION")
+                return None
                 
         except Exception as e:
             logger.warning(f"LLM vote detection failed: {e}")
         
-        # FALLBACK: Simple patterns for obvious cases only
+        # MINIMAL FALLBACK: Only most obvious cases when LLM fails
+        # This should rarely be used if LLM is working properly
         obvious_vote_patterns = [
             r"\blet'?s vote\b",
-            r"\btime to vote\b", 
-            r"\bi propose we vote\b",
+            r"\btime to vote\b",
             r"\bready to vote\b",
-            r"\bcall for a vote\b",
         ]
         
         statement_lower = statement.lower().strip()
@@ -733,7 +797,7 @@ Response:"""
         await self.async_init()
         
         format_prompt = self._get_format_improvement_prompt(response, parse_type)
-        result = await Runner.run(self.parser_agent, format_prompt)
+        result = await run_without_tracing(self.parser_agent, format_prompt)
         
         return result.final_output
     
@@ -768,7 +832,7 @@ Response:"""
                     attempt=attempt + 1
                 )
                 
-                result = await Runner.run(self.parser_agent, parsing_prompt)
+                result = await run_without_tracing(self.parser_agent, parsing_prompt)
                 response_text = result.final_output.strip()
                 
                 # Parse structured LLM response
@@ -806,8 +870,13 @@ Response:"""
                 logger.warning(f"Missing required fields in JSON response: {parsed_json}")
                 return None
             
-            # Validate principle value - support full names only (NO LETTERS)
+            # CRITICAL: IMMEDIATE rejection of letter-based principles (NO LETTERS SUPPORTED)
             principle_input = parsed_json['principle'].lower().strip()
+            
+            # REJECT ANY SINGLE LETTER REFERENCES IMMEDIATELY
+            if re.match(r'^[a-d]$', principle_input) or re.match(r'^principle\s+[a-d]$', principle_input):
+                logger.warning(f"IMMEDIATELY REJECTING letter-based principle: {principle_input}")
+                return None
             
             # Direct validation for canonical names (no mapping needed)
             valid_canonical_principles = {
@@ -820,23 +889,33 @@ Response:"""
             if principle_input in valid_canonical_principles:
                 principle_name = principle_input
             else:
-                # Map variations and legacy letters to canonical names
+                # Map variations and legacy names to canonical names - NO LETTERS SUPPORTED
                 principle_variations = {
-                    # Full principle names only - NO LETTERS SUPPORTED
-                    
-                    # Common variations
+                    # English variations - FULL NAMES ONLY
                     'maximizing_floor_income': 'maximizing_floor',
                     'maximizing_average_income': 'maximizing_average',
                     'floor_constraint': 'maximizing_average_floor_constraint',
                     'range_constraint': 'maximizing_average_range_constraint',
+                    'maximizing the floor income': 'maximizing_floor',
+                    'maximizing the average income': 'maximizing_average',
+                    'maximizing floor income': 'maximizing_floor',
+                    'maximizing average income': 'maximizing_average',
                     
                     # Chinese principle names
                     '最大化最低收入': 'maximizing_floor',
                     '最大化平均收入': 'maximizing_average', 
                     '在最低收入约束条件下最大化平均收入': 'maximizing_average_floor_constraint',
                     '在范围约束条件下最大化平均收入': 'maximizing_average_range_constraint',
+                    '最低收入最大化': 'maximizing_floor',
+                    '平均收入最大化': 'maximizing_average',
+                    '最低收入约束条件': 'maximizing_average_floor_constraint',
+                    '范围约束条件': 'maximizing_average_range_constraint',
                     
                     # Spanish principle names
+                    'maximizar los ingresos mínimos': 'maximizing_floor',
+                    'maximizar los ingresos promedio': 'maximizing_average',
+                    'maximizar los ingresos promedio con restricción de ingreso mínimo': 'maximizing_average_floor_constraint',
+                    'maximizar los ingresos promedio con restricción de rango': 'maximizing_average_range_constraint',
                     'maximización del ingreso mínimo': 'maximizing_floor',
                     'maximización del ingreso promedio': 'maximizing_average',
                     'maximización del ingreso promedio bajo restricción de ingreso mínimo': 'maximizing_average_floor_constraint',
@@ -845,6 +924,10 @@ Response:"""
                 
                 principle_name = principle_variations.get(principle_input)
                 if principle_name is None:
+                    # DOUBLE CHECK: Ensure no letter-based input was missed
+                    if re.search(r'\b[a-d]\b', principle_input):
+                        logger.warning(f"REJECTING letter-contaminated principle: {principle_input}")
+                        return None
                     logger.warning(f"Invalid principle value: {principle_input}")
                     return None
             
@@ -918,7 +1001,7 @@ Response:"""
                 statement=statement
             )
             
-            result = await Runner.run(self.parser_agent, detection_prompt)
+            result = await run_without_tracing(self.parser_agent, detection_prompt)
             response_text = result.final_output.strip()
             
             # Parse LLM response
@@ -961,7 +1044,7 @@ Response:"""
                 statement=statement
             )
             
-            result = await Runner.run(self.parser_agent, detection_prompt)
+            result = await run_without_tracing(self.parser_agent, detection_prompt)
             response_text = result.final_output.strip()
             
             # Parse LLM response
@@ -997,7 +1080,7 @@ Response:"""
                 principle=principle
             )
             
-            result = await Runner.run(self.parser_agent, parsing_prompt)
+            result = await run_without_tracing(self.parser_agent, parsing_prompt)
             response_text = result.final_output.strip()
             
             # Parse LLM response
@@ -1038,52 +1121,131 @@ Response:"""
         """
         await self.async_init()
         
+        # IMMEDIATE rejection of letter-based preferences - COMPREHENSIVE MULTILINGUAL PATTERNS
+        statement_lower = statement.lower().strip()
+        letter_rejection_patterns = [
+            # English patterns
+            r'\b(?:prefer|choice|support|choose)\s+(?:principle\s+)?[a-d]\b',
+            r'\b(?:my|i)\s+(?:prefer|choice|support|choose)\s+[a-d]\b',
+            r'\bpreference:\s*[a-d]\b',
+            r'\bchoice:\s*[a-d]\b',
+            r'\b[a-d]\s+with\s+\$?\d+',
+            r'\b[a-d]\s+with\s+(?:range|floor)\s+constraint',
+            
+            # CRITICAL MISSING PATTERNS identified in contamination report
+            r'\b(?:preference|choice)\s+is\s+(?:principle\s+)?[a-d]\b',  # "My choice is principle b"
+            r'\bvote\s+(?:for|is)\s+(?:principle\s+)?[a-d]\b',           # "My vote is principle c"  
+            r'\belection\s+de\s+voto\s+es\s+principio\s+[a-d]\b',       # Spanish ballot format
+            r'\bi\s+(?:might\s+)?vote\s+for\s+(?:principle\s+)?[a-d]\b', # "I might vote for principle a"
+            
+            # Spanish patterns  
+            r'\b(?:principio|opción|elección)\s*[a-d]\b',
+            r'\b(?:mi|yo)\s+(?:prefiero|elijo|apoyo)\s+(?:principio\s+)?[a-d]\b',
+            r'\bpreferencia:\s*[a-d]\b',
+            r'\belección:\s*[a-d]\b',
+            r'\bmi\s+elección\s+de\s+voto\s+es\s+principio\s+[a-d]\b',   # "Mi elección de voto es principio c"
+            
+            # Mandarin/Chinese patterns
+            r'原则\s*[a-dA-D甲乙丙丁]\b',
+            r'[甲乙丙丁]\s*(?:原则|选择|方案)\b', 
+            r'我\s*(?:选择|偏好|支持)\s*[a-dA-D甲乙丙丁]\b',
+            r'选择\s*[a-dA-D甲乙丙丁]\b',
+            r'偏好\s*[a-dA-D甲乙丙丁]\b',
+            r'原则[a-dA-D甲乙丙丁]\b',  # Mixed format: 原则a, 原则A, 原则甲
+        ]
+        
+        for pattern in letter_rejection_patterns:
+            if re.search(pattern, statement_lower):
+                logger.info(f"Immediately rejecting letter-based preference: {statement}")
+                return None
+        
         # PRIMARY: LLM-based detection for natural language understanding
         try:
             language_manager = get_language_manager()
             
             # Enhanced prompt for preference detection with constraint extraction
             enhanced_prompt = f"""
-Analyze this statement for preference expressions about justice principles:
+Analyze this statement for DEFINITIVE preference expressions about justice principles:
 
 Statement: "{statement}"
 
-Detect preference for these EXACT principles (FULL NAMES ONLY):
-- "maximizing floor" or "maximizing floor income" = Maximizing the floor income
-- "maximizing average" or "maximizing average income" = Maximizing the average income
-- "floor constraint" or "minimum income" = Maximizing average with floor constraint  
-- "range constraint" or "income gap" = Maximizing average with range constraint
+**CRITICAL REQUIREMENT: If the statement contains single letters (a, b, c, d) after preference words, IMMEDIATELY return NO_PREFERENCE_DETECTED. Single letters are NEVER valid principle names.**
 
-CRITICAL: 
-- If it mentions "floor constraint" or "minimum income", identify as floor constraint principle
-- If it mentions "range constraint" or "income gap", identify as range constraint principle
-- Focus on full principle names and natural language descriptions
+Only detect CLEAR, DEFINITIVE preferences with these patterns:
+✓ "I prefer [principle]" (definitive choice)
+✓ "My preference is [principle]" (definitive statement)  
+✓ "I choose [principle]" (definitive choice)
+✓ "My choice is [principle]" (definitive statement)
+✓ "I support [principle]" (definitive support)
+✓ "Preference: [principle]" (definitive format)
+✓ "Choice: [principle]" (definitive format)
+
+Do NOT detect preferences in:
+✗ Letter-based references: "I prefer a", "My choice is b", "principle c", "principle d" (NEVER detect single letters)
+✗ Questions: "Should we choose [principle]?" or "Which principle do you prefer?"
+✗ Conditionals: "If we choose [principle]..." or "[principle] might be good"
+✗ Possibilities: "We could consider [principle]" or "Maybe [principle] is good"
+✗ Past references: "I used to prefer [principle]" or "Previously I thought [principle]"
+✗ General discussion: "We should discuss [principle]" or "What do others think about [principle]?"
+✗ Future references: "We might prefer [principle] later"
+
+**MULTILINGUAL PRINCIPLE DETECTION:**
+
+**English:**
+- "maximizing floor" or "maximizing floor income" = maximizing_floor
+- "maximizing average" or "maximizing average income" = maximizing_average
+- "floor constraint" or "minimum income" = maximizing_average_floor_constraint
+- "range constraint" or "income gap" = maximizing_average_range_constraint
+
+**Chinese (中文):**
+- "最大化最低收入" (maximizing floor income) = maximizing_floor
+- "最大化平均收入" (maximizing average income) = maximizing_average
+- "在最低收入约束条件下最大化平均收入" (maximizing average under floor constraint) = maximizing_average_floor_constraint
+- "在范围约束条件下最大化平均收入" (maximizing average under range constraint) = maximizing_average_range_constraint
+- "最低收入约束条件" (floor constraint) = maximizing_average_floor_constraint
+- "范围约束条件" (range constraint) = maximizing_average_range_constraint
+
+**Spanish:**
+- "maximización del ingreso mínimo" = maximizing_floor
+- "maximización del ingreso promedio" = maximizing_average
+- "maximización del ingreso promedio bajo restricción de ingreso mínimo" = maximizing_average_floor_constraint
+- "maximización del ingreso promedio bajo restricción de rango" = maximizing_average_range_constraint
+
+CRITICAL: Only detect CURRENT, DEFINITIVE preference statements, not questions or discussions about preferences.
 
 Examples:
-- "My choice is maximizing average" → PREFERENCE_DETECTED: maximizing_average
-- "I prefer floor constraint with $18,500" → PREFERENCE_DETECTED: maximizing_average_floor_constraint $18,500
-- "Preference: range constraint" → PREFERENCE_DETECTED: maximizing_average_range_constraint
-- "I support maximizing floor income" → PREFERENCE_DETECTED: maximizing_floor
+✓ "My choice is maximizing average" → PREFERENCE_DETECTED: maximizing_average
+✓ "Choice: maximizing average income" → PREFERENCE_DETECTED: maximizing_average
+✓ "I prefer floor constraint with $18,500" → PREFERENCE_DETECTED: maximizing_average_floor_constraint $18,500
+✓ "我的偏好是最大化最低收入" → PREFERENCE_DETECTED: maximizing_floor
+✓ "我选择在最低收入约束条件下最大化平均收入" → PREFERENCE_DETECTED: maximizing_average_floor_constraint
+✗ "I prefer a" → NO_PREFERENCE_DETECTED (single letter rejected)
+✗ "My choice is b" → NO_PREFERENCE_DETECTED (single letter rejected)
+✗ "What do others think about maximizing floor income?" → NO_PREFERENCE_DETECTED
+✗ "maximizing the average income might be good" → NO_PREFERENCE_DETECTED
 
-If clear preference detected, respond with:
+If DEFINITIVE preference detected, respond with:
 PREFERENCE_DETECTED: [full_principle_name] [amount if any]
 
-If no clear preference, respond with:
+If no definitive preference, respond with:
 NO_PREFERENCE_DETECTED
 
 Response:"""
 
-            result = await Runner.run(self.parser_agent, enhanced_prompt)
+            result = await run_without_tracing(self.parser_agent, enhanced_prompt)
             response = result.final_output.strip()
             
             if "PREFERENCE_DETECTED:" in response:
                 # Parse the LLM response
                 preference_text = response.split("PREFERENCE_DETECTED:")[1].strip()
                 
+                # Extract just the principle name part (before any dollar amounts)
+                principle_name_only = re.split(r'\s+with\s+\$|\s+\$', preference_text)[0].strip()
+                
                 # Extract principle using unified method
-                principle = self._map_identifier_to_principle(preference_text)
+                principle = self._map_identifier_to_principle(principle_name_only)
                 if not principle:
-                    principle = await self._extract_principle_from_text(preference_text)
+                    principle = await self._extract_principle_from_text(principle_name_only)
                 
                 if principle:
                     # Extract constraint amount using unified method
@@ -1101,17 +1263,50 @@ Response:"""
         except Exception as e:
             logger.warning(f"LLM preference detection failed: {e}")
         
-        # FALLBACK: Full-name patterns only - NO LETTER SUPPORT
-        full_name_patterns = [
-            (r'\b(?:maximizing|maximize)\s+(?:the\s+)?floor(?:\s+income)?\b', 'maximizing_floor'),
-            (r'\b(?:maximizing|maximize)\s+(?:the\s+)?average(?:\s+income)?\b', 'maximizing_average'),
-            (r'\bfloor\s+constraint\b', 'maximizing_average_floor_constraint'),
-            (r'\brange\s+constraint\b', 'maximizing_average_range_constraint'),
-            (r'\bminimum\s+income\b', 'maximizing_average_floor_constraint'),
-            (r'\bincome\s+gap\b', 'maximizing_average_range_constraint'),
+        # FIRST: Check for exclusion patterns that should NOT be preferences
+        non_preference_patterns = [
+            r'\bwhat\s+(?:do|does)\b.*\b(?:maximizing|floor|average|constraint)\b',  # Questions
+            r'\bshould\s+we\s+(?:choose|consider)\b.*\b(?:maximizing|floor|average|constraint)\b',  # Should we...
+            r'\bwhat\s+if\b.*\b(?:maximizing|floor|average|constraint)\b',  # What if...
+            r'\bif\s+we\s+(?:choose|go|went)\b.*\b(?:maximizing|floor|average|constraint)\b',  # If we...
+            r'\b(?:used\s+to|might|could|previously)\b.*\b(?:maximizing|floor|average|constraint)\b',  # Past/conditional
+            r'\bmight\s+be\s+good\b',  # "might be good"
+            r'\bwe\s+(?:could|should|might)\s+consider\b',  # "we could consider"
         ]
         
-        statement_lower = statement.lower().strip()
+        for pattern in non_preference_patterns:
+            if re.search(pattern, statement_lower):
+                logger.info(f"Rejecting non-preference statement: {statement}")
+                return None
+
+        # FALLBACK: Full-name patterns only - NO LETTER SUPPORT (statement_lower already defined above)
+        full_name_patterns = [
+            # Basic preference expressions with maximizing
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:)\s+(?:maximizing|maximize)\s+(?:the\s+)?floor(?:\s+income)?\b', 'maximizing_floor'),
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:)\s+(?:maximizing|maximize)\s+(?:the\s+)?average(?:\s+income)?\b', 'maximizing_average'),
+            
+            # Constraint-based preferences
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:|i\s+support)\s+floor\s+constraint\b', 'maximizing_average_floor_constraint'),
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:|i\s+support)\s+range\s+constraint\b', 'maximizing_average_range_constraint'),
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:|i\s+support)\s+minimum\s+income\b', 'maximizing_average_floor_constraint'),
+            (r'\b(?:my\s+(?:preference|choice)\s+is|i\s+prefer|preference\s*:|choice\s*:|i\s+support)\s+income\s+gap\b', 'maximizing_average_range_constraint'),
+            
+            # Additional "I support" patterns for constraint detection
+            (r'\bi\s+support\s+(?:maximizing\s+average\s+(?:income\s+)?(?:with|under)\s+)?floor\s+constraint(?:\s+with)?\b', 'maximizing_average_floor_constraint'),
+            (r'\bi\s+support\s+(?:maximizing\s+average\s+(?:income\s+)?(?:with|under)\s+)?range\s+constraint(?:\s+with)?\b', 'maximizing_average_range_constraint'),
+            
+            # MISSING PATTERNS FROM PHASE 3: Enhanced pattern coverage for missing expressions
+            # "Choice: maximizing average income" format
+            (r'\bchoice\s*:\s*(?:maximizing|maximize)\s+(?:the\s+)?floor(?:\s+income)?\b', 'maximizing_floor'),
+            (r'\bchoice\s*:\s*(?:maximizing|maximize)\s+(?:the\s+)?average(?:\s+income)?\b', 'maximizing_average'),
+            (r'\bchoice\s*:\s*floor\s+constraint\b', 'maximizing_average_floor_constraint'),
+            (r'\bchoice\s*:\s*range\s+constraint\b', 'maximizing_average_range_constraint'),
+            
+            # Enhanced "I support" patterns with dollar amounts
+            (r'\bi\s+support\s+floor\s+constraint\s+with\s+\$\d+', 'maximizing_average_floor_constraint'),
+            (r'\bi\s+support\s+range\s+constraint\s+with\s+\$\d+', 'maximizing_average_range_constraint'),
+        ]
+        
         for pattern, principle_name in full_name_patterns:
             match = re.search(pattern, statement_lower)
             if match:
@@ -1125,39 +1320,84 @@ Response:"""
                         reasoning="Preference detected via simple pattern matching"
                     )
         
-        # No preference detected
-        return None
+        # PHASE 5 FIX: Secondary LLM fallback when pattern matching fails
+        logger.info("Pattern matching failed, attempting secondary LLM fallback for preference detection")
+        return await self._detect_preference_via_llm(statement)
     
     def _map_identifier_to_principle(self, identifier: str) -> Optional[JusticePrinciple]:
-        """Map principle identifier to JusticePrinciple. Supports full names and legacy letters."""
+        """Map principle identifier to JusticePrinciple. REJECTS ALL LETTER-BASED REFERENCES."""
         identifier = identifier.lower().strip()
         
-        # Remove common prefixes
-        identifier = re.sub(r'^(principle|principio|原则)\s*', '', identifier)
+        # IMMEDIATE REJECTION of letter-based identifiers across all languages
+        if re.match(r'^[a-d]$', identifier):
+            logger.warning(f"REJECTING letter-based identifier: {identifier}")
+            return None
+            
+        # Remove common prefixes but check for letters after prefix removal
+        clean_identifier = re.sub(r'^(principle|principio|原则)\s*', '', identifier)
+        if re.match(r'^[a-d]$', clean_identifier):
+            logger.warning(f"REJECTING letter-based identifier after prefix removal: {identifier} -> {clean_identifier}")
+            return None
+        
+        # MULTILINGUAL letter rejection - reject common letter patterns in all languages
+        letter_rejection_patterns = [
+            r'^[a-d]$',  # Single letters
+            r'^principle\s+[a-d]$',  # English "principle a"
+            r'^principio\s+[a-d]$',  # Spanish "principio b" 
+            r'^原则[a-dA-D甲乙丙丁]$',  # Chinese "原则a", "原则甲"
+        ]
+        
+        for pattern in letter_rejection_patterns:
+            if re.search(pattern, identifier):
+                logger.warning(f"REJECTING letter-based identifier via pattern {pattern}: {identifier}")
+                return None
         
         mapping = {
             # English full names ONLY - NO LETTERS SUPPORTED
             'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
             'maximizing_floor_income': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing the floor income': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing floor income': JusticePrinciple.MAXIMIZING_FLOOR,
             'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing_average_income': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing the average income': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing average income': JusticePrinciple.MAXIMIZING_AVERAGE,
             'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
             'floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
             
             # Chinese principle names
             '最大化最低收入': JusticePrinciple.MAXIMIZING_FLOOR,
             '最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE,
             '在最低收入约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             '在范围约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            '最低收入最大化': JusticePrinciple.MAXIMIZING_FLOOR,
+            '平均收入最大化': JusticePrinciple.MAXIMIZING_AVERAGE,
+            '最低收入约束条件': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            '范围约束条件': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
             
-            # Spanish principle names (for completeness)
+            # Spanish principle names (comprehensive)
+            'maximizar los ingresos mínimos': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizar los ingresos promedio': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizar los ingresos promedio con restricción de ingreso mínimo': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximizar los ingresos promedio con restricción de rango': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
             'maximización del ingreso mínimo': JusticePrinciple.MAXIMIZING_FLOOR,
             'maximización del ingreso promedio': JusticePrinciple.MAXIMIZING_AVERAGE,
             'maximización del ingreso promedio bajo restricción de ingreso mínimo': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             'maximización del ingreso promedio bajo restricción de rango': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
         }
         
-        return mapping.get(identifier)
+        result = mapping.get(clean_identifier)
+        if result:
+            return result
+        
+        # Final safety check - reject anything containing letters
+        if re.search(r'\b[a-d]\b', identifier):
+            logger.warning(f"REJECTING identifier containing letters: {identifier}")
+            return None
+            
+        return None
     
     async def _extract_principle_from_text(self, principle_text: str) -> Optional[JusticePrinciple]:
         """
@@ -1190,12 +1430,12 @@ Response:"""
         if '-' in statement:
             return None
             
-        # Multiple patterns for flexible amount parsing including space separators
+        # Multiple patterns for flexible amount parsing including space separators and international currencies
         amount_patterns = [
-            r'\$\s*(\d{1,6}(?:[.,\s]\d{3})*)',  # $14,000 or $14000 or $15 000
-            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:dollars?|\$)',  # 14,000 dollars or 14000$ or 15 000$
+            r'[\$¥€]\s*(\d{1,6}(?:[.,\s]\d{3})*)',  # $14,000 or ¥14,000 or €14,000 or $14000 or ¥15 000
+            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:dollars?|\$|元|euros?|€)',  # 14,000 dollars or 14000$ or 15000元 or 15 000€
             r'(\d{1,2})\s*k(?:\s|$|\.)',  # 14k
-            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:thousand)',  # 14 thousand or 15 000 thousand
+            r'(\d{1,3})\s*(?:thousand|千|mil)',  # 16 thousand, 18千, 20 mil (Spanish) - fixed to 1-3 digits
             r'(\d{3,6})(?!\s*[%])',  # Plain numbers 3-6 digits (avoid percentages)
         ]
         
@@ -1215,11 +1455,13 @@ Response:"""
                     
                     amount = float(amount_str)
                     
-                    # Check if this is a "k" pattern
-                    if 'k' in statement.lower() and amount < 1000:
+                    # Check if this is a "k" pattern or thousand marker
+                    statement_lower = statement.lower()
+                    if 'k' in statement_lower and amount < 1000:
                         amount *= 1000
-                    elif 'thousand' in statement.lower() and amount < 1000:
+                    elif ('thousand' in statement_lower or '千' in statement or 'mil' in statement_lower) and amount < 1000:
                         amount *= 1000
+                        logger.info(f"Multiplied {match} by 1000 due to thousand/千/mil marker, result: {amount}")
                     
                     amount_int = int(amount)
                     
@@ -1244,7 +1486,7 @@ Response:"""
         )
         
         try:
-            result = await Runner.run(self.parser_agent, detection_prompt)
+            result = await run_without_tracing(self.parser_agent, detection_prompt)
             response = result.final_output.strip()
             
             # Parse LLM response
@@ -1303,6 +1545,14 @@ Response:"""
         # Check for consensus (all preferences in same group)
         if len(preference_groups) == 1:
             agreed_choice = list(preference_groups.values())[0][0]  # First preference in the single group
+            
+            # CRITICAL FIX: Prevent consensus if constraint amounts are missing for constraint principles
+            if (agreed_choice.constraint_amount is None and 
+                agreed_choice.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                          JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                warnings.append(f"Cannot reach consensus: Missing constraint amount for {agreed_choice.principle.value}")
+                return False, None, warnings
+            
             return True, agreed_choice, warnings
         
         return False, None, warnings
@@ -1324,7 +1574,7 @@ Response:"""
         )
         
         try:
-            result = await Runner.run(self.parser_agent, validation_prompt)
+            result = await run_without_tracing(self.parser_agent, validation_prompt)
             response = result.final_output.strip()
             
             if "CONSENSUS_MISMATCH" in response:
@@ -1370,6 +1620,14 @@ Response:"""
         # Check for consensus (all ballots in same group)
         if len(ballot_groups) == 1:
             agreed_choice = list(ballot_groups.values())[0][0]  # First ballot in the single group
+            
+            # CRITICAL FIX: Prevent consensus if constraint amounts are missing for constraint principles
+            if (agreed_choice.constraint_amount is None and 
+                agreed_choice.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                          JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                warnings.append(f"Cannot reach consensus: Missing constraint amount for {agreed_choice.principle.value}")
+                return False, None, warnings
+            
             return True, agreed_choice, warnings
         
         return False, None, warnings

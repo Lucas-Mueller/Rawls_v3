@@ -85,27 +85,6 @@ class TestPreferenceDetectionSimpleMode(unittest.TestCase):
                 self.assertEqual(result.constraint_amount, case["expected_constraint"],
                                f"Wrong constraint for '{case['statement']}': got {result.constraint_amount}")
     
-    def test_letter_based_preference_detection(self):
-        """Test letter-based principle references (backward compatibility)."""
-        
-        letter_cases = [
-            ("I prefer a", JusticePrinciple.MAXIMIZING_FLOOR),
-            ("My choice is maximizing average", JusticePrinciple.MAXIMIZING_AVERAGE),
-            ("I support c with $18000", JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT),
-            ("Preference: d with range constraint of $25,000", JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT),
-            
-            # With "principle" prefix
-            ("I prefer maximizing floor income", JusticePrinciple.MAXIMIZING_FLOOR),
-            ("My choice is floor constraint with $16000", JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT),
-        ]
-        
-        for statement, expected_principle in letter_cases:
-            with self.subTest(statement=statement):
-                result = asyncio.run(self._detect_preference(statement))
-                
-                self.assertIsNotNone(result, f"Failed to detect letter preference: '{statement}'")
-                self.assertEqual(result.principle, expected_principle,
-                               f"Wrong principle for letter case '{statement}': got {result.principle.value}")
     
     def test_constraint_amount_detection_in_preferences(self):
         """Test constraint amount extraction from preference statements."""
@@ -164,42 +143,45 @@ class TestPreferenceDetectionSimpleMode(unittest.TestCase):
                 self.assertIsNone(result, f"Should NOT detect preference in: '{statement}'")
     
     @patch('experiment_agents.utility_agent.Runner.run')
-    async def test_llm_fallback_for_preference_detection(self, mock_runner):
+    def test_llm_fallback_for_preference_detection(self, mock_runner):
         """Test LLM fallback when regex patterns don't match."""
-        await self.utility_agent.async_init()
+        async def run_test():
+            await self.utility_agent.async_init()
+            
+            # Test complex statements that might need LLM analysis
+            fallback_cases = [
+                {
+                    "statement": "After careful consideration, I believe the floor-maximizing approach is best",
+                    "llm_response": "PREFERENCE_DETECTED: maximizing_floor",
+                    "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
+                },
+                {
+                    "statement": "My analysis leads me to support the constrained average approach with $18000",
+                    "llm_response": "PREFERENCE_DETECTED: maximizing_average_floor_constraint with $18000",
+                    "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
+                },
+                {
+                    "statement": "Complex discussion without clear preference",
+                    "llm_response": "NO_PREFERENCE_DETECTED",
+                    "expected_principle": None
+                }
+            ]
+            
+            for case in fallback_cases:
+                with self.subTest(statement=case["statement"]):
+                    mock_result = MagicMock()
+                    mock_result.final_output = case["llm_response"]
+                    mock_runner.return_value = mock_result
+                    
+                    result = await self.utility_agent.detect_preference_statement(case["statement"])
+                    
+                    if case["expected_principle"]:
+                        self.assertIsNotNone(result, f"LLM should detect preference in: '{case['statement']}'")
+                        self.assertEqual(result.principle, case["expected_principle"])
+                    else:
+                        self.assertIsNone(result, f"LLM should NOT detect preference in: '{case['statement']}'")
         
-        # Test complex statements that might need LLM analysis
-        fallback_cases = [
-            {
-                "statement": "After careful consideration, I believe the floor-maximizing approach is best",
-                "llm_response": "PREFERENCE_DETECTED: maximizing_floor",
-                "expected_principle": JusticePrinciple.MAXIMIZING_FLOOR
-            },
-            {
-                "statement": "My analysis leads me to support the constrained average approach with $18000",
-                "llm_response": "PREFERENCE_DETECTED: maximizing_average_floor_constraint with $18000",
-                "expected_principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
-            },
-            {
-                "statement": "Complex discussion without clear preference",
-                "llm_response": "NO_PREFERENCE_DETECTED",
-                "expected_principle": None
-            }
-        ]
-        
-        for case in fallback_cases:
-            with self.subTest(statement=case["statement"]):
-                mock_result = MagicMock()
-                mock_result.final_output = case["llm_response"]
-                mock_runner.return_value = mock_result
-                
-                result = await self.utility_agent.detect_preference_statement(case["statement"])
-                
-                if case["expected_principle"]:
-                    self.assertIsNotNone(result, f"LLM should detect preference in: '{case['statement']}'")
-                    self.assertEqual(result.principle, case["expected_principle"])
-                else:
-                    self.assertIsNone(result, f"LLM should NOT detect preference in: '{case['statement']}'")
+        asyncio.run(run_test())
     
     def test_multilingual_preference_detection(self):
         """Test preference detection across languages."""

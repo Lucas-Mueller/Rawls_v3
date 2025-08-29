@@ -16,9 +16,8 @@ class TestAliceBallotParsingFix:
     def utility_agent(self):
         """Create utility agent for testing."""
         return UtilityAgent(
-            model="gpt-4o-mini",
-            temperature=0.1,
-            language="english"
+            utility_model="gpt-4o-mini",
+            temperature=0.1
         )
 
     async def test_alice_ballot_parsing(self, utility_agent):
@@ -60,10 +59,10 @@ class TestAliceBallotParsingFix:
     async def test_mixed_language_examples(self):
         """Test full names in different languages."""
         # English agent
-        english_agent = UtilityAgent(model="gpt-4o-mini", temperature=0.1, language="english")
+        english_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.1)
         
         # Spanish agent  
-        spanish_agent = UtilityAgent(model="gpt-4o-mini", temperature=0.1, language="spanish")
+        spanish_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.1)
         
         test_cases = [
             # English full name
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     async def main():
         """Run tests directly for debugging."""
         test_instance = TestAliceBallotParsingFix()
-        agent = UtilityAgent(model="gpt-4o-mini", temperature=0.1, language="english")
+        agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.1)
         
         print("Running Alice Ballot Parsing Fix Integration Tests...")
         

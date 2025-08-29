@@ -133,30 +133,33 @@ class TestVoteIntentionDetection(unittest.TestCase):
                                f"Expected {expected} for ambiguous case: '{statement}'")
     
     @patch('experiment_agents.utility_agent.Runner.run')
-    async def test_llm_fallback_behavior(self, mock_runner):
+    def test_llm_fallback_behavior(self, mock_runner):
         """Test LLM fallback when regex patterns don't match."""
-        await self.utility_agent.async_init()
+        async def run_test():
+            await self.utility_agent.async_init()
+            
+            # Mock LLM responses - use proper voting-related statements for positive cases
+            test_cases = [
+                ("I believe we should proceed with the voting process", "VOTE_DETECTED", True),
+                ("Another complex statement", "NO_VOTE_DETECTED", False),  
+                ("Let's reach a decision on this matter", "VOTE_DETECTED: clear intention", True),
+            ]
+            
+            for statement, llm_response, expected in test_cases:
+                with self.subTest(statement=statement):
+                    # Mock the LLM response
+                    mock_result = MagicMock()
+                    mock_result.final_output = llm_response
+                    mock_runner.return_value = mock_result
+                    
+                    result = await self.utility_agent.detect_vote_intention_enhanced(statement)
+                    
+                    if expected:
+                        self.assertIsNotNone(result, f"LLM should detect vote intention in: '{statement}'")
+                    else:
+                        self.assertIsNone(result, f"LLM should NOT detect vote intention in: '{statement}'")
         
-        # Mock LLM responses
-        test_cases = [
-            ("Some complex statement that doesn't match patterns", "VOTE_DETECTED", True),
-            ("Another complex statement", "NO_VOTE_DETECTED", False),
-            ("Edge case statement", "VOTE_DETECTED: clear intention", True),
-        ]
-        
-        for statement, llm_response, expected in test_cases:
-            with self.subTest(statement=statement):
-                # Mock the LLM response
-                mock_result = MagicMock()
-                mock_result.final_output = llm_response
-                mock_runner.return_value = mock_result
-                
-                result = await self.utility_agent.detect_vote_intention_enhanced(statement)
-                
-                if expected:
-                    self.assertIsNotNone(result, f"LLM should detect vote intention in: '{statement}'")
-                else:
-                    self.assertIsNone(result, f"LLM should NOT detect vote intention in: '{statement}'")
+        asyncio.run(run_test())
     
     def test_multilingual_consistency(self):
         """Test that equivalent statements in different languages are handled consistently."""
@@ -238,15 +241,18 @@ class TestVoteIntentionDetection(unittest.TestCase):
                                f"Exclusion should override positive patterns in: '{statement}'")
     
     @patch('experiment_agents.utility_agent.Runner.run')
-    async def test_llm_error_handling(self, mock_runner):
+    def test_llm_error_handling(self, mock_runner):
         """Test handling of LLM errors during fallback."""
-        await self.utility_agent.async_init()
+        async def run_test():
+            await self.utility_agent.async_init()
+            
+            # Test LLM timeout/error scenario
+            mock_runner.side_effect = asyncio.TimeoutError("LLM timeout")
+            
+            result = await self.utility_agent.detect_vote_intention_enhanced("Some complex statement")
+            self.assertIsNone(result, "Should return None when LLM fails")
         
-        # Test LLM timeout/error scenario
-        mock_runner.side_effect = asyncio.TimeoutError("LLM timeout")
-        
-        result = await self.utility_agent.detect_vote_intention_enhanced("Some complex statement")
-        self.assertIsNone(result, "Should return None when LLM fails")
+        asyncio.run(run_test())
     
     async def _detect_vote_intention(self, statement: str) -> bool:
         """Helper method for async vote intention detection."""

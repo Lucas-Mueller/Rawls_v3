@@ -3,7 +3,7 @@ Phase 1 manager for individual participant familiarization.
 """
 import asyncio
 from typing import List
-from agents import Agent, Runner, trace
+from agents import Agent, Runner
 
 from models import (
     ParticipantContext, Phase1Results, ApplicationResult, ExperimentPhase,

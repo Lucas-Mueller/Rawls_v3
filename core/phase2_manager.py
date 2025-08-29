@@ -6,7 +6,7 @@ import random
 import re
 import time
 from typing import List, Dict, Optional
-from agents import Agent, Runner, trace
+from agents import Agent, Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
@@ -702,9 +702,18 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         # If reasoning is enabled, ask for internal reasoning first
         internal_reasoning = ""
         if agent_config.reasoning_enabled:
-            reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
-            reasoning_result = await Runner.run(participant.agent, reasoning_prompt, context=context)
-            internal_reasoning = reasoning_result.final_output
+            try:
+                reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
+                reasoning_result = await asyncio.wait_for(
+                    Runner.run(participant.agent, reasoning_prompt, context=context),
+                    timeout=self.settings.statement_timeout_seconds
+                )
+                internal_reasoning = reasoning_result.final_output
+            except Exception as e:
+                # Log reasoning timeout/error but continue with empty reasoning
+                # This catches all exceptions including TimeoutError, asyncio.TimeoutError, etc.
+                self._log_warning(f"Reasoning timeout/error for {participant.name}: {str(e)}")
+                internal_reasoning = ""
         
         # Get public statement with validation and retry logic
         try:
