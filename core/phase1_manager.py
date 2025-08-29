@@ -24,9 +24,13 @@ class Phase1Manager:
     def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
         self.participants = participants
         self.utility_agent = utility_agent
+        self.logger = None  # Will be set in run_phase1
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
+        
+        # Set logger instance for use in helper methods
+        self.logger = logger
         
         tasks = []
         for i, participant in enumerate(self.participants):
@@ -50,6 +54,16 @@ class Phase1Manager:
             phase=ExperimentPhase.PHASE_1,
             memory_character_limit=agent_config.memory_character_limit
         )
+    
+    def _log_info(self, message: str):
+        """Safe logging helper."""
+        if self.logger and hasattr(self.logger, 'debug_logger'):
+            self.logger.debug_logger.info(message)
+    
+    def _log_warning(self, message: str):
+        """Safe logging helper."""
+        if self.logger and hasattr(self.logger, 'debug_logger'):
+            self.logger.debug_logger.warning(message)
     
     async def _run_single_participant_phase1(
         self,

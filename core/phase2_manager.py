@@ -1336,8 +1336,24 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
             # Parse ballot using existing utility agent methods
             try:
                 principle_choice = await self.utility_agent.parse_principle_choice_enhanced(ballot_response)
+                
+                # Validation: Check if ballot mentions principle c/d explicitly
+                ballot_lower = ballot_response.lower()
+                if 'principle c' in ballot_lower or 'floor constraint' in ballot_lower:
+                    expected = JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
+                    if principle_choice.principle != expected:
+                        self._log_warning(f"PARSING ERROR: Ballot says 'principle c/floor constraint' but parsed as {principle_choice.principle.value}")
+                        self._log_warning(f"Correcting principle for {participant.name} from {principle_choice.principle.value} to {expected.value}")
+                        principle_choice.principle = expected
+                elif 'principle d' in ballot_lower or 'range constraint' in ballot_lower:
+                    expected = JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+                    if principle_choice.principle != expected:
+                        self._log_warning(f"PARSING ERROR: Ballot says 'principle d/range constraint' but parsed as {principle_choice.principle.value}")
+                        self._log_warning(f"Correcting principle for {participant.name} from {principle_choice.principle.value} to {expected.value}")
+                        principle_choice.principle = expected
+                
                 ballots.append(principle_choice)
-                self._log_info(f"Secret ballot received from {participant.name}")
+                self._log_info(f"Secret ballot received from {participant.name}: {principle_choice.principle.value} (constraint: ${principle_choice.constraint_amount if principle_choice.constraint_amount else 'None'})")
                 
                 # Update participant memory with their ballot choice
                 ballot_content = f"""Secret Ballot Vote Round {discussion_state.round_number}:

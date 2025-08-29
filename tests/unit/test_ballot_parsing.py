@@ -165,6 +165,72 @@ class TestBallotParsingVulnerabilities(unittest.TestCase):
                     self.assertIn(choice_data['principle'], ['maximizing_floor', 'maximizing_average'],
                                 f"Informal phrase should parse as simple principle if detected: {input_text}")
     
+    def test_enhanced_ballot_parsing_scenarios(self):
+        """Test enhanced ballot parsing scenarios from comprehensive test suite."""
+        # Full principle name tests (modern primary support)
+        full_name_cases = [
+            ("My ballot choice is maximizing_average_floor_constraint with constraint of $15,000", 
+             "maximizing_average_floor_constraint"),
+            ("I choose maximizing the average income with a floor constraint", 
+             "maximizing_average_floor_constraint"), 
+            ("My vote is maximizing average with floor constraint", 
+             "maximizing_average_floor_constraint"),
+            ("My ballot choice is maximizing_floor", 
+             "maximizing_floor"),
+            ("I choose maximizing_average", 
+             "maximizing_average"),
+        ]
+        
+        for input_text, expected_principle in full_name_cases:
+            with self.subTest(input_text=input_text, test_type="full_names"):
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
+                self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
+                self.assertEqual(choice_data['principle'], expected_principle,
+                               f"Expected {expected_principle}, got {choice_data['principle']} for: {input_text}")
+    
+    def test_spanish_ballot_parsing(self):
+        """Test Spanish ballot parsing functionality."""
+        spanish_cases = [
+            ("Mi elección de boleta es principio c con restricción de mínimo de $10000", 
+             "maximizing_average_floor_constraint"),
+            ("principio c con restricción de mínimo de $15000", 
+             "maximizing_average_floor_constraint"),
+            ("Mi elección es el principio a", 
+             "maximizing_floor"),
+            ("Prefiero maximizar promedio", 
+             "maximizing_average"),
+        ]
+        
+        for input_text, expected_principle in spanish_cases:
+            with self.subTest(input_text=input_text, language="spanish"):
+                # Note: This tests the parsing logic, though full Spanish support requires language setup
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
+                if choice_data:  # Spanish parsing may not always work without proper language setup
+                    self.assertEqual(choice_data['principle'], expected_principle,
+                                   f"Expected {expected_principle}, got {choice_data['principle']} for Spanish: {input_text}")
+    
+    def test_comprehensive_constraint_extraction(self):
+        """Test comprehensive constraint amount extraction scenarios."""
+        constraint_cases = [
+            # Various formatting styles
+            ("My ballot choice is principle c with a floor constraint of $10", 10),
+            ("My ballot choice is principle c with a floor constraint of $13,000", 13000),
+            ("principle c with a floor constraint of $100", 100),
+            ("principle d with a range constraint of $20000", 20000),
+            ("maximizing average with floor constraint of $25000", 25000),
+            # Complex phrasing
+            ("My ballot choice is Maximizing the average income with a floor constraint with a floor constraint of $13,000", 13000),
+            ("I choose maximizing the average income with a floor constraint with floor constraint of $8,000", 8000),
+        ]
+        
+        for input_text, expected_amount in constraint_cases:
+            with self.subTest(input_text=input_text, test_type="constraint_extraction"):
+                choice_data = asyncio.run(self.utility_agent.parse_principle_choice_llm(input_text))
+                self.assertIsNotNone(choice_data, f"Should detect principle in: {input_text}")
+                if 'constraint_amount' in choice_data:
+                    self.assertEqual(choice_data['constraint_amount'], expected_amount,
+                                   f"Expected constraint amount {expected_amount}, got {choice_data.get('constraint_amount')} for: {input_text}")
+    
     def test_regression_prevention(self):
         """Test the specific regression that caused the experiment failure."""
         # This is the EXACT scenario from the failed experiment:

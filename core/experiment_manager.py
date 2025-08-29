@@ -5,6 +5,7 @@ import uuid
 import time
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import List
 from agents import Agent, trace
 
@@ -58,8 +59,9 @@ class FrohlichExperimentManager:
         >>> print(f"Consensus: {results.phase2_results.consensus_reached}")
     """
     
-    def __init__(self, config: ExperimentConfiguration):
+    def __init__(self, config: ExperimentConfiguration, config_file_path: str = "default_config.yaml"):
         self.config = config
+        self.config_file_path = config_file_path
         self.experiment_id = str(uuid.uuid4())
         self.error_handler = get_global_error_handler()
         
@@ -339,7 +341,7 @@ class FrohlichExperimentManager:
             rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
             public_conversation=public_conversation,
             final_vote_results=final_vote_results,
-            config_file="default_config.yaml",  # Could be made configurable
+            config_file=Path(self.config_file_path).name,
             income_class_probabilities=probabilities_dict,
             original_values_mode_enabled=original_values_enabled
         )
@@ -375,7 +377,7 @@ class FrohlichExperimentManager:
                 rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
                 public_conversation=phase2_results.discussion_result.discussion_history or "No discussion recorded",
                 final_vote_results=final_vote_results,
-                config_file="default_config.yaml"
+                config_file=Path(self.config_file_path).name
             )
             
             logger.info("Fallback general information set successfully")
@@ -391,7 +393,7 @@ class FrohlichExperimentManager:
                     rounds_conducted_phase_2=0,
                     public_conversation="Logging error occurred",
                     final_vote_results={},
-                    config_file="default_config.yaml"
+                    config_file=Path(self.config_file_path).name
                 )
             except Exception as final_e:
                 logger.error(f"Absolute fallback also failed: {final_e}")

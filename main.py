@@ -95,7 +95,7 @@ async def main():
             logger.info(f"  - {agent.name}: {agent.model} (temp={agent.temperature})")
         
         # Initialize and run experiment
-        experiment_manager = FrohlichExperimentManager(config)
+        experiment_manager = FrohlichExperimentManager(config, config_path)
         
         logger.info("=" * 60)
         logger.info(f"STARTING FROHLICH EXPERIMENT")

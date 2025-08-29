@@ -518,22 +518,20 @@ class UtilityAgent:
     
     
     def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for ranking detection."""
+        """Compile regex patterns for ranking detection only."""
         return {
             'ranking_line': re.compile(r'(\d+)\.?\s*\*?\*?\s*(.*?)(?=\n\s*\d+\.|$)', re.MULTILINE | re.DOTALL),
-            'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE),
-            'constraint_amount': re.compile(r'\$?(\d{1,3}(?:,\d{3})*|\d+)(?:\s*(?:dollars?|k|thousand))?', re.IGNORECASE)
+            'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE)
         }
     
     async def parse_principle_choice_enhanced(self, response: str, max_retries: int = 3) -> PrincipleChoice:
-        """Enhanced parsing for principle choice using LLM-based parsing (replaces regex)."""
+        """Streamlined principle choice parsing using JSON-based LLM approach."""
         
         for attempt in range(max_retries):
             try:
-                # Use new LLM-based parsing instead of regex
+                # Primary method: Use JSON-based LLM parsing
                 choice_data = await self.parse_principle_choice_llm(response)
                 if choice_data:
-                    # Convert LLM response to PrincipleChoice
                     return PrincipleChoice.create_for_parsing(
                         principle=JusticePrinciple(choice_data['principle']),
                         constraint_amount=choice_data.get('constraint_amount'),
@@ -541,16 +539,19 @@ class UtilityAgent:
                         reasoning=choice_data.get('reasoning', response)
                     )
                 
-                # Fallback to original agent-based parsing if LLM parsing fails
-                return await self.parse_principle_choice(response)
+                # If LLM parsing fails completely, try one fallback
+                if attempt == max_retries - 1:
+                    logger.warning(f"JSON parsing failed after {max_retries} attempts, using fallback")
+                    return await self.parse_principle_choice(response)
                 
             except Exception as e:
+                logger.warning(f"Principle choice parsing attempt {attempt + 1} failed: {e}")
                 if attempt == max_retries - 1:
-                    # Final attempt - use more permissive parsing
+                    # Final fallback
                     return await self._parse_with_fallback(response, 'principle_choice')
-                
-                # Add clarifying context for retry
-                response = f"Original response: {response}\n\nPlease clearly state your principle choice."
+        
+        # This should not be reached due to the fallback in the loop
+        raise ValueError(f"Failed to parse principle choice after {max_retries} attempts")
     
     
     def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
@@ -800,68 +801,122 @@ class UtilityAgent:
         return None
     
     def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
-        """Parse simplified LLM response format: PRINCIPLE: [a/b/c/d] | CONSTRAINT: [amount] | CERTAINTY: [level]"""
-        import re
+        """Parse JSON response from utility agent LLM."""
+        import json
         try:
-            # Look for the new simplified format
-            response_lower = llm_response.lower()
+            # Clean the response - look for JSON content
+            response_stripped = llm_response.strip()
             
-            # Extract principle (a/b/c/d)
-            principle_match = re.search(r'(?:principle|原则|principio)[:：]\s*([a-d])', response_lower, re.IGNORECASE)
-            if not principle_match:
+            # Try to extract JSON from the response
+            start_idx = response_stripped.find('{')
+            end_idx = response_stripped.rfind('}')
+            
+            if start_idx == -1 or end_idx == -1:
+                logger.warning(f"No JSON found in LLM response: {response_stripped[:100]}...")
                 return None
             
-            principle_letter = principle_match.group(1).lower()
+            json_str = response_stripped[start_idx:end_idx + 1]
+            parsed_json = json.loads(json_str)
             
-            # Map letters to principle names
-            principle_map = {
-                'a': 'maximizing_floor',
-                'b': 'maximizing_average', 
-                'c': 'maximizing_average_floor_constraint',
-                'd': 'maximizing_average_range_constraint'
+            # Validate required fields
+            if not all(key in parsed_json for key in ['principle', 'constraint_amount', 'certainty']):
+                logger.warning(f"Missing required fields in JSON response: {parsed_json}")
+                return None
+            
+            # Validate principle value - support both full names and letters
+            principle_input = parsed_json['principle'].lower().strip()
+            
+            # Direct validation for canonical names (no mapping needed)
+            valid_canonical_principles = {
+                'maximizing_floor',
+                'maximizing_average',
+                'maximizing_average_floor_constraint', 
+                'maximizing_average_range_constraint'
             }
             
-            principle = principle_map.get(principle_letter)
-            if not principle:
+            if principle_input in valid_canonical_principles:
+                principle_name = principle_input
+            else:
+                # Map variations and legacy letters to canonical names
+                principle_variations = {
+                    # Legacy letters (backward compatibility)
+                    'a': 'maximizing_floor',
+                    'b': 'maximizing_average', 
+                    'c': 'maximizing_average_floor_constraint',
+                    'd': 'maximizing_average_range_constraint',
+                    
+                    # Common variations
+                    'maximizing_floor_income': 'maximizing_floor',
+                    'maximizing_average_income': 'maximizing_average',
+                    'floor_constraint': 'maximizing_average_floor_constraint',
+                    'range_constraint': 'maximizing_average_range_constraint',
+                    
+                    # Chinese principle names
+                    '最大化最低收入': 'maximizing_floor',
+                    '最大化平均收入': 'maximizing_average', 
+                    '在最低收入约束条件下最大化平均收入': 'maximizing_average_floor_constraint',
+                    '在范围约束条件下最大化平均收入': 'maximizing_average_range_constraint',
+                    
+                    # Spanish principle names
+                    'maximización del ingreso mínimo': 'maximizing_floor',
+                    'maximización del ingreso promedio': 'maximizing_average',
+                    'maximización del ingreso promedio bajo restricción de ingreso mínimo': 'maximizing_average_floor_constraint',
+                    'maximización del ingreso promedio bajo restricción de rango': 'maximizing_average_range_constraint'
+                }
+                
+                principle_name = principle_variations.get(principle_input)
+                if principle_name is None:
+                    logger.warning(f"Invalid principle value: {principle_input}")
+                    return None
+            
+            # Check for common parsing errors - if response mentions constraint but principle is basic average
+            response_lower = llm_response.lower()
+            if principle_name == 'maximizing_average' and ('floor constraint' in response_lower):
+                logger.warning("Detected 'floor constraint' with basic average principle - correcting to floor constraint")
+                principle_name = 'maximizing_average_floor_constraint'
+            elif principle_name == 'maximizing_average' and ('range constraint' in response_lower):
+                logger.warning("Detected 'range constraint' with basic average principle - correcting to range constraint") 
+                principle_name = 'maximizing_average_range_constraint'
+            
+            # Validate certainty value
+            valid_certainty = ['very_unsure', 'unsure', 'sure', 'very_sure']
+            if parsed_json['certainty'] not in valid_certainty:
+                logger.warning(f"Invalid certainty value: {parsed_json['certainty']}")
                 return None
             
-            # Extract constraint amount
-            constraint_amount = None
-            constraint_match = re.search(r'(?:constraint|约束|restriccion)[:：]\s*(\d+|none|无|ninguna)', response_lower, re.IGNORECASE)
-            if constraint_match:
-                constraint_text = constraint_match.group(1).lower()
-                if constraint_text not in ['none', '无', 'ninguna']:
-                    try:
-                        constraint_amount = int(constraint_text)
-                        if constraint_amount <= 0:
-                            constraint_amount = None
-                    except ValueError:
-                        pass
+            # Validate constraint amount - accept any positive amount
+            constraint_amount = parsed_json['constraint_amount']
+            if constraint_amount is not None:
+                if isinstance(constraint_amount, (int, float)) and constraint_amount > 0:
+                    constraint_amount = int(constraint_amount)
+                    logger.info(f"Parsed constraint amount: ${constraint_amount}")
+                else:
+                    logger.warning(f"Invalid constraint amount: {constraint_amount} - must be positive number")
+                    constraint_amount = None
             
-            # Extract certainty
-            certainty = 'sure'  # Default
-            certainty_match = re.search(r'(?:certainty|确定性|certeza)[:：]\s*(very_unsure|很不确定|muy_inseguro|unsure|不确定|inseguro|sure|确定|seguro|very_sure|很确定|muy_seguro)', response_lower, re.IGNORECASE)
-            if certainty_match:
-                certainty_text = certainty_match.group(1).lower()
-                # Map multilingual certainty levels to English
-                certainty_map = {
-                    'very_unsure': 'very_unsure', '很不确定': 'very_unsure', 'muy_inseguro': 'very_unsure',
-                    'unsure': 'unsure', '不确定': 'unsure', 'inseguro': 'unsure',
-                    'sure': 'sure', '确定': 'sure', 'seguro': 'sure',
-                    'very_sure': 'very_sure', '很确定': 'very_sure', 'muy_seguro': 'very_sure'
-                }
-                certainty = certainty_map.get(certainty_text, 'sure')
+            # Fallback: If constraint amount is missing but principle requires it, try regex extraction
+            if (constraint_amount is None and 
+                principle_name in ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']):
+                fallback_amount = self._extract_constraint_amount_flexible(llm_response)
+                if fallback_amount:
+                    constraint_amount = fallback_amount
+                    logger.info(f"Fallback extraction recovered constraint amount: ${constraint_amount}")
+                else:
+                    logger.warning(f"Failed to extract constraint amount for {principle_name} principle")
             
             return {
-                'principle': principle,
+                'principle': principle_name,
                 'constraint_amount': constraint_amount,
-                'certainty': certainty,
-                'confidence': 0.9,  # High confidence for simplified format
+                'certainty': parsed_json['certainty'],
+                'confidence': 0.9,  # High confidence for JSON format
                 'reasoning': llm_response
             }
             
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON from LLM response: {e}. Response: {llm_response[:200]}...")
+            return None
         except Exception as e:
-            logger.warning(f"Failed to parse simplified LLM principle response: {e}")
+            logger.warning(f"Failed to parse LLM principle response: {e}")
             return None
     
     async def parse_preference_statement_llm(self, statement: str) -> Optional[PrincipleChoice]:
@@ -976,9 +1031,12 @@ class UtilityAgent:
                 if amount_matches:
                     try:
                         amount = int(amount_matches[0].replace(',', ''))
-                        # Validate reasonable range (between $1,000 and $100,000)
-                        if 1000 <= amount <= 100000:
+                        # Accept any positive amount
+                        if amount > 0:
+                            logger.info(f"Extracted constraint amount from LLM: ${amount}")
                             return amount
+                        else:
+                            logger.warning(f"Constraint amount must be positive: ${amount}")
                     except ValueError:
                         pass
             
@@ -1169,8 +1227,9 @@ class UtilityAgent:
                     
                     amount_int = int(amount)
                     
-                    # Validate reasonable range
-                    if 1000 <= amount_int <= 100000:
+                    # Accept any positive amount
+                    if amount_int > 0:
+                        logger.info(f"Extracted flexible constraint amount: ${amount_int}")
                         return amount_int
                         
                 except (ValueError, TypeError):
