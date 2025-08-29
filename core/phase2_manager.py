@@ -6,7 +6,7 @@ import random
 import re
 import time
 from typing import List, Dict, Optional
-from agents import Agent, Runner
+from agents import Agent, Runner, trace
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
@@ -699,38 +699,40 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
     ) -> tuple[str, str]:
         """Get participant's statement with internal reasoning. Returns (statement, internal_reasoning)."""
         
-        # If reasoning is enabled, ask for internal reasoning first
-        internal_reasoning = ""
-        if agent_config.reasoning_enabled:
-            reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
-            reasoning_result = await Runner.run(participant.agent, reasoning_prompt, context=context)
-            internal_reasoning = reasoning_result.final_output
-        
-        # Get public statement with validation and retry logic
-        try:
-            statement, _ = await self._get_participant_statement_with_retry(
-                participant, context, discussion_state, agent_config, internal_reasoning
-            )
+        with trace(f"Phase 2: {participant.name} - Round {context.round_number}", 
+                  trace_id=f"trace_phase2_{participant.name.lower().replace(' ', '_')}_r{context.round_number}"):
+            # If reasoning is enabled, ask for internal reasoning first
+            internal_reasoning = ""
+            if agent_config.reasoning_enabled:
+                reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
+                reasoning_result = await Runner.run(participant.agent, reasoning_prompt, context=context)
+                internal_reasoning = reasoning_result.final_output
             
-            return statement, internal_reasoning
-            
-        except AgentCommunicationError as e:
-            # Log the error
-            self._log_warning(f"Agent communication error for {participant.name}: {str(e)}")
-            self.validation_stats["fallback_statements"] += 1
-            
-            # Quarantine failed responses if enabled
-            if self.settings.quarantine_failed_responses:
-                self.validation_stats["quarantined_responses"] += 1
-                # Return a neutral statement that doesn't contaminate discussion
-                language_manager = get_language_manager()
-                neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
-                # Mark as quarantined internally
-                return f"__QUARANTINED__{neutral_statement}", internal_reasoning
-            else:
-                # Legacy behavior: include failure message (not recommended)
-                fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
-                return fallback_statement, internal_reasoning
+            # Get public statement with validation and retry logic
+            try:
+                statement, _ = await self._get_participant_statement_with_retry(
+                    participant, context, discussion_state, agent_config, internal_reasoning
+                )
+                
+                return statement, internal_reasoning
+                
+            except AgentCommunicationError as e:
+                # Log the error
+                self._log_warning(f"Agent communication error for {participant.name}: {str(e)}")
+                self.validation_stats["fallback_statements"] += 1
+                
+                # Quarantine failed responses if enabled
+                if self.settings.quarantine_failed_responses:
+                    self.validation_stats["quarantined_responses"] += 1
+                    # Return a neutral statement that doesn't contaminate discussion
+                    language_manager = get_language_manager()
+                    neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
+                    # Mark as quarantined internally
+                    return f"__QUARANTINED__{neutral_statement}", internal_reasoning
+                else:
+                    # Legacy behavior: include failure message (not recommended)
+                    fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
+                    return fallback_statement, internal_reasoning
     
     def _get_voting_reminder_message(self) -> str:
         """Get voting reminder message in appropriate language."""
@@ -1075,15 +1077,17 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
     ) -> PrincipleRanking:
         """Get participant's final principle ranking after Phase 2."""
         
-        language_manager = get_language_manager()
-        final_ranking_prompt = language_manager.get("prompts.phase2_final_ranking_prompt")
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        return await self.utility_agent.parse_principle_ranking_enhanced(text_response)
+        with trace(f"Phase 2: {participant.name} - Final Ranking", 
+                  trace_id=f"trace_phase2_{participant.name.lower().replace(' ', '_')}_final"):
+            language_manager = get_language_manager()
+            final_ranking_prompt = language_manager.get("prompts.phase2_final_ranking_prompt")
+            
+            # Always use text responses, parse with enhanced utility agent
+            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            text_response = result.final_output
+            
+            # Parse using enhanced utility agent with retry logic
+            return await self.utility_agent.parse_principle_ranking_enhanced(text_response)
     
     def _build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for internal reasoning before public statement."""
@@ -1245,11 +1249,13 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             
             # Get confirmation response from participant with timeout
             try:
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, confirmation_prompt, context=context),
-                    timeout=self.settings.confirmation_timeout_seconds
-                )
-                confirmation_response = result.final_output
+                with trace(f"Phase 2: {participant.name} - Voting Confirmation", 
+                          trace_id=f"trace_phase2_{participant.name.lower().replace(' ', '_')}_vote_confirm"):
+                    result = await asyncio.wait_for(
+                        Runner.run(participant.agent, confirmation_prompt, context=context),
+                        timeout=self.settings.confirmation_timeout_seconds
+                    )
+                    confirmation_response = result.final_output
             except asyncio.TimeoutError:
                 self._log_warning(f"Timeout waiting for confirmation from {participant.name}")
                 confirmation_response = f"[{participant.name} timed out during confirmation]"
@@ -1324,11 +1330,13 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
             
             # Get secret ballot from participant with timeout
             try:
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, ballot_prompt, context=context),
-                    timeout=self.settings.ballot_timeout_seconds
-                )
-                ballot_response = result.final_output
+                with trace(f"Phase 2: {participant.name} - Secret Ballot", 
+                          trace_id=f"trace_phase2_{participant.name.lower().replace(' ', '_')}_ballot"):
+                    result = await asyncio.wait_for(
+                        Runner.run(participant.agent, ballot_prompt, context=context),
+                        timeout=self.settings.ballot_timeout_seconds
+                    )
+                    ballot_response = result.final_output
             except asyncio.TimeoutError:
                 self._log_warning(f"Timeout waiting for ballot from {participant.name}")
                 ballot_response = f"[{participant.name} timed out during ballot]"

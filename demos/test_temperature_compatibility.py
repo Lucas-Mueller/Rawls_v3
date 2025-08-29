@@ -25,7 +25,7 @@ from utils.dynamic_model_capabilities import (
 )
 from utils.model_provider import create_model_config_with_temperature_detection
 from config import AgentConfiguration
-from experiment_agents.participant_agent import ParticipantAgent, create_participant_agents_with_batch_testing
+from experiment_agents.participant_agent import ParticipantAgent, create_participant_agents_with_dynamic_temperature
 from experiment_agents.utility_agent import UtilityAgent
 
 async def test_individual_model_detection():
@@ -148,7 +148,7 @@ async def test_batch_agent_creation():
     
     print("🚀 Creating agents with batch temperature testing...")
     try:
-        agents = await create_participant_agents_with_batch_testing(configs)
+        agents = await create_participant_agents_with_dynamic_temperature(configs)
         print(f"✅ Successfully created {len(agents)} agents with batch testing")
         
         for agent in agents:
