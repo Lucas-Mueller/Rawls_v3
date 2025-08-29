@@ -368,7 +368,7 @@ class TestPreferenceDetectionSimpleMode(unittest.TestCase):
         
         for statement, expected_principle, expected_constraint in chinese_constraint_cases:
             with self.subTest(statement=statement):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(statement)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(statement))
                 
                 # Test constraint extraction directly (some full preferences may not be detected yet)
                 if extracted_amount is not None:
@@ -385,7 +385,7 @@ class TestPreferenceDetectionSimpleMode(unittest.TestCase):
         
         for statement, expected_principle, expected_constraint in spanish_constraint_cases:
             with self.subTest(statement=statement):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(statement)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(statement))
                 
                 # Test constraint extraction directly (some full preferences may not be detected yet)
                 if extracted_amount is not None:

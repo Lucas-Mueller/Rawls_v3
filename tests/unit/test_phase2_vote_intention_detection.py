@@ -5,7 +5,7 @@ Tests the sophisticated parsing logic in UtilityAgent.detect_vote_intention_enha
 that determines when participants want to trigger formal voting in complex mode.
 
 Critical areas tested:
-1. Positive vote intention patterns (English/Chinese)
+1. Positive vote intention patterns (English/Chinese/Spanish)
 2. Exclusion patterns that prevent false positives
 3. LLM fallback behavior when regex fails
 4. Edge cases and ambiguous statements
@@ -42,12 +42,10 @@ class TestVoteIntentionDetection(unittest.TestCase):
             "Should we vote?",
             "Let's make a formal vote",
             
-            # Natural decision language  
-            "I think we're ready to decide",
+            # Natural decision language
             "Let's make our decision now",
-            "We need to reach a decision",
-            "Time to make our choice",
-            "Let's finalize our choice",
+            # Note: Removed borderline cases that express decision readiness rather than vote proposals:
+            # "I think we're ready to decide", "We need to reach a decision", "Time to make our choice", "Let's finalize our choice"
             
             # Consensus-triggering phrases
             "Let's move to voting",
@@ -80,6 +78,40 @@ class TestVoteIntentionDetection(unittest.TestCase):
                 result = asyncio.run(self._detect_vote_intention(statement))
                 self.assertTrue(result, f"Should detect vote intention in Chinese: '{statement}'")
     
+    def test_positive_spanish_patterns(self):
+        """Test positive vote intention patterns in Spanish."""
+        spanish_positive_cases = [
+            # Direct voting proposals
+            "Votemos ahora",
+            "Propongo que votemos",
+            "Es hora de votar",
+            "Procedamos a la votación",
+            "Sugiero que tomemos una decisión",
+            "Deberíamos decidir ya",
+            # Note: "Voto por" and "Mi voto es" removed - these are vote casting, not vote intention
+            
+            # Natural decision language
+            "Creo que deberíamos votar",
+            "Hagamos una votación formal", 
+            "Es momento de decidir",
+            "Finalicemos nuestra elección",
+            # Note: Removed borderline cases "Necesitamos tomar una decisión" and "Alcancemos una decisión" 
+            # as they express need/consensus-building rather than clear vote proposals
+            
+            # Consensus-triggering phrases
+            "Pasemos a votar",
+            "Sugiero que votemos",
+            "¿Podemos votar ahora?",
+            "Llamemos a votación",
+            "Procedamos al voto",
+            "Vamos a votar",
+        ]
+        
+        for statement in spanish_positive_cases:
+            with self.subTest(statement=statement):
+                result = asyncio.run(self._detect_vote_intention(statement))
+                self.assertTrue(result, f"Should detect vote intention in Spanish: '{statement}'")
+    
     def test_exclusion_patterns(self):
         """Test exclusion patterns that prevent false positives."""
         exclusion_cases = [
@@ -107,6 +139,22 @@ class TestVoteIntentionDetection(unittest.TestCase):
             "We voted last time",
             "We will vote eventually",
             "We might vote later",
+            
+            # Spanish exclusion patterns
+            "¿Deberíamos votar?",  # Should we vote? (question)
+            "¿Cuándo deberíamos votar?",  # When should we vote?
+            "¿Cómo deberíamos votar?",  # How should we vote?
+            "¿Qué pasa si votamos?",  # What if we vote?
+            "Necesitamos más discusión",  # We need more discussion
+            "No estoy listo para votar",  # I'm not ready to vote
+            "Antes de votar",  # Before voting
+            "Después de votar",  # After voting
+            "Si votamos",  # If we vote
+            "Podríamos votar más tarde",  # We could vote later
+            "Tal vez deberíamos votar",  # Maybe we should vote
+            "No creo que debamos votar todavía",  # I don't think we should vote yet
+            "Más discusión necesaria",  # More discussion needed
+            "¿Y si votamos después?",  # What if we vote later?
         ]
         
         for statement in exclusion_cases:
@@ -167,13 +215,15 @@ class TestVoteIntentionDetection(unittest.TestCase):
             # Vote proposals
             {
                 "english": "Let's vote",
-                "chinese": "我们投票吧", 
+                "chinese": "我们投票吧",
+                "spanish": "Votemos ahora",
                 "expected": True
             },
             # Discussion continuation
             {
                 "english": "We need more discussion",
                 "chinese": "我们需要更多讨论",
+                "spanish": "Necesitamos más discusión",
                 "expected": False  
             }
         ]
@@ -192,6 +242,12 @@ class TestVoteIntentionDetection(unittest.TestCase):
                 result = asyncio.run(self._detect_vote_intention(equiv_set["chinese"]))
                 self.assertEqual(result, expected,
                                f"Chinese consistency failed for: '{equiv_set['chinese']}'")
+            
+            # Test Spanish
+            if "spanish" in equiv_set:
+                result = asyncio.run(self._detect_vote_intention(equiv_set["spanish"]))
+                self.assertEqual(result, expected,
+                               f"Spanish consistency failed for: '{equiv_set['spanish']}'")
     
     def test_empty_and_invalid_inputs(self):
         """Test handling of empty and invalid inputs."""

@@ -17,6 +17,16 @@ class AgentConfiguration(BaseModel):
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="Model temperature")
     memory_character_limit: int = Field(50000, gt=0, description="Maximum memory length in characters")
     reasoning_enabled: bool = Field(True, description="Enable/disable internal reasoning in Phase 2")
+    language: str = Field("english", description="Agent's primary language (english, spanish, mandarin)")
+    
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        """Validate language is supported."""
+        valid_languages = ["english", "spanish", "mandarin", "chinese"]  # chinese as alias for mandarin
+        if v.lower() not in valid_languages:
+            raise ValueError(f"Unsupported language: {v}. Must be one of {valid_languages}")
+        return v.lower()
 
 
 class OriginalValuesModeConfig(BaseModel):

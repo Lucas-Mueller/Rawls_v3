@@ -8,7 +8,7 @@ parameter by creating test agents and running simple inference calls.
 import asyncio
 import logging
 from typing import Dict, Optional, Tuple, List
-from agents import Agent, Runner, ModelSettings
+from agents import Agent, Runner, ModelSettings, set_tracing_disabled
 from utils.model_provider import detect_model_provider
 from agents.extensions.models.litellm_model import LitellmModel
 import os
@@ -17,6 +17,15 @@ logger = logging.getLogger(__name__)
 
 # Cache for temperature compatibility results to avoid repeated tests
 _temperature_cache: Dict[str, bool] = {}
+
+
+async def _run_without_tracing(agent, prompt: str, context=None):
+    """Run a quick probe call without emitting tracing spans."""
+    set_tracing_disabled(True)
+    try:
+        return await Runner.run(agent, prompt, context=context)
+    finally:
+        set_tracing_disabled(False)
 
 async def test_temperature_support(model_string: str) -> Tuple[bool, str, Optional[Exception]]:
     """
@@ -62,7 +71,7 @@ async def test_temperature_support(model_string: str) -> Tuple[bool, str, Option
             # Test 2: Try a simple inference call to verify it actually works
             logger.debug(f"Running test inference with temperature for {model_string}")
             simple_response = await asyncio.wait_for(
-                Runner.run(test_agent_with_temp, "Say 'test' and nothing else."),
+                _run_without_tracing(test_agent_with_temp, "Say 'test' and nothing else."),
                 timeout=30  # 30 second timeout for testing
             )
             
@@ -87,7 +96,7 @@ async def test_temperature_support(model_string: str) -> Tuple[bool, str, Option
                 # Test basic inference without temperature
                 logger.debug(f"Running test inference without temperature for {model_string}")
                 simple_response = await asyncio.wait_for(
-                    Runner.run(test_agent_no_temp, "Say 'test' and nothing else."),
+                    _run_without_tracing(test_agent_no_temp, "Say 'test' and nothing else."),
                     timeout=30
                 )
                 
@@ -263,11 +272,11 @@ async def create_agent_with_temperature_retry(
                     phase=ExperimentPhase.PHASE_1,
                     memory_character_limit=1000
                 )
-                await Runner.run(agent, test_prompt, context=test_context)
+                await _run_without_tracing(agent, test_prompt, context=test_context)
             except Exception as ctx_error:
                 # If context doesn't work, try without context (for regular Agent)
                 try:
-                    await Runner.run(agent, test_prompt)
+                    await _run_without_tracing(agent, test_prompt)
                 except Exception as no_ctx_error:
                     # Re-raise the original context error since that's more likely to be the intended usage
                     raise ctx_error
@@ -325,11 +334,11 @@ async def create_agent_with_temperature_retry(
                             phase=ExperimentPhase.PHASE_1,
                             memory_character_limit=1000
                         )
-                        await Runner.run(agent, test_prompt, context=test_context)
+                        await _run_without_tracing(agent, test_prompt, context=test_context)
                     except Exception as ctx_error:
                         # If context doesn't work, try without context (for regular Agent)
                         try:
-                            await Runner.run(agent, test_prompt)
+                            await _run_without_tracing(agent, test_prompt)
                         except Exception as no_ctx_error:
                             # Re-raise the original context error since that's more likely to be the intended usage
                             raise ctx_error

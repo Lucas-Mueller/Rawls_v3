@@ -43,6 +43,19 @@ async def main():
     setup_logging()
     logger = logging.getLogger(__name__)
     
+    # Warn if tracing is globally disabled via environment
+    try:
+        import os
+        disable_flags = {
+            'OPENAI_AGENTS_DISABLE_TRACING': os.getenv('OPENAI_AGENTS_DISABLE_TRACING'),
+            'OPENAI_DISABLE_TRACING': os.getenv('OPENAI_DISABLE_TRACING')
+        }
+        if any(v for v in disable_flags.values() if str(v).lower() in ['1', 'true', 'yes']):
+            logger.warning("OpenAI Agents SDK tracing appears disabled via environment variables. "
+                           "Participant runs will not be traced. Unset OPENAI_AGENTS_DISABLE_TRACING/OPENAI_DISABLE_TRACING to enable.")
+    except Exception:
+        pass
+    
     # Parse command line arguments
     config_path = sys.argv[1] if len(sys.argv) > 1 else "config/default_config.yaml"
     
@@ -98,6 +111,7 @@ async def main():
         
         # Initialize and run experiment
         experiment_manager = FrohlichExperimentManager(config, config_path)
+        logger.info("Tracing policy: participant-only spans; utility agents untraced")
         
         logger.info("=" * 60)
         logger.info(f"STARTING FROHLICH EXPERIMENT")
@@ -125,9 +139,21 @@ async def main():
         # Display trace link if available
         trace_id = experiment_manager.get_trace_id()
         if trace_id:
-            trace_url = f"https://platform.openai.com/traces/{trace_id}"
-            print(f"\n🔗 Trace: {trace_url}")
-            logger.info(f"Trace available at: {trace_url}")
+            # Remove 'trace_' prefix if present for proper URL format
+            clean_trace_id = trace_id[6:] if trace_id.startswith('trace_') else trace_id
+            # Use Observability UI path
+            trace_url = f"https://platform.openai.com/observability/traces/{clean_trace_id}"
+            
+            # Check if OPENAI_API_KEY is set
+            import os
+            if os.getenv('OPENAI_API_KEY'):
+                print(f"\n🔗 Trace: {trace_url}")
+                logger.info(f"Trace available at: {trace_url}")
+            else:
+                print(f"\n⚠️  Trace ID generated: {clean_trace_id}")
+                print(f"🔗 Trace URL: {trace_url}")
+                print("⚠️  Note: OPENAI_API_KEY not set - trace may not be uploaded to OpenAI platform")
+                logger.info(f"Trace ID: {clean_trace_id} (API key not set)")
         else:
             logger.info("No trace ID available for this experiment")
         

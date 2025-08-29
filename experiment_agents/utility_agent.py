@@ -436,73 +436,66 @@ class UtilityAgent:
     
     async def detect_vote_intention_enhanced(self, statement: str) -> Optional[str]:
         """
-        Enhanced vote detection using LLM-first approach with exclusion patterns.
+        Enhanced multilingual vote detection using utility agent intelligence.
         Detects when participants want to trigger formal voting in discussions.
+        Replaces regex patterns with smart LLM-based analysis for better accuracy.
         """
         await self.async_init()
 
         statement_lower = statement.lower().strip()
         
-        # FIRST: Apply exclusion patterns that prevent false positives
-        exclusion_patterns = [
-            r"\bshould we vote\s+(later|tomorrow|next)\b",  # Future timing
-            r"\bdo you think we should vote\b",             # Opinion questions
-            r"\bwhen should we vote\b",                     # Timing questions  
-            r"\bhow should we vote\b",                      # Method questions
-            r"\bwhat if we vote\b",                         # Hypothetical
-            r"\bnot ready to vote\b",                       # Explicit rejection
-            r"\bneed more discussion\b",                    # Discussion priority
-            r"\bwe need to discuss more\b",                 # Discussion priority
-            r"\bbefore we vote\b",                          # Conditional timing
-            r"\bafter we vote\b",                           # Future reference
-            r"\bif we vote\b",                              # Conditional
-            r"\bunless we vote\b",                          # Conditional
-            r"\bwe voted\b",                                # Past reference
-            r"\bwill vote\b",                               # Future reference
-            r"\bmight vote\b",                              # Uncertain future
-            r"\bmaybe we should vote\b",                    # Uncertainty
-            r"\bwe could vote\b",                           # Possibility
-            r"\bvoting would be good\b",                    # Conditional
-        ]
-        
-        # Return early if exclusion patterns match
-        for pattern in exclusion_patterns:
-            if re.search(pattern, statement_lower):
-                logger.info(f"Vote intention excluded by pattern: {pattern}")
-                return None
+        # Detect likely language for better processing
+        language_hint = self._detect_language_hint(statement)
+        logger.debug(f"Detected language '{language_hint}' for vote intention analysis: {statement}")
 
-        # PRIMARY: LLM-based vote intention detection
+        # PRIMARY: LLM-based multilingual vote intention detection
         try:
-            # Improved prompt for vote intention detection with broader scope
             vote_detection_prompt = f"""
-Analyze this statement to determine if the speaker is expressing intention or readiness to proceed with voting or decision-making.
+Analyze if this statement expresses IMMEDIATE intention to vote or make a decision.
 
 Statement: "{statement}"
+Language hint: {language_hint}
 
-DETECT VOTE_INTENTION when the speaker:
-1. PROPOSES voting/decision action: "Let's vote", "I propose we vote", "We should vote now"
-2. SIGNALS READINESS for voting: "Ready to vote", "Time to vote", "Time for the vote"
-3. INDICATES SEQUENCE/TIMING: "Voting is the next step", "Now we vote", "Let's move to voting"
-4. SEEKS AGREEMENT to vote: "Should we vote?", "Can we vote now?"
-5. DECLARES DECISION PHASE: "Time to decide", "Let's make our decision", "Ready to decide"
+DETECT VOTE_INTENTION for:
+1. IMMEDIATE PROPOSALS: "Let's vote", "Votemos", "我们投票吧", "I propose we vote"
+2. DECISION READINESS: "Ready to vote", "Time to vote", "Es hora de votar", "投票时间到了"
+3. ACTION SIGNALS: "Voting is the next step", "Now we vote", "Ahora votemos", "现在投票"
+4. CONSENSUS TRIGGERS: "Should we vote?", "¿Votamos?", "我们应该投票吗?"
+5. DECISION LANGUAGE: "Let's decide", "Decidamos", "我们来决定", "Sugiero que tomemos una decisión"
+6. PROCEDURE INITIATION: "Let's move to voting", "Procedamos a la votación", "开始投票程序"
 
 DO NOT DETECT when the speaker:
-- Asks WHEN/HOW to vote without proposing action: "When should we vote?", "How should we vote?"
-- Expresses UNCERTAINTY: "Maybe we should vote", "We might vote", "We could vote"
-- Refers to PAST/FUTURE without immediate intent: "We voted before", "We will vote later"
-- Seeks MORE DISCUSSION: "We need more discussion", "Let's think about voting"
-- Makes CONDITIONAL statements: "If we vote", "Unless we vote"
+1. ASKS QUESTIONS ABOUT VOTING: "When should we vote?", "¿Cuándo deberíamos votar?", "什么时候投票?"
+2. EXPRESSES UNCERTAINTY: "Maybe we should vote", "Tal vez deberíamos votar", "也许我们应该投票"
+3. SEEKS MORE DISCUSSION: "We need more discussion", "Necesitamos más discusión", "需要更多讨论"
+4. MAKES CONDITIONAL STATEMENTS: "If we vote", "Si votamos", "如果我们投票"
+5. REFERS TO PAST/FUTURE: "We voted before", "We will vote later", "Votaremos después"
+6. ASKS FOR OPINIONS: "Do you think we should vote?", "¿Crees que deberíamos votar?", "你觉得我们应该投票吗?"
+
+SPANISH LANGUAGE SPECIFICS:
+✓ "Sugiero que tomemos una decisión" → VOTE_INTENTION (decision proposal)
+✓ "Procedamos a la votación" → VOTE_INTENTION (procedure initiation)  
+✓ "Es momento de decidir" → VOTE_INTENTION (timing signal)
+✓ "Votemos ahora" → VOTE_INTENTION (immediate proposal)
+✓ "¿Podemos votar ahora?" → VOTE_INTENTION (consensus seeking)
+
+✗ "¿Deberíamos votar?" → NO_VOTE_INTENTION (opinion question, not proposal)
+✗ "¿Cuándo deberíamos votar?" → NO_VOTE_INTENTION (timing question)
+✗ "Necesitamos más discusión" → NO_VOTE_INTENTION (more discussion needed)
+✗ "Tal vez deberíamos votar" → NO_VOTE_INTENTION (uncertainty)
+✗ "Si votamos después" → NO_VOTE_INTENTION (conditional)
 
 EXAMPLES:
 ✓ "Let's vote" → VOTE_INTENTION_DETECTED
+✓ "Votemos ahora" → VOTE_INTENTION_DETECTED
 ✓ "Time for the vote" → VOTE_INTENTION_DETECTED  
-✓ "Voting is the next step" → VOTE_INTENTION_DETECTED
-✓ "Should we vote?" → VOTE_INTENTION_DETECTED
-✓ "Ready to decide" → VOTE_INTENTION_DETECTED
-✗ "Maybe we should vote" → NO_VOTE_INTENTION
-✗ "When should we vote?" → NO_VOTE_INTENTION
-✗ "We need more discussion" → NO_VOTE_INTENTION
-✗ "Random unrelated statement" → NO_VOTE_INTENTION
+✓ "Sugiero que tomemos una decisión" → VOTE_INTENTION_DETECTED
+✓ "Should we vote?" → VOTE_INTENTION_DETECTED (seeking immediate consensus)
+
+✗ "¿Deberíamos votar?" → NO_VOTE_INTENTION (opinion question in Spanish)
+✗ "Maybe we should vote" → NO_VOTE_INTENTION (uncertainty)
+✗ "When should we vote?" → NO_VOTE_INTENTION (timing question)
+✗ "We need more discussion" → NO_VOTE_INTENTION (more discussion)
 
 Response format - respond with EXACTLY one of these:
 VOTE_INTENTION_DETECTED
@@ -513,7 +506,7 @@ Response:"""
             result = await run_without_tracing(self.parser_agent, vote_detection_prompt)
             response = result.final_output.strip()
             
-            # Parse response - trust the LLM's analysis
+            # Parse response - trust the LLM's multilingual analysis
             if response == "VOTE_INTENTION_DETECTED" or (response.startswith("VOTE_DETECTED") and not response.startswith("NO_VOTE_DETECTED")):
                 logger.info(f"Vote intention detected via LLM analysis: {statement}")
                 return statement
@@ -527,22 +520,31 @@ Response:"""
                 
         except Exception as e:
             logger.warning(f"LLM vote detection failed: {e}")
-        
-        # MINIMAL FALLBACK: Only most obvious cases when LLM fails
-        # This should rarely be used if LLM is working properly
-        obvious_vote_patterns = [
-            r"\blet'?s vote\b",
-            r"\btime to vote\b",
-            r"\bready to vote\b",
+            # Fallback to simple patterns only for obvious cases
+            return self._detect_vote_intention_simple_fallback(statement_lower)
+
+    def _detect_vote_intention_simple_fallback(self, statement_lower: str) -> Optional[str]:
+        """
+        Simple fallback for vote intention detection when LLM fails.
+        Only handles the most obvious multilingual cases.
+        """
+        # Simple obvious patterns across languages
+        obvious_patterns = [
+            r"\blet'?s vote\b",           # English
+            r"\btime to vote\b",          # English  
+            r"\bready to vote\b",         # English
+            r"\bvotemos\b",               # Spanish "let's vote"
+            r"\ba votar\b",               # Spanish "to vote"
+            r"\b我们投票\b",                # Chinese "we vote"
+            r"\b投票吧\b",                 # Chinese "let's vote"
         ]
         
-        statement_lower = statement.lower().strip()
-        for pattern in obvious_vote_patterns:
+        for pattern in obvious_patterns:
             if re.search(pattern, statement_lower):
-                logger.info(f"Vote detected via obvious pattern: {pattern}")
-                return statement
+                logger.info(f"Vote detected via obvious fallback pattern: {pattern}")
+                return statement_lower
         
-        # No vote intention detected
+        # No obvious vote intention detected
         return None
     
     async def re_prompt_for_constraint(self, participant_name: str, choice: PrincipleChoice) -> str:
@@ -836,7 +838,7 @@ Response:"""
                 response_text = result.final_output.strip()
                 
                 # Parse structured LLM response
-                parsed_data = self._parse_llm_principle_response(response_text)
+                parsed_data = await self._parse_llm_principle_response(response_text)
                 if parsed_data:
                     return parsed_data
                     
@@ -847,7 +849,7 @@ Response:"""
                     
         return None
     
-    def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
+    async def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
         """Parse JSON response from utility agent LLM."""
         import json
         try:
@@ -956,10 +958,11 @@ Response:"""
                     logger.warning(f"Invalid constraint amount: {constraint_amount} - must be positive number")
                     constraint_amount = None
             
-            # Fallback: If constraint amount is missing but principle requires it, try regex extraction
+            # Fallback: If constraint amount is missing but principle requires it, try multilingual parsing
             if (constraint_amount is None and 
                 principle_name in ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']):
-                fallback_amount = self._extract_constraint_amount_flexible(llm_response)
+                language_hint = self._detect_language_hint(llm_response)
+                fallback_amount = await self.parse_constraint_amount_multilingual(llm_response, language_hint)
                 if fallback_amount:
                     constraint_amount = fallback_amount
                     logger.info(f"Fallback extraction recovered constraint amount: ${constraint_amount}")
@@ -1009,7 +1012,7 @@ Response:"""
                 preference_content = response_text.split("PREFERENCE_DETECTED:")[1].strip()
                 
                 # Use the principle choice parser to extract details
-                parsed_data = self._parse_llm_principle_response(f"PRINCIPLE_DETECTED: {preference_content}")
+                parsed_data = await self._parse_llm_principle_response(f"PRINCIPLE_DETECTED: {preference_content}")
                 if parsed_data:
                     return PrincipleChoice.create_for_parsing(
                         principle=JusticePrinciple(parsed_data['principle']),
@@ -1248,10 +1251,11 @@ Response:"""
                     principle = await self._extract_principle_from_text(principle_name_only)
                 
                 if principle:
-                    # Extract constraint amount using unified method
-                    constraint_amount = self._extract_constraint_amount_flexible(preference_text)
+                    # Extract constraint amount using multilingual method with language hints
+                    language_hint = self._detect_language_hint(statement)
+                    constraint_amount = await self.parse_constraint_amount_multilingual(preference_text, language_hint)
                     if not constraint_amount:
-                        constraint_amount = self._extract_constraint_amount_flexible(statement)
+                        constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
                     
                     return PrincipleChoice(
                         principle=principle,
@@ -1312,7 +1316,8 @@ Response:"""
             if match:
                 principle = self._map_identifier_to_principle(principle_name)
                 if principle:
-                    constraint_amount = self._extract_constraint_amount_flexible(statement)
+                    language_hint = self._detect_language_hint(statement)
+                    constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
                     return PrincipleChoice(
                         principle=principle,
                         constraint_amount=constraint_amount,
@@ -1421,59 +1426,256 @@ Response:"""
         
         return None
     
-    def _extract_constraint_amount_flexible(self, statement: str) -> Optional[int]:
+    async def parse_constraint_amount_multilingual(self, constraint_text: str, language_hint: str = None) -> Optional[int]:
         """
-        Flexible constraint amount extraction supporting various formats:
-        14,000 | 14.000 | 14000 | $14000 | $ 14000 | 14k | etc.
+        Use utility agent to parse constraint amounts across languages and formats.
+        
+        This replaces hardcoded regex patterns with intelligent LLM-based parsing
+        that can handle:
+        - Multiple languages (English/Spanish/Chinese)
+        - Various number formats (European: 15.000,50 vs Latin American: 15,000.50)
+        - Word numbers (fifteen thousand, quince mil, 一万五千)
+        - Currency symbols and codes
+        
+        Args:
+            constraint_text: Text containing constraint amount to parse
+            language_hint: Optional language hint ("english", "spanish", "mandarin")
+        
+        Returns:
+            Parsed amount as integer, or None if no valid amount found
         """
-        # Skip negative numbers entirely
-        if '-' in statement:
+        if not constraint_text or constraint_text.strip() == "":
             return None
+        
+        # Get language manager for prompt construction
+        language_manager = get_language_manager()
+        
+        parsing_prompt = f"""You are an expert at parsing constraint amounts from multilingual text with specialized Spanish language expertise.
+
+PARSE CONSTRAINT AMOUNT from: "{constraint_text}"
+Language hint: {language_hint or "unknown"}
+
+**SPANISH LANGUAGE EXPERTISE (CRITICAL)**:
+1. **Spanish Constraint Terminology**:
+   - "restricción" = constraint/restriction (most common)
+   - "límite" = limit 
+   - "tope" = cap/ceiling
+   - "cota" = bound
+   - "barrera" = barrier
+   - "frontera" = boundary
+   - "umbral" = threshold
+   - "máximo" = maximum
+   - "limitación" = limitation
+   - "condición" = condition
+
+2. **Spanish Number Format Rules**:
+   - **European Spanish**: €15.000 = 15000 (period as thousands separator, NO comma decimal for whole numbers)
+   - **Latin American Spanish**: $15,000 = 15000 (comma as thousands separator)
+   - **Mixed format**: €2.250.500 = 2,250,500 (multiple periods for large numbers)
+   - **Decimal handling**: €125.750,25 = 125750 (ignore decimal part for constraint amounts)
+
+3. **Spanish Currency Recognition**:
+   - **Euros**: €, EUR, euros, euro (Spain primarily)
+   - **Pesos**: $, MXN, ARS, COP, pesos, peso (Latin America)
+   - **US Dollars**: $, USD, dólares, dólar (used in some regions)
+
+4. **Spanish Number Words (COMPREHENSIVE)**:
+   - "cinco mil" = 5000 (five thousand)
+   - "diez mil" = 10000 (ten thousand)
+   - "quince mil" = 15000 (fifteen thousand)
+   - "veinte mil" = 20000 (twenty thousand)
+   - "veinticinco mil" = 25000 (twenty-five thousand)
+   - "treinta mil" = 30000 (thirty thousand)
+   - "cincuenta mil" = 50000 (fifty thousand)
+   - **Mixed numeric + word**: "15 mil" = 15000, "2.5 mil" = 2500, "30 mil" = 30000
+
+5. **Spanish Preposition Patterns**:
+   - "con restricción de" = with constraint of
+   - "bajo restricción de" = under constraint of  
+   - "dentro del límite de" = within limit of
+   - "sujeto a restricción de" = subject to constraint of
+   - "mediante restricción de" = through constraint of
+   - "según restricción de" = according to constraint of
+   - "por restricción de" = by constraint of
+
+6. **Spanish Null Patterns**:
+   - "sin restricciones" = without constraints → NONE
+   - "ilimitado" = unlimited → NONE
+   - "sin límite" = no limit → NONE
+   - "libre" = free/unrestricted → NONE
+
+**COMPREHENSIVE SPANISH EXAMPLES**:
+✓ "restricción de €15.000" → 15000 (European format)
+✓ "límite de $15,000" → 15000 (Latin American format)
+✓ "tope de quince mil euros" → 15000 (number words)
+✓ "con restricción de €15000" → 15000 (basic format)
+✓ "barrera de 2.5 mil euros" → 2500 (mixed numeric + word)
+✓ "constraint MXN 45.000" → 45000 (Mexican peso, European format)
+✓ "límite de 30 mil pesos" → 30000 (thirty thousand pesos)
+✓ "restricción €18.500,50" → 18500 (ignore decimal)
+✓ "bajo restricción de €25.000" → 25000 (preposition variation)
+✓ "tope de cinco mil euros" → 5000 (five thousand)
+✓ "límite $ 22,500" → 22500 (space after symbol)
+✓ "restricción de 125.750 euros" → 125750 (large European format)
+✗ "sin restricciones" → NONE
+✗ "ilimitado" → NONE
+✗ "sin límite" → NONE
+
+**OTHER LANGUAGES**:
+- English: $15,000, 15k, fifteen thousand → 15000
+- Chinese: ¥15,000, 15千, 一万五千 → 15000
+- General: Space separators (15 000), various currency codes
+
+**PARSING RULES**:
+1. Extract numeric amount ignoring currency symbols
+2. Handle both European (15.000) and Latin American (15,000) formats
+3. Convert number words to digits
+4. Ignore decimal parts for constraint amounts
+5. Return only positive integer amounts
+6. Return NONE if no valid amount or null patterns found
+
+Response format: Return ONLY the numeric amount as integer, or "NONE" if no amount found.
+Do not include explanations, currency symbols, or formatting.
+
+Response:"""
+
+        try:
+            result = await run_without_tracing(self.parser_agent, parsing_prompt)
+            response = result.final_output.strip()
             
-        # Multiple patterns for flexible amount parsing including space separators and international currencies
-        amount_patterns = [
-            r'[\$¥€]\s*(\d{1,6}(?:[.,\s]\d{3})*)',  # $14,000 or ¥14,000 or €14,000 or $14000 or ¥15 000
-            r'(\d{1,6}(?:[.,\s]\d{3})*)\s*(?:dollars?|\$|元|euros?|€)',  # 14,000 dollars or 14000$ or 15000元 or 15 000€
-            r'(\d{1,2})\s*k(?:\s|$|\.)',  # 14k
-            r'(\d{1,3})\s*(?:thousand|千|mil)',  # 16 thousand, 18千, 20 mil (Spanish) - fixed to 1-3 digits
-            r'(\d{3,6})(?!\s*[%])',  # Plain numbers 3-6 digits (avoid percentages)
+            if response.upper() == "NONE":
+                logger.info(f"No constraint amount found in: '{constraint_text}'")
+                return None
+            
+            # Parse the numeric response
+            try:
+                amount = int(response)
+                if amount > 0:
+                    logger.info(f"LLM parsed constraint amount: {amount} from '{constraint_text}'")
+                    return amount
+                else:
+                    logger.warning(f"LLM returned non-positive amount: {amount}")
+                    return None
+            except ValueError:
+                logger.warning(f"LLM returned non-numeric response: '{response}'")
+                return None
+        
+        except Exception as e:
+            logger.warning(f"LLM constraint parsing failed for '{constraint_text}': {e}")
+            # Fallback to simple regex only for obvious cases
+            return self._extract_constraint_amount_simple_fallback(constraint_text)
+
+    def _extract_constraint_amount_simple_fallback(self, statement: str) -> Optional[int]:
+        """
+        Simplified fallback for constraint parsing when LLM fails.
+        Only handles the most obvious cases.
+        """
+        # Simple patterns for obvious cases only
+        simple_patterns = [
+            r'[\$¥€]\s*(\d{3,6})(?!\d)',  # $15000, €15000, ¥15000
+            r'(\d{3,6})\s*(?:dollars?|euros?|yuan)',  # 15000 dollars
+            r'(\d{1,3})\s*k(?:\s|$|\.)',  # 15k
         ]
         
-        for pattern in amount_patterns:
+        for pattern in simple_patterns:
             matches = re.findall(pattern, statement, re.IGNORECASE)
             for match in matches:
                 try:
-                    # Handle thousand separators: commas, dots (European), spaces
-                    if (',' in match or 
-                        ('.' in match and len(match.split('.')[-1]) == 3) or
-                        ' ' in match):
-                        # Has thousand separators: 15,000 or 15.000 or 15 000
-                        amount_str = match.replace(',', '').replace('.', '').replace(' ', '')
-                    else:
-                        # Plain number: 15000 - no processing needed
-                        amount_str = match.replace(',', '').replace('.', '').replace(' ', '')
-                    
-                    amount = float(amount_str)
-                    
-                    # Check if this is a "k" pattern or thousand marker
-                    statement_lower = statement.lower()
-                    if 'k' in statement_lower and amount < 1000:
+                    amount = int(match)
+                    if 'k' in statement.lower() and amount < 1000:
                         amount *= 1000
-                    elif ('thousand' in statement_lower or '千' in statement or 'mil' in statement_lower) and amount < 1000:
-                        amount *= 1000
-                        logger.info(f"Multiplied {match} by 1000 due to thousand/千/mil marker, result: {amount}")
-                    
-                    amount_int = int(amount)
-                    
-                    # Accept any positive amount
-                    if amount_int > 0:
-                        logger.info(f"Extracted flexible constraint amount: ${amount_int}")
-                        return amount_int
-                        
+                    if amount > 0:
+                        logger.info(f"Fallback parsed constraint amount: {amount}")
+                        return amount
                 except (ValueError, TypeError):
                     continue
         
         return None
+    
+    def _detect_language_hint(self, statement: str) -> str:
+        """
+        Enhanced language detection with comprehensive Spanish intelligence.
+        
+        Returns:
+            Language hint: "spanish", "english", "mandarin", or "unknown"
+        """
+        statement_lower = statement.lower()
+        
+        # COMPREHENSIVE SPANISH DETECTION (Enhanced following utility agent philosophy)
+        spanish_indicators = {
+            # Core constraint terminology (high confidence)
+            'high_confidence': ['restricción', 'límite', 'limitación', 'condición', 'tope', 'cota', 'barrera', 'frontera', 'umbral', 'máximo'],
+            
+            # Currency and number words (medium-high confidence)
+            'currency_numbers': ['euros', 'euro', 'pesos', 'peso', 'dólares', 'dólar', 'mil', 'cinco', 'diez', 'quince', 'veinte', 'veinticinco', 'treinta', 'cincuenta'],
+            
+            # Prepositions and common words (medium confidence) 
+            'prepositions': ['con', 'de', 'bajo', 'dentro', 'del', 'sujeto', 'mediante', 'según', 'por', 'sin', 'es', 'la', 'el', 'una'],
+            
+            # Spanish-specific patterns (medium confidence)
+            'patterns': ['condiciones', 'limitaciones', 'ilimitado', 'libre', 'mxn', 'ars', 'cop'],
+            
+            # Justice principle terms in Spanish (high confidence)
+            'principles': ['maximización', 'maximizar', 'ingresos', 'ingreso', 'promedio', 'mínimos', 'mínimo', 'promedio', 'rango']
+        }
+        
+        # Count indicators by confidence level
+        high_confidence_count = sum(1 for word in spanish_indicators['high_confidence'] if word in statement_lower)
+        currency_count = sum(1 for word in spanish_indicators['currency_numbers'] if word in statement_lower)
+        preposition_count = sum(1 for word in spanish_indicators['prepositions'] if word in statement_lower)
+        pattern_count = sum(1 for word in spanish_indicators['patterns'] if word in statement_lower)
+        principle_count = sum(1 for word in spanish_indicators['principles'] if word in statement_lower)
+        
+        total_spanish_indicators = high_confidence_count + currency_count + preposition_count + pattern_count + principle_count
+        
+        # Spanish detection logic with confidence thresholds
+        if high_confidence_count >= 1:  # Any high-confidence Spanish constraint term
+            return "spanish"
+        elif currency_count >= 1 and preposition_count >= 1:  # Spanish currency + Spanish grammar
+            return "spanish"  
+        elif principle_count >= 2:  # Multiple Spanish justice principle terms
+            return "spanish"
+        elif total_spanish_indicators >= 3:  # Multiple Spanish indicators together
+            return "spanish"
+        elif total_spanish_indicators >= 2 and len(statement_lower.split()) <= 8:  # Short phrases with Spanish indicators
+            return "spanish"
+        
+        # Chinese indicators (characters)
+        chinese_chars = ['元', '千', '万', '限制', '约束', '条件', '投票', '决定', '最大化', '最低', '平均', '收入', '范围']
+        chinese_count = sum(1 for char in chinese_chars if char in statement)
+        if chinese_count >= 1:
+            return "mandarin"
+        
+        # English indicators (comprehensive)
+        english_indicators = {
+            'constraint_terms': ['constraint', 'limit', 'maximum', 'minimum', 'restriction', 'bound', 'cap', 'threshold'],
+            'currency_numbers': ['dollars', 'dollar', 'thousand', 'million', 'euros'],
+            'principles': ['maximizing', 'maximize', 'income', 'average', 'floor', 'range'],
+            'common': ['with', 'of', 'no', 'the', 'and', 'is', 'are', 'vote', 'decision']
+        }
+        
+        english_constraint_count = sum(1 for word in english_indicators['constraint_terms'] if word in statement_lower)
+        english_currency_count = sum(1 for word in english_indicators['currency_numbers'] if word in statement_lower)
+        english_principle_count = sum(1 for word in english_indicators['principles'] if word in statement_lower)
+        english_common_count = sum(1 for word in english_indicators['common'] if word in statement_lower)
+        
+        total_english_indicators = english_constraint_count + english_currency_count + english_principle_count + english_common_count
+        
+        # English detection logic
+        if english_constraint_count >= 1:  # Any English constraint term
+            return "english"
+        elif english_principle_count >= 2:  # Multiple English principle terms
+            return "english"
+        elif total_english_indicators >= 3:  # Multiple English indicators
+            return "english"
+        
+        # Final decision: Spanish vs English for ambiguous cases
+        if total_spanish_indicators > total_english_indicators:
+            return "spanish"
+        elif total_english_indicators > total_spanish_indicators:
+            return "english"
+        
+        return "unknown"
     
     async def _detect_preference_via_llm(self, statement: str) -> Optional[PrincipleChoice]:
         """Use LLM to detect preference when pattern matching fails."""
@@ -1631,3 +1833,192 @@ Response:"""
             return True, agreed_choice, warnings
         
         return False, None, warnings
+    
+    async def detect_problematic_content_multilingual(self, statement: str) -> Optional[Dict[str, Any]]:
+        """
+        Detect problematic content using utility agent intelligence.
+        Replaces regex-based quarantine detection with smart LLM analysis.
+        
+        Following our utility agent philosophy: enhance intelligence, not hardcoded patterns.
+        
+        Args:
+            statement: Statement to analyze for problematic content
+            
+        Returns:
+            Dict with problem details if detected, None otherwise
+        """
+        await self.async_init()
+        
+        detection_prompt = f"""Analyze this statement for problematic content that should be quarantined:
+
+Statement: "{statement}"
+
+DETECT these critical problems:
+
+1. **Letter-based principle references** (HIGHEST PRIORITY):
+   - English: "principle a", "principle b", "choose a", "prefer b", "option a", "option b"
+   - Spanish: "principio a", "principio b", "elijo a", "prefiero b", "opción a", "opción b"
+   - Chinese: "原则a", "原则b", "选择a", "选择b"
+   - Mixed: Any preference/choice word followed by single letters a-d
+
+2. **Premature voting intentions with letters**:
+   - "Let's vote for a", "Votemos por b", "我投票给a"
+   - "Vote for option a", "Votar por la opción b"
+   - Combining letter reference with voting language
+
+3. **Invalid preference expressions**:
+   - Any preference statement using single letters instead of full principle names
+   - Mixed language letter references
+
+**EXAMPLES OF PROBLEMS TO DETECT**:
+✓ "I choose principle a" → PROBLEM: letter_reference
+✓ "Mi elección es el principio a" → PROBLEM: letter_reference
+✓ "Let's vote for option b" → PROBLEM: letter_reference + voting
+✓ "Votemos por la opción b" → PROBLEM: letter_reference + voting
+✓ "我选择原则a" → PROBLEM: letter_reference
+✓ "Vote for a right now" → PROBLEM: letter_reference + voting
+
+**EXAMPLES OF VALID CONTENT** (should NOT be detected):
+✗ "I prefer maximizing floor income" → NO_PROBLEM
+✗ "Mi elección es maximización del ingreso promedio" → NO_PROBLEM
+✗ "Let's vote for maximizing average income" → NO_PROBLEM
+✗ "我选择最大化最低收入" → NO_PROBLEM
+
+**CRITICAL DETECTION RULES**:
+- Any single letter (a, b, c, d) after words like: choose, prefer, vote, select, pick, option, principle, principio, opción, elijo, prefiero, voto, 选择, 偏好, 投票, 原则
+- Must distinguish between letter references vs. words that contain letters
+- Focus on problematic preference/voting expressions with letters
+
+If problem detected, respond with:
+PROBLEM_DETECTED: [type] - [detailed_reason]
+
+If no problem, respond with:
+NO_PROBLEM_DETECTED
+
+Response:"""
+
+        try:
+            result = await run_without_tracing(self.parser_agent, detection_prompt)
+            response = result.final_output.strip()
+            
+            if "PROBLEM_DETECTED:" in response:
+                parts = response.split("PROBLEM_DETECTED:")[1].strip().split(" - ", 1)
+                problem_type = parts[0].strip()
+                reason = parts[1].strip() if len(parts) > 1 else "Problematic content detected"
+                
+                logger.info(f"🚫 Quarantine detection: {statement[:50]}... → {problem_type}")
+                
+                return {
+                    "type": problem_type,
+                    "reason": reason,
+                    "message": statement,
+                    "detection_method": "utility_agent_llm"
+                }
+            elif "NO_PROBLEM_DETECTED" in response:
+                logger.debug(f"✅ Content approved: {statement[:50]}...")
+                return None
+            else:
+                # Log unexpected response but treat as no detection
+                logger.warning(f"Unexpected quarantine detection response: '{response[:100]}...' - treating as NO_PROBLEM")
+                return None
+                
+        except Exception as e:
+            logger.warning(f"LLM quarantine detection failed: {e} - falling back to basic check")
+            # Fallback to simple letter detection only for obvious cases
+            return self._detect_problematic_content_simple_fallback(statement)
+
+    def _detect_problematic_content_simple_fallback(self, statement: str) -> Optional[Dict[str, Any]]:
+        """
+        Simple fallback for problematic content detection when LLM fails.
+        Only handles the most obvious letter-based references.
+        """
+        statement_lower = statement.lower()
+        
+        # Only check for the most obvious letter patterns across languages
+        obvious_letter_patterns = [
+            r'\b(?:principle|principio|原则)\s+[a-d]\b',       # "principle a", "principio b", "原则a"
+            r'\b(?:option|opción)\s+[a-d]\b',                # "option a", "opción b" 
+            r'\b(?:choose|elijo|选择)\s+[a-d]\b',              # "choose a", "elijo b", "选择a"
+            r'\b(?:prefer|prefiero|偏好)\s+[a-d]\b',          # "prefer a", "prefiero b", "偏好a"
+        ]
+        
+        for pattern in obvious_letter_patterns:
+            if re.search(pattern, statement, re.IGNORECASE):
+                logger.info(f"🚫 Fallback quarantine detection: {statement[:50]}... → letter_reference")
+                return {
+                    "type": "letter_reference",
+                    "reason": "Contains obvious letter-based principle reference",
+                    "message": statement,
+                    "detection_method": "regex_fallback"
+                }
+        
+        return None
+    
+    async def _extract_constraint_amount_flexible(self, constraint_text: str) -> Optional[int]:
+        """
+        Flexible constraint amount extraction using utility agent intelligence.
+        This method wraps the existing multilingual parsing infrastructure.
+        
+        Args:
+            constraint_text: Text containing constraint amount to parse
+            
+        Returns:
+            Constraint amount as integer, or None if not found/invalid
+        """
+        await self.async_init()
+        
+        if not constraint_text or constraint_text.strip() == "":
+            return None
+        
+        # Detect language hint for better parsing
+        language_hint = self._detect_language_hint(constraint_text)
+        
+        # Use existing multilingual parsing with enhanced error handling
+        try:
+            amount = await self.parse_constraint_amount_multilingual(constraint_text, language_hint)
+            if amount and amount > 0:
+                logger.info(f"Flexible constraint extraction successful: {amount} from '{constraint_text}'")
+                return amount
+            return None
+        except Exception as e:
+            logger.warning(f"Flexible constraint extraction failed: {e}")
+            return None
+    
+    async def parse_participant_preference(self, statement: str, participant_name: str = None) -> Optional[PrincipleChoice]:
+        """
+        Parse participant preference statements with constraint amounts.
+        Uses LLM-based analysis for multilingual support.
+        
+        Args:
+            statement: The participant's statement to analyze
+            participant_name: Optional participant name for logging
+            
+        Returns:
+            PrincipleChoice if preference is detected, None otherwise
+        """
+        await self.async_init()
+        
+        # Use existing preference detection logic
+        preference = await self.detect_preference_statement(statement)
+        
+        if preference:
+            # If constraint amount is missing but principle requires it, try enhanced extraction
+            if (preference.constraint_amount is None and 
+                preference.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                                       JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]):
+                
+                # Use flexible constraint extraction
+                extracted_amount = await self._extract_constraint_amount_flexible(statement)
+                if extracted_amount:
+                    logger.info(f"Enhanced constraint extraction for {participant_name or 'participant'}: {extracted_amount}")
+                    # Create new preference with extracted amount
+                    return PrincipleChoice(
+                        principle=preference.principle,
+                        constraint_amount=extracted_amount,
+                        certainty=preference.certainty,
+                        reasoning=preference.reasoning
+                    )
+            
+            return preference
+        
+        return None

@@ -147,14 +147,14 @@ class FrohlichExperimentManager:
         # Create trace for the entire experiment
         trace_name = f"Frohlich Experiment - {self.experiment_id}"
         trace_metadata = {
-            "experiment_id": self.experiment_id,
-            "participant_count": len(self.participants),
-            "config_file": Path(self.config_file_path).name,
-            "language": getattr(self.config, 'language', 'en'),
-            "voting_detection_mode": getattr(self.config, 'voting_detection_mode', 'simple'),
-            "phase2_max_rounds": getattr(self.config, 'phase2_rounds', 10),
-            "participant_names": [p.name for p in self.participants],
-            "participant_models": [p.config.model for p in self.participants]
+            "experiment_id": str(self.experiment_id),
+            "participant_count": str(len(self.participants)),
+            "config_file": str(Path(self.config_file_path).name),
+            "language": str(getattr(self.config, 'language', 'en')),
+            "voting_detection_mode": str(getattr(self.config, 'voting_detection_mode', 'simple')),
+            "phase2_max_rounds": str(getattr(self.config, 'phase2_rounds', 10)),
+            "participant_names": ", ".join([p.name for p in self.participants]),
+            "participant_models": ", ".join([p.config.model for p in self.participants])
         }
         
         start_time = time.time()

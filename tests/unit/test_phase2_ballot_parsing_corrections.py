@@ -198,7 +198,7 @@ class TestBallotParsingCorrections(unittest.TestCase):
         
         for amount_text, expected in constraint_cases:
             with self.subTest(amount_text=amount_text):
-                result = self.utility_agent._extract_constraint_amount_flexible(f"constraint of {amount_text}")
+                result = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(f"constraint of {amount_text}"))
                 self.assertEqual(result, expected, 
                                f"Constraint extraction failed for '{amount_text}': got {result}, expected {expected}")
     
@@ -370,7 +370,7 @@ class TestBallotParsingCorrections(unittest.TestCase):
         # Test Chinese constraint formats
         for constraint_text, expected_amount, description in CONSTRAINTS["chinese"]:
             with self.subTest(description=f"Chinese: {description}"):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(constraint_text))
                 
                 if extracted_amount is not None:  # Some formats might not be supported yet
                     self.assertEqual(extracted_amount, expected_amount,
@@ -379,7 +379,7 @@ class TestBallotParsingCorrections(unittest.TestCase):
         # Test Spanish constraint formats
         for constraint_text, expected_amount, description in CONSTRAINTS["spanish"]:
             with self.subTest(description=f"Spanish: {description}"):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(constraint_text))
                 
                 if extracted_amount is not None:  # Some formats might not be supported yet
                     self.assertEqual(extracted_amount, expected_amount,
@@ -388,7 +388,7 @@ class TestBallotParsingCorrections(unittest.TestCase):
         # Test English constraint formats for comparison
         for constraint_text, expected_amount, description in CONSTRAINTS["english"]:
             with self.subTest(description=f"English: {description}"):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(constraint_text)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(constraint_text))
                 
                 self.assertEqual(extracted_amount, expected_amount,
                                f"English constraint parsing failed for '{constraint_text}': got {extracted_amount}, expected {expected_amount}")
@@ -429,7 +429,7 @@ class TestBallotParsingCorrections(unittest.TestCase):
         
         for case in currency_test_cases:
             with self.subTest(language=case["language"], symbol=case["symbol"]):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(case["text"])
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(case["text"]))
                 
                 if extracted_amount is not None:
                     self.assertEqual(extracted_amount, case["expected_amount"],

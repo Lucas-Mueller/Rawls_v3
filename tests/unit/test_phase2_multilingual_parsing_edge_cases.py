@@ -96,7 +96,7 @@ class TestMultilingualParsingEdgeCases(unittest.TestCase):
         
         for statement, expected_amount in chinese_constraint_cases:
             with self.subTest(statement=statement):
-                extracted_amount = self.utility_agent._extract_constraint_amount_flexible(statement)
+                extracted_amount = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(statement))
                 
                 # May not extract all formats, but test what we can
                 if extracted_amount is not None:
@@ -356,7 +356,7 @@ class TestMultilingualParsingEdgeCases(unittest.TestCase):
         
         for amount_text, expected, description in localized_formats:
             with self.subTest(description=description):
-                extracted = self.utility_agent._extract_constraint_amount_flexible(amount_text)
+                extracted = asyncio.run(self.utility_agent._extract_constraint_amount_flexible(amount_text))
                 
                 if extracted is not None:  # Some formats might not be supported
                     self.assertEqual(extracted, expected,

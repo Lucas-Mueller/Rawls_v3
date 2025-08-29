@@ -24,6 +24,10 @@ class ExperimentTestFixture:
     @staticmethod
     def create_minimal_config(num_agents: int = 2) -> ExperimentConfiguration:
         """Create minimal viable configuration for testing."""
+        # Add validation to prevent single-agent configs that violate constraints
+        if num_agents < 2:
+            raise ValueError("Minimum 2 agents required for valid experiment configuration")
+            
         agents = []
         personalities = [
             "Analytical and methodical, focused on fairness",
@@ -41,6 +45,31 @@ class ExperimentTestFixture:
                 memory_character_limit=50000,
                 reasoning_enabled=True
             ))
+        
+        return ExperimentConfiguration(
+            agents=agents,
+            phase2_rounds=5,
+            distribution_range_phase1=(0.8, 1.2),
+            distribution_range_phase2=(0.9, 1.1)
+        )
+    
+    @staticmethod
+    def create_config_with_agents(agent_specs: List[Dict[str, Any]]) -> ExperimentConfiguration:
+        """Create configuration with specific agent specifications."""
+        agents = []
+        
+        for spec in agent_specs:
+            # Set defaults for missing fields
+            agent_config = AgentConfiguration(
+                name=spec.get("name", f"TestAgent{len(agents)+1}"),
+                personality=spec.get("personality", "Test personality"),
+                model=spec.get("model", "o3-mini"),
+                temperature=spec.get("temperature", 0.7),
+                memory_character_limit=spec.get("memory_character_limit", 50000),
+                reasoning_enabled=spec.get("reasoning_enabled", True),
+                language=spec.get("language", "english")
+            )
+            agents.append(agent_config)
         
         return ExperimentConfiguration(
             agents=agents,
