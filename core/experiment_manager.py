@@ -104,8 +104,12 @@ class FrohlichExperimentManager:
             # Create participants with dynamic temperature detection
             self.participants = await self._create_participants()
             
-            # Create utility agent (also with dynamic detection)
-            self.utility_agent = UtilityAgent(self.config.utility_agent_model, self.config.utility_agent_temperature)
+            # Create utility agent with experiment language (also with dynamic detection)
+            self.utility_agent = UtilityAgent(
+                self.config.utility_agent_model, 
+                self.config.utility_agent_temperature,
+                self.config.language
+            )
             await self.utility_agent.async_init()
             
             # Initialize phase managers

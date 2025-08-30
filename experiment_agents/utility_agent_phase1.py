@@ -40,7 +40,7 @@ class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
     
-    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english"):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0):
         
         # Use environment variable or default for utility agents
         if utility_model is None:
@@ -49,7 +49,6 @@ class UtilityAgent:
         self.utility_model = utility_model
         self.temperature = temperature
         self.temperature_info = None
-        self.experiment_language = experiment_language.lower()
         self.language_manager = get_language_manager()
         
         # Agents will be created in async_init
@@ -57,8 +56,8 @@ class UtilityAgent:
         self.validator_agent = None
         self._initialization_complete = False
         
-        # Load patterns only for the configured language
-        self._language_patterns = self._compile_patterns_for_language(self.experiment_language)
+        # Enhanced parsing patterns (keeping only ranking patterns)
+        self._ranking_patterns = self._compile_ranking_patterns()
         
     async def async_init(self):
         """Asynchronously initialize utility agents with dynamic temperature detection."""
@@ -203,10 +202,14 @@ class UtilityAgent:
         
         return None
     
-    async def detect_agreement(self, response: str) -> bool:
-        """Language-specific agreement detection using configured experiment language.
-        
-        Uses pre-loaded patterns for the configured experiment language to detect agreement/disagreement.
+    async def detect_agreement_multilingual(self, response: str) -> bool:
+        """Multilingual agreement detection with context-aware negation handling.
+
+        Rules:
+        - Decisive agreement tokens (YES/I AGREE/LET'S VOTE/etc.) return True unless there is an explicit refusal.
+        - Words like "NO" are NOT treated as refusal if part of domain phrases (e.g., "NO CONSTRAINTS").
+        - If both agreement and ambiguous negation cues appear, defer to LLM fallback.
+        - Empty or whitespace-only responses are always treated as disagreement.
         """
         await self.async_init()
 
@@ -218,23 +221,68 @@ class UtilityAgent:
             return False
             
         normalized = text.upper()
-        
-        # Use pre-loaded language-specific patterns
-        agreement_tokens = self._language_patterns.get('agreement_tokens', [])
-        disagreement_tokens = self._language_patterns.get('disagreement_tokens', [])
 
-        # Check for direct agreement
-        has_agree = any(token.upper() in normalized for token in agreement_tokens)
-        has_disagree = any(token.upper() in normalized for token in disagreement_tokens)
-        
-        if has_agree and not has_disagree:
-            logger.info(f"Direct agreement detected using {self.experiment_language} patterns")
+        # Agreement tokens (broad but decisive)
+        agreement_tokens = [
+            "YES", "I AGREE", "AGREED", "LET'S VOTE", "LETS VOTE", "READY TO VOTE",
+            "LET'S PROCEED", "LETS PROCEED", "LET'S DO IT", "LETS DO IT",
+            "SOUNDS GOOD", "THAT WORKS", "FINE WITH ME"
+        ]
+
+        # Explicit refusal patterns (word-boundary, short-window negations)
+        refusal_regexes = [
+            r"\bNO\b\s*(,|\.|$)",
+            r"\bNO\b\s+(THANKS|NOT|NEED|TIME|VOTE|LATER|WAIT)",
+            r"\bNOT\s+READY\b",
+            r"\bNOT\s+YET\b",
+            r"\bNEED\s+MORE\b",
+            r"\bHOLD\s+ON\b",
+            r"\bI\s+DISAGREE\b",
+            # Chinese disagreement patterns
+            r"不，我不同意",
+            r"不同意",
+            r"不，不",
+            r"我不同意",
+        ]
+
+        # Domain phrases that must NOT flip agreement
+        domain_exceptions = [
+            r"\bNO\s+CONSTRAINTS?\b",
+            r"\bNO\s+RANGE\b",
+            r"\bNO\s+FLOOR\b",
+        ]
+
+        has_agree = any(tok in normalized for tok in agreement_tokens)
+
+        # Check for refusal patterns (English "NO" and Chinese "不")
+        mentions_refusal = (" NO" in f" {normalized}" or normalized.startswith("NO") or 
+                          "不" in text)  # Check original text for Chinese characters
+        only_domain_no = False
+        if mentions_refusal:
+            # Check if it's only domain exceptions and not explicit refusal
+            only_domain_no = any(re.search(p, normalized) for p in domain_exceptions) and not any(
+                re.search(rx, text) for rx in refusal_regexes  # Check against original text for Chinese
+            )
+
+        # Immediate decision: clear agreement without explicit refusal
+        if has_agree and (not mentions_refusal or only_domain_no):
+            logger.info("Direct agreement detected (decisive tokens, no explicit refusal)")
             return True
-        elif has_disagree and not has_agree:
-            logger.info(f"Direct disagreement detected using {self.experiment_language} patterns")
-            return False
 
-        # If ambiguous, use LLM fallback
+        # Check explicit refusal - use appropriate text for each pattern
+        for rx in refusal_regexes:
+            # Chinese patterns should be checked against original text
+            if any(chinese_char in rx for chinese_char in ['不', '我', '同意']):
+                if re.search(rx, text):
+                    logger.info(f"Direct refusal detected via Chinese pattern: {rx}")
+                    return False
+            # English patterns against normalized text
+            else:
+                if re.search(rx, normalized):
+                    logger.info(f"Direct refusal detected via English pattern: {rx}")
+                    return False
+
+        # If ambiguous (e.g., both agree tokens and some non-exception NO), defer to LLM fallback
         language_manager = get_language_manager()
         detection_prompt = language_manager.get(
             "prompts.utility_agreement_detection_enhanced",
@@ -258,8 +306,9 @@ class UtilityAgent:
 
         statement_lower = statement.lower().strip()
         
-        # Use configured experiment language
-        logger.debug(f"Using configured language '{self.experiment_language}' for vote intention analysis: {statement}")
+        # Detect likely language for better processing
+        language_hint = self._detect_language_hint(statement)
+        logger.debug(f"Detected language '{language_hint}' for vote intention analysis: {statement}")
 
         # PRIMARY: LLM-based multilingual vote intention detection
         try:
@@ -267,7 +316,7 @@ class UtilityAgent:
 Analyze if this statement expresses IMMEDIATE intention to vote or make a decision.
 
 Statement: "{statement}"
-Language: {self.experiment_language}
+Language hint: {language_hint}
 
 DETECT VOTE_INTENTION for:
 1. IMMEDIATE PROPOSALS: "Let's vote", "Votemos", "我们投票吧", "I propose we vote"
@@ -379,26 +428,12 @@ Response:"""
     
     
     
-    def _compile_patterns_for_language(self, language: str) -> Dict[str, Any]:
-        """Compile all patterns needed for the specified experiment language."""
-        patterns = {}
-        
-        # Basic ranking patterns (language-independent)
-        patterns['ranking_line'] = re.compile(r'(\d+)\.?\s*\*?\*?\s*(.*?)(?=\n\s*\d+\.|$)', re.MULTILINE | re.DOTALL)
-        patterns['rank_number'] = re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE)
-        
-        # Load language-specific agreement patterns
-        if language == "spanish":
-            patterns['agreement_tokens'] = ["sí", "si", "de acuerdo", "acepto", "correcto", "exacto", "perfecto"]
-            patterns['disagreement_tokens'] = ["no", "incorrecto", "desacuerdo", "rechazo"]
-        elif language == "mandarin":
-            patterns['agreement_tokens'] = ["是的", "对", "同意", "正确", "好的"]  
-            patterns['disagreement_tokens'] = ["不", "不对", "不同意", "错误"]
-        else:  # Default English
-            patterns['agreement_tokens'] = ["yes", "agree", "correct", "right", "exactly", "absolutely", "indeed"]
-            patterns['disagreement_tokens'] = ["no", "disagree", "incorrect", "wrong", "false"]
-            
-        return patterns
+    def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
+        """Compile regex patterns for ranking detection only."""
+        return {
+            'ranking_line': re.compile(r'(\d+)\.?\s*\*?\*?\s*(.*?)(?=\n\s*\d+\.|$)', re.MULTILINE | re.DOTALL),
+            'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE)
+        }
     
     async def parse_principle_choice_enhanced(self, response: str, max_retries: int = 3) -> PrincipleChoice:
         """Streamlined principle choice parsing using JSON-based LLM approach."""
@@ -419,8 +454,7 @@ Response:"""
                 if attempt == max_retries - 1:
                     raise ExperimentError(
                         f"Failed to parse principle choice after {max_retries} attempts - experiment must be aborted",
-                        ExperimentErrorCategory.VALIDATION_ERROR,
-                        ErrorSeverity.FATAL,
+                        ErrorSeverity.CRITICAL,
                         {
                             "response_text": response,
                             "attempts": max_retries,
@@ -434,8 +468,7 @@ Response:"""
                     # Final attempt failed - abort experiment
                     raise ExperimentError(
                         f"Failed to parse principle choice after {max_retries} attempts - experiment must be aborted",
-                        ExperimentErrorCategory.VALIDATION_ERROR,
-                        ErrorSeverity.FATAL,
+                        ErrorSeverity.CRITICAL,
                         {
                             "response_text": response,
                             "attempts": max_retries,
@@ -486,8 +519,7 @@ Response:"""
                 # If direct parsing fails, abort experiment
                 raise ExperimentError(
                     f"Failed to parse principle ranking after {max_retries} attempts - experiment must be aborted",
-                    ExperimentErrorCategory.VALIDATION_ERROR,
-                    ErrorSeverity.FATAL,
+                    ErrorSeverity.CRITICAL,
                     {
                         "response_text": response,
                         "attempts": max_retries,
@@ -500,8 +532,7 @@ Response:"""
                     # Final attempt failed - abort experiment
                     raise ExperimentError(
                         f"Failed to parse principle ranking after {max_retries} attempts - experiment must be aborted",
-                        ExperimentErrorCategory.VALIDATION_ERROR,
-                        ErrorSeverity.FATAL,
+                        ErrorSeverity.CRITICAL,
                         {
                             "response_text": response,
                             "attempts": max_retries,
@@ -519,7 +550,7 @@ Response:"""
         rankings = []
         
         # Look for numbered list format
-        ranking_matches = self._language_patterns['ranking_line'].findall(response)
+        ranking_matches = self._ranking_patterns['ranking_line'].findall(response)
         
         if len(ranking_matches) >= 4:
             for rank_num, rank_text in ranking_matches[:4]:
@@ -747,7 +778,8 @@ Response:"""
             # Fallback: If constraint amount is missing but principle requires it, try multilingual parsing
             if (constraint_amount is None and 
                 principle_name in ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']):
-                fallback_amount = await self.parse_constraint_amount(llm_response, self.experiment_language)
+                language_hint = self._detect_language_hint(llm_response)
+                fallback_amount = await self.parse_constraint_amount_multilingual(llm_response, language_hint)
                 if fallback_amount:
                     constraint_amount = fallback_amount
                     logger.info(f"Fallback extraction recovered constraint amount: ${constraint_amount}")
@@ -1036,10 +1068,11 @@ Response:"""
                     principle = await self._extract_principle_from_text(principle_name_only)
                 
                 if principle:
-                    # Extract constraint amount using multilingual method with configured language
-                    constraint_amount = await self.parse_constraint_amount(preference_text, self.experiment_language)
+                    # Extract constraint amount using multilingual method with language hints
+                    language_hint = self._detect_language_hint(statement)
+                    constraint_amount = await self.parse_constraint_amount_multilingual(preference_text, language_hint)
                     if not constraint_amount:
-                        constraint_amount = await self.parse_constraint_amount(statement, self.experiment_language)
+                        constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
                     
                     return PrincipleChoice(
                         principle=principle,
@@ -1100,7 +1133,8 @@ Response:"""
             if match:
                 principle = self._map_identifier_to_principle(principle_name)
                 if principle:
-                    constraint_amount = await self.parse_constraint_amount(statement, self.experiment_language)
+                    language_hint = self._detect_language_hint(statement)
+                    constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
                     return PrincipleChoice(
                         principle=principle,
                         constraint_amount=constraint_amount,
@@ -1209,7 +1243,7 @@ Response:"""
         
         return None
     
-    async def parse_constraint_amount(self, constraint_text: str, language: str = None) -> Optional[int]:
+    async def parse_constraint_amount_multilingual(self, constraint_text: str, language_hint: str = None) -> Optional[int]:
         """
         Use utility agent to parse constraint amounts across languages and formats.
         
@@ -1222,7 +1256,7 @@ Response:"""
         
         Args:
             constraint_text: Text containing constraint amount to parse
-            language: Optional language override (defaults to experiment language)
+            language_hint: Optional language hint ("english", "spanish", "mandarin")
         
         Returns:
             Parsed amount as integer, or None if no valid amount found
@@ -1236,7 +1270,7 @@ Response:"""
         parsing_prompt = f"""You are an expert at parsing constraint amounts from multilingual text with specialized Spanish language expertise.
 
 PARSE CONSTRAINT AMOUNT from: "{constraint_text}"
-Language: {language or self.experiment_language}
+Language hint: {language_hint or "unknown"}
 
 **SPANISH LANGUAGE EXPERTISE (CRITICAL)**:
 1. **Spanish Constraint Terminology**:
@@ -1330,10 +1364,9 @@ Response:"""
                 logger.info(f"No constraint amount found in: '{constraint_text}'")
                 return None
             
-            # Parse the numeric response (handle both int and float)
+            # Parse the numeric response
             try:
-                # Try parsing as float first, then convert to int to handle "2500.0" format
-                amount = int(float(response))
+                amount = int(response)
                 if amount > 0:
                     # Validate constraint scale
                     # Validate constraint amount using merged logic
@@ -1384,123 +1417,90 @@ Response:"""
         
         return None
     
-    async def parse_constraint_amount_multilingual(self, constraint_text: str, language_hint: str = None) -> Optional[int]:
+    def _detect_language_hint(self, statement: str) -> str:
         """
-        Multilingual constraint amount parsing method.
-        This is an alias for parse_constraint_amount() for backward compatibility.
-        
-        Args:
-            constraint_text: Text containing constraint amount to parse
-            language_hint: Optional language hint (used as language parameter)
+        Enhanced language detection with comprehensive Spanish intelligence.
         
         Returns:
-            Parsed amount as integer, or None if no valid amount found
+            Language hint: "spanish", "english", "mandarin", or "unknown"
         """
-        return await self.parse_constraint_amount(constraint_text, language_hint)
-    
-    async def validate_ballot_parsing_consistency(self, raw_response: str, parsed_result: Dict[str, Any], language: str = "english") -> bool:
-        """
-        Validate ballot parsing matches expected patterns to catch systematic errors.
+        statement_lower = statement.lower()
         
-        Args:
-            raw_response: Original ballot text from agent
-            parsed_result: Dictionary result from parse_principle_choice_llm
-            language: Language to use for validation patterns
+        # COMPREHENSIVE SPANISH DETECTION (Enhanced following utility agent philosophy)
+        spanish_indicators = {
+            # Core constraint terminology (high confidence)
+            'high_confidence': ['restricción', 'límite', 'limitación', 'condición', 'tope', 'cota', 'barrera', 'frontera', 'umbral', 'máximo'],
             
-        Returns:
-            bool: True if parsing appears consistent, False if potential mismatch detected
-        """
-        if not parsed_result or 'principle' not in parsed_result:
-            logger.warning(f"🚫 VALIDATION: Invalid parsed result: {parsed_result}")
-            return False
+            # Currency and number words (medium-high confidence)
+            'currency_numbers': ['euros', 'euro', 'pesos', 'peso', 'dólares', 'dólar', 'mil', 'cinco', 'diez', 'quince', 'veinte', 'veinticinco', 'treinta', 'cincuenta'],
             
-        principle_result = parsed_result['principle']
-        response_lower = raw_response.lower().strip()
-        
-        # English validation patterns
-        english_patterns = {
-            "maximizing the floor income": "maximizing_floor",
-            "maximizing the average income": "maximizing_average", 
-            "maximizing floor income": "maximizing_floor",
-            "maximizing average income": "maximizing_average",
-            "maximizing average with floor constraint": "maximizing_average_floor_constraint",
-            "maximizing average with range constraint": "maximizing_average_range_constraint",
-            "floor constraint": "maximizing_average_floor_constraint",
-            "range constraint": "maximizing_average_range_constraint"
+            # Prepositions and common words (medium confidence) 
+            'prepositions': ['con', 'de', 'bajo', 'dentro', 'del', 'sujeto', 'mediante', 'según', 'por', 'sin', 'es', 'la', 'el', 'una'],
+            
+            # Spanish-specific patterns (medium confidence)
+            'patterns': ['condiciones', 'limitaciones', 'ilimitado', 'libre', 'mxn', 'ars', 'cop'],
+            
+            # Justice principle terms in Spanish (high confidence)
+            'principles': ['maximización', 'maximizar', 'ingresos', 'ingreso', 'promedio', 'mínimos', 'mínimo', 'promedio', 'rango']
         }
         
-        # Spanish validation patterns (enhanced for Phase 2)
-        spanish_patterns = {
-            # Basic principles - DEL indicates basic principle
-            "maximización del ingreso mínimo": "maximizing_floor",
-            "maximización del ingreso promedio": "maximizing_average",
-            "maximizar los ingresos mínimos": "maximizing_floor", 
-            "maximizar los ingresos promedio": "maximizing_average",
-            
-            # Constraint indicators - CON/con indicates constraint principle  
-            # Specific constraint types (more specific patterns first)
-            "maximización del promedio con restricción de rango": "maximizing_average_range_constraint",
-            "restricción de rango": "maximizing_average_range_constraint",
-            "con restricción de rango": "maximizing_average_range_constraint",
-            "maximización del promedio con restricción de ingreso mínimo": "maximizing_average_floor_constraint",
-            "restricción de ingreso mínimo": "maximizing_average_floor_constraint",
-            "con restricción de ingreso mínimo": "maximizing_average_floor_constraint"
+        # Count indicators by confidence level
+        high_confidence_count = sum(1 for word in spanish_indicators['high_confidence'] if word in statement_lower)
+        currency_count = sum(1 for word in spanish_indicators['currency_numbers'] if word in statement_lower)
+        preposition_count = sum(1 for word in spanish_indicators['prepositions'] if word in statement_lower)
+        pattern_count = sum(1 for word in spanish_indicators['patterns'] if word in statement_lower)
+        principle_count = sum(1 for word in spanish_indicators['principles'] if word in statement_lower)
+        
+        total_spanish_indicators = high_confidence_count + currency_count + preposition_count + pattern_count + principle_count
+        
+        # Spanish detection logic with confidence thresholds
+        if high_confidence_count >= 1:  # Any high-confidence Spanish constraint term
+            return "spanish"
+        elif currency_count >= 1 and preposition_count >= 1:  # Spanish currency + Spanish grammar
+            return "spanish"  
+        elif principle_count >= 2:  # Multiple Spanish justice principle terms
+            return "spanish"
+        elif total_spanish_indicators >= 3:  # Multiple Spanish indicators together
+            return "spanish"
+        elif total_spanish_indicators >= 2 and len(statement_lower.split()) <= 8:  # Short phrases with Spanish indicators
+            return "spanish"
+        
+        # Chinese indicators (characters)
+        chinese_chars = ['元', '千', '万', '限制', '约束', '条件', '投票', '决定', '最大化', '最低', '平均', '收入', '范围']
+        chinese_count = sum(1 for char in chinese_chars if char in statement)
+        if chinese_count >= 1:
+            return "mandarin"
+        
+        # English indicators (comprehensive)
+        english_indicators = {
+            'constraint_terms': ['constraint', 'limit', 'maximum', 'minimum', 'restriction', 'bound', 'cap', 'threshold'],
+            'currency_numbers': ['dollars', 'dollar', 'thousand', 'million', 'euros'],
+            'principles': ['maximizing', 'maximize', 'income', 'average', 'floor', 'range'],
+            'common': ['with', 'of', 'no', 'the', 'and', 'is', 'are', 'vote', 'decision']
         }
         
-        # Mandarin validation patterns (enhanced for Phase 2)
-        mandarin_patterns = {
-            # Basic principles - direct phrases indicate basic principles
-            "最大化最低收入": "maximizing_floor",
-            "最低收入最大化": "maximizing_floor",
-            "平均收入最大化": "maximizing_average", 
-            
-            # Constraint indicators - 约束条件 indicates constraint principle
-            # Specific constraint types (more specific patterns first)
-            "在范围约束条件下": "maximizing_average_range_constraint",
-            "在最低收入约束条件下": "maximizing_average_floor_constraint", 
-            "范围约束条件下最大化平均收入": "maximizing_average_range_constraint",
-            "最低收入约束条件下最大化平均收入": "maximizing_average_floor_constraint",
-            "范围约束": "maximizing_average_range_constraint",
-            "最低收入约束": "maximizing_average_floor_constraint"
-        }
+        english_constraint_count = sum(1 for word in english_indicators['constraint_terms'] if word in statement_lower)
+        english_currency_count = sum(1 for word in english_indicators['currency_numbers'] if word in statement_lower)
+        english_principle_count = sum(1 for word in english_indicators['principles'] if word in statement_lower)
+        english_common_count = sum(1 for word in english_indicators['common'] if word in statement_lower)
         
-        # Select appropriate patterns based on language
-        validation_patterns = {
-            "english": english_patterns,
-            "spanish": spanish_patterns, 
-            "mandarin": mandarin_patterns
-        }.get(language.lower(), english_patterns)
+        total_english_indicators = english_constraint_count + english_currency_count + english_principle_count + english_common_count
         
-        # Check for obvious mismatches - sort by specificity (longer patterns first)
-        sorted_patterns = sorted(validation_patterns.items(), key=lambda x: len(x[0]), reverse=True)
+        # English detection logic
+        if english_constraint_count >= 1:  # Any English constraint term
+            return "english"
+        elif english_principle_count >= 2:  # Multiple English principle terms
+            return "english"
+        elif total_english_indicators >= 3:  # Multiple English indicators
+            return "english"
         
-        for pattern, expected_principle in sorted_patterns:
-            if pattern in response_lower:
-                if principle_result != expected_principle:
-                    logger.error(f"🚫 BALLOT PARSING MISMATCH [{language.upper()}]: "
-                               f"'{raw_response}' contains '{pattern}' but parsed as '{principle_result}', "
-                               f"expected '{expected_principle}'")
-                    return False
-                # Match found and correct, no need to check less specific patterns
-                break
-                    
-        # Check for critical disambiguation errors
-        critical_mismatches = [
-            # Basic principles incorrectly parsed as constraint principles
-            ("maximizing the floor income", "maximizing_average_floor_constraint"),
-            ("maximizing the average income", "maximizing_average_floor_constraint"),
-            ("maximizing the floor income", "maximizing_average_range_constraint"),
-            ("maximizing the average income", "maximizing_average_range_constraint"),
-        ]
+        # Final decision: Spanish vs English for ambiguous cases
+        if total_spanish_indicators > total_english_indicators:
+            return "spanish"
+        elif total_english_indicators > total_spanish_indicators:
+            return "english"
         
-        for phrase, wrong_parsing in critical_mismatches:
-            if phrase in response_lower and principle_result == wrong_parsing:
-                logger.error(f"🚫 CRITICAL PARSING ERROR: '{raw_response}' contains '{phrase}' "
-                           f"but was parsed as '{wrong_parsing}' - this is the systematic error we fixed!")
-                return False
-        
-        return True
-    
+        return "unknown"
     
     async def _detect_preference_via_llm(self, statement: str) -> Optional[PrincipleChoice]:
         """Use LLM to detect preference when pattern matching fails."""
@@ -1795,9 +1795,12 @@ Response:"""
         if not constraint_text or constraint_text.strip() == "":
             return None
         
-        # Use existing multilingual parsing with configured language
+        # Detect language hint for better parsing
+        language_hint = self._detect_language_hint(constraint_text)
+        
+        # Use existing multilingual parsing with enhanced error handling
         try:
-            amount = await self.parse_constraint_amount(constraint_text, self.experiment_language)
+            amount = await self.parse_constraint_amount_multilingual(constraint_text, language_hint)
             if amount and amount > 0:
                 # Validate constraint amount scale  
                 # Validate constraint amount using merged logic

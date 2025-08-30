@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from experiment_agents.utility_agent import UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
 from utils.error_handling import ValidationError
+from utils.language_manager import SupportedLanguage
 
 
 class TestMultilingualBallotParsingIntegration(unittest.TestCase):
@@ -23,12 +24,23 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
         """Set up test fixtures."""
         self.utility_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
     
-    async def _parse_and_validate(self, ballot_text: str, language: str = "english") -> tuple[PrincipleChoice, bool]:
+    async def _parse_and_validate(self, ballot_text: str, language: str = "english") -> tuple[dict, bool]:
         """Helper to parse ballot and validate with runtime validation system."""
         await self.utility_agent.async_init()
         
+        # Map string language to enum and set language context
+        language_mapping = {
+            "english": SupportedLanguage.ENGLISH,
+            "spanish": SupportedLanguage.SPANISH,
+            "mandarin": SupportedLanguage.MANDARIN
+        }
+        
+        if hasattr(self.utility_agent, 'language_manager'):
+            lang_enum = language_mapping.get(language.lower(), SupportedLanguage.ENGLISH)
+            self.utility_agent.language_manager.set_language(lang_enum)
+        
         # Parse the ballot
-        parsed_result = await self.utility_agent.parse_principle_choice_llm(ballot_text, language=language)
+        parsed_result = await self.utility_agent.parse_principle_choice_llm(ballot_text)
         
         # Validate with runtime system
         is_consistent = await self.utility_agent.validate_ballot_parsing_consistency(
@@ -76,9 +88,19 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                         result, is_consistent = await self._parse_and_validate(ballot, language)
                         
                         # Assert correct principle parsing
+                        # Map principle string to enum for comparison
+                        principle_name = result.get('principle')
+                        principle_mapping = {
+                            'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+                            'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+                            'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                            'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+                        }
+                        
+                        parsed_principle = principle_mapping.get(principle_name)
                         self.assertEqual(
-                            result.principle, expected_principle,
-                            f"Language {language}: '{ballot}' parsed as {result.principle.value}, expected {expected_principle.value}"
+                            parsed_principle, expected_principle,
+                            f"Language {language}: '{ballot}' parsed as {principle_name}, expected {expected_principle.value}"
                         )
                         
                         # Assert runtime validation passes
@@ -136,8 +158,8 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                     )
                     
                     self.assertEqual(
-                        result.constraint_amount, case["expected_amount"],
-                        f"Constraint amount mismatch for '{case['ballot']}': got {result.constraint_amount}, expected {case['expected_amount']}"
+                        result.get('constraint_amount'), case["expected_amount"],
+                        f"Constraint amount mismatch for '{case['ballot']}': got {result.get('constraint_amount')}, expected {case['expected_amount']}"
                     )
                     
                     self.assertTrue(
@@ -201,9 +223,19 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                         case["ballot"], case["language"] 
                     )
                     
+                    # Map principle string to enum for comparison
+                    principle_name = result.get('principle')
+                    principle_mapping = {
+                        'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+                        'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+                        'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                        'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+                    }
+                    
+                    parsed_principle = principle_mapping.get(principle_name)
                     self.assertEqual(
-                        result.principle, case["expected"],
-                        f"Disambiguation failed for {case['description']}: '{case['ballot']}' parsed as {result.principle.value}, expected {case['expected'].value}"
+                        parsed_principle, case["expected"],
+                        f"Disambiguation failed for {case['description']}: '{case['ballot']}' parsed as {principle_name}, expected {case['expected'].value}"
                     )
                     
                     self.assertTrue(
@@ -246,9 +278,19 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                     )
                     
                     # This MUST parse correctly - these are the exact cases that were failing
+                    # Map principle string to enum for comparison
+                    principle_name = result.get('principle')
+                    principle_mapping = {
+                        'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+                        'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+                        'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                        'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+                    }
+                    
+                    parsed_principle = principle_mapping.get(principle_name)
                     self.assertEqual(
-                        result.principle, case["expected"],
-                        f"SYSTEMATIC ERROR STILL OCCURRING: {case['description']} - '{case['ballot']}' parsed as {result.principle.value}, should be {case['expected'].value}"
+                        parsed_principle, case["expected"],
+                        f"SYSTEMATIC ERROR STILL OCCURRING: {case['description']} - '{case['ballot']}' parsed as {principle_name}, should be {case['expected'].value}"
                     )
                     
                     # Runtime validation MUST pass
@@ -299,7 +341,7 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                         
                         # All parsing should succeed
                         self.assertIsNotNone(result)
-                        self.assertIsNotNone(result.principle)
+                        self.assertIsNotNone(result.get('principle'))
                         
                         # All runtime validation should pass
                         self.assertTrue(
@@ -310,7 +352,7 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                         # Constraint ballots should have constraint amounts
                         if any(constraint_word in ballot.lower() for constraint_word in ["constraint", "restricción", "约束条件"]):
                             self.assertIsNotNone(
-                                result.constraint_amount,
+                                result.get('constraint_amount'),
                                 f"Missing constraint amount for {participant['participant']} ballot {i+1}: '{ballot}'"
                             )
         
@@ -338,7 +380,17 @@ class TestMultilingualBallotParsingIntegration(unittest.TestCase):
                     )
                     
                     # If parsing is correct, validation should pass
-                    if result.principle == case["correct_principle"]:
+                    # Map principle string to enum for comparison
+                    principle_name = result.get('principle')
+                    principle_mapping = {
+                        'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+                        'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+                        'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                        'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
+                    }
+                    parsed_principle = principle_mapping.get(principle_name)
+                    
+                    if parsed_principle == case["correct_principle"]:
                         self.assertTrue(
                             is_consistent,
                             f"Correct parsing should pass validation: {case['description']}"

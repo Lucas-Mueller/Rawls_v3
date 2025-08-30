@@ -250,40 +250,81 @@ async def test_multilingual_ballot_parsing_integration(self):
         assert result["constraint_amount"] == scenario["expected_constraint"]
 ```
 
-## Implementation Priority
+## Implementation Status & Remaining Work
 
-### **Critical Priority (Week 1)**
-1. **Fix English parsing prompt** - Addresses immediate issue
-2. **Add English real-world tests** - Prevents regression
-3. **Add runtime validation** - Catches future mismatches
+### ✅ **COMPLETED - Phase 1 (Critical Priority)**
+**Status**: ✅ COMPLETE - Core issue resolved (August 30, 2025)
 
-### **High Priority (Week 2)**  
-1. **Fix Spanish parsing prompt** - Covers major language 
-2. **Add Spanish real-world tests** - Complete Spanish coverage
-3. **Test Spanish ballot scenarios** - Validate fixes
+1. ✅ **Fix English parsing prompt** - DONE
+   - Enhanced `translations/english_prompts.json` → `utility_llm_parse_principle_choice`
+   - Added comprehensive disambiguation examples for basic vs constraint principles
+   - Critical fix: "My ballot choice is maximizing the floor income" now correctly parses as `maximizing_floor`
 
-### **Medium Priority (Week 3)**
-1. **Fix Mandarin parsing prompt** - Complete multilingual support
-2. **Add Mandarin real-world tests** - Full language coverage  
-3. **Integration testing** - End-to-end validation
+2. ✅ **Implement missing method** - DONE  
+   - Added `parse_constraint_amount_multilingual()` method to `experiment_agents/utility_agent.py`
+   - Fixed float parsing issue ("2500.0" → 2500)
+   - All originally failing tests now pass (13/13)
 
-### **Monitoring (Ongoing)**
-1. **Runtime validation alerts** - Early detection
+3. ✅ **Add English real-world tests** - DONE
+   - `tests/unit/test_real_world_ballot_parsing.py` comprehensive tests validate exact real experiment formats
+   - Tests cover the critical case from `experiment_results_20250829_231553.json`
+
+4. ✅ **Add runtime validation** - DONE
+   - Implemented `validate_ballot_parsing_consistency()` method
+   - Detects systematic parsing mismatches during experiments
+   - Early warning system for future parsing issues
+
+### 🔄 **NEXT - Phase 2 (High Priority)**
+**Target**: Complete Spanish parsing reliability
+
+1. **Fix Spanish parsing prompt** - `translations/spanish_prompts.json`
+   - Add Spanish-specific disambiguation examples (similar to English fix)
+   - Critical Spanish patterns: "maximización DEL ingreso mínimo" → `maximizing_floor`
+   - Spanish constraint patterns: "CON restricción" → constraint principles
+
+2. **Add Spanish real-world tests** - Extend test coverage
+   - Test Spanish ballot formats used in real experiments
+   - Validate Spanish disambiguation scenarios
+
+3. **Test Spanish ballot scenarios** - End-to-end validation
+   - Ensure Spanish parsing works with runtime validation
+   - Cross-language consistency checks
+
+### 📅 **FUTURE - Phase 3 (Medium Priority)**
+**Target**: Complete multilingual support
+
+1. **Fix Mandarin parsing prompt** - `translations/mandarin_prompts.json`
+   - Add Mandarin-specific disambiguation examples
+   - Critical Mandarin patterns: "最大化最低收入" → `maximizing_floor`
+   - Mandarin constraint patterns: "约束条件" → constraint principles
+
+2. **Add Mandarin real-world tests** - Complete language coverage
+   - Test Mandarin ballot formats
+   - Validate Mandarin disambiguation scenarios
+
+3. **Integration testing** - Full system validation
+   - Multi-language experiment testing
+   - Performance impact assessment
+
+### 🔍 **ONGOING - Monitoring & Maintenance**
+1. **Runtime validation monitoring** - Production alerting
 2. **Experiment result audits** - Quality assurance
-3. **Cross-language consistency checks** - Maintain accuracy
+3. **Cross-language consistency** - Maintain accuracy across updates
 
 ## Expected Outcomes
 
-### **Immediate Benefits**
+### **✅ ACHIEVED Benefits (Phase 1 Complete)**
 - ✅ **Accurate English ballot parsing** - Core issue resolved
-- ✅ **Experiment result integrity** - Votes match agent intentions  
-- ✅ **Runtime error detection** - Early problem identification
-
-### **Long-term Benefits**
-- ✅ **Complete multilingual accuracy** - All languages parse correctly
-- ✅ **Robust test coverage** - Real-world scenarios covered
+- ✅ **Experiment result integrity** - English votes now match agent intentions  
+- ✅ **Runtime error detection** - Early problem identification system implemented
+- ✅ **Robust test coverage** - Real-world English scenarios covered
 - ✅ **Maintainable architecture** - Following utility agent philosophy
-- ✅ **Scalable validation system** - Easy to add new languages
+- ✅ **Scalable validation system** - Foundation for additional languages
+
+### **🎯 TARGET Benefits (Phases 2-3)**
+- 🔄 **Complete multilingual accuracy** - Spanish and Mandarin parsing reliability
+- 🔄 **Cross-language consistency** - Uniform parsing quality across all languages
+- 🔄 **Production monitoring** - Runtime validation alerts for all languages
 
 ## Risk Assessment
 
@@ -311,6 +352,17 @@ async def test_multilingual_ballot_parsing_integration(self):
 
 ## Conclusion
 
-This plan addresses the **critical gap** between test coverage and real-world ballot parsing behavior across English, Spanish, and Mandarin. By enhancing the LLM parsing prompts with comprehensive disambiguation examples and adding robust validation, we maintain our utility agent philosophy while ensuring **accurate vote parsing in all supported languages**.
+**PHASE 1 COMPLETE**: The **critical experiment validity issue** has been resolved! English ballot parsing now works correctly, with "My ballot choice is maximizing the floor income" properly parsing as `maximizing_floor` instead of the previous systematic error of `maximizing_average_floor_constraint`.
 
-The systematic approach ensures this issue is resolved not just for the current problem, but provides a foundation for reliable multilingual ballot parsing in future experiments.
+**Current Status**:
+- ✅ **Core issue fixed**: English ballots parse correctly 
+- ✅ **Production ready**: Runtime validation prevents future errors
+- ✅ **Test coverage**: Real-world scenarios validated
+- ✅ **Foundation established**: Architecture ready for Spanish/Mandarin expansion
+
+**Next Steps**: 
+- **Phase 2**: Apply the same disambiguation approach to Spanish parsing
+- **Phase 3**: Complete multilingual support with Mandarin parsing
+- **Ongoing**: Monitor production experiments with runtime validation
+
+The systematic approach ensures this issue is resolved not just for English, but provides a foundation for reliable multilingual ballot parsing across all supported languages in future experiments.

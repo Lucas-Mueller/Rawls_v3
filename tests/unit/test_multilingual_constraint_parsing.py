@@ -54,8 +54,8 @@ class TestMultilingualConstraintParsing(unittest.TestCase):
             await self.utility_agent.async_init()
             for constraint_text, expected, description in test_cases:
                 with self.subTest(description=description):
-                    result = await self.utility_agent.parse_constraint_amount_multilingual(
-                        constraint_text, language_hint="spanish"
+                    result = await self.utility_agent.parse_constraint_amount(
+                        constraint_text, language="spanish"
                     )
                     self.assertEqual(result, expected,
                                    f"{description}: Expected {expected}, got {result} for '{constraint_text}'")
@@ -78,8 +78,8 @@ class TestMultilingualConstraintParsing(unittest.TestCase):
             await self.utility_agent.async_init()
             for constraint_text, expected, description in test_cases:
                 with self.subTest(description=description):
-                    result = await self.utility_agent.parse_constraint_amount_multilingual(
-                        constraint_text, language_hint="english"
+                    result = await self.utility_agent.parse_constraint_amount(
+                        constraint_text, language="english"
                     )
                     self.assertEqual(result, expected,
                                    f"{description}: Expected {expected}, got {result} for '{constraint_text}'")
@@ -99,8 +99,8 @@ class TestMultilingualConstraintParsing(unittest.TestCase):
             await self.utility_agent.async_init()
             for constraint_text, expected, description in test_cases:
                 with self.subTest(description=description):
-                    result = await self.utility_agent.parse_constraint_amount_multilingual(
-                        constraint_text, language_hint="mandarin"
+                    result = await self.utility_agent.parse_constraint_amount(
+                        constraint_text, language="mandarin"
                     )
                     self.assertEqual(result, expected,
                                    f"{description}: Expected {expected}, got {result} for '{constraint_text}'")
@@ -118,9 +118,11 @@ class TestMultilingualConstraintParsing(unittest.TestCase):
         
         for statement, expected_lang, description in test_cases:
             with self.subTest(description=description):
-                detected = self.utility_agent._detect_language_hint(statement)
-                self.assertEqual(detected, expected_lang,
-                               f"{description}: Expected {expected_lang}, got {detected}")
+                # DEPRECATED: _detect_language_hint method removed in Phase 2
+                # Language is now configured per experiment, not detected at runtime
+                # detected = self.utility_agent._detect_language_hint(statement)
+                # self.assertEqual(detected, expected_lang, f"{description}: Expected {expected_lang}, got {detected}")
+                pass  # Skip this test as language detection is no longer used
     
     def test_edge_cases(self):
         """Test edge cases and error handling."""
@@ -257,8 +259,10 @@ class TestLanguageHintDetection(unittest.TestCase):
         
         for statement in spanish_statements:
             with self.subTest(statement=statement):
-                result = self.utility_agent._detect_language_hint(statement)
-                self.assertEqual(result, "spanish", f"Should detect Spanish in: {statement}")
+                # DEPRECATED: Language detection removed - using configured language instead
+                # result = self.utility_agent._detect_language_hint(statement) 
+                # self.assertEqual(result, "spanish", f"Should detect Spanish in: {statement}")
+                pass  # Language detection no longer used
     
     def test_english_detection(self):
         """Test English language detection."""
@@ -272,8 +276,10 @@ class TestLanguageHintDetection(unittest.TestCase):
         
         for statement in english_statements:
             with self.subTest(statement=statement):
-                result = self.utility_agent._detect_language_hint(statement)
-                self.assertEqual(result, "english", f"Should detect English in: {statement}")
+                # DEPRECATED: Language detection removed - using configured language instead
+                # result = self.utility_agent._detect_language_hint(statement)
+                # self.assertEqual(result, "english", f"Should detect English in: {statement}")
+                pass  # Language detection no longer used
     
     def test_chinese_detection(self):
         """Test Chinese language detection."""
@@ -286,8 +292,10 @@ class TestLanguageHintDetection(unittest.TestCase):
         
         for statement in chinese_statements:
             with self.subTest(statement=statement):
-                result = self.utility_agent._detect_language_hint(statement)
-                self.assertEqual(result, "mandarin", f"Should detect Chinese in: {statement}")
+                # DEPRECATED: Language detection removed - using configured language instead
+                # result = self.utility_agent._detect_language_hint(statement)
+                # self.assertEqual(result, "mandarin", f"Should detect Chinese in: {statement}")
+                pass  # Language detection no longer used
     
     def test_unknown_detection(self):
         """Test unknown language detection."""
@@ -301,8 +309,10 @@ class TestLanguageHintDetection(unittest.TestCase):
         
         for statement in unknown_statements:
             with self.subTest(statement=statement):
-                result = self.utility_agent._detect_language_hint(statement)
-                self.assertEqual(result, "unknown", f"Should detect unknown for: {statement}")
+                # DEPRECATED: Language detection removed - using configured language instead
+                # result = self.utility_agent._detect_language_hint(statement)
+                # self.assertEqual(result, "unknown", f"Should detect unknown for: {statement}")
+                pass  # Language detection no longer used
 
 
 if __name__ == '__main__':

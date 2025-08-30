@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from experiment_agents.utility_agent import UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
 from utils.error_handling import ValidationError
+from utils.language_manager import SupportedLanguage
 
 
 class TestRealWorldBallotParsing(unittest.TestCase):
@@ -30,9 +31,17 @@ class TestRealWorldBallotParsing(unittest.TestCase):
         """Helper to parse ballot text with language specification."""
         await self.utility_agent.async_init()
         
+        # Map string language to enum
+        language_mapping = {
+            "english": SupportedLanguage.ENGLISH,
+            "spanish": SupportedLanguage.SPANISH,
+            "mandarin": SupportedLanguage.MANDARIN
+        }
+        
         # Set the language context for the utility agent
         if hasattr(self.utility_agent, 'language_manager'):
-            self.utility_agent.language_manager.set_language(language)
+            lang_enum = language_mapping.get(language.lower(), SupportedLanguage.ENGLISH)
+            self.utility_agent.language_manager.set_language(lang_enum)
             
         # Parse using the enhanced parsing method
         result_dict = await self.utility_agent.parse_principle_choice_llm(ballot_text)

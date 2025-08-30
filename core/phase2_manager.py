@@ -1312,7 +1312,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 return False
             
             # Use existing multilingual agreement detection
-            agrees_to_vote = await self.utility_agent.detect_agreement_multilingual(confirmation_response)
+            agrees_to_vote = await self.utility_agent.detect_agreement(confirmation_response)
             
             confirmations.append({
                 'participant': participant.name,

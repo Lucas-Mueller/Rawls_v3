@@ -448,9 +448,9 @@ class Phase2ParsingFixtures:
     """Main fixture provider for Phase 2 parsing tests."""
     
     @staticmethod
-    def create_test_utility_agent(model: str = "gpt-4o-mini", temperature: float = 0.0) -> UtilityAgent:
-        """Create utility agent for testing."""
-        return UtilityAgent(utility_model=model, temperature=temperature)
+    def create_test_utility_agent(model: str = "gpt-4o-mini", temperature: float = 0.0, experiment_language: str = "english") -> UtilityAgent:
+        """Create utility agent for testing with multilingual support."""
+        return UtilityAgent(utility_model=model, temperature=temperature, experiment_language=experiment_language)
     
     @staticmethod
     def create_mock_participant_agent(name: str) -> ParticipantAgent:
