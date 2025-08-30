@@ -113,6 +113,11 @@ class VoteRoundDetails(BaseModel):
     confirmation_phase_occurred: bool = Field(False, description="Whether confirmation phase occurred")
     confirmation_results: Optional[List[Dict[str, Any]]] = Field(None, description="Confirmation responses if complex mode")
     warnings: List[str] = Field(default_factory=list, description="System warnings during vote processing")
+    
+    # Two-stage voting details
+    two_stage_details: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Two-stage voting success details by participant")
+    two_stage_retries: List[Dict[str, Any]] = Field(default_factory=list, description="Two-stage voting retry attempts")  
+    two_stage_failures: List[Dict[str, Any]] = Field(default_factory=list, description="Two-stage voting failure details")
 
 
 class VotingHistoryLog(BaseModel):

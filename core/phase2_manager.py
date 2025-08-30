@@ -1104,18 +1104,78 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             
             # Log post-discussion state with actual ranking
             if logger:
+                # Extract individual vote information for this participant
+                final_vote, vote_timestamp = self._extract_participant_vote_info(
+                    participant_name, discussion_result, logger
+                )
+                
                 logger.log_post_discussion(
                     participant_name,
                     assigned_class,
                     final_earnings,
                     ranking,
                     memory_state,
-                    bank_balance
+                    bank_balance,
+                    final_vote=final_vote,
+                    vote_timestamp=vote_timestamp
                 )
             
             final_rankings[participant_name] = ranking
         
         return final_rankings
+    
+    def _extract_participant_vote_info(
+        self, 
+        participant_name: str, 
+        discussion_result: GroupDiscussionResult, 
+        logger: AgentCentricLogger
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        Extract individual vote information for a specific participant.
+        
+        Args:
+            participant_name: Name of the participant to extract vote info for
+            discussion_result: The discussion result containing vote history
+            logger: The agent-centric logger containing voting history
+            
+        Returns:
+            Tuple of (final_vote, vote_timestamp) where both may be None if no vote found
+        """
+        # Try to extract from agent logger's voting history first (most reliable)
+        if (logger and 
+            hasattr(logger, 'voting_history') and 
+            logger.voting_history and
+            logger.voting_history.vote_rounds):
+            
+            # Get the most recent vote round
+            for vote_round in reversed(logger.voting_history.vote_rounds):
+                if vote_round.participant_votes:
+                    for vote_detail in vote_round.participant_votes:
+                        if vote_detail["participant_name"] == participant_name:
+                            assessed_choice = vote_detail["assessed_choice"]
+                            vote_timestamp = vote_detail.get("vote_timestamp")
+                            
+                            # Don't return parsing failures as valid votes
+                            if assessed_choice and assessed_choice != "PARSING_FAILED":
+                                return assessed_choice, vote_timestamp
+        
+        # Fallback: Try to extract from discussion result vote history (less reliable for individual votes)
+        if (discussion_result.vote_history and 
+            len(discussion_result.vote_history) > 0):
+            
+            last_vote = discussion_result.vote_history[-1]
+            if last_vote.votes:
+                # This is less reliable as it assumes vote order matches participant order
+                # But it's a fallback in case voting history isn't properly populated
+                for i, participant in enumerate(self.participants):
+                    if participant.name == participant_name and i < len(last_vote.votes):
+                        vote = last_vote.votes[i]
+                        if vote:
+                            timestamp = last_vote.timestamp.isoformat() if last_vote.timestamp else None
+                            return vote.principle.value, timestamp
+        
+        # No vote information found
+        return None, None
     
     async def _get_final_ranking(
         self,
@@ -1279,24 +1339,8 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                     )
                 return False
             
-            # Step B: Two-Stage Voting Phase
-            # Initialize two-stage voting manager
-            voting_manager = TwoStageVotingManager(
-                participants=self.participants,
-                language_manager=get_language_manager(),
-                logger=self.logger,
-                settings=self.settings
-            )
-            
-            # Conduct two-stage voting process
-            self._log_info("=== COMPLEX VOTING: TWO-STAGE VOTING PHASE ===")
-            vote_result = await voting_manager.conduct_full_voting_process(contexts, discussion_state)
-            
-            consensus_reached = vote_result is not None and hasattr(vote_result, 'consensus_reached') and vote_result.consensus_reached
-            
-            # Store vote result in discussion state for logging
-            if vote_result:
-                discussion_state.last_vote_result = vote_result
+            # Step B: Enhanced Secret Ballot Phase using streamlined method
+            consensus_reached = await self._conduct_secret_ballot_phase(contexts, discussion_state)
         finally:
             # Always reset voting flags
             self._voting_in_progress = False
@@ -1409,140 +1453,58 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
         discussion_state: GroupDiscussionState
     ) -> bool:
         """
-        Conduct secret ballot phase using existing parsing methods.
+        Conduct secret ballot phase using enhanced TwoStageVotingManager.
         Returns True if consensus is reached.
         """
         
-        self._log_info("=== COMPLEX VOTING: SECRET BALLOT PHASE ===")
+        self._log_info("=== COMPLEX VOTING: SECRET BALLOT PHASE (ENHANCED) ===")
         
-        language_manager = get_language_manager()
-        ballot_prompt = language_manager.get("prompts.utility_secret_ballot_request")
-        
-        ballots = []
-        
-        for i, context in enumerate(contexts):
-            participant = self.participants[i]
-            
-            # Get secret ballot from participant with timeout
-            try:
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, ballot_prompt, context=context),
-                    timeout=self.settings.ballot_timeout_seconds
-                )
-                ballot_response = result.final_output
-            except asyncio.TimeoutError:
-                self._log_warning(f"Timeout waiting for ballot from {participant.name}")
-                ballot_response = f"[{participant.name} timed out during ballot]"
-            
-            # Parse ballot using existing utility agent methods
-            try:
-                principle_choice = await self.utility_agent.parse_principle_choice_enhanced(ballot_response)
-                
-                # Validation: Check if ballot mentions constraint types explicitly
-                ballot_lower = ballot_response.lower()
-                
-                # Check for floor constraint mentions
-                floor_indicators = ['floor constraint', 'minimum income', 'minimum constraint', 'floor income']
-                if any(indicator in ballot_lower for indicator in floor_indicators):
-                    expected = JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
-                    if principle_choice.principle != expected:
-                        self._log_warning(f"PARSING ERROR: Ballot mentions floor constraint but parsed as {principle_choice.principle.value}")
-                        self._log_warning(f"Correcting principle for {participant.name} from {principle_choice.principle.value} to {expected.value}")
-                        principle_choice.principle = expected
-                
-                # Check for range constraint mentions
-                range_indicators = ['range constraint', 'income gap', 'difference constraint', 'gap constraint']
-                if any(indicator in ballot_lower for indicator in range_indicators):
-                    expected = JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
-                    if principle_choice.principle != expected:
-                        self._log_warning(f"PARSING ERROR: Ballot mentions range constraint but parsed as {principle_choice.principle.value}")
-                        self._log_warning(f"Correcting principle for {participant.name} from {principle_choice.principle.value} to {expected.value}")
-                        principle_choice.principle = expected
-                
-                # Validate constraint amount before adding to ballots
-                if not self._validate_constraint_amount(principle_choice.constraint_amount, participant.name):
-                    self._log_warning(f"Invalid constraint amount detected in ballot from {participant.name} - proceeding with validation warnings")
-                
-                ballots.append(principle_choice)
-                self._log_info(f"Secret ballot received from {participant.name}: {principle_choice.principle.value} (constraint: ${principle_choice.constraint_amount if principle_choice.constraint_amount else 'None'})")
-                
-                # Update participant memory with their ballot choice
-                ballot_content = f"""Secret Ballot Vote Round {discussion_state.round_number}:
-You cast a secret ballot for a justice principle.
-Your vote: {principle_choice.principle.value}
-{f'With constraint: ${principle_choice.constraint_amount:,}' if principle_choice.constraint_amount else 'No specific constraint amount'}
-Outcome: Vote recorded (secret ballot - results pending)"""
-                
-                # Extract configuration for memory guidance
-                memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
-                
-                context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, ballot_content, memory_guidance_style=memory_guidance_style
-                )
-                
-                # Log the vote response
-                if self.logger:
-                    self.logger.log_vote_response(
-                        participant_name=participant.name,
-                        raw_response=ballot_response,
-                        assessed_choice=principle_choice.principle.value,
-                        constraint_amount=principle_choice.constraint_amount,
-                        parsing_success=True
-                    )
-                
-            except Exception as e:
-                self._log_warning(f"Failed to parse ballot from {participant.name}: {e}")
-                
-                # Log failed parsing
-                if self.logger:
-                    self.logger.log_vote_response(
-                        participant_name=participant.name,
-                        raw_response=ballot_response,
-                        assessed_choice="PARSING_FAILED",
-                        parsing_success=False
-                    )
-                
-                # Could implement re-prompt logic here if needed
-                discussion_state.public_history += f"\n[VOTING ERROR] Failed to parse ballot - returning to discussion"
-                return False
-        
-        # Check for consensus using new method
-        consensus_reached, agreed_principle, warnings = self.utility_agent.check_ballot_consensus(ballots)
-        
-        # Handle constraint correction if needed
-        if warnings and not consensus_reached:
-            consensus_reached = await self._handle_constraint_corrections(
-                ballots, contexts, warnings, discussion_state
-            )
-            if consensus_reached:
-                # Re-check consensus after corrections
-                consensus_reached, agreed_principle, _ = self.utility_agent.check_ballot_consensus(ballots)
-        
-        # Create VoteResult using existing model and store in existing vote_history
-        vote_result = VoteResult(
-            votes=ballots,
-            consensus_reached=consensus_reached,
-            agreed_principle=agreed_principle,
-            vote_counts=self._calculate_vote_counts(ballots)
+        # Initialize enhanced two-stage voting manager
+        voting_manager = TwoStageVotingManager(
+            participants=self.participants,
+            language_manager=get_language_manager(),
+            logger=self.logger,
+            settings=self.settings
         )
         
+        # Conduct structured two-stage voting process
+        # This replaces 100+ lines of complex LLM parsing with deterministic validation
+        vote_result = await voting_manager.conduct_full_voting_process(contexts, discussion_state)
+        
+        if vote_result is None:
+            # Voting process failed - log and return to discussion
+            self._log_warning("Two-stage voting process failed - returning to discussion")
+            discussion_state.public_history += f"\n[VOTING ERROR] Two-stage voting process failed - returning to discussion"
+            return False
+        
+        # Store vote result in discussion state (maintains compatibility with existing code)
         discussion_state.last_vote_result = vote_result
-        discussion_state.vote_history.append(vote_result)  # Use existing vote_history
+        discussion_state.vote_history.append(vote_result)
         
-        if consensus_reached:
-            self._log_info(f"Consensus reached via secret ballot: {agreed_principle.principle.value}")
+        # Log and update discussion history based on consensus result
+        if vote_result.consensus_reached:
+            self._log_info(f"Consensus reached via enhanced two-stage voting: {vote_result.agreed_principle.principle.value}")
+            
             # Add to public history (aggregate result only, no individual ballots)
-            consensus_msg = f"Secret ballot consensus: {agreed_principle.principle.value}"
-            if agreed_principle.constraint_amount:
-                consensus_msg += f" (${agreed_principle.constraint_amount:,})"
+            consensus_msg = f"Two-stage voting consensus: {vote_result.agreed_principle.principle.value}"
+            if vote_result.agreed_principle.constraint_amount:
+                consensus_msg += f" (${vote_result.agreed_principle.constraint_amount:,})"
             discussion_state.public_history += f"\n[VOTING RESULT] {consensus_msg}"
+            
+            # Additional logging for transparency
+            self._log_info(f"Vote counts: {vote_result.vote_counts}")
         else:
-            self._log_info("No consensus reached in secret ballot")
-            # Analyze disagreement type and provide specific feedback
-            disagreement_message = self._analyze_ballot_disagreement(ballots)
+            self._log_info("No consensus reached in enhanced two-stage voting")
+            
+            # Analyze disagreement using existing method (maintains compatibility)
+            disagreement_message = self._analyze_ballot_disagreement(vote_result.votes)
             discussion_state.public_history += f"\n[VOTING RESULT] {disagreement_message}"
+            
+            # Log vote distribution for debugging
+            if vote_result.vote_counts:
+                self._log_info(f"Vote distribution: {vote_result.vote_counts}")
         
-        return consensus_reached
+        return vote_result.consensus_reached
     
     def _calculate_vote_counts(self, ballots: List[PrincipleChoice]) -> Dict[str, int]:
         """Calculate vote counts for VoteResult."""
@@ -1614,100 +1576,3 @@ Outcome: Vote recorded (secret ballot - results pending)"""
             # but disagreement between groups
             return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
     
-    async def _handle_constraint_corrections(
-        self,
-        ballots: List[PrincipleChoice],
-        contexts: List[ParticipantContext],
-        warnings: List[str],
-        discussion_state: GroupDiscussionState
-    ) -> bool:
-        """
-        Handle constraint corrections using existing memory management.
-        Returns True if corrections were successful.
-        """
-        
-        self._log_info("=== COMPLEX VOTING: CONSTRAINT CORRECTIONS ===")
-        
-        language_manager = get_language_manager()
-        corrections_made = 0
-        
-        # Iterate through ballots to identify those needing corrections
-        for i, ballot in enumerate(ballots):
-            participant = self.participants[i]
-            context = contexts[i]
-            
-            # Check if this ballot needs constraint correction
-            needs_correction = (
-                ballot.constraint_amount is None and 
-                ballot.principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                                   JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]
-            )
-            
-            if needs_correction:
-                self._log_info(f"Requesting constraint clarification from {participant.name} for {ballot.principle.value}")
-                
-                # Determine constraint type for prompt
-                if ballot.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
-                    constraint_type = "floor"
-                    constraint_type_display = "minimum income"
-                else:  # MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
-                    constraint_type = "range"
-                    constraint_type_display = "income range limit"
-                
-                # Create constraint clarification prompt
-                clarification_prompt = language_manager.get(
-                    "prompts.utility_constraint_re_prompt",
-                    participant_name=participant.name,
-                    principle_name=ballot.principle.value,
-                    constraint_type=constraint_type_display
-                )
-                
-                # Get constraint clarification with timeout
-                try:
-                    result = await asyncio.wait_for(
-                        Runner.run(participant.agent, clarification_prompt, context=context),
-                        timeout=self.settings.ballot_timeout_seconds
-                    )
-                    clarification_response = result.final_output
-                    
-                    # Extract constraint amount using existing flexible extraction
-                    extracted_amount = await self.utility_agent._extract_constraint_amount_flexible(clarification_response)
-                    
-                    if extracted_amount:
-                        # Update ballot with extracted amount
-                        ballot.constraint_amount = extracted_amount
-                        corrections_made += 1
-                        
-                        self._log_info(f"Successfully corrected constraint amount for {participant.name}: ${extracted_amount:,}")
-                        
-                        # Update participant memory with constraint clarification
-                        correction_content = f"""Constraint Clarification Round {discussion_state.round_number}:
-You were asked to specify a constraint amount for your {ballot.principle.value} choice.
-Your clarification: {clarification_response}
-Constraint amount extracted: ${extracted_amount:,}
-Outcome: Ballot updated with constraint amount"""
-                        
-                        # Extract configuration for memory guidance
-                        memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
-                        
-                        context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                            participant, context, correction_content, memory_guidance_style=memory_guidance_style
-                        )
-                        
-                    else:
-                        self._log_warning(f"Failed to extract constraint amount from {participant.name}'s clarification: {clarification_response[:100]}...")
-                        
-                except asyncio.TimeoutError:
-                    self._log_warning(f"Timeout waiting for constraint clarification from {participant.name}")
-                except Exception as e:
-                    self._log_warning(f"Error getting constraint clarification from {participant.name}: {e}")
-        
-        # Report correction results
-        if corrections_made > 0:
-            self._log_info(f"Successfully corrected {corrections_made} constraint amounts")
-            discussion_state.public_history += f"\n[VOTING UPDATE] Corrected {corrections_made} missing constraint amounts"
-            return True
-        else:
-            self._log_info("No constraint corrections were successful")
-            discussion_state.public_history += f"\n[VOTING WARNING] Could not correct missing constraint amounts"
-            return False

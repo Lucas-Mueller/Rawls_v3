@@ -291,6 +291,7 @@ Outcome: Learned how each justice principle is applied to income distributions t
         text_response = result.final_output
         
         # Parse using enhanced utility agent with retry logic
+        print(f"DEBUG: Principle choice response to parse: {repr(text_response)}")
         parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
         
         # Validate constraint specification

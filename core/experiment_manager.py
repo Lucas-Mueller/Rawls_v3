@@ -313,20 +313,33 @@ class FrohlichExperimentManager:
         # Build final vote results and track vote timestamps
         final_vote_results = {}
         vote_timestamps = {}
-        if phase2_results.discussion_result.vote_history:
-            last_vote = phase2_results.discussion_result.vote_history[-1]
-            # Since votes are anonymous (stored as list), we'll map them to participant names by order
-            for i, participant in enumerate(self.participants):
-                if i < len(last_vote.votes):
-                    vote = last_vote.votes[i]
-                    final_vote_results[participant.name] = vote.principle.value if vote else "No vote"
-                    # Record vote timestamp if available
-                    vote_timestamps[participant.name] = last_vote.timestamp.isoformat() if last_vote.timestamp else None
-                else:
+        
+        # Extract individual votes from voting history if available
+        if (self.agent_logger.voting_history and 
+            self.agent_logger.voting_history.vote_rounds and 
+            len(self.agent_logger.voting_history.vote_rounds) > 0):
+            
+            # Get the most recent vote round
+            last_vote_round = self.agent_logger.voting_history.vote_rounds[-1]
+            
+            # Extract individual votes from participant_votes array
+            if last_vote_round.participant_votes:
+                for vote_detail in last_vote_round.participant_votes:
+                    participant_name = vote_detail["participant_name"]
+                    assessed_choice = vote_detail["assessed_choice"]
+                    vote_timestamp = vote_detail.get("vote_timestamp")
+                    
+                    # Use the assessed choice as the final vote result
+                    final_vote_results[participant_name] = assessed_choice
+                    vote_timestamps[participant_name] = vote_timestamp
+            
+            # Fill in any missing participants with "No vote"
+            for participant in self.participants:
+                if participant.name not in final_vote_results:
                     final_vote_results[participant.name] = "No vote"
                     vote_timestamps[participant.name] = None
         else:
-            # If no votes, use participant names with "No vote"
+            # Fallback: If no voting history, use participant names with "No vote"
             for participant in self.participants:
                 final_vote_results[participant.name] = "No vote"
                 vote_timestamps[participant.name] = None

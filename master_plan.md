@@ -33,7 +33,9 @@ In this phase, each AI agent independently familiarizes itself with a set of jus
 
 * Very Sure
 
-* **Note for Claude Code:** A "utility agent" (a separate, specialized agent) will process the participant agent's output to extract the preference ranking and certainty.**1.2. Detailed Explanation of Principles Applied to Distributions*** **Action:** Agents are shown a table of four example income distributions.
+* **Note for Claude Code:** A "utility agent" (a separate, specialized agent) will process the participant agent's output to extract the preference ranking and certainty.
+
+**1.2. Detailed Explanation of Principles Applied to Distributions*** **Action:** Agents are shown a table of four example income distributions.
 
 * **Agent Task:** Agents are informed how each of the four justice principles would select a specific distribution from the examples. This is for informational purposes to deepen their understanding.\
   **Example Income Distributions:**|                  |             |             |             |             |

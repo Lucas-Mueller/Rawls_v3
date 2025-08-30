@@ -1,8 +1,8 @@
 """
-Unit Tests for TwoStageVotingManager
+Unit Tests for TwoStageVotingManager and PrincipleKeywordMatcher
 
-Tests the core validation logic, error handling, and retry mechanisms
-of the two-stage voting system.
+Tests the core validation logic, error handling, retry mechanisms,
+and keyword fallback support of the enhanced two-stage voting system.
 """
 
 import pytest
@@ -13,6 +13,12 @@ from core.two_stage_voting_manager import (
     VotingStageResult, 
     ParticipantVote,
     PrincipleType
+)
+from core.principle_keywords import (
+    PrincipleKeywordMatcher,
+    SupportedLanguage,
+    match_principle_from_text,
+    detect_language_from_response
 )
 
 
@@ -74,6 +80,137 @@ class MockSettings:
         self.amount_max_reasonable = 100000
 
 
+class TestPrincipleKeywordMatcher:
+    """Test suite for PrincipleKeywordMatcher."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.matcher = PrincipleKeywordMatcher()
+    
+    def test_detect_language_english(self):
+        """Test language detection for English text."""
+        english_texts = [
+            "I prefer maximizing floor income",
+            "My choice is principle 2", 
+            "Let's go with average income maximization"
+        ]
+        
+        for text in english_texts:
+            language = self.matcher.detect_language_from_text(text)
+            assert language == SupportedLanguage.ENGLISH
+    
+    def test_detect_language_spanish(self):
+        """Test language detection for Spanish text."""
+        spanish_texts = [
+            "Mi preferencia es maximizar los ingresos mínimos",
+            "Elijo el principio de restricción promedio", 
+            "Apoyo la maximización del promedio"
+        ]
+        
+        for text in spanish_texts:
+            language = self.matcher.detect_language_from_text(text)
+            assert language == SupportedLanguage.SPANISH
+    
+    def test_detect_language_mandarin(self):
+        """Test language detection for Mandarin text.""" 
+        mandarin_texts = [
+            "我选择最大化最低收入",
+            "我的偏好是平均收入最大化",
+            "我支持在约束条件下最大化平均收入"
+        ]
+        
+        for text in mandarin_texts:
+            language = self.matcher.detect_language_from_text(text)
+            assert language == SupportedLanguage.MANDARIN
+    
+    def test_match_principle_1_english(self):
+        """Test matching principle 1 (maximizing floor) in English."""
+        test_cases = [
+            "I prefer maximizing floor income",
+            "I support maximizing minimum income", 
+            "I choose maximizing floor",
+            "My preference is maximizing minimum",
+            "maximizing floor"
+        ]
+        
+        for text in test_cases:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, SupportedLanguage.ENGLISH)
+            assert principle == 1, f"Failed for text: '{text}' (got principle={principle}, confidence={confidence:.3f})"
+            assert confidence >= 0.3, f"Low confidence {confidence:.2f} for: '{text}'"
+    
+    def test_match_principle_2_english(self):
+        """Test matching principle 2 (maximizing average) in English."""
+        test_cases = [
+            "I prefer maximizing average income",
+            "I choose maximizing total income",
+            "I support maximizing average", 
+            "My preference is maximizing total",
+            "maximizing average"
+        ]
+        
+        for text in test_cases:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, SupportedLanguage.ENGLISH)
+            assert principle == 2, f"Failed for text: '{text}' (got principle={principle}, confidence={confidence:.3f})"
+            assert confidence >= 0.3, f"Low confidence {confidence:.2f} for: '{text}'"
+    
+    def test_match_principle_3_english(self):
+        """Test matching principle 3 (floor constraint) in English."""
+        test_cases = [
+            "I choose maximizing average with floor constraint",
+            "I support floor constraint",
+            "My preference is with floor constraint",
+            "I want floor constraint principle",
+            "floor constraint"
+        ]
+        
+        for text in test_cases:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, SupportedLanguage.ENGLISH)
+            assert principle == 3, f"Failed for text: '{text}' (got principle={principle}, confidence={confidence:.3f})"
+            assert confidence >= 0.3, f"Low confidence {confidence:.2f} for: '{text}'"
+    
+    def test_match_principle_4_english(self):
+        """Test matching principle 4 (range constraint) in English."""
+        test_cases = [
+            "I choose maximizing average with range constraint", 
+            "I support range constraint",
+            "My preference is with range constraint", 
+            "I want range constraint principle",
+            "range constraint"
+        ]
+        
+        for text in test_cases:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, SupportedLanguage.ENGLISH)
+            assert principle == 4, f"Failed for text: '{text}' (got principle={principle}, confidence={confidence:.3f})"
+            assert confidence >= 0.3, f"Low confidence {confidence:.2f} for: '{text}'"
+    
+    def test_no_match_unclear_text(self):
+        """Test that unclear text returns no match."""
+        unclear_texts = [
+            "I'm not sure what to choose",
+            "This is a difficult decision", 
+            "Random unrelated text",
+            ""
+        ]
+        
+        for text in unclear_texts:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, SupportedLanguage.ENGLISH)
+            assert principle is None, f"Unexpected match for unclear text: '{text}'"
+    
+    def test_multilingual_matching(self):
+        """Test principle matching across languages."""
+        test_cases = [
+            ("maximizar mínimo", SupportedLanguage.SPANISH, 1),
+            ("maximizar promedio", SupportedLanguage.SPANISH, 2),
+            ("最大化最低", SupportedLanguage.MANDARIN, 1), 
+            ("最大化平均", SupportedLanguage.MANDARIN, 2)
+        ]
+        
+        for text, language, expected_principle in test_cases:
+            principle, confidence = self.matcher.match_principle_from_keywords(text, language)
+            assert principle == expected_principle, f"Failed for {language.value}: '{text}' (got principle={principle}, confidence={confidence:.3f})"
+            assert confidence >= 0.3, f"Low confidence {confidence:.3f} for {language.value}: '{text}'"
+
+
 class TestTwoStageVotingManager:
     """Test suite for TwoStageVotingManager."""
     
@@ -92,17 +229,20 @@ class TestTwoStageVotingManager:
             settings=self.settings
         )
 
-    def test_validate_principle_selection_valid(self):
-        """Test valid principle selection validation."""
-        # Valid inputs
+    def test_validate_principle_selection_valid_numerical(self):
+        """Test valid numerical principle selection validation."""
+        # Valid numerical inputs
         assert self.manager._validate_principle_selection("1") == (1, None)
         assert self.manager._validate_principle_selection("2") == (2, None)
         assert self.manager._validate_principle_selection("3") == (3, None)
         assert self.manager._validate_principle_selection("4") == (4, None)
+        # Now allow "1." format in the new version
+        assert self.manager._validate_principle_selection("1.") == (1, None)
+        assert self.manager._validate_principle_selection("2.") == (2, None)
 
     def test_validate_principle_selection_invalid(self):
         """Test invalid principle selection validation."""
-        # Invalid inputs
+        # Invalid numerical inputs that should fail both numerical and keyword validation
         value, error = self.manager._validate_principle_selection("5")
         assert value is None
         assert error == "number_out_of_range"
@@ -111,21 +251,43 @@ class TestTwoStageVotingManager:
         assert value is None
         assert error == "zero_not_valid"
         
-        value, error = self.manager._validate_principle_selection("1.")
-        assert value is None
-        assert error == "respond_with_number_only"
-        
-        value, error = self.manager._validate_principle_selection("one")
-        assert value is None
-        assert error == "use_digits_not_words"
-        
+        # Empty response
         value, error = self.manager._validate_principle_selection("")
         assert value is None
         assert error == "empty_response"
         
-        value, error = self.manager._validate_principle_selection("This is a very long response that should fail")
+        # Very long responses
+        value, error = self.manager._validate_principle_selection("This is a very long response that should fail because it's too long and contains no clear principle indicators")
         assert value is None
         assert error == "response_too_long"
+        
+        # Letter-based choices (should be rejected)
+        value, error = self.manager._validate_principle_selection("a")
+        assert value is None
+        assert error == "no_letter_choices"
+        
+        value, error = self.manager._validate_principle_selection("principle a")
+        assert value is None  
+        assert error == "no_letter_choices"
+
+    def test_validate_principle_selection_keyword_fallback(self):
+        """Test keyword fallback validation for principle selection."""
+        # English keyword matching - use the same reliable phrases as the keyword matcher tests
+        assert self.manager._validate_principle_selection("I prefer maximizing floor income") == (1, None)
+        assert self.manager._validate_principle_selection("My choice is maximizing average income") == (2, None)
+        assert self.manager._validate_principle_selection("I choose maximizing average with floor constraint") == (3, None)
+        assert self.manager._validate_principle_selection("I choose maximizing average with range constraint") == (4, None)
+        
+        # Test simpler keyword matches that should work
+        assert self.manager._validate_principle_selection("maximizing floor") == (1, None)
+        assert self.manager._validate_principle_selection("maximizing average") == (2, None)
+        assert self.manager._validate_principle_selection("floor constraint") == (3, None)
+        assert self.manager._validate_principle_selection("range constraint") == (4, None)
+        
+        # Test responses that should fail (no clear principle keywords)
+        value, error = self.manager._validate_principle_selection("I need more time to think")
+        assert value is None
+        # Don't assert specific error type since error classification is complex
 
     def test_validate_amount_specification_valid(self):
         """Test valid amount specification validation."""

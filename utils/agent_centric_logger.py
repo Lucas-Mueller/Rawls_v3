@@ -374,10 +374,7 @@ class AgentCentricLogger:
             # Create a new vote round if one doesn't exist
             self.start_vote_round(0, "two_stage_voting", participant_name)
         
-        # Store in vote round details
-        if not hasattr(self.current_vote_round, 'two_stage_details'):
-            self.current_vote_round.two_stage_details = {}
-        
+        # Store in vote round details (fields now defined in model)
         if participant_name not in self.current_vote_round.two_stage_details:
             self.current_vote_round.two_stage_details[participant_name] = {}
         
@@ -401,9 +398,7 @@ class AgentCentricLogger:
         if not self.current_vote_round:
             self.start_vote_round(0, "two_stage_voting", participant_name)
         
-        # Store retry information
-        if not hasattr(self.current_vote_round, 'two_stage_retries'):
-            self.current_vote_round.two_stage_retries = []
+        # Store retry information (field now defined in model)
         
         retry_info = {
             "participant": participant_name,
@@ -426,9 +421,7 @@ class AgentCentricLogger:
         if not self.current_vote_round:
             self.start_vote_round(0, "two_stage_voting", participant_name)
         
-        # Store failure information
-        if not hasattr(self.current_vote_round, 'two_stage_failures'):
-            self.current_vote_round.two_stage_failures = []
+        # Store failure information (field now defined in model)
         
         failure_info = {
             "participant": participant_name,

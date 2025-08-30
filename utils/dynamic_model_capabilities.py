@@ -8,7 +8,8 @@ parameter by creating test agents and running simple inference calls.
 import asyncio
 import logging
 from typing import Dict, Optional, Tuple, List
-from agents import Agent, Runner, ModelSettings, set_tracing_disabled
+from agents import Agent, Runner, ModelSettings
+from agents.tracing.setup import get_trace_provider
 from utils.model_provider import detect_model_provider
 from agents.extensions.models.litellm_model import LitellmModel
 import os
@@ -20,12 +21,14 @@ _temperature_cache: Dict[str, bool] = {}
 
 
 async def _run_without_tracing(agent, prompt: str, context=None):
-    """Run a quick probe call without emitting tracing spans."""
-    set_tracing_disabled(True)
-    try:
+    """Run a quick probe call without emitting tracing spans.
+
+    Uses a disabled trace context to scope suppression to this probe only,
+    avoiding global tracing flips that can affect concurrent participant runs.
+    """
+    trace_obj = get_trace_provider().create_trace(name="capability_probe", disabled=True)
+    with trace_obj:
         return await Runner.run(agent, prompt, context=context)
-    finally:
-        set_tracing_disabled(False)
 
 async def test_temperature_support(model_string: str) -> Tuple[bool, str, Optional[Exception]]:
     """

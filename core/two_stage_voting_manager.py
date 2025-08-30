@@ -24,6 +24,14 @@ from agents import Runner
 from utils.cultural_adaptation import get_amount_formatter, SupportedLanguage as CulturalLanguage
 from core.principle_name_manager import get_principle_name_manager
 
+# Import keyword matching system for fallback validation
+from core.principle_keywords import (
+    principle_keyword_matcher, 
+    SupportedLanguage, 
+    match_principle_from_text,
+    detect_language_from_response
+)
+
 # Import memory content builders
 from utils.memory_content import (
     build_two_stage_voting_principle_selection_delta,
@@ -376,7 +384,12 @@ class TwoStageVotingManager:
 
     def _validate_principle_selection(self, response: str) -> Tuple[Optional[int], Optional[str]]:
         """
-        Validate principle selection response using regex.
+        Enhanced principle selection validation with keyword fallback support.
+        
+        Priority order:
+        1. Numerical format validation (1-4)
+        2. Keyword matching fallback across languages
+        3. Error classification for user feedback
         
         Args:
             response: Raw agent response
@@ -386,33 +399,126 @@ class TwoStageVotingManager:
             - validated_value: 1-4 if valid, None if invalid
             - error_type: string describing error type for user feedback
         """
-        response = response.strip()
+        if not response:
+            return None, "empty_response"
+            
+        response_stripped = response.strip()
         
+        # Stage 1: Try numerical format validation (preferred method)
+        numerical_result, numerical_error = self._validate_numerical_principle_selection(response_stripped)
+        if numerical_result is not None:
+            logger.debug(f"Principle selection validated numerically: '{response_stripped}' -> {numerical_result}")
+            return numerical_result, None
+        
+        # Stage 2: Try keyword matching fallback
+        keyword_result, confidence = self._validate_keyword_principle_selection(response_stripped)
+        if keyword_result is not None:
+            logger.info(f"Principle selection validated via keywords: '{response_stripped[:50]}...' -> {keyword_result} (confidence: {confidence:.2f})")
+            return keyword_result, None
+        
+        # Stage 3: Classify error for helpful user feedback
+        error_type = self._classify_principle_selection_error(response_stripped, numerical_error)
+        logger.debug(f"Principle selection validation failed: '{response_stripped}' -> {error_type}")
+        return None, error_type
+    
+    def _validate_numerical_principle_selection(self, response: str) -> Tuple[Optional[int], Optional[str]]:
+        """
+        Validate numerical principle selection (1-4).
+        
+        Args:
+            response: Cleaned response string
+            
+        Returns:
+            Tuple of (validated_value, error_type) for numerical validation only
+        """
         # Check for exact match: single digit 1-4
         if re.match(r'^[1-4]$', response):
             return int(response), None
         
-        # Common error patterns with specific error messages
-        if re.match(r'^[1-4]\D+', response):  # "1." or "1 - Principle One"
-            return None, "respond_with_number_only"
+        # Check for common numerical variations that should work
+        if re.match(r'^[1-4]\.?$', response):  # Allow "1." format
+            return int(response[0]), None
             
-        if response.lower() in ["one", "two", "three", "four", "uno", "dos", "tres", "cuatro", "一", "二", "三", "四"]:
-            return None, "use_digits_not_words"
+        # Return specific error types for numerical validation
+        if re.match(r'^[1-4]\D+', response):  # "1 - Principle One"
+            return None, "respond_with_number_only"
             
         if re.match(r'^[5-9]$', response) or re.match(r'^[0-9]{2,}$', response):
             return None, "number_out_of_range"
             
         if response == "0":
             return None, "zero_not_valid"
-            
-        if len(response) > 20:
-            return None, "response_too_long"
-            
-        if not response:
-            return None, "empty_response"
         
-        # Default error for unrecognized patterns
-        return None, "invalid_format_general"
+        # Not a numerical format - will try keyword fallback
+        return None, "not_numerical"
+    
+    def _validate_keyword_principle_selection(self, response: str) -> Tuple[Optional[int], float]:
+        """
+        Validate principle selection using keyword matching fallback.
+        
+        Args:
+            response: Response text to analyze for keywords
+            
+        Returns:
+            Tuple of (principle_number, confidence_score)
+        """
+        try:
+            # Detect language from response content
+            detected_language = detect_language_from_response(response)
+            
+            # Use keyword matcher to find principle
+            principle_num, confidence = match_principle_from_text(response, detected_language)
+            
+            # Apply confidence threshold for acceptance
+            min_confidence_threshold = 0.3  # Configurable threshold - lowered for better coverage
+            if principle_num is not None and confidence >= min_confidence_threshold:
+                logger.debug(f"Keyword matching successful: language={detected_language.value}, "
+                           f"principle={principle_num}, confidence={confidence:.2f}")
+                return principle_num, confidence
+            else:
+                logger.debug(f"Keyword matching below threshold: principle={principle_num}, "
+                           f"confidence={confidence:.2f}, threshold={min_confidence_threshold}")
+                return None, confidence
+                
+        except Exception as e:
+            logger.warning(f"Error in keyword matching fallback: {e}")
+            return None, 0.0
+    
+    def _classify_principle_selection_error(self, response: str, numerical_error: Optional[str]) -> str:
+        """
+        Classify principle selection error for helpful user feedback.
+        
+        Args:
+            response: Original response text
+            numerical_error: Error from numerical validation, if any
+            
+        Returns:
+            Error type string for user feedback
+        """
+        response_lower = response.lower()
+        
+        # Handle common error patterns
+        if numerical_error in ["respond_with_number_only", "number_out_of_range", "zero_not_valid"]:
+            return numerical_error
+            
+        if response_lower in ["one", "two", "three", "four", "uno", "dos", "tres", "cuatro", "一", "二", "三", "四"]:
+            return "use_digits_not_words"
+            
+        if len(response) > 100:
+            return "response_too_long"
+            
+        if any(word in response_lower for word in ['a', 'b', 'c', 'd']):
+            return "no_letter_choices"
+            
+        # Check if response contains principle-related content but failed matching
+        principle_related_terms = ['principle', 'income', 'average', 'floor', 'constraint', 
+                                  'principio', 'ingreso', 'promedio', 'restricción',
+                                  '原则', '收入', '平均', '约束']
+        if any(term in response_lower for term in principle_related_terms):
+            return "principle_content_unclear"
+        
+        # Default fallback error
+        return "invalid_format_general"
 
     def _validate_amount_specification(self, response: str) -> Tuple[Optional[int], Optional[str]]:
         """
@@ -616,13 +722,20 @@ Respond with the amount (examples: 25000 or $25000):"""
     def _get_fallback_error_message(self, error_type: str, attempt: int) -> str:
         """Fallback error messages in English."""
         messages = {
+            # Numerical validation errors
             "respond_with_number_only": f"Invalid response (attempt {attempt}/{self.max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
             "use_digits_not_words": f"Invalid response (attempt {attempt}/{self.max_retries}). Please use digits (1, 2, 3, or 4), not words.",
             "number_out_of_range": f"Invalid response (attempt {attempt}/{self.max_retries}). You must respond with 1, 2, 3, or 4 only.",
             "zero_not_valid": f"Invalid response (attempt {attempt}/{self.max_retries}). Zero is not a valid principle choice. Use 1, 2, 3, or 4.",
             "response_too_long": f"Invalid response (attempt {attempt}/{self.max_retries}). Please respond with just the number.",
             "empty_response": f"Empty response (attempt {attempt}/{self.max_retries}). Please respond with 1, 2, 3, or 4.",
+            
+            # Keyword validation errors (new)
+            "no_letter_choices": f"Invalid response (attempt {attempt}/{self.max_retries}). Don't use letters (a, b, c, d). Use numbers: 1, 2, 3, or 4.",
+            "principle_content_unclear": f"Unclear principle choice (attempt {attempt}/{self.max_retries}). Please respond with the number of your preferred principle: 1, 2, 3, or 4.",
             "invalid_format_general": f"Invalid response (attempt {attempt}/{self.max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
+            
+            # Amount validation errors
             "amount_must_be_positive": f"Invalid amount (attempt {attempt}/{self.max_retries}). You must respond with a positive whole dollar amount.",
             "whole_numbers_only": f"Invalid amount format (attempt {attempt}/{self.max_retries}). You must respond with a whole dollar amount (no decimals).",
             "no_negative_amounts": f"Invalid amount (attempt {attempt}/{self.max_retries}). Negative amounts are not allowed.",

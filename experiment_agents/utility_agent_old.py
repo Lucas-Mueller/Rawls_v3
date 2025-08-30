@@ -6,7 +6,8 @@ import logging
 import re
 import os
 from typing import Optional, Dict, Any, List
-from agents import Agent, Runner, AgentOutputSchema, set_tracing_disabled
+from agents import Agent, Runner, AgentOutputSchema
+from agents.tracing.setup import get_trace_provider
 
 from models import (
     PrincipleChoice, PrincipleRanking, VoteProposal, JusticePrinciple,
@@ -19,28 +20,29 @@ from utils.error_handling import (
 )
 from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
-from utils.language_manager import get_language_manager, get_english_principle_name
+from utils.language_manager import get_language_manager, SupportedLanguage, get_english_principle_name
 
 logger = logging.getLogger(__name__)
 
 
 async def run_without_tracing(agent, prompt, context=None):
-    """Run agent without tracing to prevent utility agent operations from being traced."""
-    # Temporarily disable tracing
-    set_tracing_disabled(True)
-    try:
-        result = await Runner.run(agent, prompt, context=context)
-        return result
-    finally:
-        # Re-enable tracing
-        set_tracing_disabled(False)
+    """Run agent without tracing to prevent utility agent operations from being traced.
+
+    Uses a disabled trace context to avoid global toggles that can interfere with
+    participant tracing in concurrent tasks.
+    """
+    # Create a disabled (no-op) trace only for this block using provider directly
+    # to avoid "Trace already exists" warnings from the high-level helper.
+    trace_obj = get_trace_provider().create_trace(name="utility_agent_run", disabled=True)
+    with trace_obj:
+        return await Runner.run(agent, prompt, context=context)
 
 
 class UtilityAgent:
     """Specialized agent for parsing and validating participant responses with enhanced text parsing."""
     
     
-    def __init__(self, utility_model: str = None, temperature: float = 0.0):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english"):
         
         # Use environment variable or default for utility agents
         if utility_model is None:
@@ -49,6 +51,7 @@ class UtilityAgent:
         self.utility_model = utility_model
         self.temperature = temperature
         self.temperature_info = None
+        self.experiment_language = experiment_language.lower()
         self.language_manager = get_language_manager()
         
         # Agents will be created in async_init
@@ -56,62 +59,58 @@ class UtilityAgent:
         self.validator_agent = None
         self._initialization_complete = False
         
-        # Enhanced parsing patterns (keeping only ranking patterns)
-        self._ranking_patterns = self._compile_ranking_patterns()
+        # Load patterns only for the configured language
+        self._language_patterns = self._compile_patterns_for_language(self.experiment_language)
+        
+        # Multi-language principle mapping tables for lookup-based parsing
+        self._principle_mappings = self._create_principle_mappings()
         
     async def async_init(self):
         """Asynchronously initialize utility agents with dynamic temperature detection."""
         if self._initialization_complete:
             return
         
-        # Save current tracing state
-        tracing_was_disabled = False
         try:
-            # Temporarily disable tracing for utility agent creation
-            set_tracing_disabled(True)
-            tracing_was_disabled = True
-            
-            logger.info(f"Creating utility agents with model: {self.utility_model} (tracing disabled)")
-            
-            # Create parser agent with dynamic temperature detection
-            parser_kwargs = {
-                "name": "Response Parser",
-                "instructions": self.language_manager.get_parser_instructions(),
-            }
-            
-            self.parser_agent, self.temperature_info = await create_agent_with_temperature_retry(
-                agent_class=Agent,
-                model_string=self.utility_model,
-                temperature=self.temperature,
-                agent_kwargs=parser_kwargs
-            )
-            
-            # Create validator agent (reuse temperature info since it's the same model)
-            validator_kwargs = {
-                "name": "Response Validator", 
-                "instructions": self.language_manager.get_validator_instructions(),
-            }
-            
-            self.validator_agent, _ = await create_agent_with_temperature_retry(
-                agent_class=Agent,
-                model_string=self.utility_model,
-                temperature=self.temperature,
-                agent_kwargs=validator_kwargs
-            )
-            
+            # Build utility agents inside a disabled trace context to avoid emitting spans
+            trace_obj = get_trace_provider().create_trace(name="utility_agent_init", disabled=True)
+            with trace_obj:
+                logger.info(f"Creating utility agents with model: {self.utility_model} (tracing disabled)")
+
+                # Create parser agent with dynamic temperature detection
+                parser_kwargs = {
+                    "name": "Response Parser",
+                    "instructions": self.language_manager.get_parser_instructions(),
+                }
+
+                self.parser_agent, self.temperature_info = await create_agent_with_temperature_retry(
+                    agent_class=Agent,
+                    model_string=self.utility_model,
+                    temperature=self.temperature,
+                    agent_kwargs=parser_kwargs
+                )
+
+                # Create validator agent (reuse temperature info since it's the same model)
+                validator_kwargs = {
+                    "name": "Response Validator", 
+                    "instructions": self.language_manager.get_validator_instructions(),
+                }
+
+                self.validator_agent, _ = await create_agent_with_temperature_retry(
+                    agent_class=Agent,
+                    model_string=self.utility_model,
+                    temperature=self.temperature,
+                    agent_kwargs=validator_kwargs
+                )
+
             # Log temperature status
             self._log_temperature_status()
-            
+
             self._initialization_complete = True
             logger.info(f"✅ Utility agents initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize utility agents: {e}")
             raise e
-        finally:
-            # Re-enable tracing for participant agents
-            if tracing_was_disabled:
-                set_tracing_disabled(False)
             
     def _log_temperature_status(self):
         """Log temperature detection status for utility agent."""
@@ -202,14 +201,10 @@ class UtilityAgent:
         
         return None
     
-    async def detect_agreement_multilingual(self, response: str) -> bool:
-        """Multilingual agreement detection with context-aware negation handling.
-
-        Rules:
-        - Decisive agreement tokens (YES/I AGREE/LET'S VOTE/etc.) return True unless there is an explicit refusal.
-        - Words like "NO" are NOT treated as refusal if part of domain phrases (e.g., "NO CONSTRAINTS").
-        - If both agreement and ambiguous negation cues appear, defer to LLM fallback.
-        - Empty or whitespace-only responses are always treated as disagreement.
+    async def detect_agreement(self, response: str) -> bool:
+        """Language-specific agreement detection using configured experiment language.
+        
+        Uses pre-loaded patterns for the configured experiment language to detect agreement/disagreement.
         """
         await self.async_init()
 
@@ -221,68 +216,23 @@ class UtilityAgent:
             return False
             
         normalized = text.upper()
+        
+        # Use pre-loaded language-specific patterns
+        agreement_tokens = self._language_patterns.get('agreement_tokens', [])
+        disagreement_tokens = self._language_patterns.get('disagreement_tokens', [])
 
-        # Agreement tokens (broad but decisive)
-        agreement_tokens = [
-            "YES", "I AGREE", "AGREED", "LET'S VOTE", "LETS VOTE", "READY TO VOTE",
-            "LET'S PROCEED", "LETS PROCEED", "LET'S DO IT", "LETS DO IT",
-            "SOUNDS GOOD", "THAT WORKS", "FINE WITH ME"
-        ]
-
-        # Explicit refusal patterns (word-boundary, short-window negations)
-        refusal_regexes = [
-            r"\bNO\b\s*(,|\.|$)",
-            r"\bNO\b\s+(THANKS|NOT|NEED|TIME|VOTE|LATER|WAIT)",
-            r"\bNOT\s+READY\b",
-            r"\bNOT\s+YET\b",
-            r"\bNEED\s+MORE\b",
-            r"\bHOLD\s+ON\b",
-            r"\bI\s+DISAGREE\b",
-            # Chinese disagreement patterns
-            r"不，我不同意",
-            r"不同意",
-            r"不，不",
-            r"我不同意",
-        ]
-
-        # Domain phrases that must NOT flip agreement
-        domain_exceptions = [
-            r"\bNO\s+CONSTRAINTS?\b",
-            r"\bNO\s+RANGE\b",
-            r"\bNO\s+FLOOR\b",
-        ]
-
-        has_agree = any(tok in normalized for tok in agreement_tokens)
-
-        # Check for refusal patterns (English "NO" and Chinese "不")
-        mentions_refusal = (" NO" in f" {normalized}" or normalized.startswith("NO") or 
-                          "不" in text)  # Check original text for Chinese characters
-        only_domain_no = False
-        if mentions_refusal:
-            # Check if it's only domain exceptions and not explicit refusal
-            only_domain_no = any(re.search(p, normalized) for p in domain_exceptions) and not any(
-                re.search(rx, text) for rx in refusal_regexes  # Check against original text for Chinese
-            )
-
-        # Immediate decision: clear agreement without explicit refusal
-        if has_agree and (not mentions_refusal or only_domain_no):
-            logger.info("Direct agreement detected (decisive tokens, no explicit refusal)")
+        # Check for direct agreement
+        has_agree = any(token.upper() in normalized for token in agreement_tokens)
+        has_disagree = any(token.upper() in normalized for token in disagreement_tokens)
+        
+        if has_agree and not has_disagree:
+            logger.info(f"Direct agreement detected using {self.experiment_language} patterns")
             return True
+        elif has_disagree and not has_agree:
+            logger.info(f"Direct disagreement detected using {self.experiment_language} patterns")
+            return False
 
-        # Check explicit refusal - use appropriate text for each pattern
-        for rx in refusal_regexes:
-            # Chinese patterns should be checked against original text
-            if any(chinese_char in rx for chinese_char in ['不', '我', '同意']):
-                if re.search(rx, text):
-                    logger.info(f"Direct refusal detected via Chinese pattern: {rx}")
-                    return False
-            # English patterns against normalized text
-            else:
-                if re.search(rx, normalized):
-                    logger.info(f"Direct refusal detected via English pattern: {rx}")
-                    return False
-
-        # If ambiguous (e.g., both agree tokens and some non-exception NO), defer to LLM fallback
+        # If ambiguous, use LLM fallback
         language_manager = get_language_manager()
         detection_prompt = language_manager.get(
             "prompts.utility_agreement_detection_enhanced",
@@ -306,9 +256,8 @@ class UtilityAgent:
 
         statement_lower = statement.lower().strip()
         
-        # Detect likely language for better processing
-        language_hint = self._detect_language_hint(statement)
-        logger.debug(f"Detected language '{language_hint}' for vote intention analysis: {statement}")
+        # Use configured experiment language
+        logger.debug(f"Using configured language '{self.experiment_language}' for vote intention analysis: {statement}")
 
         # PRIMARY: LLM-based multilingual vote intention detection
         try:
@@ -316,7 +265,7 @@ class UtilityAgent:
 Analyze if this statement expresses IMMEDIATE intention to vote or make a decision.
 
 Statement: "{statement}"
-Language hint: {language_hint}
+Language: {self.experiment_language}
 
 DETECT VOTE_INTENTION for:
 1. IMMEDIATE PROPOSALS: "Let's vote", "Votemos", "我们投票吧", "I propose we vote"
@@ -385,29 +334,6 @@ Response:"""
             # Fallback to simple patterns only for obvious cases
             return self._detect_vote_intention_simple_fallback(statement_lower)
 
-    def _detect_vote_intention_simple_fallback(self, statement_lower: str) -> Optional[str]:
-        """
-        Simple fallback for vote intention detection when LLM fails.
-        Only handles the most obvious multilingual cases.
-        """
-        # Simple obvious patterns across languages
-        obvious_patterns = [
-            r"\blet'?s vote\b",           # English
-            r"\btime to vote\b",          # English  
-            r"\bready to vote\b",         # English
-            r"\bvotemos\b",               # Spanish "let's vote"
-            r"\ba votar\b",               # Spanish "to vote"
-            r"\b我们投票\b",                # Chinese "we vote"
-            r"\b投票吧\b",                 # Chinese "let's vote"
-        ]
-        
-        for pattern in obvious_patterns:
-            if re.search(pattern, statement_lower):
-                logger.info(f"Vote detected via obvious fallback pattern: {pattern}")
-                return statement_lower
-        
-        # No obvious vote intention detected
-        return None
     
     async def re_prompt_for_constraint(self, participant_name: str, choice: PrincipleChoice) -> str:
         """Generate re-prompt message for missing constraint."""
@@ -428,57 +354,247 @@ Response:"""
     
     
     
-    def _compile_ranking_patterns(self) -> Dict[str, re.Pattern]:
-        """Compile regex patterns for ranking detection only."""
-        return {
-            'ranking_line': re.compile(r'(\d+)\.?\s*\*?\*?\s*(.*?)(?=\n\s*\d+\.|$)', re.MULTILINE | re.DOTALL),
-            'rank_number': re.compile(r'(?:rank|position|place)?\s*(\d+)', re.IGNORECASE)
+    
+    def _create_principle_mappings(self) -> Dict[str, JusticePrinciple]:
+        """Create comprehensive multi-language principle mapping tables for lookup-based parsing."""
+        mappings = {}
+        
+        # English mappings
+        english_mappings = {
+            # Core principle names
+            "maximizing the floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximizing the average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximizing the average income with a floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximizing the average income with a range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Common variations
+            "maximize floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximize average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximizing floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximizing average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "floor income maximization": JusticePrinciple.MAXIMIZING_FLOOR,
+            "average income maximization": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximizing the floor": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximizing the average": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximize the floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximize the average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "average income with floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "average income with range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "maximizing average with floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximizing the average with a floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximizing average with range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "maximizing the average with a range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "average maximization with floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "average maximization with range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Short form variations
+            "floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "floor constraint principle": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "range constraint principle": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "average maximization": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "floor maximization": JusticePrinciple.MAXIMIZING_FLOOR,
+            "average with floor": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "average with range": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "the floor income maximization approach": JusticePrinciple.MAXIMIZING_FLOOR,
+            "the principle of maximizing average income": JusticePrinciple.MAXIMIZING_AVERAGE,
         }
+        
+        # Spanish mappings
+        spanish_mappings = {
+            # Core principle names
+            "maximización del ingreso mínimo": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximización del ingreso promedio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximización del ingreso promedio bajo restricción de ingreso mínimo": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximización del ingreso promedio bajo restricción de rango": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Common variations
+            "maximizar ingreso mínimo": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximizar ingreso promedio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximización del ingreso medio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximización de la media de ingresos": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximizando el ingreso promedio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximización del ingreso promedio con restricción de mínimo": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximización del ingreso promedio con límite inferior": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximización del ingreso medio con restricción de piso": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximización del promedio con restricción": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "restricción de rango": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+        }
+        
+        # Mandarin mappings
+        mandarin_mappings = {
+            # Core principle names
+            "最大化最低收入": JusticePrinciple.MAXIMIZING_FLOOR,
+            "最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "在最低收入约束条件下最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "在范围约束条件下最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Common variations
+            "最大化平均收入并设置最低限制": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "带最低约束的平均收入最大化": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "最大化收入平均值": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "平均收入最大化": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "收入平均值最大化": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "最低收入最大化": JusticePrinciple.MAXIMIZING_FLOOR,
+            "最大化平均收入并设置范围限制": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "在范围约束下最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+        }
+        
+        # Combine all mappings with language-agnostic lowercase keys
+        for lang_mappings in [english_mappings, spanish_mappings, mandarin_mappings]:
+            for text, principle in lang_mappings.items():
+                # Store with normalized key (lowercase, stripped)
+                key = text.lower().strip()
+                mappings[key] = principle
+                
+        return mappings
+    
+    def _fuzzy_match_principle(self, text: str) -> Optional[JusticePrinciple]:
+        """Find principle using fuzzy matching on normalized text."""
+        normalized_text = text.lower().strip()
+        
+        # Direct lookup first
+        principle = self._principle_mappings.get(normalized_text)
+        if principle:
+            return principle
+            
+        # Fuzzy matching for partial matches
+        for mapping_key, principle in self._principle_mappings.items():
+            # Check if the key is contained in the text or vice versa
+            if mapping_key in normalized_text or normalized_text in mapping_key:
+                # Additional check: ensure it's a substantial match (>50% overlap)
+                shorter_len = min(len(mapping_key), len(normalized_text))
+                longer_len = max(len(mapping_key), len(normalized_text))
+                if shorter_len / longer_len > 0.5:
+                    return principle
+                    
+        return None
+    
+    def _extract_numbered_list(self, response: str) -> List[tuple]:
+        """Extract numbered list items from response text."""
+        rankings = []
+        
+        # Use existing regex pattern
+        ranking_matches = self._language_patterns['ranking_line'].findall(response)
+        
+        if len(ranking_matches) >= 4:
+            for rank_num, rank_text in ranking_matches[:4]:
+                try:
+                    rank = int(rank_num)
+                    if 1 <= rank <= 4:
+                        # Clean up the text: remove markdown, extra whitespace, and explanations
+                        clean_text = rank_text.strip()
+                        clean_text = re.sub(r'\*+', '', clean_text)  # Remove markdown asterisks
+                        clean_text = clean_text.split(':')[0]  # Take only text before colon (remove explanations)
+                        clean_text = re.sub(r'\s+', ' ', clean_text)  # Normalize whitespace
+                        clean_text = clean_text.strip()
+                        if clean_text:
+                            rankings.append((rank, clean_text))
+                except ValueError:
+                    continue
+                    
+        return rankings
     
     async def parse_principle_choice_enhanced(self, response: str, max_retries: int = 3) -> PrincipleChoice:
-        """Streamlined principle choice parsing using JSON-based LLM approach."""
+        """Simple lookup-based parsing for principle choice - maintains compatibility with enhanced interface."""
         
-        for attempt in range(max_retries):
-            try:
-                # Primary method: Use JSON-based LLM parsing
-                choice_data = await self.parse_principle_choice_llm(response)
-                if choice_data:
-                    return PrincipleChoice.create_for_parsing(
-                        principle=JusticePrinciple(choice_data['principle']),
-                        constraint_amount=choice_data.get('constraint_amount'),
-                        certainty=CertaintyLevel(choice_data['certainty']),
-                        reasoning=choice_data.get('reasoning', response)
-                    )
+        try:
+            # 1. Find the principle in the response using fuzzy matching
+            principle = self._fuzzy_match_principle(response)
+            
+            if not principle:
+                # Try to extract key phrases from the response
+                response_lower = response.lower().strip()
                 
-                # If LLM parsing fails completely, abort experiment
-                if attempt == max_retries - 1:
-                    raise ExperimentError(
-                        f"Failed to parse principle choice after {max_retries} attempts - experiment must be aborted",
-                        ErrorSeverity.CRITICAL,
-                        {
-                            "response_text": response,
-                            "attempts": max_retries,
-                            "operation": "principle_choice_parsing_failure"
-                        }
-                    )
+                # Look for key phrases that might indicate principle
+                for phrase in ["my choice is", "i choose", "my preference is", "i prefer", "my selection is"]:
+                    if phrase in response_lower:
+                        # Extract text after the phrase
+                        start_idx = response_lower.find(phrase)
+                        text_after = response[start_idx + len(phrase):].strip()
+                        principle = self._fuzzy_match_principle(text_after)
+                        if principle:
+                            break
                 
-            except Exception as e:
-                logger.warning(f"Principle choice parsing attempt {attempt + 1} failed: {e}")
-                if attempt == max_retries - 1:
-                    # Final attempt failed - abort experiment
-                    raise ExperimentError(
-                        f"Failed to parse principle choice after {max_retries} attempts - experiment must be aborted",
-                        ErrorSeverity.CRITICAL,
-                        {
-                            "response_text": response,
-                            "attempts": max_retries,
-                            "final_error": str(e),
-                            "operation": "principle_choice_parsing_critical_failure"
-                        }
-                    )
-        
-        # This should not be reached due to the fallback in the loop
-        raise ValueError(f"Failed to parse principle choice after {max_retries} attempts")
+                # If still not found, try splitting response and checking each part
+                if not principle:
+                    for part in response.split('.'):
+                        part = part.strip()
+                        if part:
+                            principle = self._fuzzy_match_principle(part)
+                            if principle:
+                                break
+            
+            if not principle:
+                raise ExperimentError(
+                    f"Could not identify principle from response",
+                    ExperimentErrorCategory.VALIDATION_ERROR,
+                    ErrorSeverity.FATAL,
+                    {
+                        "response_text": response,
+                        "operation": "principle_choice_lookup_failure"
+                    }
+                )
+            
+            # 2. Extract constraint amount if it's a constraint principle
+            constraint_amount = None
+            if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                           JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
+                # Look for dollar amounts or numbers in the response
+                dollar_matches = re.findall(r'\$(\d{1,6}(?:,\d{3})*|\d{4,6})', response)
+                if dollar_matches:
+                    try:
+                        constraint_amount = int(dollar_matches[0].replace(',', ''))
+                    except ValueError:
+                        pass
+                
+                # If no dollar amount, look for bare numbers
+                if constraint_amount is None:
+                    number_matches = re.findall(r'\b(\d{4,6})\b', response)
+                    if number_matches:
+                        try:
+                            constraint_amount = int(number_matches[0])
+                        except ValueError:
+                            pass
+            
+            # 3. Determine certainty level (simple heuristic)
+            certainty = CertaintyLevel.SURE  # Default
+            response_lower = response.lower()
+            if any(word in response_lower for word in ['very unsure', 'extremely uncertain']):
+                certainty = CertaintyLevel.VERY_UNSURE
+            elif any(word in response_lower for word in ['unsure', 'uncertain', 'not sure']):
+                certainty = CertaintyLevel.UNSURE
+            elif any(word in response_lower for word in ['no opinion', 'neutral', 'indifferent']):
+                certainty = CertaintyLevel.NO_OPINION
+            elif any(word in response_lower for word in ['very sure', 'very confident', 'extremely confident']):
+                certainty = CertaintyLevel.VERY_SURE
+            
+            # 4. Create and return the PrincipleChoice
+            return PrincipleChoice.create_for_parsing(
+                principle=principle,
+                constraint_amount=constraint_amount,
+                certainty=certainty,
+                reasoning=response
+            )
+            
+        except ExperimentError:
+            # Re-raise ExperimentErrors as-is
+            raise
+        except Exception as e:
+            # Convert other exceptions to ExperimentError
+            raise ExperimentError(
+                f"Failed to parse principle choice due to unexpected error: {str(e)}",
+                ExperimentErrorCategory.VALIDATION_ERROR,
+                ErrorSeverity.FATAL,
+                {
+                    "response_text": response,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "operation": "principle_choice_parsing_exception"
+                }
+            ) from e
     
     
     def _create_principle_choice(self, data: Dict[str, Any]) -> PrincipleChoice:
@@ -507,42 +623,238 @@ Response:"""
         )
     
     async def parse_principle_ranking_enhanced(self, response: str, max_retries: int = 3) -> PrincipleRanking:
-        """Enhanced parsing for principle ranking with retry logic."""
+        """LLM-first parsing for principle ranking with lookup fallback."""
         
-        for attempt in range(max_retries):
-            try:
-                # First try direct pattern matching
-                ranking_data = await self._extract_ranking_direct(response)
-                if ranking_data and len(ranking_data['rankings']) == 4:
-                    return self._create_principle_ranking(ranking_data)
-                
-                # If direct parsing fails, abort experiment
-                raise ExperimentError(
-                    f"Failed to parse principle ranking after {max_retries} attempts - experiment must be aborted",
-                    ErrorSeverity.CRITICAL,
-                    {
-                        "response_text": response,
-                        "attempts": max_retries,
-                        "operation": "principle_ranking_parsing_failure"
-                    }
-                )
-                
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    # Final attempt failed - abort experiment
-                    raise ExperimentError(
-                        f"Failed to parse principle ranking after {max_retries} attempts - experiment must be aborted",
-                        ErrorSeverity.CRITICAL,
-                        {
-                            "response_text": response,
-                            "attempts": max_retries,
-                            "final_error": str(e),
-                            "operation": "principle_ranking_parsing_critical_failure"
-                        }
-                    )
-                
-                # Add clarifying context for retry
-                response = f"Original response: {response}\n\nPlease provide a complete ranking of all 4 principles from 1-4."
+        # Try LLM parsing first (already exists!)
+        try:
+            llm_result = await self._extract_ranking_llm_fallback(response)
+            if llm_result:
+                converted_result = self._convert_llm_result_to_principle_ranking(llm_result)
+                if converted_result:
+                    logger.info("LLM parsing successful")
+                    return converted_result
+                else:
+                    logger.warning("LLM parsing failed validation, falling back to lookup")
+        except Exception as e:
+            logger.warning(f"LLM parsing failed, falling back to lookup: {e}")
+        
+        # Fallback to lookup if needed
+        return await self._original_lookup_based_parsing(response)
+
+    def _convert_llm_result_to_principle_ranking(self, llm_result: Dict[str, Any]) -> PrincipleRanking:
+        """Convert LLM parsing result to PrincipleRanking object."""
+        rankings = []
+        
+        logger.info(f"DEBUG: Converting LLM result: {llm_result}")
+        
+        for ranking_data in llm_result['rankings']:
+            # Map principle name to enum
+            principle_name = ranking_data['principle']
+            principle = self._map_principle_name_to_enum(principle_name)
+            logger.info(f"DEBUG: Mapped principle '{principle_name}' -> {principle}")
+            if principle:
+                rankings.append(RankedPrinciple(
+                    principle=principle,
+                    rank=ranking_data['rank']
+                ))
+        
+        logger.info(f"DEBUG: Created {len(rankings)} rankings from {len(llm_result['rankings'])} LLM results")
+        
+        # Validate we have exactly 4 unique principles
+        if len(rankings) != 4:
+            logger.warning(f"LLM parsing incomplete: got {len(rankings)} principles, need 4")
+            return None
+            
+        # Check for unique principles
+        principles_found = set(r.principle for r in rankings)
+        if len(principles_found) != 4:
+            logger.warning(f"LLM parsing duplicate principles: {principles_found}")
+            return None
+        
+        # Map certainty
+        certainty_str = llm_result.get('certainty', 'sure').lower()
+        certainty = self._map_certainty_string_to_enum(certainty_str)
+        
+        return PrincipleRanking(rankings=rankings, certainty=certainty)
+
+    def _map_principle_name_to_enum(self, principle_name: str) -> Optional[JusticePrinciple]:
+        """Map principle name from any language to JusticePrinciple enum."""
+        if not principle_name:
+            return None
+            
+        principle_str = principle_name.lower().strip()
+        
+        # Multi-language mapping for principle names to enum values
+        principle_mappings = {
+            # English variations
+            'maximizing_floor': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing_average': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing_average_floor_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximizing_average_range_constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Full English names
+            'maximizing the floor income': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximizing the average income': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximizing the average income with a floor constraint': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximizing the average income with a range constraint': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Spanish variations
+            'maximización del ingreso mínimo': JusticePrinciple.MAXIMIZING_FLOOR,
+            'maximización del ingreso promedio': JusticePrinciple.MAXIMIZING_AVERAGE,
+            'maximización del ingreso promedio con restricción de ingreso mínimo': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            'maximización del ingreso promedio con restricción de rango': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            
+            # Mandarin variations  
+            '最大化最低收入': JusticePrinciple.MAXIMIZING_FLOOR,
+            '最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE,
+            '在最低收入约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            '在范围约束条件下最大化平均收入': JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+        }
+        
+        # Direct lookup
+        principle = principle_mappings.get(principle_str)
+        if principle:
+            return principle
+            
+        # Fuzzy matching for partial matches
+        for key, enum_val in principle_mappings.items():
+            if key in principle_str or principle_str in key:
+                # Ensure substantial match (>50% overlap)
+                shorter_len = min(len(key), len(principle_str))
+                longer_len = max(len(key), len(principle_str))
+                if shorter_len / longer_len > 0.5:
+                    return enum_val
+        
+        logger.warning(f"Failed to map principle name '{principle_name}' to enum")
+        return None
+
+    def _map_certainty_string_to_enum(self, certainty_str: str) -> CertaintyLevel:
+        """Map certainty string from any language to CertaintyLevel enum."""
+        if not certainty_str:
+            return CertaintyLevel.SURE
+            
+        certainty_lower = certainty_str.lower().strip()
+        
+        # Multi-language certainty mapping
+        certainty_mappings = {
+            # English
+            'very_unsure': CertaintyLevel.VERY_UNSURE,
+            'very unsure': CertaintyLevel.VERY_UNSURE,
+            'unsure': CertaintyLevel.UNSURE,
+            'no_opinion': CertaintyLevel.NO_OPINION, 
+            'no opinion': CertaintyLevel.NO_OPINION,
+            'sure': CertaintyLevel.SURE,
+            'very_sure': CertaintyLevel.VERY_SURE,
+            'very sure': CertaintyLevel.VERY_SURE,
+            
+            # Spanish
+            'muy_inseguro': CertaintyLevel.VERY_UNSURE,
+            'muy inseguro': CertaintyLevel.VERY_UNSURE,
+            'inseguro': CertaintyLevel.UNSURE,
+            'sin_opinion': CertaintyLevel.NO_OPINION,
+            'sin opinion': CertaintyLevel.NO_OPINION,
+            'seguro': CertaintyLevel.SURE,
+            'muy_seguro': CertaintyLevel.VERY_SURE,
+            'muy seguro': CertaintyLevel.VERY_SURE,
+            
+            # Mandarin
+            '非常不确定': CertaintyLevel.VERY_UNSURE,
+            '不确定': CertaintyLevel.UNSURE,
+            '无意见': CertaintyLevel.NO_OPINION,
+            '确定': CertaintyLevel.SURE,
+            '非常确定': CertaintyLevel.VERY_SURE,
+        }
+        
+        mapped_certainty = certainty_mappings.get(certainty_lower)
+        if mapped_certainty:
+            return mapped_certainty
+            
+        # Default to SURE if no mapping found
+        logger.warning(f"Failed to map certainty '{certainty_str}' to enum, defaulting to SURE")
+        return CertaintyLevel.SURE
+
+    async def _original_lookup_based_parsing(self, response: str) -> PrincipleRanking:
+        """Original lookup-based parsing as fallback."""
+        
+        try:
+            # 1. Extract numbered list from response using existing regex
+            numbered_items = self._extract_numbered_list(response)
+            
+            if len(numbered_items) < 4:
+                # Try alternative extraction if numbered list fails
+                numbered_items = []
+                lines = response.split('\n')
+                rank = 1
+                for line in lines:
+                    line = line.strip()
+                    if line and rank <= 4:
+                        # Try to extract principle text from line
+                        # Remove common prefixes like "1.", "Rank 1:", etc.
+                        cleaned = re.sub(r'^\d+[\.\:\)\s]*', '', line).strip()
+                        cleaned = re.sub(r'^(rank|preference)\s*\d*[\.\:\)\s]*', '', cleaned, flags=re.IGNORECASE).strip()
+                        if cleaned:
+                            numbered_items.append((rank, cleaned))
+                            rank += 1
+            
+            # 2. Map each text to principle using lookup table
+            mapped_rankings = []
+            for rank, text in numbered_items[:4]:  # Only take first 4
+                principle = self._fuzzy_match_principle(text)
+                if principle:
+                    mapped_rankings.append(RankedPrinciple(principle=principle, rank=rank))
+            
+            # 3. Validate we have exactly 4 unique principles
+            if len(mapped_rankings) == 4:
+                # Check for unique principles
+                principles_found = set(r.principle for r in mapped_rankings)
+                if len(principles_found) == 4:
+                    # Sort by rank to ensure proper ordering
+                    mapped_rankings.sort(key=lambda x: x.rank)
+                    
+                    # Determine overall certainty (simple heuristic)
+                    certainty = CertaintyLevel.SURE  # Default
+                    response_lower = response.lower()
+                    if any(word in response_lower for word in ['very unsure', 'extremely uncertain']):
+                        certainty = CertaintyLevel.VERY_UNSURE
+                    elif any(word in response_lower for word in ['unsure', 'uncertain', 'not sure']):
+                        certainty = CertaintyLevel.UNSURE
+                    elif any(word in response_lower for word in ['no opinion', 'neutral', 'indifferent']):
+                        certainty = CertaintyLevel.NO_OPINION
+                    elif any(word in response_lower for word in ['very sure', 'very confident', 'extremely confident']):
+                        certainty = CertaintyLevel.VERY_SURE
+                    
+                    return PrincipleRanking(rankings=mapped_rankings, certainty=certainty)
+            
+            # If we reach here, parsing failed
+            raise ExperimentError(
+                f"Failed to parse principle ranking: found {len(mapped_rankings)} valid principles, need 4 unique ones",
+                ExperimentErrorCategory.VALIDATION_ERROR,
+                ErrorSeverity.FATAL,
+                {
+                    "response_text": response,
+                    "numbered_items_found": len(numbered_items),
+                    "valid_mappings_found": len(mapped_rankings),
+                    "operation": "principle_ranking_lookup_failure",
+                    "extracted_items": [text for _, text in numbered_items[:4]]
+                }
+            )
+            
+        except ExperimentError:
+            # Re-raise ExperimentErrors as-is
+            raise
+        except Exception as e:
+            # Convert other exceptions to ExperimentError
+            raise ExperimentError(
+                f"Failed to parse principle ranking due to unexpected error: {str(e)}",
+                ExperimentErrorCategory.VALIDATION_ERROR,
+                ErrorSeverity.FATAL,
+                {
+                    "response_text": response,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "operation": "principle_ranking_parsing_exception"
+                }
+            ) from e
     
     async def _extract_ranking_direct(self, response: str) -> Optional[Dict[str, Any]]:
         """Direct pattern matching for principle ranking using LLM-based parsing."""
@@ -550,7 +862,7 @@ Response:"""
         rankings = []
         
         # Look for numbered list format
-        ranking_matches = self._ranking_patterns['ranking_line'].findall(response)
+        ranking_matches = self._language_patterns['ranking_line'].findall(response)
         
         if len(ranking_matches) >= 4:
             for rank_num, rank_text in ranking_matches[:4]:
@@ -578,6 +890,174 @@ Response:"""
                 'rankings': rankings,
                 'certainty': certainty
             }
+        
+        return None
+    
+    async def _extract_ranking_llm_fallback(self, response: str) -> Optional[Dict[str, Any]]:
+        """Fallback LLM-based parsing for principle ranking when pattern matching fails."""
+        try:
+            # Use the parser agent to extract ranking structure
+            language_manager = get_language_manager()
+            
+            # CRITICAL FIX: Set language manager to correct language before LLM call
+            original_language = language_manager.current_language
+            experiment_lang_enum = self._get_supported_language_enum()
+            if experiment_lang_enum:
+                language_manager.set_language(experiment_lang_enum)
+            
+            try:
+                parsing_prompt = language_manager.get("prompts.utility_parse_principle_ranking").format(
+                    response=response
+                )
+            finally:
+                # Always restore original language
+                language_manager.set_language(original_language)
+            
+            result = await Runner.run(self.parser_agent, parsing_prompt)
+            parsed_text = result.final_output.strip()
+            
+            # Try to parse as JSON first
+            try:
+                import json
+                ranking_data = json.loads(parsed_text)
+                if isinstance(ranking_data, dict) and 'rankings' in ranking_data:
+                    # Validate that we have 4 rankings
+                    if len(ranking_data['rankings']) == 4:
+                        # CRITICAL FIX: Map principle names and certainty to English before returning
+                        for ranking in ranking_data['rankings']:
+                            original_principle = ranking['principle']
+                            mapped_principle = await self._map_principle_name_to_english(original_principle)
+                            ranking['principle'] = mapped_principle
+                            logger.debug(f"Mapped principle: '{original_principle}' -> '{mapped_principle}'")
+                        
+                        # Also map certainty level to English
+                        if 'certainty' in ranking_data:
+                            original_certainty = ranking_data['certainty']
+                            mapped_certainty = self._map_certainty_to_english(original_certainty)
+                            ranking_data['certainty'] = mapped_certainty
+                            logger.debug(f"Mapped certainty: '{original_certainty}' -> '{mapped_certainty}'")
+                        
+                        return ranking_data
+            except json.JSONDecodeError:
+                pass
+            
+            # If JSON parsing fails, try to extract from text format
+            return await self._parse_ranking_from_text_fallback(parsed_text)
+            
+        except Exception as e:
+            logger.warning(f"LLM fallback ranking parsing failed: {e}")
+            return None
+    
+    def _get_supported_language_enum(self) -> Optional[SupportedLanguage]:
+        """Map experiment_language string to SupportedLanguage enum."""
+        language_map = {
+            "english": SupportedLanguage.ENGLISH,
+            "spanish": SupportedLanguage.SPANISH,
+            "mandarin": SupportedLanguage.MANDARIN
+        }
+        return language_map.get(self.experiment_language.lower()) if self.experiment_language else None
+    
+    async def _map_principle_name_to_english(self, principle_name: str) -> str:
+        """Map principle name from any language to English enum value."""
+        # If it's already an English enum value, return as-is
+        if principle_name in ['maximizing_floor', 'maximizing_average', 
+                            'maximizing_average_floor_constraint', 'maximizing_average_range_constraint']:
+            return principle_name
+        
+        # Try to identify the principle using existing multilingual mapping
+        mapped_principle = await self._identify_principle_in_text(principle_name)
+        if mapped_principle:
+            return mapped_principle
+            
+        # If identification fails, log and return original (will cause error but is traceable)
+        logger.warning(f"Failed to map principle name to English: '{principle_name}'")
+        return principle_name
+    
+    def _map_certainty_to_english(self, certainty: str) -> str:
+        """Map certainty level from any language to English enum value."""
+        # Direct English mappings
+        if certainty in ['very_unsure', 'unsure', 'sure', 'very_sure']:
+            return certainty
+        
+        # Spanish mappings
+        spanish_certainty_map = {
+            'muy_inseguro': 'very_unsure',
+            'inseguro': 'unsure', 
+            'seguro': 'sure',
+            'muy_seguro': 'very_sure'
+        }
+        
+        # Mandarin mappings
+        mandarin_certainty_map = {
+            '很不确定': 'very_unsure',
+            '不确定': 'unsure',
+            'sure': 'sure',  # Sometimes mixed
+            '很确定': 'very_sure'
+        }
+        
+        # Try mappings
+        mapped = spanish_certainty_map.get(certainty) or mandarin_certainty_map.get(certainty)
+        if mapped:
+            return mapped
+            
+        # If no mapping found, log and default to 'sure'
+        logger.warning(f"Failed to map certainty level '{certainty}' to English, defaulting to 'sure'")
+        return 'sure'
+    
+    def _with_language_context(self, language_manager, func):
+        """Context manager to temporarily set language manager to utility agent's language."""
+        class LanguageContext:
+            def __init__(self, lang_manager, lang_enum):
+                self.lang_manager = lang_manager
+                self.lang_enum = lang_enum
+                self.original_language = None
+                
+            def __enter__(self):
+                self.original_language = self.lang_manager.current_language
+                if self.lang_enum:
+                    self.lang_manager.set_language(self.lang_enum)
+                return self.lang_manager
+                
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if self.original_language:
+                    self.lang_manager.set_language(self.original_language)
+        
+        experiment_lang_enum = self._get_supported_language_enum()
+        return LanguageContext(language_manager, experiment_lang_enum)
+    
+    async def _parse_ranking_from_text_fallback(self, text: str) -> Optional[Dict[str, Any]]:
+        """Parse ranking from text format as final fallback."""
+        rankings = []
+        lines = text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Look for patterns like "1. Principle Name" or "Rank 1: Principle"
+            # re already imported at module level
+            match = re.match(r'(?:rank\s*)?(\d+)\.?\s*:?\s*(.+)', line, re.IGNORECASE)
+            if match:
+                rank_num = int(match.group(1))
+                principle_text = match.group(2).strip()
+                
+                # Try to identify the principle
+                principle = await self._identify_principle_in_text(principle_text)
+                if principle and 1 <= rank_num <= 4:
+                    rankings.append({
+                        'principle': principle,
+                        'rank': rank_num
+                    })
+        
+        # Check if we have exactly 4 unique rankings
+        if len(rankings) == 4:
+            ranks = [r['rank'] for r in rankings]
+            if len(set(ranks)) == 4 and all(1 <= r <= 4 for r in ranks):
+                return {
+                    'rankings': rankings,
+                    'certainty': 'sure'  # Default certainty for fallback
+                }
         
         return None
     
@@ -628,60 +1108,88 @@ Response:"""
     # NEW LLM-BASED PARSING METHODS
     # ========================================
     
-    async def parse_principle_choice_llm(self, response: str, max_retries: int = 3) -> Optional[Dict[str, Any]]:
-        """
-        Parse principle choice using LLM instead of regex patterns.
-        This replaces the messy regex-based _extract_principle_choice_direct method.
+    
+    def _preprocess_multilingual_response(self, response: str, language: str) -> str:
+        """Preprocess response text based on language for better parsing."""
+        import unicodedata
+        # re already imported at module level
         
-        Args:
-            response: The participant's response to analyze
-            max_retries: Maximum number of retry attempts
+        # Unicode normalization for all languages
+        response = unicodedata.normalize('NFKC', response)
+        
+        if language == "mandarin":
+            # Handle Mandarin-specific preprocessing
+            # Replace Chinese punctuation with standard punctuation
+            response = response.replace('，', ',').replace('。', '.').replace('：', ':')
+            # Remove mixed ASCII artifacts that might be leftover from contamination
+            response = re.sub(r'Original response:\s*', '', response, flags=re.IGNORECASE)
+            # Clean up common Chinese response patterns
+            response = re.sub(r'^(回复|答案|响应)[：:\s]*', '', response.strip())
             
-        Returns:
-            Dict with principle, constraint_amount, certainty, confidence, or None if parsing fails
-        """
-        await self.async_init()
+        elif language == "spanish":
+            # Handle Spanish-specific preprocessing
+            # Remove contamination artifacts in Spanish
+            response = re.sub(r'Original response:\s*', '', response, flags=re.IGNORECASE)
+            # Clean up Spanish response patterns
+            response = re.sub(r'^(Respuesta|Mi respuesta|La respuesta)[：:\s]*', '', response.strip())
+            # Preserve Spanish accent marks properly
+            
+        else:  # English
+            # Handle English preprocessing
+            # Remove contamination artifacts
+            response = re.sub(r'Original response:\s*', '', response, flags=re.IGNORECASE)
+            # Clean up English response patterns
+            response = re.sub(r'^(Response|My response|Answer)[：:\s]*', '', response.strip())
         
-        for attempt in range(max_retries):
-            try:
-                # Get the LLM parsing prompt
-                parsing_prompt = self.language_manager.get(
-                    "prompts.utility_llm_parse_principle_choice",
-                    response=response,
-                    attempt=attempt + 1
-                )
-                
-                result = await run_without_tracing(self.parser_agent, parsing_prompt)
-                response_text = result.final_output.strip()
-                
-                # Parse structured LLM response
-                parsed_data = await self._parse_llm_principle_response(response_text)
-                if parsed_data:
-                    return parsed_data
-                    
-            except Exception as e:
-                logger.warning(f"LLM principle parsing failed (attempt {attempt + 1}): {e}")
-                if attempt == max_retries - 1:
-                    return None
-                    
-        return None
+        # Common cleanup for all languages
+        response = response.strip()
+        
+        return response
     
     async def _parse_llm_principle_response(self, llm_response: str) -> Optional[Dict[str, Any]]:
-        """Parse JSON response from utility agent LLM."""
+        """Parse JSON response from utility agent LLM with multilingual support."""
         import json
+        import unicodedata
         try:
-            # Clean the response - look for JSON content
-            response_stripped = llm_response.strip()
+            # MULTILINGUAL ENHANCEMENT: Apply language-specific preprocessing
+            response_stripped = self._preprocess_multilingual_response(llm_response, self.experiment_language or "english")
             
-            # Try to extract JSON from the response
+            # Remove common LLM artifacts that might interfere with JSON parsing
+            artifacts_to_remove = [
+                "Here is the JSON:", "JSON response:", "Response:", "Answer:",
+                "这是JSON:", "回复:", "答案:", "Respuesta:", "JSON respuesta:"
+            ]
+            for artifact in artifacts_to_remove:
+                response_stripped = response_stripped.replace(artifact, "").strip()
+            
+            # Enhanced JSON boundary detection with better error handling
             start_idx = response_stripped.find('{')
             end_idx = response_stripped.rfind('}')
             
             if start_idx == -1 or end_idx == -1:
-                logger.warning(f"No JSON found in LLM response: {response_stripped[:100]}...")
-                return None
+                # Try alternative JSON markers in case of formatting issues
+                json_patterns = [
+                    r'\{[^{}]*"principle"[^{}]*"constraint_amount"[^{}]*"certainty"[^{}]*\}',
+                    r'\{.*?"principle".*?\}',
+                ]
+                # re already imported at module level
+                for pattern in json_patterns:
+                    match = re.search(pattern, response_stripped, re.DOTALL)
+                    if match:
+                        json_str = match.group(0)
+                        try:
+                            parsed_json = json.loads(json_str)
+                            if 'principle' in parsed_json:
+                                break
+                        except json.JSONDecodeError:
+                            continue
+                else:
+                    logger.warning(f"No JSON found in LLM response (multilingual): {response_stripped[:100]}...")
+                    return None
+            else:
+                json_str = response_stripped[start_idx:end_idx + 1]
             
-            json_str = response_stripped[start_idx:end_idx + 1]
+            # Parse the JSON
             parsed_json = json.loads(json_str)
             
             # Validate required fields
@@ -778,8 +1286,7 @@ Response:"""
             # Fallback: If constraint amount is missing but principle requires it, try multilingual parsing
             if (constraint_amount is None and 
                 principle_name in ['maximizing_average_floor_constraint', 'maximizing_average_range_constraint']):
-                language_hint = self._detect_language_hint(llm_response)
-                fallback_amount = await self.parse_constraint_amount_multilingual(llm_response, language_hint)
+                fallback_amount = await self.parse_constraint_amount(llm_response, self.experiment_language)
                 if fallback_amount:
                     constraint_amount = fallback_amount
                     logger.info(f"Fallback extraction recovered constraint amount: ${constraint_amount}")
@@ -801,82 +1308,7 @@ Response:"""
             logger.warning(f"Failed to parse LLM principle response: {e}")
             return None
     
-    async def parse_preference_statement_llm(self, statement: str) -> Optional[PrincipleChoice]:
-        """
-        Parse preference statements for SIMPLE MODE using LLM instead of regex.
-        This replaces regex-based preference detection.
-        
-        Args:
-            statement: The participant's statement to analyze
-            
-        Returns:
-            PrincipleChoice if preference is detected, None otherwise
-        """
-        await self.async_init()
-        
-        try:
-            # Get the LLM preference detection prompt
-            detection_prompt = self.language_manager.get(
-                "prompts.utility_llm_parse_preference_statement",
-                statement=statement
-            )
-            
-            result = await run_without_tracing(self.parser_agent, detection_prompt)
-            response_text = result.final_output.strip()
-            
-            # Parse LLM response
-            if "PREFERENCE_DETECTED:" in response_text:
-                preference_content = response_text.split("PREFERENCE_DETECTED:")[1].strip()
-                
-                # Use the principle choice parser to extract details
-                parsed_data = await self._parse_llm_principle_response(f"PRINCIPLE_DETECTED: {preference_content}")
-                if parsed_data:
-                    return PrincipleChoice.create_for_parsing(
-                        principle=JusticePrinciple(parsed_data['principle']),
-                        constraint_amount=parsed_data.get('constraint_amount'),
-                        certainty=CertaintyLevel(parsed_data['certainty']),
-                        reasoning=f"Preference detected via LLM: {preference_content}"
-                    )
-            
-            return None
-            
-        except Exception as e:
-            logger.warning(f"LLM preference detection failed: {e}")
-            return None
     
-    async def parse_vote_intention_llm(self, statement: str) -> Optional[str]:
-        """
-        Parse vote intention for COMPLEX MODE using LLM instead of regex.
-        This replaces regex-based voting detection.
-        
-        Args:
-            statement: The participant's statement to analyze
-            
-        Returns:
-            Vote intention description if detected, None otherwise
-        """
-        await self.async_init()
-        
-        try:
-            # Get the LLM vote detection prompt
-            detection_prompt = self.language_manager.get(
-                "prompts.utility_llm_parse_vote_intention", 
-                statement=statement
-            )
-            
-            result = await run_without_tracing(self.parser_agent, detection_prompt)
-            response_text = result.final_output.strip()
-            
-            # Parse LLM response
-            if "VOTE_INTENTION_DETECTED:" in response_text:
-                vote_content = response_text.split("VOTE_INTENTION_DETECTED:")[1].strip()
-                return vote_content
-            
-            return None
-            
-        except Exception as e:
-            logger.warning(f"LLM vote intention detection failed: {e}")
-            return None
     
     async def parse_constraint_amount_llm(self, response: str, principle: str) -> Optional[int]:
         """
@@ -893,12 +1325,14 @@ Response:"""
         await self.async_init()
         
         try:
-            # Get the LLM constraint parsing prompt
-            parsing_prompt = self.language_manager.get(
-                "prompts.utility_llm_parse_constraint_amount",
-                response=response,
-                principle=principle
-            )
+            # Get the LLM constraint parsing prompt with correct language context
+            language_manager = get_language_manager()
+            with self._with_language_context(language_manager, None) as lm:
+                parsing_prompt = lm.get(
+                    "prompts.utility_llm_parse_constraint_amount",
+                    response=response,
+                    principle=principle
+                )
             
             result = await run_without_tracing(self.parser_agent, parsing_prompt)
             response_text = result.final_output.strip()
@@ -908,7 +1342,7 @@ Response:"""
                 amount_text = response_text.split("CONSTRAINT_AMOUNT:")[1].strip()
                 
                 # Extract numeric value
-                import re
+                # re already imported at module level
                 amount_matches = re.findall(r'(\d{1,6}(?:,\d{3})*|\d{4,6})', amount_text)
                 if amount_matches:
                     try:
@@ -1068,11 +1502,10 @@ Response:"""
                     principle = await self._extract_principle_from_text(principle_name_only)
                 
                 if principle:
-                    # Extract constraint amount using multilingual method with language hints
-                    language_hint = self._detect_language_hint(statement)
-                    constraint_amount = await self.parse_constraint_amount_multilingual(preference_text, language_hint)
+                    # Extract constraint amount using multilingual method with configured language
+                    constraint_amount = await self.parse_constraint_amount(preference_text, self.experiment_language)
                     if not constraint_amount:
-                        constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
+                        constraint_amount = await self.parse_constraint_amount(statement, self.experiment_language)
                     
                     return PrincipleChoice(
                         principle=principle,
@@ -1133,8 +1566,7 @@ Response:"""
             if match:
                 principle = self._map_identifier_to_principle(principle_name)
                 if principle:
-                    language_hint = self._detect_language_hint(statement)
-                    constraint_amount = await self.parse_constraint_amount_multilingual(statement, language_hint)
+                    constraint_amount = await self.parse_constraint_amount(statement, self.experiment_language)
                     return PrincipleChoice(
                         principle=principle,
                         constraint_amount=constraint_amount,
@@ -1243,7 +1675,7 @@ Response:"""
         
         return None
     
-    async def parse_constraint_amount_multilingual(self, constraint_text: str, language_hint: str = None) -> Optional[int]:
+    async def parse_constraint_amount(self, constraint_text: str, language: str = None) -> Optional[int]:
         """
         Use utility agent to parse constraint amounts across languages and formats.
         
@@ -1256,7 +1688,7 @@ Response:"""
         
         Args:
             constraint_text: Text containing constraint amount to parse
-            language_hint: Optional language hint ("english", "spanish", "mandarin")
+            language: Optional language override (defaults to experiment language)
         
         Returns:
             Parsed amount as integer, or None if no valid amount found
@@ -1270,7 +1702,7 @@ Response:"""
         parsing_prompt = f"""You are an expert at parsing constraint amounts from multilingual text with specialized Spanish language expertise.
 
 PARSE CONSTRAINT AMOUNT from: "{constraint_text}"
-Language hint: {language_hint or "unknown"}
+Language: {language or self.experiment_language}
 
 **SPANISH LANGUAGE EXPERTISE (CRITICAL)**:
 1. **Spanish Constraint Terminology**:
@@ -1364,9 +1796,10 @@ Response:"""
                 logger.info(f"No constraint amount found in: '{constraint_text}'")
                 return None
             
-            # Parse the numeric response
+            # Parse the numeric response (handle both int and float)
             try:
-                amount = int(response)
+                # Try parsing as float first, then convert to int to handle "2500.0" format
+                amount = int(float(response))
                 if amount > 0:
                     # Validate constraint scale
                     # Validate constraint amount using merged logic
@@ -1417,90 +1850,123 @@ Response:"""
         
         return None
     
-    def _detect_language_hint(self, statement: str) -> str:
+    async def parse_constraint_amount_multilingual(self, constraint_text: str, language_hint: str = None) -> Optional[int]:
         """
-        Enhanced language detection with comprehensive Spanish intelligence.
+        Multilingual constraint amount parsing method.
+        This is an alias for parse_constraint_amount() for backward compatibility.
+        
+        Args:
+            constraint_text: Text containing constraint amount to parse
+            language_hint: Optional language hint (used as language parameter)
         
         Returns:
-            Language hint: "spanish", "english", "mandarin", or "unknown"
+            Parsed amount as integer, or None if no valid amount found
         """
-        statement_lower = statement.lower()
+        return await self.parse_constraint_amount(constraint_text, language_hint)
+    
+    async def validate_ballot_parsing_consistency(self, raw_response: str, parsed_result: Dict[str, Any], language: str = "english") -> bool:
+        """
+        Validate ballot parsing matches expected patterns to catch systematic errors.
         
-        # COMPREHENSIVE SPANISH DETECTION (Enhanced following utility agent philosophy)
-        spanish_indicators = {
-            # Core constraint terminology (high confidence)
-            'high_confidence': ['restricción', 'límite', 'limitación', 'condición', 'tope', 'cota', 'barrera', 'frontera', 'umbral', 'máximo'],
+        Args:
+            raw_response: Original ballot text from agent
+            parsed_result: Dictionary result from parse_principle_choice_llm
+            language: Language to use for validation patterns
             
-            # Currency and number words (medium-high confidence)
-            'currency_numbers': ['euros', 'euro', 'pesos', 'peso', 'dólares', 'dólar', 'mil', 'cinco', 'diez', 'quince', 'veinte', 'veinticinco', 'treinta', 'cincuenta'],
+        Returns:
+            bool: True if parsing appears consistent, False if potential mismatch detected
+        """
+        if not parsed_result or 'principle' not in parsed_result:
+            logger.warning(f"🚫 VALIDATION: Invalid parsed result: {parsed_result}")
+            return False
             
-            # Prepositions and common words (medium confidence) 
-            'prepositions': ['con', 'de', 'bajo', 'dentro', 'del', 'sujeto', 'mediante', 'según', 'por', 'sin', 'es', 'la', 'el', 'una'],
-            
-            # Spanish-specific patterns (medium confidence)
-            'patterns': ['condiciones', 'limitaciones', 'ilimitado', 'libre', 'mxn', 'ars', 'cop'],
-            
-            # Justice principle terms in Spanish (high confidence)
-            'principles': ['maximización', 'maximizar', 'ingresos', 'ingreso', 'promedio', 'mínimos', 'mínimo', 'promedio', 'rango']
+        principle_result = parsed_result['principle']
+        response_lower = raw_response.lower().strip()
+        
+        # English validation patterns
+        english_patterns = {
+            "maximizing the floor income": "maximizing_floor",
+            "maximizing the average income": "maximizing_average", 
+            "maximizing floor income": "maximizing_floor",
+            "maximizing average income": "maximizing_average",
+            "maximizing average with floor constraint": "maximizing_average_floor_constraint",
+            "maximizing average with range constraint": "maximizing_average_range_constraint",
+            "floor constraint": "maximizing_average_floor_constraint",
+            "range constraint": "maximizing_average_range_constraint"
         }
         
-        # Count indicators by confidence level
-        high_confidence_count = sum(1 for word in spanish_indicators['high_confidence'] if word in statement_lower)
-        currency_count = sum(1 for word in spanish_indicators['currency_numbers'] if word in statement_lower)
-        preposition_count = sum(1 for word in spanish_indicators['prepositions'] if word in statement_lower)
-        pattern_count = sum(1 for word in spanish_indicators['patterns'] if word in statement_lower)
-        principle_count = sum(1 for word in spanish_indicators['principles'] if word in statement_lower)
-        
-        total_spanish_indicators = high_confidence_count + currency_count + preposition_count + pattern_count + principle_count
-        
-        # Spanish detection logic with confidence thresholds
-        if high_confidence_count >= 1:  # Any high-confidence Spanish constraint term
-            return "spanish"
-        elif currency_count >= 1 and preposition_count >= 1:  # Spanish currency + Spanish grammar
-            return "spanish"  
-        elif principle_count >= 2:  # Multiple Spanish justice principle terms
-            return "spanish"
-        elif total_spanish_indicators >= 3:  # Multiple Spanish indicators together
-            return "spanish"
-        elif total_spanish_indicators >= 2 and len(statement_lower.split()) <= 8:  # Short phrases with Spanish indicators
-            return "spanish"
-        
-        # Chinese indicators (characters)
-        chinese_chars = ['元', '千', '万', '限制', '约束', '条件', '投票', '决定', '最大化', '最低', '平均', '收入', '范围']
-        chinese_count = sum(1 for char in chinese_chars if char in statement)
-        if chinese_count >= 1:
-            return "mandarin"
-        
-        # English indicators (comprehensive)
-        english_indicators = {
-            'constraint_terms': ['constraint', 'limit', 'maximum', 'minimum', 'restriction', 'bound', 'cap', 'threshold'],
-            'currency_numbers': ['dollars', 'dollar', 'thousand', 'million', 'euros'],
-            'principles': ['maximizing', 'maximize', 'income', 'average', 'floor', 'range'],
-            'common': ['with', 'of', 'no', 'the', 'and', 'is', 'are', 'vote', 'decision']
+        # Spanish validation patterns (enhanced for Phase 2)
+        spanish_patterns = {
+            # Basic principles - DEL indicates basic principle
+            "maximización del ingreso mínimo": "maximizing_floor",
+            "maximización del ingreso promedio": "maximizing_average",
+            "maximizar los ingresos mínimos": "maximizing_floor", 
+            "maximizar los ingresos promedio": "maximizing_average",
+            
+            # Constraint indicators - CON/con indicates constraint principle  
+            # Specific constraint types (more specific patterns first)
+            "maximización del promedio con restricción de rango": "maximizing_average_range_constraint",
+            "restricción de rango": "maximizing_average_range_constraint",
+            "con restricción de rango": "maximizing_average_range_constraint",
+            "maximización del promedio con restricción de ingreso mínimo": "maximizing_average_floor_constraint",
+            "restricción de ingreso mínimo": "maximizing_average_floor_constraint",
+            "con restricción de ingreso mínimo": "maximizing_average_floor_constraint"
         }
         
-        english_constraint_count = sum(1 for word in english_indicators['constraint_terms'] if word in statement_lower)
-        english_currency_count = sum(1 for word in english_indicators['currency_numbers'] if word in statement_lower)
-        english_principle_count = sum(1 for word in english_indicators['principles'] if word in statement_lower)
-        english_common_count = sum(1 for word in english_indicators['common'] if word in statement_lower)
+        # Mandarin validation patterns (enhanced for Phase 2)
+        mandarin_patterns = {
+            # Basic principles - direct phrases indicate basic principles
+            "最大化最低收入": "maximizing_floor",
+            "最低收入最大化": "maximizing_floor",
+            "平均收入最大化": "maximizing_average", 
+            
+            # Constraint indicators - 约束条件 indicates constraint principle
+            # Specific constraint types (more specific patterns first)
+            "在范围约束条件下": "maximizing_average_range_constraint",
+            "在最低收入约束条件下": "maximizing_average_floor_constraint", 
+            "范围约束条件下最大化平均收入": "maximizing_average_range_constraint",
+            "最低收入约束条件下最大化平均收入": "maximizing_average_floor_constraint",
+            "范围约束": "maximizing_average_range_constraint",
+            "最低收入约束": "maximizing_average_floor_constraint"
+        }
         
-        total_english_indicators = english_constraint_count + english_currency_count + english_principle_count + english_common_count
+        # Select appropriate patterns based on language
+        validation_patterns = {
+            "english": english_patterns,
+            "spanish": spanish_patterns, 
+            "mandarin": mandarin_patterns
+        }.get(language.lower(), english_patterns)
         
-        # English detection logic
-        if english_constraint_count >= 1:  # Any English constraint term
-            return "english"
-        elif english_principle_count >= 2:  # Multiple English principle terms
-            return "english"
-        elif total_english_indicators >= 3:  # Multiple English indicators
-            return "english"
+        # Check for obvious mismatches - sort by specificity (longer patterns first)
+        sorted_patterns = sorted(validation_patterns.items(), key=lambda x: len(x[0]), reverse=True)
         
-        # Final decision: Spanish vs English for ambiguous cases
-        if total_spanish_indicators > total_english_indicators:
-            return "spanish"
-        elif total_english_indicators > total_spanish_indicators:
-            return "english"
+        for pattern, expected_principle in sorted_patterns:
+            if pattern in response_lower:
+                if principle_result != expected_principle:
+                    logger.error(f"🚫 BALLOT PARSING MISMATCH [{language.upper()}]: "
+                               f"'{raw_response}' contains '{pattern}' but parsed as '{principle_result}', "
+                               f"expected '{expected_principle}'")
+                    return False
+                # Match found and correct, no need to check less specific patterns
+                break
+                    
+        # Check for critical disambiguation errors
+        critical_mismatches = [
+            # Basic principles incorrectly parsed as constraint principles
+            ("maximizing the floor income", "maximizing_average_floor_constraint"),
+            ("maximizing the average income", "maximizing_average_floor_constraint"),
+            ("maximizing the floor income", "maximizing_average_range_constraint"),
+            ("maximizing the average income", "maximizing_average_range_constraint"),
+        ]
         
-        return "unknown"
+        for phrase, wrong_parsing in critical_mismatches:
+            if phrase in response_lower and principle_result == wrong_parsing:
+                logger.error(f"🚫 CRITICAL PARSING ERROR: '{raw_response}' contains '{phrase}' "
+                           f"but was parsed as '{wrong_parsing}' - this is the systematic error we fixed!")
+                return False
+        
+        return True
+    
     
     async def _detect_preference_via_llm(self, statement: str) -> Optional[PrincipleChoice]:
         """Use LLM to detect preference when pattern matching fails."""
@@ -1795,12 +2261,9 @@ Response:"""
         if not constraint_text or constraint_text.strip() == "":
             return None
         
-        # Detect language hint for better parsing
-        language_hint = self._detect_language_hint(constraint_text)
-        
-        # Use existing multilingual parsing with enhanced error handling
+        # Use existing multilingual parsing with configured language
         try:
-            amount = await self.parse_constraint_amount_multilingual(constraint_text, language_hint)
+            amount = await self.parse_constraint_amount(constraint_text, self.experiment_language)
             if amount and amount > 0:
                 # Validate constraint amount scale  
                 # Validate constraint amount using merged logic
@@ -1856,4 +2319,3 @@ Response:"""
             return preference
         
         return None
-
