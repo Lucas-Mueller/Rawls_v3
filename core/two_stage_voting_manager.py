@@ -122,7 +122,7 @@ class TwoStageVotingManager:
             VoteResult object if successful, None if voting failed
         """
         if not contexts or len(contexts) != len(self.participants):
-            logger.error("Mismatch between participants and contexts")
+            logger.error(f"Mismatch between participants and contexts - participants: {len(self.participants)}, contexts: {len(contexts) if contexts else 0}")
             return None
         
         participant_votes = []
@@ -136,7 +136,13 @@ class TwoStageVotingManager:
             principle_result = await self._conduct_principle_selection_with_retry(participant, context)
             
             if not principle_result or not principle_result.success:
-                logger.warning(f"Stage 1 failed for {participant.name}")
+                logger.error(f"Stage 1 (principle selection) failed for {participant.name}")
+                if principle_result:
+                    logger.error(f"  - Error type: {principle_result.error_type}")
+                    logger.error(f"  - Attempts used: {principle_result.attempts_used}")
+                    logger.error(f"  - Raw response: {principle_result.raw_response[:200]}...")
+                else:
+                    logger.error("  - principle_result was None")
                 return None  # Voting failed
             
             principle_num = principle_result.value
@@ -151,7 +157,13 @@ class TwoStageVotingManager:
                 )
                 
                 if not amount_result or not amount_result.success:
-                    logger.warning(f"Stage 2 failed for {participant.name}")
+                    logger.error(f"Stage 2 (amount specification) failed for {participant.name}")
+                    if amount_result:
+                        logger.error(f"  - Error type: {amount_result.error_type}")
+                        logger.error(f"  - Attempts used: {amount_result.attempts_used}")
+                        logger.error(f"  - Raw response: {amount_result.raw_response[:200]}...")
+                    else:
+                        logger.error("  - amount_result was None")
                     return None  # Voting failed
                 
                 constraint_amount = amount_result.value
@@ -175,17 +187,24 @@ class TwoStageVotingManager:
         
         # Convert to principle choices for consensus checking
         try:
+            logger.debug(f"Converting {len(participant_votes)} participant votes to principle choices")
             principle_choices = [self._convert_to_principle_choice(vote) for vote in participant_votes]
+            logger.debug(f"Successfully converted to {len(principle_choices)} principle choices")
             
             # Use existing consensus checking logic (this would be imported from the existing system)
             # For now, we'll return a mock success result
             # TODO: Integrate with actual consensus checking logic in Phase 3
             
             logger.info("Two-stage voting completed successfully for all participants")
-            return self._create_vote_result(participant_votes, principle_choices)
+            vote_result = self._create_vote_result(participant_votes, principle_choices)
+            logger.debug(f"Created vote result - consensus: {vote_result.consensus_reached}")
+            return vote_result
             
         except Exception as e:
             logger.error(f"Error processing voting results: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
 
     async def _conduct_principle_selection_with_retry(
@@ -207,11 +226,16 @@ class TwoStageVotingManager:
         
         try:
             # Use enhanced language manager method for two-stage prompts
+            logger.debug(f"Attempting to get two-stage principle selection prompt for participant {participant.name}")
             base_prompt = self.language_manager.get_two_stage_principle_selection_prompt()
+            logger.debug(f"Successfully retrieved two-stage principle selection prompt")
         except Exception as e:
-            logger.warning(f"Failed to get two-stage principle prompt: {e}")
+            logger.error(f"Failed to get two-stage principle prompt for {participant.name}: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            logger.error(f"Language manager type: {type(self.language_manager).__name__}")
             # Fallback prompt if translation system not available
             base_prompt = self._get_fallback_principle_prompt()
+            logger.warning(f"Using fallback principle prompt for {participant.name}")
         
         current_prompt = base_prompt
         
@@ -220,10 +244,12 @@ class TwoStageVotingManager:
                 logger.debug(f"Principle selection attempt {attempt}/{self.max_retries} for {participant.name}")
                 
                 # Get response from agent with timeout
+                logger.debug(f"Calling agent {participant.name} with prompt length {len(current_prompt)}")
                 result = await asyncio.wait_for(
                     self._run_agent(participant.agent, current_prompt, context),
                     timeout=self.timeout_seconds
                 )
+                logger.debug(f"Received result from agent {participant.name}: type={type(result)}")
                 
                 response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
                 
@@ -306,10 +332,15 @@ class TwoStageVotingManager:
         
         try:
             # Use enhanced language manager method for two-stage amount specification
+            logger.debug(f"Attempting to get two-stage amount specification prompt for participant {participant.name}, principle {principle_name}")
             base_prompt = self.language_manager.get_two_stage_amount_specification_prompt(principle_name)
+            logger.debug(f"Successfully retrieved two-stage amount specification prompt")
         except Exception as e:
-            logger.warning(f"Failed to get two-stage amount prompt: {e}")
+            logger.error(f"Failed to get two-stage amount prompt for {participant.name}: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            logger.error(f"Principle name: {principle_name}")
             base_prompt = self._get_fallback_amount_prompt(principle_name)
+            logger.warning(f"Using fallback amount prompt for {participant.name}")
         
         current_prompt = base_prompt
         
@@ -318,10 +349,12 @@ class TwoStageVotingManager:
                 logger.debug(f"Amount specification attempt {attempt}/{self.max_retries} for {participant.name}")
                 
                 # Get response from agent with timeout
+                logger.debug(f"Calling agent {participant.name} for amount with prompt length {len(current_prompt)}")
                 result = await asyncio.wait_for(
                     self._run_agent(participant.agent, current_prompt, context),
                     timeout=self.timeout_seconds
                 )
+                logger.debug(f"Received amount result from agent {participant.name}: type={type(result)}")
                 
                 response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
                 

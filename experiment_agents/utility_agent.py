@@ -462,6 +462,39 @@ class UtilityAgent:
                 return True
                 
         return False
+    
+    def detect_numerical_agreement(self, response: str) -> tuple[bool, Optional[str]]:
+        """
+        Detect numerical agreement in responses (1=yes, 0=no).
+        
+        Args:
+            response: The participant's response to parse
+            
+        Returns:
+            Tuple of (success, error_message) where:
+            - success=True for "1", success=False for "0" 
+            - error_message=None for valid responses, error description for invalid responses
+        """
+        # Clean the response
+        response_clean = response.strip()
+        
+        # Try to extract valid single digits using more precise regex
+        import re
+        # Match standalone 0 or 1, not part of larger numbers, not after minus sign
+        digit_matches = re.findall(r'(?<!\d)(?<!-)([01])(?!\d)', response_clean)
+        
+        if len(digit_matches) == 1:
+            # Found exactly one valid digit
+            if digit_matches[0] == "1":
+                return True, None  # Agreement
+            elif digit_matches[0] == "0":
+                return False, None  # Disagreement
+        elif len(digit_matches) > 1:
+            # Multiple digits found
+            return False, f"Multiple numbers found: {digit_matches}. Please respond with exactly one number (1 or 0)."
+        
+        # No valid numerical response found
+        return False, f"No valid number found. Please respond with exactly: 1 (to vote now) or 0 (to continue discussion)."
 
     def check_preference_consensus_simple_mode(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
         """Check if preference statements reached consensus in simple mode."""

@@ -53,6 +53,14 @@ python run_tests.py integration
 python run_tests.py --coverage
 ```
 
+### Batch Experiment Execution
+```bash
+# Run all condition 1 experiments from hypothesis testing directory
+python run_condition_1_experiments.py
+```
+
+This script automatically runs all YAML configurations in sequence and saves results to organized directories with descriptive names.
+
 ### Environment Setup
 ```bash
 # Install dependencies
@@ -80,6 +88,20 @@ The framework supports English, Spanish, and Mandarin experiments:
 - Formal voting system with "Let's vote" triggers
 - Two-stage process: vote initiation + confirmation, then secret ballot
 - Requires unanimous confirmation and voting participation
+
+## Two-Stage Voting System
+
+The framework implements a sophisticated voting mechanism (`core/two_stage_voting_manager.py`):
+
+### Voting Stages
+- **Stage 1**: Numerical principle selection (agents input 1-4)
+- **Stage 2**: Amount specification (for principles 3 & 4 requiring floor constraints)
+
+### Key Features
+- Deterministic numerical input validation replacing complex LLM-based detection
+- Multilingual number format parsing (supports various cultural number formats)
+- Integrated with principle name manager for consistent terminology
+- Fallback keyword matching system for validation
 
 ## Memory Management
 

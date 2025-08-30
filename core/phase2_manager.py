@@ -1407,8 +1407,15 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 discussion_state.public_history += f"\n[VOTING RESULT] Agent failure detected - confirmation failed"
                 return False
             
-            # Use existing multilingual agreement detection
-            agrees_to_vote = await self.utility_agent.detect_agreement(confirmation_response)
+            # Use numerical agreement detection (1=yes, 0=no)
+            agrees_to_vote, parse_error = self.utility_agent.detect_numerical_agreement(confirmation_response)
+            
+            # Handle malformed responses
+            if parse_error is not None:
+                self._log_warning(f"Malformed confirmation response from {participant.name}: {parse_error}")
+                discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+                discussion_state.public_history += f"\n[VOTING RESULT] Invalid response format - confirmation failed. {parse_error}"
+                return False
             
             confirmations.append({
                 'participant': participant.name,

@@ -1,4 +1,4 @@
-language: "English" 
+language: "Mandarin" 
 
 agents:
   - name: "Alice"
@@ -9,7 +9,7 @@ agents:
     temperature: 0
     
   - name: "James" 
-    personality: "You are an american college student."
+    personality: "You are an american college student. You love adcventure, risks and seek maximum profit."
     model: "google/gemma-3-27b-it"
     temperature: 0
     memory_character_limit: 25000
