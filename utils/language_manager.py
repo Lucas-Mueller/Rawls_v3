@@ -429,6 +429,135 @@ class LanguageManager:
             
         else:
             raise ValueError(f"Unknown list_type: {list_type}")
+    
+    # Two-Stage Voting Support Methods
+    
+    def get_two_stage_principle_selection_prompt(self) -> str:
+        """Get the principle selection prompt for two-stage voting."""
+        return self.get("prompts.two_stage_principle_selection")
+    
+    def get_two_stage_amount_specification_prompt(self, principle_name: str) -> str:
+        """
+        Get the amount specification prompt for two-stage voting.
+        
+        Args:
+            principle_name: Name of the selected principle requiring constraint
+            
+        Returns:
+            Formatted amount specification prompt
+        """
+        return self.get("prompts.two_stage_amount_specification", principle_name=principle_name)
+    
+    def get_two_stage_error_message(self, error_type: str, attempt: int, max_attempts: int) -> str:
+        """
+        Get a two-stage voting error message.
+        
+        Args:
+            error_type: Type of error (e.g., "respond_with_number_only", "invalid_amount_format")
+            attempt: Current attempt number
+            max_attempts: Maximum allowed attempts
+            
+        Returns:
+            Formatted error message
+        """
+        try:
+            return self.get(f"errors.two_stage_{error_type}", 
+                          attempt=attempt, max_attempts=max_attempts)
+        except KeyError:
+            # Fallback error messages
+            fallback_messages = {
+                "respond_with_number_only": f"Invalid response (attempt {attempt}/{max_attempts}). You must respond with exactly one number: 1, 2, 3, or 4.",
+                "invalid_amount_format": f"Invalid amount format (attempt {attempt}/{max_attempts}). You must respond with a positive whole dollar amount.",
+                "amount_too_low": f"Amount too low (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount.",
+                "amount_too_high": f"Amount too high (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount.",
+                "amount_must_be_positive": f"Invalid amount (attempt {attempt}/{max_attempts}). Amount must be positive.",
+                "no_text_in_amount": f"Invalid format (attempt {attempt}/{max_attempts}). Please provide only a number.",
+                "empty_amount_response": f"Empty response (attempt {attempt}/{max_attempts}). Please provide a dollar amount."
+            }
+            return fallback_messages.get(error_type, 
+                f"Invalid response (attempt {attempt}/{max_attempts}). Please try again.")
+    
+    def format_amount_display(self, amount: int) -> str:
+        """
+        Format amounts in dollars consistently across all languages.
+        
+        Args:
+            amount: Dollar amount to format
+            
+        Returns:
+            Formatted amount string (e.g., "$25,000")
+        """
+        # Import here to avoid circular imports
+        try:
+            from utils.cultural_adaptation import get_amount_formatter, SupportedLanguage as CulturalLanguage
+            
+            formatter = get_amount_formatter()
+            
+            # Map current language to cultural language enum
+            language_mapping = {
+                SupportedLanguage.ENGLISH: CulturalLanguage.ENGLISH,
+                SupportedLanguage.SPANISH: CulturalLanguage.SPANISH, 
+                SupportedLanguage.MANDARIN: CulturalLanguage.MANDARIN
+            }
+            
+            cultural_lang = language_mapping.get(self.current_language, CulturalLanguage.ENGLISH)
+            return formatter.format_amount(amount, cultural_lang)
+            
+        except ImportError:
+            # Fallback formatting if cultural adaptation not available
+            return f"${amount:,}"
+    
+    def get_two_stage_timeout_message(self) -> str:
+        """Get timeout message for two-stage voting."""
+        try:
+            return self.get("errors.timeout_retry")
+        except KeyError:
+            # Language-specific fallback messages
+            fallbacks = {
+                SupportedLanguage.ENGLISH: "Response timed out. Please try again.",
+                SupportedLanguage.SPANISH: "Tiempo de espera agotado. Por favor, inténtalo de nuevo.",
+                SupportedLanguage.MANDARIN: "响应超时。请重试。"
+            }
+            return fallbacks.get(self.current_language, "Response timed out. Please try again.")
+    
+    def validate_two_stage_translations(self) -> Dict[str, bool]:
+        """
+        Validate that all required two-stage voting translations exist.
+        
+        Returns:
+            Dictionary with validation results for each language
+        """
+        results = {}
+        required_keys = [
+            "prompts.two_stage_principle_selection",
+            "prompts.two_stage_amount_specification", 
+            "errors.two_stage_respond_with_number_only",
+            "errors.two_stage_invalid_amount_format",
+            "errors.two_stage_amount_too_low", 
+            "errors.two_stage_amount_too_high"
+        ]
+        
+        original_language = self.current_language
+        
+        try:
+            for language in SupportedLanguage:
+                self.set_language(language)
+                language_valid = True
+                
+                for key in required_keys:
+                    try:
+                        self.get(key)
+                    except KeyError:
+                        logger.warning(f"Missing translation key '{key}' for {language.value}")
+                        language_valid = False
+                
+                results[language.value] = language_valid
+        
+        finally:
+            # Restore original language
+            self.set_language(original_language)
+        
+        return results
 
 
 # Global instance for easy access

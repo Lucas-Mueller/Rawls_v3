@@ -119,6 +119,26 @@
     "phase2_voting_no_consensus_principle_disagreement": "未达成共识 - 代理人投票支持不同的正义原则 - 讨论继续",
     "phase2_voting_no_consensus_constraint_disagreement": "未达成共识 - 代理人就{principle_name}达成一致，但在约束金额上存在分歧 - 讨论继续",
     "phase2_voting_no_consensus_mixed_disagreement": "未达成共识 - 在原则和约束上存在混合分歧 - 讨论继续",
-    "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。"
+    "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。",
+    "two_stage_principle_selection": "投票已开始。你想投票支持四个原则中的哪一个？\n\n1. 最大化最低收入\n2. 最大化平均收入\n3. 在最低收入约束条件下最大化平均收入\n4. 在范围约束条件下最大化平均收入\n\n请只回答数字（1、2、3或4）：",
+    "two_stage_amount_specification": "你选择了{principle_name}。请说明金额（以美元计），需要是正整数。\n\n请回答金额（例如：25000 或 $25000）："
+  },
+  "errors": {
+    "two_stage_respond_with_number_only": "无效回答（尝试{attempt}/{max_attempts}）。你必须只回答一个数字：1、2、3或4。",
+    "two_stage_use_digits_not_words": "无效回答（尝试{attempt}/{max_attempts}）。请使用数字（1、2、3或4），不要使用文字。",
+    "two_stage_number_out_of_range": "无效回答（尝试{attempt}/{max_attempts}）。你必须只回答1、2、3或4。",
+    "two_stage_zero_not_valid": "无效回答（尝试{attempt}/{max_attempts}）。零不是有效的原则选择。请使用1、2、3或4。",
+    "two_stage_response_too_long": "无效回答（尝试{attempt}/{max_attempts}）。请只回答数字。",
+    "two_stage_empty_response": "空白回答（尝试{attempt}/{max_attempts}）。请回答1、2、3或4。",
+    "two_stage_invalid_format_general": "无效回答（尝试{attempt}/{max_attempts}）。你必须只回答一个数字：1、2、3或4。",
+    "two_stage_amount_must_be_positive": "无效金额（尝试{attempt}/{max_attempts}）。你必须回答一个正整数美元金额。",
+    "two_stage_whole_numbers_only": "金额格式无效（尝试{attempt}/{max_attempts}）。你必须回答整数美元金额（不能有小数）。",
+    "two_stage_no_negative_amounts": "无效金额（尝试{attempt}/{max_attempts}）。不允许负金额。",
+    "two_stage_no_text_in_amount": "金额格式无效（尝试{attempt}/{max_attempts}）。你必须只回答数字。",
+    "two_stage_empty_amount_response": "空白回答（尝试{attempt}/{max_attempts}）。请提供美元金额。",
+    "two_stage_invalid_amount_format": "金额格式无效（尝试{attempt}/{max_attempts}）。你必须回答一个正整数美元金额。",
+    "two_stage_amount_too_low": "金额过低（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最低$1,000）。",
+    "two_stage_amount_too_high": "金额过高（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最高$100,000）。",
+    "timeout_retry": "响应超时。请重试。"
   }
 }

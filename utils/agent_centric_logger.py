@@ -361,6 +361,84 @@ class AgentCentricLogger:
         self.voting_history.vote_rounds.append(self.current_vote_round)
         self.current_vote_round = None
     
+    def log_two_stage_voting_success(
+        self,
+        participant_name: str,
+        stage: str,
+        response: str,
+        value: int,
+        attempt: int
+    ):
+        """Log successful completion of a two-stage voting stage."""
+        if not self.current_vote_round:
+            # Create a new vote round if one doesn't exist
+            self.start_vote_round(0, "two_stage_voting", participant_name)
+        
+        # Store in vote round details
+        if not hasattr(self.current_vote_round, 'two_stage_details'):
+            self.current_vote_round.two_stage_details = {}
+        
+        if participant_name not in self.current_vote_round.two_stage_details:
+            self.current_vote_round.two_stage_details[participant_name] = {}
+        
+        self.current_vote_round.two_stage_details[participant_name][stage] = {
+            "success": True,
+            "response": response,
+            "value": value,
+            "attempts_used": attempt,
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    def log_two_stage_voting_retry(
+        self,
+        participant_name: str,
+        stage: str,
+        response: str,
+        error_type: str,
+        attempt: int
+    ):
+        """Log retry attempt for a two-stage voting stage."""
+        if not self.current_vote_round:
+            self.start_vote_round(0, "two_stage_voting", participant_name)
+        
+        # Store retry information
+        if not hasattr(self.current_vote_round, 'two_stage_retries'):
+            self.current_vote_round.two_stage_retries = []
+        
+        retry_info = {
+            "participant": participant_name,
+            "stage": stage,
+            "response": response,
+            "error_type": error_type,
+            "attempt": attempt,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        self.current_vote_round.two_stage_retries.append(retry_info)
+    
+    def log_two_stage_voting_failure(
+        self,
+        participant_name: str,
+        stage: str,
+        max_attempts: int
+    ):
+        """Log failure of a two-stage voting stage after all retries."""
+        if not self.current_vote_round:
+            self.start_vote_round(0, "two_stage_voting", participant_name)
+        
+        # Store failure information
+        if not hasattr(self.current_vote_round, 'two_stage_failures'):
+            self.current_vote_round.two_stage_failures = []
+        
+        failure_info = {
+            "participant": participant_name,
+            "stage": stage,
+            "max_attempts": max_attempts,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        self.current_vote_round.two_stage_failures.append(failure_info)
+    
     def generate_target_state(self) -> TargetStateStructure:
         """Generate the complete target state structure."""
         if not self.general_info:

@@ -114,6 +114,46 @@ class Phase2Settings(BaseModel):
         description="Maximum attempts for constraint correction"
     )
     
+    # Two-stage voting settings
+    two_stage_voting_enabled: bool = Field(
+        default=True,
+        description="Enable two-stage structured voting"
+    )
+    two_stage_max_retries: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum retry attempts per voting stage"
+    )
+    two_stage_timeout_seconds: float = Field(
+        default=30.0,
+        ge=10.0,
+        le=300.0,
+        description="Timeout for each voting stage"
+    )
+    
+    # Amount validation settings
+    amount_range_validation: bool = Field(
+        default=True,
+        description="Enable reasonable amount range validation"
+    )
+    amount_min_reasonable: int = Field(
+        default=1000,
+        ge=1,
+        description="Minimum reasonable constraint amount"
+    )
+    amount_max_reasonable: int = Field(
+        default=100000,
+        ge=1000,
+        description="Maximum reasonable constraint amount"
+    )
+    
+    # Trigger phrase settings
+    simple_trigger_phrases: bool = Field(
+        default=True,
+        description="Use simple trigger phrases for vote initiation"
+    )
+    
     # Logging settings
     log_statement_preview_length: int = Field(
         default=100,

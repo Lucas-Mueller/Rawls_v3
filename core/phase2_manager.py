@@ -22,6 +22,7 @@ from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from utils.language_manager import get_language_manager
 from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
+from core.two_stage_voting_manager import TwoStageVotingManager
 
 
 class Phase2Manager:
@@ -1182,6 +1183,45 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         else:
             return base_prompt
     
+    def _is_voting_trigger_phrase(self, statement: str) -> bool:
+        """
+        Simple, reliable voting trigger detection using deterministic phrase matching.
+        Replaces complex LLM-based vote intention detection with simple pattern matching.
+        """
+        statement_lower = statement.lower().strip()
+        
+        # Simple trigger phrases across languages
+        # English phrases
+        english_triggers = [
+            "let's vote", "let us vote", "time to vote", "ready to vote",
+            "i think we should vote", "should we vote", "can we vote", 
+            "shall we vote", "we should vote", "ready for a vote",
+            "call for a vote", "propose we vote", "move to vote",
+            "proceed with a vote", "finalize with a vote", "voting time",
+            "i propose we vote", "let's proceed with voting"
+        ]
+        
+        # Spanish phrases
+        spanish_triggers = [
+            "votemos", "es hora de votar", "procedamos a la votación",
+            "creo que deberíamos votar", "deberíamos votar", "podemos votar",
+            "listo para votar", "tiempo de votar", "propongo que votemos"
+        ]
+        
+        # Mandarin phrases
+        mandarin_triggers = [
+            "我们投票吧", "投票时间到了", "开始投票", "我们应该投票", 
+            "可以投票了", "准备投票", "我建议投票"
+        ]
+        
+        all_triggers = english_triggers + spanish_triggers + mandarin_triggers
+        
+        for trigger in all_triggers:
+            if trigger in statement_lower:
+                return True
+                
+        return False
+    
     async def _handle_complex_voting_mode(
         self,
         participant: 'ParticipantAgent',
@@ -1199,10 +1239,8 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             self._log_info("Voting already in progress, skipping new vote detection")
             return False
         
-        # Check if voting intention is detected using existing method
-        vote_detection_result = await self.utility_agent.detect_vote_intention_enhanced(statement)
-        
-        if vote_detection_result is None:
+        # Check if statement contains voting trigger phrase
+        if not self._is_voting_trigger_phrase(statement):
             return False  # No voting intention detected
         
         self._log_info(f"Complex voting intention detected from {participant.name}")
@@ -1241,10 +1279,24 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                     )
                 return False
             
-            # Step B: Secret Ballot Phase
-            consensus_reached = await self._conduct_secret_ballot_phase(
-                contexts, discussion_state
+            # Step B: Two-Stage Voting Phase
+            # Initialize two-stage voting manager
+            voting_manager = TwoStageVotingManager(
+                participants=self.participants,
+                language_manager=get_language_manager(),
+                logger=self.logger,
+                settings=self.settings
             )
+            
+            # Conduct two-stage voting process
+            self._log_info("=== COMPLEX VOTING: TWO-STAGE VOTING PHASE ===")
+            vote_result = await voting_manager.conduct_full_voting_process(contexts, discussion_state)
+            
+            consensus_reached = vote_result is not None and hasattr(vote_result, 'consensus_reached') and vote_result.consensus_reached
+            
+            # Store vote result in discussion state for logging
+            if vote_result:
+                discussion_state.last_vote_result = vote_result
         finally:
             # Always reset voting flags
             self._voting_in_progress = False

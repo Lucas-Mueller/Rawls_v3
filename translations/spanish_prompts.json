@@ -119,6 +119,26 @@
     "phase2_counterfactual_insights_worst_same": "- Worst alternative: Current earnings match the worst possible outcome",
     "phase2_voting_no_consensus_principle_disagreement": "No consenso - agents votod for different justice principios - discussion continues",
     "phase2_voting_no_consensus_constraint_disagreement": "No consenso - agents agreed on {principio_name} but disagreed on restricción amounts - discussion continues",
-    "phase2_voting_no_consensus_mixed_disagreement": "No consenso - mixed disagreement on principios and restriccións - discussion continues"
+    "phase2_voting_no_consensus_mixed_disagreement": "No consenso - mixed disagreement on principios and restriccións - discussion continues",
+    "two_stage_principle_selection": "Se ha iniciado una votación. ¿Por cuál de los cuatro principios quieres votar?\n\n1. Maximizar Ingreso Mínimo\n2. Maximizar Ingreso Promedio\n3. Maximizar Promedio con Restricción Mínima\n4. Maximizar Promedio con Restricción de Rango\n\nResponde SOLO con el número (1, 2, 3, o 4):",
+    "two_stage_amount_specification": "Elegiste {principle_name}. Por favor, especifica la cantidad en dólares como un número entero positivo.\n\nResponde con la cantidad (ejemplos: 25000 o $25000):"
+  },
+  "errors": {
+    "two_stage_respond_with_number_only": "Respuesta inválida (intento {attempt}/{max_attempts}). Debes responder con exactamente un número: 1, 2, 3, o 4.",
+    "two_stage_use_digits_not_words": "Respuesta inválida (intento {attempt}/{max_attempts}). Por favor usa dígitos (1, 2, 3, o 4), no palabras.",
+    "two_stage_number_out_of_range": "Respuesta inválida (intento {attempt}/{max_attempts}). Debes responder con 1, 2, 3, o 4 solamente.",
+    "two_stage_zero_not_valid": "Respuesta inválida (intento {attempt}/{max_attempts}). Cero no es una opción válida de principio. Usa 1, 2, 3, o 4.",
+    "two_stage_response_too_long": "Respuesta inválida (intento {attempt}/{max_attempts}). Por favor responde solo con el número.",
+    "two_stage_empty_response": "Respuesta vacía (intento {attempt}/{max_attempts}). Por favor responde con 1, 2, 3, o 4.",
+    "two_stage_invalid_format_general": "Respuesta inválida (intento {attempt}/{max_attempts}). Debes responder con exactamente un número: 1, 2, 3, o 4.",
+    "two_stage_amount_must_be_positive": "Cantidad inválida (intento {attempt}/{max_attempts}). Debes responder con una cantidad entera positiva en dólares.",
+    "two_stage_whole_numbers_only": "Formato de cantidad inválido (intento {attempt}/{max_attempts}). Debes responder con una cantidad entera en dólares (sin decimales).",
+    "two_stage_no_negative_amounts": "Cantidad inválida (intento {attempt}/{max_attempts}). No se permiten cantidades negativas.",
+    "two_stage_no_text_in_amount": "Formato de cantidad inválido (intento {attempt}/{max_attempts}). Debes responder solo con un número.",
+    "two_stage_empty_amount_response": "Respuesta vacía (intento {attempt}/{max_attempts}). Por favor proporciona una cantidad en dólares.",
+    "two_stage_invalid_amount_format": "Formato de cantidad inválido (intento {attempt}/{max_attempts}). Debes responder con una cantidad entera positiva en dólares.",
+    "two_stage_amount_too_low": "Cantidad demasiado baja (intento {attempt}/{max_attempts}). Por favor proporciona una cantidad realista en dólares (mínimo $1,000).",
+    "two_stage_amount_too_high": "Cantidad demasiado alta (intento {attempt}/{max_attempts}). Por favor proporciona una cantidad realista en dólares (máximo $100,000).",
+    "timeout_retry": "El tiempo de respuesta expiró. Por favor intenta de nuevo."
   }
 }

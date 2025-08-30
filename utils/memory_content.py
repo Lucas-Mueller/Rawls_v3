@@ -317,3 +317,140 @@ def extract_phase2_counterfactual_insights(
         insights['worst'] = "Worst alternative: Current earnings match the worst possible outcome"
     
     return insights
+
+
+def build_two_stage_voting_principle_selection_delta(
+    participant_name: str,
+    principle_num: int,
+    principle_display_name: str,
+    attempts_used: int,
+    success: bool,
+    raw_response: Optional[str] = None
+) -> str:
+    """
+    Build memory content for two-stage voting principle selection (Stage 1).
+    
+    Args:
+        participant_name: Name of the participant
+        principle_num: Selected principle number (1-4) if successful
+        principle_display_name: Display name of selected principle
+        attempts_used: Number of attempts used
+        success: Whether the stage was successful
+        raw_response: The raw response (optional, truncated if too long)
+        
+    Returns:
+        Compact memory delta for principle selection
+    """
+    delta_parts = ["Two-Stage Voting - Stage 1: Principle Selection"]
+    
+    if success:
+        delta_parts.append(f"Selected: {principle_num} ({principle_display_name})")
+        if attempts_used > 1:
+            delta_parts.append(f"Attempts: {attempts_used}")
+    else:
+        delta_parts.append("FAILED - Unable to select principle")
+        delta_parts.append(f"Attempts: {attempts_used}")
+    
+    # Add raw response if it's short and meaningful
+    if raw_response and len(raw_response.strip()) <= 50:
+        delta_parts.append(f"Response: '{raw_response.strip()}'")
+    elif raw_response and len(raw_response.strip()) > 50:
+        delta_parts.append(f"Response: '{raw_response.strip()[:50]}...'")
+    
+    return " | ".join(delta_parts)
+
+
+def build_two_stage_voting_amount_specification_delta(
+    participant_name: str,
+    principle_display_name: str,
+    constraint_amount: Optional[int],
+    attempts_used: int,
+    success: bool,
+    raw_response: Optional[str] = None
+) -> str:
+    """
+    Build memory content for two-stage voting amount specification (Stage 2).
+    
+    Args:
+        participant_name: Name of the participant
+        principle_display_name: Display name of the constraint principle
+        constraint_amount: Specified constraint amount if successful
+        attempts_used: Number of attempts used
+        success: Whether the stage was successful
+        raw_response: The raw response (optional, truncated if too long)
+        
+    Returns:
+        Compact memory delta for amount specification
+    """
+    delta_parts = [f"Two-Stage Voting - Stage 2: Amount Specification for {principle_display_name}"]
+    
+    if success and constraint_amount is not None:
+        delta_parts.append(f"Specified: ${constraint_amount:,}")
+        if attempts_used > 1:
+            delta_parts.append(f"Attempts: {attempts_used}")
+    else:
+        delta_parts.append("FAILED - Unable to specify constraint amount")
+        delta_parts.append(f"Attempts: {attempts_used}")
+    
+    # Add raw response if it's short and meaningful
+    if raw_response and len(raw_response.strip()) <= 50:
+        delta_parts.append(f"Response: '{raw_response.strip()}'")
+    elif raw_response and len(raw_response.strip()) > 50:
+        delta_parts.append(f"Response: '{raw_response.strip()[:50]}...'")
+    
+    return " | ".join(delta_parts)
+
+
+def build_two_stage_voting_complete_delta(
+    participant_name: str,
+    principle_num: int,
+    principle_display_name: str,
+    constraint_amount: Optional[int] = None,
+    consensus_reached: bool = False,
+    agreed_principle: Optional[str] = None,
+    total_stages: int = 1,
+    total_attempts: int = 1
+) -> str:
+    """
+    Build memory content for complete two-stage voting process.
+    
+    Args:
+        participant_name: Name of the participant
+        principle_num: Selected principle number (1-4)
+        principle_display_name: Display name of selected principle
+        constraint_amount: Constraint amount if applicable
+        consensus_reached: Whether group consensus was achieved
+        agreed_principle: Group's agreed principle if consensus reached
+        total_stages: Total number of voting stages completed (1 or 2)
+        total_attempts: Total attempts across all stages
+        
+    Returns:
+        Compact memory delta for complete voting process
+    """
+    delta_parts = ["Two-Stage Voting Complete"]
+    
+    # Personal vote
+    vote_info = f"Your vote: {principle_num} ({principle_display_name})"
+    if constraint_amount is not None:
+        vote_info += f" with ${constraint_amount:,} constraint"
+    delta_parts.append(vote_info)
+    
+    # Process efficiency
+    if total_stages == 2:
+        delta_parts.append("Two-stage process (principle + amount)")
+    else:
+        delta_parts.append("Single-stage process (principle only)")
+    
+    if total_attempts > total_stages:
+        delta_parts.append(f"Total attempts: {total_attempts}")
+    
+    # Group outcome
+    if consensus_reached:
+        consensus_info = "Group consensus: YES"
+        if agreed_principle:
+            consensus_info += f" (Agreed: {agreed_principle})"
+        delta_parts.append(consensus_info)
+    else:
+        delta_parts.append("Group consensus: NO")
+    
+    return " | ".join(delta_parts)
