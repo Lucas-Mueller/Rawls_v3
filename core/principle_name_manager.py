@@ -8,7 +8,7 @@ voting system, providing consistent principle naming across all supported langua
 import logging
 from typing import Dict, Any, Optional, List
 from enum import Enum
-from utils.language_manager import SupportedLanguage, get_language_manager
+from utils.language_manager import SupportedLanguage
 from utils.cultural_adaptation import get_amount_formatter, SupportedLanguage as CulturalLanguage
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class PrincipleNameManager:
         Args:
             language_manager: LanguageManager instance, uses global if None
         """
-        self.language_manager = language_manager or get_language_manager()
+        self.language_manager = language_manager
         self.amount_formatter = get_amount_formatter()
         
         # Principle key mappings (from language manager)

@@ -1,4 +1,4 @@
-language: "Mandarin" ## Alternatives: English, Spanish
+language: "English" ## Alternatives: Mandarin, Spanish
 seed: 42
 
 agents:

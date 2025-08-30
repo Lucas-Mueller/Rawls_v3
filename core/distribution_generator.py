@@ -7,7 +7,6 @@ from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
 from models.experiment_types import IncomeClassProbabilities
-from utils.language_manager import get_language_manager
 
 
 class DistributionGenerator:
@@ -340,9 +339,8 @@ class DistributionGenerator:
         return alternative_earnings
     
     @staticmethod
-    def format_distributions_table(distributions: List[IncomeDistribution]) -> str:
+    def format_distributions_table(distributions: List[IncomeDistribution], language_manager) -> str:
         """Format distributions as a table for display to participants."""
-        language_manager = get_language_manager()
         
         # Get localized table components
         table = language_manager.get("prompts.distribution_distributions_table_header")
@@ -370,11 +368,9 @@ class DistributionGenerator:
         return table
     
     @staticmethod
-    def format_principle_name_with_constraint(principle_choice) -> str:
+    def format_principle_name_with_constraint(principle_choice, language_manager) -> str:
         """Format principle name with constraint amount for display."""
         from models.principle_types import JusticePrinciple
-        
-        language_manager = get_language_manager()
         # Get principle names using new API
         try:
             base_name = language_manager.get(f"common.principle_names.{principle_choice.principle.value}")

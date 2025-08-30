@@ -15,15 +15,15 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
-from utils.language_manager import get_language_manager
 
 
 class Phase1Manager:
     """Manages Phase 1 execution for all participants."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, language_manager):
         self.participants = participants
         self.utility_agent = utility_agent
+        self.language_manager = language_manager
         self.logger = None  # Will be set in run_phase1
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
@@ -92,7 +92,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content, memory_guidance_style=memory_guidance_style
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -113,7 +113,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content, memory_guidance_style=memory_guidance_style
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -136,7 +136,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -186,7 +186,7 @@ class Phase1Manager:
             memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content, memory_guidance_style=memory_guidance_style
+                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
             )
             
             # Update context with earnings
@@ -213,7 +213,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content, memory_guidance_style=memory_guidance_style
+            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -245,10 +245,11 @@ class Phase1Manager:
         parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
         
         # Create round content for memory
+        language_manager = self.language_manager
         round_content = f"""Prompt: {ranking_prompt}
-Your Response: {text_response}
-Your Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
-Outcome: Completed initial ranking of justice principles."""
+{language_manager.get('memory_field_labels.your_response')} {text_response}
+{language_manager.get('memory_field_labels.your_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_initial_ranking')}"""
         
         return parsed_ranking, round_content
     
@@ -267,9 +268,10 @@ Outcome: Completed initial ranking of justice principles."""
         result = await Runner.run(participant.agent, explanation_prompt, context=context)
         
         # Create round content for memory
+        language_manager = self.language_manager
         round_content = f"""Prompt: {explanation_prompt}
-Your Response: {result.final_output}
-Outcome: Learned how each justice principle is applied to income distributions through examples."""
+{language_manager.get('memory_field_labels.your_response')} {result.final_output}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.learned_principle_applications')}"""
         
         return round_content
     
@@ -382,7 +384,7 @@ Outcome: Learned how each justice principle is applied to income distributions t
         assigned_income = chosen_distribution.get_income_by_class(assigned_class)
         
         # Build the counterfactual table using language manager
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         counterfactual_table = language_manager.get(
             "prompts.phase1_counterfactual_table_header",
@@ -453,10 +455,11 @@ Outcome: Learned how each justice principle is applied to income distributions t
         parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
         
         # Create round content for memory
+        language_manager = self.language_manager
         round_content = f"""Prompt: {post_explanation_prompt}
-Your Response: {text_response}
-Your Post-Explanation Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
-Outcome: Completed ranking after learning how principles apply to distributions."""
+{language_manager.get('memory_field_labels.your_response')} {text_response}
+{language_manager.get('memory_field_labels.your_post_explanation_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_post_explanation_ranking')}"""
         
         return parsed_ranking, round_content
     
@@ -478,27 +481,28 @@ Outcome: Completed ranking after learning how principles apply to distributions.
         parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
         
         # Create round content for memory
+        language_manager = self.language_manager
         round_content = f"""Prompt: {final_ranking_prompt}
-Your Response: {text_response}
-Your Final Rankings: {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
-Outcome: Completed final ranking of justice principles after experiencing all four rounds."""
+{language_manager.get('memory_field_labels.your_response')} {text_response}
+{language_manager.get('memory_field_labels.your_final_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_final_ranking')}"""
         
         return parsed_ranking, round_content
     
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
     
     def _build_detailed_explanation_prompt(self, config: ExperimentConfiguration = None) -> str:
         """Build prompt for detailed explanation of principles."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         # If original values mode is enabled, use Sample situation distributions for explanation
         if config and config.original_values_mode and config.original_values_mode.enabled:
             sample_distribution_set = DistributionGenerator.get_sample_distribution()
             distributions_table = DistributionGenerator.format_distributions_table(
-                sample_distribution_set.distributions
+                sample_distribution_set.distributions, self.language_manager
             )
             
             # Build explanation with Sample distributions
@@ -509,14 +513,14 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
     
     def _build_post_explanation_ranking_prompt(self) -> str:
         """Build prompt for post-explanation ranking."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         return language_manager.get("prompts.phase1_post_explanation_ranking_prompt")
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         distributions_table = DistributionGenerator.format_distributions_table(
-            distribution_set.distributions
+            distribution_set.distributions, self.language_manager
         )
         
         return language_manager.get("prompts.phase1_application_round",
@@ -525,5 +529,5 @@ Outcome: Completed final ranking of justice principles after experiencing all fo
     
     def _build_final_ranking_prompt(self) -> str:
         """Build prompt for final ranking after experience."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         return language_manager.get("prompts.phase1_final_ranking_after_experience")

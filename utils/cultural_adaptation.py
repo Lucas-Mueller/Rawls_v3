@@ -7,6 +7,7 @@ across different cultures and languages.
 """
 
 import logging
+import re
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -177,6 +178,7 @@ class AmountFormattingManager:
     def validate_amount_input(self, input_str: str) -> tuple[Optional[int], Optional[str]]:
         """
         Parse and validate amount input across different cultural formats.
+        Enhanced to extract amounts from verbose text responses.
         
         Args:
             input_str: Raw input string to parse
@@ -187,8 +189,20 @@ class AmountFormattingManager:
         if not input_str or not input_str.strip():
             return None, "empty_amount_response"
         
+        # First try: Direct parsing (existing logic for clean inputs)
+        result = self._try_direct_parsing(input_str.strip())
+        if result[0] is not None:
+            return result
+        
+        # Second try: Extract from verbose text if direct parsing failed
+        return self._extract_amount_from_text(input_str)
+    
+    def _try_direct_parsing(self, input_str: str) -> tuple[Optional[int], Optional[str]]:
+        """
+        Try direct parsing of clean amount inputs (existing logic).
+        """
         # Clean the input - remove common currency symbols and whitespace
-        cleaned = input_str.strip().replace("$", "").replace("¥", "").replace("€", "")
+        cleaned = input_str.replace("$", "").replace("¥", "").replace("€", "")
         
         # Handle different thousand separators
         if "," in cleaned and "." in cleaned:
@@ -210,18 +224,133 @@ class AmountFormattingManager:
             else:
                 amount = int(cleaned)
             
-            # Validate range
-            if amount <= 0:
-                return None, "amount_must_be_positive"
-            elif amount > 1000000:  # 1 million cap for reasonableness
-                return None, "amount_too_high"
-            elif amount < 1:
-                return None, "amount_too_low"
-            
-            return amount, None
+            return self._validate_amount_range(amount)
             
         except (ValueError, TypeError):
-            return None, "invalid_amount_format"
+            return None, "direct_parsing_failed"  # Internal error, will try text extraction
+    
+    def _extract_amount_from_text(self, text: str) -> tuple[Optional[int], Optional[str]]:
+        """
+        Extract monetary amounts from verbose text in multiple languages.
+        Handles English, Spanish, and Mandarin number patterns.
+        """
+        amounts = []
+        
+        # English/Spanish patterns: Find monetary amounts with proper word boundaries
+        # Match formats like: $10,000 or $10000 or 25000 dollars
+        amount_patterns = [
+            r'\$(\d{1,3}(?:,\d{3})+)',        # $10,000 (requires at least one comma)
+            r'\$(\d{4,})',                    # $10000 (without commas, 4+ digits)
+            r'(\d{4,})\s+(?:dollars?|dólares?)', # 25000 dollars
+        ]
+        
+        matches = []
+        for pattern in amount_patterns:
+            pattern_matches = re.findall(pattern, text, re.IGNORECASE)
+            matches.extend(pattern_matches)
+        
+        for match in matches:
+            try:
+                # Remove commas and convert
+                amount = int(match.replace(',', ''))
+                # Filter to reasonable amounts (avoid small numbers, etc.)
+                if 100 <= amount <= 1000000:  # Reasonable range for experiment amounts
+                    amounts.append(amount)
+            except ValueError:
+                continue
+        
+        # Chinese patterns: Only run on text that contains Chinese characters
+        if re.search(r'[\u4e00-\u9fff]', text):  # Check if text contains Chinese characters
+            chinese_patterns = [
+                # Regular Arabic numerals in Chinese text context
+                r'(\d{4,})(?=\s*(?:美元|元))',    # Numbers followed by currency in Chinese
+                # Chinese number words (basic patterns)
+                r'([一二三四五六七八九十百千万]+)(?=\s*(?:美元|元))?',
+            ]
+            
+            for pattern in chinese_patterns:
+                chinese_matches = re.findall(pattern, text)
+                for match in chinese_matches:
+                    if match.isdigit():
+                        try:
+                            amount = int(match)
+                            if 100 <= amount <= 1000000:
+                                amounts.append(amount)
+                        except ValueError:
+                            continue
+                    else:
+                        # Basic Chinese number conversion (limited set)
+                        amount = self._convert_chinese_number(match)
+                        if amount and 100 <= amount <= 1000000:
+                            amounts.append(amount)
+        
+        # Evaluate extracted amounts
+        return self._evaluate_extracted_amounts(amounts)
+    
+    def _convert_chinese_number(self, chinese_num: str) -> Optional[int]:
+        """
+        Convert basic Chinese numbers to integers.
+        Limited implementation for common experiment amounts.
+        """
+        # Basic Chinese number mappings
+        chinese_digits = {
+            '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+            '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
+            '百': 100, '千': 1000, '万': 10000
+        }
+        
+        # Handle simple patterns like 一万 (10000), 五千 (5000)
+        if '万' in chinese_num:
+            if chinese_num == '一万':
+                return 10000
+            elif chinese_num == '二万':
+                return 20000
+            elif chinese_num == '三万':
+                return 30000
+            elif chinese_num == '五万':
+                return 50000
+            elif chinese_num == '十万':
+                return 100000
+        elif '千' in chinese_num:
+            if chinese_num == '一千':
+                return 1000
+            elif chinese_num == '五千':
+                return 5000
+            elif chinese_num == '十千':
+                return 10000
+        
+        # Return None for complex patterns not implemented
+        return None
+    
+    def _evaluate_extracted_amounts(self, amounts: list[int]) -> tuple[Optional[int], Optional[str]]:
+        """
+        Evaluate a list of extracted amounts and determine the result.
+        """
+        if not amounts:
+            return None, "no_amount_found"
+        
+        # Remove duplicates while preserving order
+        unique_amounts = list(dict.fromkeys(amounts))
+        
+        if len(unique_amounts) == 1:
+            # Single unique amount found
+            return self._validate_amount_range(unique_amounts[0])
+        
+        # Multiple different amounts found
+        return None, "multiple_different_amounts_found"
+    
+    def _validate_amount_range(self, amount: int) -> tuple[Optional[int], Optional[str]]:
+        """
+        Validate that an amount is within acceptable range.
+        """
+        if amount <= 0:
+            return None, "amount_must_be_positive"
+        elif amount > 1000000:  # 1 million cap for reasonableness
+            return None, "amount_too_high"
+        elif amount < 1:
+            return None, "amount_too_low"
+        
+        return amount, None
 
 
 class LanguageRegisterManager:

@@ -2,20 +2,20 @@ language: "Mandarin"
 
 agents:
   - name: "Alice"
-    personality: "You are an american college student."
+    personality: "你是一名美国大学生。" # Translated: "You are an American college student."
     model: "google/gemma-3-27b-it"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
-    personality: "You are an american college student. You love adcventure, risks and seek maximum profit."
+    personality: "你是一名美国大学生。你喜欢冒险和风险，追求最大利润" # Translated: "You are an American college student. You like adventure and risk, pursuing maximum profit."
     model: "google/gemma-3-27b-it"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
     
-
+voting_detection_mode: "complex"
   
 
 utility_agent_model: 'google/gemini-2.5-flash-lite'

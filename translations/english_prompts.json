@@ -120,5 +120,27 @@
     "two_stage_amount_too_low": "Amount too low (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount (minimum $1,000).",
     "two_stage_amount_too_high": "Amount too high (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount (maximum $100,000).",
     "timeout_retry": "Response timed out. Please try again."
+  },
+  "memory_field_labels": {
+    "your_response": "Your Response:",
+    "your_rankings": "Your Rankings:", 
+    "your_post_explanation_rankings": "Your Post-Explanation Rankings:",
+    "your_final_rankings": "Your Final Rankings:",
+    "your_statement": "Your Statement:",
+    "your_income_assignment": "Your Income Class Assignment:",
+    "your_earnings": "Your Earnings:",
+    "outcome": "Outcome:"
+  },
+  "memory_outcomes": {
+    "completed_initial_ranking": "Completed initial ranking of justice principles.",
+    "learned_principle_applications": "Learned how each justice principle is applied to income distributions through examples.",
+    "completed_post_explanation_ranking": "Completed ranking after learning how principles apply to distributions.",
+    "completed_final_ranking": "Completed final ranking of justice principles after experiencing all four rounds.",
+    "made_discussion_statement": "Made statement in Round {round_number} of group discussion.",
+    "agreed_to_vote": "Agreed to proceed with voting",
+    "declined_to_vote": "Declined to vote"
+  },
+  "error_messages": {
+    "empty_response_retry": "IMPORTANT: Your previous response was empty or too short. Please provide a meaningful response."
   }
 }

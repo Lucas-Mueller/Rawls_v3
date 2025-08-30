@@ -464,18 +464,17 @@ class TwoStageVotingManager:
         Returns:
             Tuple of (validated_value, error_type) for numerical validation only
         """
-        # Check for exact match: single digit 1-4
-        if re.match(r'^[1-4]$', response):
-            return int(response), None
+        # First, try forgiving digit extraction - find all valid digits (1-4) in response
+        valid_digits = re.findall(r'[1-4]', response)
         
-        # Check for common numerical variations that should work
-        if re.match(r'^[1-4]\.?$', response):  # Allow "1." format
-            return int(response[0]), None
-            
-        # Return specific error types for numerical validation
-        if re.match(r'^[1-4]\D+', response):  # "1 - Principle One"
-            return None, "respond_with_number_only"
-            
+        if len(valid_digits) == 1:
+            # Exactly one valid digit found - use it
+            return int(valid_digits[0]), None
+        elif len(valid_digits) > 1:
+            # Multiple valid digits found - ambiguous
+            return None, "multiple_valid_numbers"
+        
+        # No valid digits found, check for common error patterns
         if re.match(r'^[5-9]$', response) or re.match(r'^[0-9]{2,}$', response):
             return None, "number_out_of_range"
             
@@ -760,6 +759,7 @@ Respond with the amount (examples: 25000 or $25000):"""
             "use_digits_not_words": f"Invalid response (attempt {attempt}/{self.max_retries}). Please use digits (1, 2, 3, or 4), not words.",
             "number_out_of_range": f"Invalid response (attempt {attempt}/{self.max_retries}). You must respond with 1, 2, 3, or 4 only.",
             "zero_not_valid": f"Invalid response (attempt {attempt}/{self.max_retries}). Zero is not a valid principle choice. Use 1, 2, 3, or 4.",
+            "multiple_valid_numbers": f"Multiple numbers detected (attempt {attempt}/{self.max_retries}). Please respond with only ONE number: 1, 2, 3, or 4.",
             "response_too_long": f"Invalid response (attempt {attempt}/{self.max_retries}). Please respond with just the number.",
             "empty_response": f"Empty response (attempt {attempt}/{self.max_retries}). Please respond with 1, 2, 3, or 4.",
             
@@ -776,7 +776,11 @@ Respond with the amount (examples: 25000 or $25000):"""
             "empty_amount_response": f"Empty response (attempt {attempt}/{self.max_retries}). Please provide a dollar amount.",
             "invalid_amount_format": f"Invalid amount format (attempt {attempt}/{self.max_retries}). You must respond with a positive whole dollar amount.",
             "amount_too_low": f"Amount too low (attempt {attempt}/{self.max_retries}). Please provide a realistic dollar amount (minimum ${getattr(self.settings, 'amount_min_reasonable', 1000) if self.settings else 1000:,}).",
-            "amount_too_high": f"Amount too high (attempt {attempt}/{self.max_retries}). Please provide a realistic dollar amount (maximum ${getattr(self.settings, 'amount_max_reasonable', 100000) if self.settings else 100000:,})."
+            "amount_too_high": f"Amount too high (attempt {attempt}/{self.max_retries}). Please provide a realistic dollar amount (maximum ${getattr(self.settings, 'amount_max_reasonable', 100000) if self.settings else 100000:,}).",
+            
+            # New text extraction errors
+            "no_amount_found": f"No monetary amount found (attempt {attempt}/{self.max_retries}). Please clearly state a dollar amount (e.g., $10,000 or 25000).",
+            "multiple_different_amounts_found": f"Multiple different amounts detected (attempt {attempt}/{self.max_retries}). Please specify exactly one dollar amount clearly."
         }
         return messages.get(error_type, f"Invalid response (attempt {attempt}/{self.max_retries}). Please try again.")
 
@@ -857,7 +861,7 @@ Respond with the amount (examples: 25000 or $25000):"""
             # Update participant memory using the MemoryManager
             memory_guidance_style = getattr(self.settings, 'memory_guidance_style', 'narrative') if self.settings else 'narrative'
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, memory_content, memory_guidance_style=memory_guidance_style
+                participant, context, memory_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
             )
             
             logger.info(f"Updated memory for {participant.name} after two-stage voting")

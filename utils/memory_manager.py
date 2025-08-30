@@ -9,7 +9,6 @@ from utils.error_handling import (
     ExperimentErrorCategory, get_global_error_handler,
     handle_experiment_errors
 )
-from utils.language_manager import get_language_manager
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -32,7 +31,8 @@ class MemoryManager:
         context: "ParticipantContext", 
         round_content: str,
         max_retries: int = 5,
-        memory_guidance_style: str = "narrative"
+        memory_guidance_style: str = "narrative",
+        language_manager=None
     ) -> str:
         """
         Prompt agent to update their memory based on round content.
@@ -59,12 +59,12 @@ class MemoryManager:
                 if len(context.memory) > 0.8 * context.memory_character_limit:
                     logger.info(f"Memory approaching limit for {agent.name}, attempting compression...")
                     memory_to_use = await MemoryManager._compress_memory_if_needed(
-                        agent, context.memory, context.bank_balance, context.memory_character_limit
+                        agent, context.memory, context.bank_balance, context.memory_character_limit, language_manager
                     )
                 
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
-                    memory_to_use, round_content, memory_guidance_style
+                    memory_to_use, round_content, memory_guidance_style, language_manager
                 )
                 
                 # Get updated memory from agent
@@ -158,7 +158,7 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative") -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None) -> str:
         """
         Create prompt for memory update based on guidance style.
         
@@ -166,11 +166,11 @@ class MemoryManager:
             current_memory: Agent's current memory
             round_content: Content from the current round
             guidance_style: Style of guidance ("narrative" or "structured")
+            language_manager: Language manager instance
             
         Returns:
             Formatted prompt for memory update
         """
-        language_manager = get_language_manager()
         
         # Choose prompt based on guidance style
         if guidance_style == "narrative":
@@ -189,7 +189,8 @@ class MemoryManager:
         agent: "ParticipantAgent", 
         current_memory: str, 
         bank_balance: float,
-        memory_limit: int
+        memory_limit: int,
+        language_manager=None
     ) -> str:
         """
         Compress memory when approaching the character limit.
@@ -199,11 +200,11 @@ class MemoryManager:
             current_memory: Current memory content
             bank_balance: Current bank balance for context
             memory_limit: Maximum memory character limit
+            language_manager: Language manager instance
             
         Returns:
             Compressed memory string
         """
-        language_manager = get_language_manager()
         
         # Create compression prompt
         compression_prompt = language_manager.get(

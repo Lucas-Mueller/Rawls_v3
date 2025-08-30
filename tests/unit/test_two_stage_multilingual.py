@@ -119,11 +119,83 @@ class TestAmountFormattingManager:
         
         amount, error = self.formatter.validate_amount_input("abc")
         assert amount is None
-        assert error == "invalid_amount_format"
+        assert error == "no_amount_found"  # Updated to new error type
         
         amount, error = self.formatter.validate_amount_input("1500000")  # Too high
         assert amount is None
         assert error == "amount_too_high"
+    
+    def test_validate_amount_input_verbose_text(self):
+        """Test amount extraction from verbose text responses."""
+        # Single amount in verbose text (your original example)
+        verbose_text = "Okay, let's go with $10000. I think prioritizing a solid floor of $10,000 is absolutely crucial. Seeing how drastically the average can be skewed by a huge range of incomes – and how easily people at the bottom can be left behind – really solidified that for me. It feels like the most responsible and, frankly, the most *just* approach, especially considering my own situation. It's a starting point, and we can adjust it later if we need to, but $10,000 feels like a good, firm foundation. I think we should vote."
+        amount, error = self.formatter.validate_amount_input(verbose_text)
+        assert amount == 10000
+        assert error is None
+        
+        # Spanish verbose text
+        spanish_text = "Creo que deberíamos elegir $25,000 dólares como nuestro mínimo. Es una cantidad razonable que protegerá a todos."
+        amount, error = self.formatter.validate_amount_input(spanish_text)
+        assert amount == 25000
+        assert error is None
+        
+        # Multiple identical amounts (should work)
+        identical_amounts = "I think $15000 is good, yes fifteen thousand dollars is my choice"
+        amount, error = self.formatter.validate_amount_input(identical_amounts)
+        assert amount == 15000
+        assert error is None
+        
+        # Multiple different amounts (should fail)
+        different_amounts = "I'm torn between $5,000 and $10,000, maybe something like $7,500 would work"
+        amount, error = self.formatter.validate_amount_input(different_amounts)
+        assert amount is None
+        assert error == "multiple_different_amounts_found"
+        
+        # No amounts in text
+        no_amounts = "I think the middle option is the best choice for everyone involved"
+        amount, error = self.formatter.validate_amount_input(no_amounts)
+        assert amount is None
+        assert error == "no_amount_found"
+    
+    def test_validate_amount_input_chinese_numbers(self):
+        """Test Chinese number extraction."""
+        # Basic Chinese numbers
+        chinese_text_1 = "我选择一万美元作为最低收入"
+        amount, error = self.formatter.validate_amount_input(chinese_text_1)
+        assert amount == 10000
+        assert error is None
+        
+        chinese_text_2 = "五千美元应该足够了"
+        amount, error = self.formatter.validate_amount_input(chinese_text_2)
+        assert amount == 5000
+        assert error is None
+        
+        # Arabic numerals in Chinese text
+        chinese_with_numbers = "我认为25000美元是一个合理的选择"
+        amount, error = self.formatter.validate_amount_input(chinese_with_numbers)
+        assert amount == 25000
+        assert error is None
+    
+    def test_validate_amount_input_edge_cases(self):
+        """Test edge cases for amount validation."""
+        # Very small amounts (below threshold)
+        small_amount = "I choose $50 dollars"
+        amount, error = self.formatter.validate_amount_input(small_amount)
+        assert amount is None
+        assert error == "amount_too_low"  # Below 100 threshold
+        
+        # Amounts with various formatting
+        formatted_amounts = [
+            "$20,000 dollars",
+            "20000",
+            "$20000", 
+            "twenty thousand dollars would be $20,000"
+        ]
+        
+        for text in formatted_amounts[:3]:  # Skip the last one with text numbers
+            amount, error = self.formatter.validate_amount_input(text)
+            assert amount == 20000, f"Failed for input: {text}"
+            assert error is None, f"Unexpected error for input: {text}"
     
     def test_invalid_amount_handling(self):
         """Test handling of invalid amounts."""

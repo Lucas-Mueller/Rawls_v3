@@ -560,60 +560,47 @@ class LanguageManager:
         return results
 
 
-# Global instance for easy access
-_global_language_manager: Optional[LanguageManager] = None
-
-
-def get_language_manager() -> LanguageManager:
+def create_language_manager(language: SupportedLanguage) -> LanguageManager:
     """
-    Get the global language manager instance.
-    
-    Returns:
-        Global LanguageManager instance
-    """
-    global _global_language_manager
-    if _global_language_manager is None:
-        _global_language_manager = LanguageManager()
-    return _global_language_manager
-
-
-def set_global_language(language: SupportedLanguage) -> None:
-    """
-    Set the language for the global language manager.
+    Create a new language manager instance with specified language.
     
     Args:
-        language: Language to set globally
+        language: Language to set for this instance
+        
+    Returns:
+        New LanguageManager instance configured with the specified language
     """
-    manager = get_language_manager()
+    manager = LanguageManager()
     manager.set_language(language)
+    return manager
 
 
-def get_english_principle_name(principle_key: str) -> str:
+def get_english_principle_name(principle_key: str, language_manager: LanguageManager) -> str:
     """
     Get English principle name for system logging (always English).
     
     Args:
         principle_key: The principle key (e.g., "maximizing_floor")
+        language_manager: Language manager instance to use
         
     Returns:
         English principle name for logging
     """
-    manager = get_language_manager()
-    return manager.get_justice_principle_name_english(principle_key)
+    return language_manager.get_justice_principle_name_english(principle_key)
 
 
-def get_english_certainty_name(certainty_key: str) -> str:
+def get_english_certainty_name(certainty_key: str, language_manager: LanguageManager) -> str:
     """
     Get English certainty level name for system logging (always English).
     
     Args:
         certainty_key: The certainty key (e.g., "very_sure")
+        language_manager: Language manager instance to use
         
     Returns:
         English certainty name for logging
     """
-    manager = get_language_manager()
-    return manager.get_certainty_level_name_english(certainty_key)
+    return language_manager.get_certainty_level_name_english(certainty_key)
 
 
 def validate_translation_files(translations_dir: str = "translations") -> bool:

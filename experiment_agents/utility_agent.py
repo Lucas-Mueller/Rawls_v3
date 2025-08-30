@@ -18,7 +18,6 @@ from utils.error_handling import (
     ExperimentError, ErrorSeverity, ExperimentErrorCategory
 )
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
-from utils.language_manager import get_language_manager
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ async def run_without_tracing(agent, prompt, context=None):
 class UtilityAgent:
     """Simplified utility agent for parsing and validating participant responses."""
     
-    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english"):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english", language_manager=None):
         # Use environment variable or default for utility agents
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
@@ -41,7 +40,7 @@ class UtilityAgent:
         self.utility_model = utility_model
         self.temperature = temperature
         self.experiment_language = experiment_language.lower()
-        self.language_manager = get_language_manager()
+        self.language_manager = language_manager
         
         # Agents will be created in async_init
         self.parser_agent = None
@@ -77,6 +76,54 @@ class UtilityAgent:
                         return data
             except json.JSONDecodeError:
                 continue
+        
+        return None
+    
+    def _fallback_extract_ranking(self, response: str) -> Optional[dict]:
+        """Fallback method to extract ranking from participant response using regex patterns."""
+        import re
+        
+        # Look for numbered lists with principle names
+        lines = response.split('\n')
+        rankings = []
+        
+        # Principle mappings for regex matching
+        principle_patterns = {
+            'mandarin': {
+                r'最低收入最大化|最大化最低收入': 'maximizing_floor',
+                r'平均收入最大化|最大化平均收入': 'maximizing_average', 
+                r'在最低收入约束条件下最大化平均收入|最低收入约束': 'maximizing_average_floor_constraint',
+                r'在范围约束条件下最大化平均收入|范围约束': 'maximizing_average_range_constraint'
+            },
+            'spanish': {
+                r'Maximizar los ingresos mínimos': 'maximizing_floor',
+                r'Maximizar los ingresos promedio': 'maximizing_average',
+                r'Maximizar los ingresos promedio con restricción de ingreso mínimo': 'maximizing_average_floor_constraint', 
+                r'Maximizar los ingresos promedio con restricción de rango': 'maximizing_average_range_constraint'
+            }
+        }
+        
+        patterns = principle_patterns.get(self.experiment_language.lower(), {})
+        
+        for line in lines:
+            # Look for lines starting with numbers
+            rank_match = re.match(r'^\s*(\d+)\.?\s*(.+)', line.strip())
+            if rank_match:
+                rank = int(rank_match.group(1))
+                content = rank_match.group(2)
+                
+                # Try to match principle patterns
+                for pattern, principle in patterns.items():
+                    if re.search(pattern, content, re.IGNORECASE):
+                        rankings.append({"principle": principle, "rank": rank})
+                        break
+        
+        # Return data if we found 4 rankings
+        if len(rankings) == 4:
+            return {
+                "rankings": rankings,
+                "certainty": "sure"  # Default certainty for fallback parsing
+            }
         
         return None
     
@@ -311,12 +358,42 @@ class UtilityAgent:
         """Parse principle ranking from participant response."""
         await self.async_init()
         
+        # Add language-specific mapping context
+        mapping_context = ""
+        if self.experiment_language == "mandarin":
+            mapping_context = """
+        
+        PRINCIPLE MAPPINGS (Mandarin → English):
+        - "最低收入最大化" → "maximizing_floor"
+        - "平均收入最大化" → "maximizing_average"
+        - "在最低收入约束条件下最大化平均收入" → "maximizing_average_floor_constraint"
+        - "在范围约束条件下最大化平均收入" → "maximizing_average_range_constraint"
+        
+        Use these exact mappings when converting from Mandarin to English principle names.
+        """
+        elif self.experiment_language == "spanish":
+            mapping_context = """
+        
+        PRINCIPLE MAPPINGS (Spanish → English):
+        - "Maximizar los ingresos mínimos" → "maximizing_floor"
+        - "Maximizar los ingresos promedio" → "maximizing_average"  
+        - "Maximizar los ingresos promedio con restricción de ingreso mínimo" → "maximizing_average_floor_constraint"
+        - "Maximizar los ingresos promedio con restricción de rango" → "maximizing_average_range_constraint"
+        
+        Use these exact mappings when converting from Spanish to English principle names.
+        """
+        
         prompt = f"""
-        Parse this {self.experiment_language} response for justice principle ranking:
+        Parse this {self.experiment_language} response for justice principle ranking. The response may contain mixed languages or English explanations - focus on the ranking structure.
         
         Response: "{response}"
+        {mapping_context}
         
-        Extract a complete ranking of all 4 principles from best (rank 1) to worst (rank 4).
+        INSTRUCTIONS:
+        - Look for numbered lists (1., 2., 3., 4.) indicating ranking order
+        - Ignore English text in parentheses like "(Maximizing average income)"
+        - Focus on {self.experiment_language} principle names, not English explanations
+        - Extract a complete ranking of all 4 principles from best (rank 1) to worst (rank 4)
         
         Return JSON:
         {{
@@ -329,7 +406,7 @@ class UtilityAgent:
             "certainty": "very_unsure|unsure|sure|very_sure"
         }}
         
-        Always use English principle names. Each rank 1-4 must appear exactly once.
+        Always use English principle names in JSON output. Each rank 1-4 must appear exactly once.
         """
         
         for attempt in range(max_retries):
@@ -343,8 +420,21 @@ class UtilityAgent:
                     'certainty': str
                 })
                 
+                # Fallback extraction if JSON parsing fails
+                if not data:
+                    data = self._fallback_extract_ranking(response)
+                
+                # Debug logging for Mandarin parsing issue
+                if self.experiment_language == "mandarin":
+                    logger.error(f"MANDARIN PARSE ATTEMPT {attempt + 1}:")
+                    logger.error(f"Original participant response: {response[:500]}...")  # First 500 chars
+                    logger.error(f"LLM parsing response: {response_text}")
+                    logger.error(f"Extracted JSON data: {data}")
+                    if data:
+                        logger.error(f"Rankings array length: {len(data.get('rankings', []))}")
+                
                 if not data or len(data['rankings']) != 4:
-                    raise ValueError("Invalid ranking structure")
+                    raise ValueError(f"Invalid ranking structure: got {len(data['rankings']) if data else 0} rankings, expected 4")
                 
                 ranked_principles = []
                 for item in data['rankings']:
@@ -478,10 +568,9 @@ class UtilityAgent:
         # Clean the response
         response_clean = response.strip()
         
-        # Try to extract valid single digits using more precise regex
+        # Try forgiving digit extraction - find all valid digits (0 or 1) in response
         import re
-        # Match standalone 0 or 1, not part of larger numbers, not after minus sign
-        digit_matches = re.findall(r'(?<!\d)(?<!-)([01])(?!\d)', response_clean)
+        digit_matches = re.findall(r'[01]', response_clean)
         
         if len(digit_matches) == 1:
             # Found exactly one valid digit
@@ -559,7 +648,7 @@ class UtilityAgent:
         constraint_type = "floor" if choice.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT else "range"
         principle_name = choice.principle.value
         
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         return language_manager.get(
             "prompts.utility_constraint_re_prompt",
             participant_name=participant_name,

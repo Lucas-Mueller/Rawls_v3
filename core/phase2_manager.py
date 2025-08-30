@@ -20,7 +20,6 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
-from utils.language_manager import get_language_manager
 from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
 from core.two_stage_voting_manager import TwoStageVotingManager
 
@@ -28,10 +27,11 @@ from core.two_stage_voting_manager import TwoStageVotingManager
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None):
         self.participants = participants
         self.utility_agent = utility_agent
         self.config = experiment_config
+        self.language_manager = language_manager
         self.logger = None  # Will be set in run_phase2
         self.error_handler = ExperimentErrorHandler()
         
@@ -217,9 +217,10 @@ class Phase2Manager:
                         self.validation_stats["retry_attempts"] += attempt
                     
                     # Create round content for memory
+                    language_manager = self.language_manager
                     round_content = f"""Prompt: {discussion_prompt}
-Your Statement: {statement}
-Outcome: Made statement in Round {context.round_number} of group discussion."""
+{language_manager.get('memory_field_labels.your_statement')} {statement}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
                     
                     if attempt > 0:
                         self._log_info(f"Valid statement received from {participant.name} after {attempt + 1} attempts")
@@ -233,8 +234,9 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
                         self._log_warning(f"Invalid statement from {participant.name}, retrying... (attempt {attempt + 1}/{max_retries})")
                         
                         # Modify prompt for retry to be more explicit
+                        language_manager = self.language_manager
                         discussion_prompt = f"""
-IMPORTANT: Your previous response was empty or too short. Please provide a meaningful response.
+{language_manager.get('error_messages.empty_response_retry')}
 
 {self._build_discussion_prompt(discussion_state, context.round_number)}
 
@@ -465,7 +467,7 @@ Please ensure your response contains a clear statement about your position on th
                     discussion_state.add_statement(participant.name, statement)
                 else:
                     # Add neutral message that doesn't reveal failure
-                    language_manager = get_language_manager()
+                    language_manager = self.language_manager
                     neutral_msg = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
                     discussion_state.add_statement(participant.name, neutral_msg)
                 
@@ -508,7 +510,7 @@ Please ensure your response contains a clear statement about your position on th
                 
                 # Update participant memory with agent using new guidance style
                 context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, round_content, memory_guidance_style=memory_guidance_style
+                    participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
                 )
                 contexts[participant_idx] = update_participant_context(
                     context, new_round=round_num
@@ -725,9 +727,10 @@ Please ensure your response contains a clear statement about your position on th
         statement = result.final_output
         
         # Create round content for memory
+        language_manager = self.language_manager
         round_content = f"""Prompt: {discussion_prompt}
-Your Statement: {statement}
-Outcome: Made statement in Round {context.round_number} of group discussion."""
+{language_manager.get('memory_field_labels.your_statement')} {statement}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
         
         return statement, round_content
 
@@ -773,7 +776,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             if self.settings.quarantine_failed_responses:
                 self.validation_stats["quarantined_responses"] += 1
                 # Return a neutral statement that doesn't contaminate discussion
-                language_manager = get_language_manager()
+                language_manager = self.language_manager
                 neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
                 # Mark as quarantined internally
                 return f"__QUARANTINED__{neutral_statement}", internal_reasoning
@@ -784,7 +787,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
     
     def _get_voting_reminder_message(self) -> str:
         """Get voting reminder message in appropriate language."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         # Check current language to provide appropriate reminder
         current_language = getattr(language_manager, 'current_language', 'mandarin')
@@ -820,7 +823,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
             # Log the error for debugging
             self._log_warning(f"Failed to extract principle from statement: {str(e)}")
             # Return a specific unspecified key instead of reusing constraint specification
-            language_manager = get_language_manager()
+            language_manager = self.language_manager
             return language_manager.get("prompts.phase2_favored_principle_unspecified")
     
     
@@ -939,8 +942,7 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         Build detailed Phase 2 results matching Phase 1 transparency level.
         Includes class assignment and full counterfactual analysis.
         """
-        from utils.language_manager import get_language_manager
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         # Build consensus status message
         if consensus_result.consensus_reached:
@@ -961,11 +963,12 @@ Outcome: Made statement in Round {context.round_number} of group discussion."""
         formatted_class = class_display_map.get(assigned_class.lower(), assigned_class)
         
         # Build the header
+        language_manager = self.language_manager
         result_content = f"""PHASE 2 FINAL RESULTS
 
 Consensus Status: {consensus_status}
-Your Income Class Assignment: {formatted_class}
-Your Earnings: ${final_earnings:.2f}
+{language_manager.get('memory_field_labels.your_income_assignment')} {formatted_class}
+{language_manager.get('memory_field_labels.your_earnings')} ${final_earnings:.2f}
 
 COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
@@ -1075,7 +1078,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             
             # Update memory with agent
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, f"Final Phase 2 Results: {result_content}"
+                participant, context, f"Final Phase 2 Results: {result_content}", language_manager=self.language_manager
             )
             
             updated_context = update_participant_context(
@@ -1185,7 +1188,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
     ) -> PrincipleRanking:
         """Get participant's final principle ranking after Phase 2."""
         
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         final_ranking_prompt = language_manager.get("prompts.phase2_final_ranking_prompt")
         
         # Always use text responses, parse with enhanced utility agent
@@ -1197,7 +1200,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
     
     def _build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for internal reasoning before public statement."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         return language_manager.get("prompts.phase2_internal_reasoning",
                                    round_number=round_num,
@@ -1206,7 +1209,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, internal_reasoning: str = "") -> str:
         """Build prompt for group discussion round based on voting detection mode."""
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         # Generate dynamic participant information
         num_participants = len(self.participants)
@@ -1375,7 +1378,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
         self._log_info("=== COMPLEX VOTING: CONFIRMATION PHASE ===")
         
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         # Create confirmation prompt using new language manager key
         confirmation_prompt = language_manager.get(
@@ -1427,16 +1430,17 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
             
             # Update participant memory with their confirmation response
+            language_manager = self.language_manager
             confirmation_content = f"""Voting Confirmation Round {discussion_state.round_number}:
 You were asked if you agree to proceed with voting on justice principles.
-Your response: {confirmation_response}
-Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vote'}"""
+{language_manager.get('memory_field_labels.your_response')} {confirmation_response}
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.agreed_to_vote') if agrees_to_vote else language_manager.get('memory_outcomes.declined_to_vote')}"""
             
             # Extract configuration for memory guidance
             memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, confirmation_content, memory_guidance_style=memory_guidance_style
+                participant, context, confirmation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
             )
             
             # If anyone disagrees, confirmation phase fails
@@ -1469,7 +1473,7 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
         # Initialize enhanced two-stage voting manager
         voting_manager = TwoStageVotingManager(
             participants=self.participants,
-            language_manager=get_language_manager(),
+            language_manager=self.language_manager,
             logger=self.logger,
             settings=self.settings
         )
@@ -1538,8 +1542,7 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
         Returns:
             Localized announcement message describing the disagreement type
         """
-        from utils.language_manager import get_language_manager
-        language_manager = get_language_manager()
+        language_manager = self.language_manager
         
         if not ballots:
             # Fallback to generic message if no ballots

@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from config import ExperimentConfiguration
 from core.experiment_manager import FrohlichExperimentManager
-from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 
 # Load environment variables from .env file
 load_dotenv()
@@ -75,14 +75,14 @@ async def main():
         logger.info(f"Loading configuration from: {config_path}")
         config = ExperimentConfiguration.from_yaml(config_path)
         
-        # Initialize language manager
+        # Create language manager for this experiment
         try:
             language_enum = SupportedLanguage(config.language)
-            set_global_language(language_enum)
+            language_manager = create_language_manager(language_enum)
             logger.info(f"Language set to: {config.language}")
         except ValueError:
             logger.error(f"Unsupported language: {config.language}. Using English as fallback.")
-            set_global_language(SupportedLanguage.ENGLISH)
+            language_manager = create_language_manager(SupportedLanguage.ENGLISH)
         
         # Validate configuration
         logger.info(f"Configuration loaded: {len(config.agents)} participants, {config.phase2_rounds} max rounds")
@@ -95,7 +95,7 @@ async def main():
             sys.exit(1)
         
         # Check for mode/prompt alignment
-        language_manager = get_language_manager()
+        # language_manager will be created later based on config language
         if config.voting_detection_mode == "simple":
             logger.info("✅ SIMPLE MODE: Using preference-based consensus detection")
             logger.info("   • Agents will state preferences using 'My preference is [principle]'")
@@ -110,7 +110,7 @@ async def main():
             logger.info(f"  - {agent.name}: {agent.model} (temp={agent.temperature})")
         
         # Initialize and run experiment
-        experiment_manager = FrohlichExperimentManager(config, config_path)
+        experiment_manager = FrohlichExperimentManager(config, config_path, language_manager)
         logger.info("Tracing policy: participant-only spans; utility agents untraced")
         
         logger.info("=" * 60)

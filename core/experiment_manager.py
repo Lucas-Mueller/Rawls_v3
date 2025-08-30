@@ -59,9 +59,10 @@ class FrohlichExperimentManager:
         >>> print(f"Consensus: {results.phase2_results.consensus_reached}")
     """
     
-    def __init__(self, config: ExperimentConfiguration, config_file_path: str = "default_config.yaml"):
+    def __init__(self, config: ExperimentConfiguration, config_file_path: str = "default_config.yaml", language_manager = None):
         self.config = config
         self.config_file_path = config_file_path
+        self.language_manager = language_manager
         self.experiment_id = str(uuid.uuid4())
         self.error_handler = get_global_error_handler()
         
@@ -108,13 +109,14 @@ class FrohlichExperimentManager:
             self.utility_agent = UtilityAgent(
                 self.config.utility_agent_model, 
                 self.config.utility_agent_temperature,
-                self.config.language
+                self.config.language,
+                self.language_manager
             )
             await self.utility_agent.async_init()
             
             # Initialize phase managers
-            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent)
-            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config)
+            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent, self.language_manager)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager)
             
             self._initialization_complete = True
             logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")
@@ -295,7 +297,7 @@ class FrohlichExperimentManager:
         logger.info(f"Creating {len(self.config.agents)} participant agents...")
         
         # Use dynamic temperature detection for all participants
-        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents, self.config)
+        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents, self.config, self.language_manager)
         
         return participants
     

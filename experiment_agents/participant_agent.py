@@ -7,7 +7,6 @@ from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
 from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
-from utils.language_manager import get_language_manager
 import asyncio
 import logging
 from typing import List
@@ -19,9 +18,10 @@ from typing import List
 class ParticipantAgent:
     """Wrapper for participant agent with memory management capabilities and dynamic temperature detection."""
     
-    def __init__(self, config: AgentConfiguration, experiment_config=None):
+    def __init__(self, config: AgentConfiguration, experiment_config=None, language_manager=None):
         self.config = config
         self.experiment_config = experiment_config
+        self.language_manager = language_manager
         self.logger = logging.getLogger(__name__)
         
         # We'll initialize the agent asynchronously in async_init
@@ -37,7 +37,7 @@ class ParticipantAgent:
         # Prepare base agent kwargs (without model and model_settings)
         base_kwargs = {
             "name": self.config.name,
-            "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config),
+            "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config, self.language_manager),
         }
         
         # Use dynamic temperature retry system
@@ -130,16 +130,17 @@ class ParticipantAgent:
         return self.agent.clone(**kwargs)
 
 
-async def create_participant_agent(config: AgentConfiguration) -> ParticipantAgent:
+async def create_participant_agent(config: AgentConfiguration, language_manager=None) -> ParticipantAgent:
     """Create a participant agent with the given configuration."""
-    agent = ParticipantAgent(config)
+    agent = ParticipantAgent(config, language_manager=language_manager)
     await agent.async_init()
     return agent
 
 
 async def create_participant_agents_with_dynamic_temperature(
     configs: List[AgentConfiguration],
-    experiment_config=None
+    experiment_config=None,
+    language_manager=None
 ) -> List[ParticipantAgent]:
     """
     Create multiple participant agents with dynamic temperature detection and retry.
@@ -155,7 +156,7 @@ async def create_participant_agents_with_dynamic_temperature(
     for config in configs:
         try:
             logger.info(f"Creating agent: {config.name} (model: {config.model}, temp: {config.temperature})")
-            agent = ParticipantAgent(config, experiment_config)
+            agent = ParticipantAgent(config, experiment_config, language_manager)
             await agent.async_init()
             agents.append(agent)
         except Exception as e:
@@ -170,11 +171,11 @@ def _generate_dynamic_instructions(
     ctx: RunContextWrapper[ParticipantContext], 
     agent: Agent, 
     config: AgentConfiguration,
-    experiment_config=None
+    experiment_config=None,
+    language_manager=None
 ) -> str:
     """Generate context-aware instructions including memory, bank balance, etc."""
     
-    language_manager = get_language_manager()
     context = ctx.context
     
     # Check if this is a memory update context and use minimal formatting

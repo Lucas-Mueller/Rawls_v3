@@ -51,6 +51,11 @@ python run_tests.py integration
 
 # With coverage
 python run_tests.py --coverage
+
+# Advanced pytest commands
+python -m pytest tests/unit/test_specific_file.py -v
+python -m pytest -k "test_pattern" -v
+python -m pytest tests/unit/ --tb=short
 ```
 
 ### Batch Experiment Execution
@@ -136,3 +141,17 @@ Common configurations are in `config/`:
 - `default_config.yaml`: Standard two-agent setup
 - `fast_config.yaml`: Reduced rounds for quick testing
 - Language-specific configs for Spanish/Mandarin experiments
+
+## Project Structure
+
+### Hypothesis Testing Framework
+The `hypothesis_testing/` directory contains organized experimental conditions:
+- `hypothesis_1/`: 33 different experimental conditions
+- `hypothesis_2/`: Cultural variations (American, Chinese) with 34+ conditions each
+- `hypothesis_3/`: Income inequality variations (low, medium, high) with 34+ conditions each
+
+### Specialized Components
+- `core/two_stage_voting_manager.py`: Advanced voting system with numerical validation
+- `core/principle_name_manager.py`: Consistent justice principle terminology
+- `utils/cultural_adaptation.py`: Multilingual number formatting and cultural context
+- `experiment_agents/`: Participant and utility agent implementations

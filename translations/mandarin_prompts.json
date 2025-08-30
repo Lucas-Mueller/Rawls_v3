@@ -143,5 +143,27 @@
     "two_stage_amount_too_low": "金额过低（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最低$1,000）。",
     "two_stage_amount_too_high": "金额过高（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最高$100,000）。",
     "timeout_retry": "响应超时。请重试。"
+  },
+  "memory_field_labels": {
+    "your_response": "您的回复：",
+    "your_rankings": "您的排名：", 
+    "your_post_explanation_rankings": "您的后解释排名：",
+    "your_final_rankings": "您的最终排名：",
+    "your_statement": "您的发言：",
+    "your_income_assignment": "您的收入类别分配：",
+    "your_earnings": "您的收入：",
+    "outcome": "结果："
+  },
+  "memory_outcomes": {
+    "completed_initial_ranking": "完成正义原则初始排名。",
+    "learned_principle_applications": "学习了每个正义原则如何通过例子应用于收入分配。",
+    "completed_post_explanation_ranking": "在学习原则如何应用于分配后完成排名。",
+    "completed_final_ranking": "在经历所有四轮后完成正义原则最终排名。",
+    "made_discussion_statement": "在小组讨论第{round_number}轮发表声明。",
+    "agreed_to_vote": "同意进行投票",
+    "declined_to_vote": "拒绝投票"
+  },
+  "error_messages": {
+    "empty_response_retry": "重要提示：您之前的回复为空或过短。请提供有意义的回复。"
   }
 }

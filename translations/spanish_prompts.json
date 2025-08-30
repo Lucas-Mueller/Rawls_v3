@@ -140,5 +140,27 @@
     "two_stage_amount_too_low": "Cantidad demasiado baja (intento {attempt}/{max_attempts}). Por favor proporciona una cantidad realista en dólares (mínimo $1,000).",
     "two_stage_amount_too_high": "Cantidad demasiado alta (intento {attempt}/{max_attempts}). Por favor proporciona una cantidad realista en dólares (máximo $100,000).",
     "timeout_retry": "El tiempo de respuesta expiró. Por favor intenta de nuevo."
+  },
+  "memory_field_labels": {
+    "your_response": "Su respuesta:",
+    "your_rankings": "Sus clasificaciones:", 
+    "your_post_explanation_rankings": "Sus clasificaciones post-explicación:",
+    "your_final_rankings": "Sus clasificaciones finales:",
+    "your_statement": "Su declaración:",
+    "your_income_assignment": "Su asignación de clase de ingresos:",
+    "your_earnings": "Sus ganancias:",
+    "outcome": "Resultado:"
+  },
+  "memory_outcomes": {
+    "completed_initial_ranking": "Clasificación inicial completada de los principios de justicia.",
+    "learned_principle_applications": "Aprendió cómo cada principio de justicia se aplica a las distribuciones de ingresos a través de ejemplos.",
+    "completed_post_explanation_ranking": "Clasificación completada después de aprender cómo los principios se aplican a las distribuciones.",
+    "completed_final_ranking": "Clasificación final completada de los principios de justicia después de experimentar las cuatro rondas.",
+    "made_discussion_statement": "Hizo declaración en la Ronda {round_number} de la discusión grupal.",
+    "agreed_to_vote": "Acordó proceder con la votación",
+    "declined_to_vote": "Rechazó votar"
+  },
+  "error_messages": {
+    "empty_response_retry": "IMPORTANTE: Su respuesta anterior estaba vacía o era demasiado corta. Por favor proporcione una respuesta significativa."
   }
 }
