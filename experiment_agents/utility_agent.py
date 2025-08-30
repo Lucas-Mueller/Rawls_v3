@@ -98,6 +98,73 @@ class UtilityAgent:
         
         return True
 
+    def _normalize_principle_name(self, principle_text: str) -> str:
+        """Normalize natural language principle descriptions to canonical enum values."""
+        
+        # Convert to lowercase for matching
+        text_lower = principle_text.lower().strip()
+        
+        # English mappings
+        english_mappings = {
+            # Exact enum names (already correct)
+            'maximizing_floor': 'maximizing_floor',
+            'maximizing_average': 'maximizing_average', 
+            'maximizing_average_floor_constraint': 'maximizing_average_floor_constraint',
+            'maximizing_average_range_constraint': 'maximizing_average_range_constraint',
+            
+            # Natural language variations
+            'maximizing the floor income': 'maximizing_floor',
+            'maximizing the average income': 'maximizing_average',
+            'maximizing the average income with a floor constraint': 'maximizing_average_floor_constraint',
+            'maximizing the average income with a range constraint': 'maximizing_average_range_constraint',
+            
+            # Additional variations
+            'maximizing floor income': 'maximizing_floor',
+            'maximizing average income': 'maximizing_average',
+            'maximizing average with floor constraint': 'maximizing_average_floor_constraint',
+            'maximizing average with range constraint': 'maximizing_average_range_constraint',
+            
+            # Shortened versions
+            'floor income': 'maximizing_floor',
+            'average income': 'maximizing_average',
+            'floor constraint': 'maximizing_average_floor_constraint', 
+            'range constraint': 'maximizing_average_range_constraint'
+        }
+        
+        # Spanish mappings
+        spanish_mappings = {
+            'maximizar los ingresos mínimos': 'maximizing_floor',
+            'maximizar los ingresos promedio': 'maximizing_average',
+            'maximizar los ingresos promedio con restricción de ingreso mínimo': 'maximizing_average_floor_constraint',
+            'maximizar los ingresos promedio con restricción de rango': 'maximizing_average_range_constraint'
+        }
+        
+        # Mandarin mappings  
+        mandarin_mappings = {
+            '最低收入最大化': 'maximizing_floor',
+            '平均收入最大化': 'maximizing_average', 
+            '在最低收入约束条件下最大化平均收入': 'maximizing_average_floor_constraint',
+            '在范围约束条件下最大化平均收入': 'maximizing_average_range_constraint'
+        }
+        
+        # Try each mapping set
+        for mapping_set in [english_mappings, spanish_mappings, mandarin_mappings]:
+            if text_lower in mapping_set:
+                return mapping_set[text_lower]
+        
+        # If no exact match, try partial matching for robustness
+        if 'floor' in text_lower and 'constraint' in text_lower:
+            return 'maximizing_average_floor_constraint'
+        elif 'range' in text_lower and 'constraint' in text_lower:
+            return 'maximizing_average_range_constraint' 
+        elif 'floor' in text_lower or 'minimum' in text_lower or '最低' in principle_text:
+            return 'maximizing_floor'
+        elif 'average' in text_lower or 'promedio' in text_lower or '平均' in principle_text:
+            return 'maximizing_average'
+            
+        # Return original if no match found (will likely fail enum validation)
+        return principle_text
+
     async def async_init(self):
         """Asynchronously initialize utility agents."""
         if self._initialization_complete:
@@ -202,13 +269,17 @@ class UtilityAgent:
                 if not data:
                     raise ValueError("No valid JSON found in response")
                 
+                # Normalize principle name before validation
+                normalized_principle = self._normalize_principle_name(data['principle'])
+                logger.debug(f"LLM returned principle: '{data['principle']}' -> normalized to: '{normalized_principle}'")
+                
                 # Validate principle name
                 valid_principles = [
                     'maximizing_floor', 'maximizing_average', 
                     'maximizing_average_floor_constraint', 'maximizing_average_range_constraint'
                 ]
-                if data['principle'] not in valid_principles:
-                    raise ValueError(f"Invalid principle: {data['principle']}")
+                if normalized_principle not in valid_principles:
+                    raise ValueError(f"Invalid principle after normalization: {normalized_principle}")
                 
                 # Validate certainty level
                 valid_certainty = ['very_unsure', 'unsure', 'sure', 'very_sure']
@@ -216,7 +287,7 @@ class UtilityAgent:
                     raise ValueError(f"Invalid certainty: {data['certainty']}")
                 
                 return PrincipleChoice.create_for_parsing(
-                    principle=JusticePrinciple(data['principle']),
+                    principle=JusticePrinciple(normalized_principle),
                     constraint_amount=data.get('constraint_amount'),
                     certainty=CertaintyLevel(data['certainty']),
                     reasoning=response
@@ -277,8 +348,12 @@ class UtilityAgent:
                 
                 ranked_principles = []
                 for item in data['rankings']:
+                    # Normalize principle name before validation
+                    normalized_principle = self._normalize_principle_name(item['principle'])
+                    logger.debug(f"LLM returned principle: '{item['principle']}' -> normalized to: '{normalized_principle}'")
+                    
                     ranked_principles.append(RankedPrinciple(
-                        principle=JusticePrinciple(item['principle']),
+                        principle=JusticePrinciple(normalized_principle),
                         rank=item['rank']
                     ))
                 
