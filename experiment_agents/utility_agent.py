@@ -1551,6 +1551,11 @@ Response:"""
             try:
                 amount = int(response)
                 if amount > 0:
+                    # Validate constraint scale
+                    if not self._validate_constraint_scale(amount):
+                        logger.warning(f"LLM parsed amount ${amount} but it failed scale validation")
+                        return None
+                        
                     logger.info(f"LLM parsed constraint amount: {amount} from '{constraint_text}'")
                     return amount
                 else:
@@ -1977,12 +1982,44 @@ Response:"""
         try:
             amount = await self.parse_constraint_amount_multilingual(constraint_text, language_hint)
             if amount and amount > 0:
+                # Validate constraint amount scale  
+                if not self._validate_constraint_scale(amount):
+                    logger.warning(f"Flexible extraction found amount ${amount} but it failed scale validation")
+                    return None
+                
                 logger.info(f"Flexible constraint extraction successful: {amount} from '{constraint_text}'")
                 return amount
             return None
         except Exception as e:
             logger.warning(f"Flexible constraint extraction failed: {e}")
             return None
+    
+    def _validate_constraint_scale(self, amount: int) -> bool:
+        """
+        Validate that constraint amount is in reasonable income scale, not payoff scale.
+        
+        Args:
+            amount: Constraint amount to validate
+            
+        Returns:
+            True if valid, False if likely payoff scale error
+        """
+        if amount is None:
+            return True
+        
+        # Define reasonable bounds
+        MIN_INCOME_CONSTRAINT = 1000    # $1,000
+        LIKELY_PAYOFF_SCALE_MAX = 10    # $10 suggests payoff scale error
+        
+        if amount <= LIKELY_PAYOFF_SCALE_MAX:
+            logger.warning(f"Constraint amount ${amount} appears to be in payoff scale ($1-$10) rather than income scale ($10,000-$30,000)")
+            return False
+        
+        if amount < MIN_INCOME_CONSTRAINT:
+            logger.warning(f"Constraint amount ${amount} is below reasonable minimum of ${MIN_INCOME_CONSTRAINT:,}")
+            return False
+        
+        return True
     
     async def parse_participant_preference(self, statement: str, participant_name: str = None) -> Optional[PrincipleChoice]:
         """
@@ -2022,3 +2059,95 @@ Response:"""
             return preference
         
         return None
+
+    async def validate_ballot_parsing_consistency(self, raw_response: str, parsed_result: PrincipleChoice, language: str = "english") -> bool:
+        """
+        Validate ballot parsing matches expected patterns across languages.
+        
+        Implements the runtime validation system from Critical_Ballot_Parsing_Fix_Plan.md
+        to detect parsing mismatches in real-time and prevent systematic errors.
+        
+        Args:
+            raw_response: The original participant response
+            parsed_result: The parsed PrincipleChoice result
+            language: The language of the response ("english", "spanish", "mandarin")
+            
+        Returns:
+            bool: True if parsing is consistent with expected patterns, False if mismatch detected
+        """
+        
+        # English validation patterns
+        english_patterns = {
+            "maximizing the floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximizing the average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximizing average with floor constraint": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "maximizing average with range constraint": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "my ballot choice is maximizing the floor income": JusticePrinciple.MAXIMIZING_FLOOR,
+            "my ballot choice is maximizing the average income": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "considers only the welfare of the worst-off": JusticePrinciple.MAXIMIZING_FLOOR,
+        }
+        
+        # Spanish validation patterns
+        spanish_patterns = {
+            "maximización del ingreso mínimo": JusticePrinciple.MAXIMIZING_FLOOR,
+            "maximización del ingreso promedio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "maximización del promedio con restricción": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "restricción de rango": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "mi elección de voto es maximización del ingreso mínimo": JusticePrinciple.MAXIMIZING_FLOOR,
+            "mi elección de voto es maximización del ingreso promedio": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "considera solo el bienestar de los más desfavorecidos": JusticePrinciple.MAXIMIZING_FLOOR,
+        }
+        
+        # Mandarin validation patterns  
+        mandarin_patterns = {
+            "最大化最低收入": JusticePrinciple.MAXIMIZING_FLOOR,
+            "最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "在最低收入约束条件下": JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            "在范围约束条件下": JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            "我的投票选择是最大化最低收入": JusticePrinciple.MAXIMIZING_FLOOR,
+            "我的投票选择是最大化平均收入": JusticePrinciple.MAXIMIZING_AVERAGE,
+            "只考虑最弱势者福利的原则": JusticePrinciple.MAXIMIZING_FLOOR,
+        }
+        
+        # Select appropriate patterns based on language
+        validation_patterns = {
+            "english": english_patterns,
+            "spanish": spanish_patterns, 
+            "mandarin": mandarin_patterns
+        }.get(language, english_patterns)
+        
+        # Check for obvious mismatches
+        response_lower = raw_response.lower()
+        for pattern, expected_principle in validation_patterns.items():
+            if pattern in response_lower:
+                if parsed_result.principle != expected_principle:
+                    logger.error(f"🚫 BALLOT PARSING MISMATCH [{language.upper()}]: '{raw_response}' parsed as {parsed_result.principle.value}, expected {expected_principle.value}")
+                    return False
+                    
+        # Additional critical checks for the specific cases mentioned in the plan
+        critical_english_checks = [
+            ("my ballot choice is maximizing the floor income", JusticePrinciple.MAXIMIZING_FLOOR),
+            ("maximizing the floor income", JusticePrinciple.MAXIMIZING_FLOOR),
+        ]
+        
+        critical_spanish_checks = [
+            ("mi elección de voto es maximización del ingreso mínimo", JusticePrinciple.MAXIMIZING_FLOOR),
+        ]
+        
+        critical_mandarin_checks = [
+            ("我的投票选择是最大化最低收入", JusticePrinciple.MAXIMIZING_FLOOR),
+        ]
+        
+        critical_checks = {
+            "english": critical_english_checks,
+            "spanish": critical_spanish_checks,
+            "mandarin": critical_mandarin_checks
+        }.get(language, critical_english_checks)
+        
+        for critical_text, expected_principle in critical_checks:
+            if critical_text in response_lower:
+                if parsed_result.principle != expected_principle:
+                    logger.error(f"🚨 CRITICAL BALLOT PARSING ERROR [{language.upper()}]: The systematic error has occurred! '{raw_response}' parsed as {parsed_result.principle.value}, should be {expected_principle.value}")
+                    return False
+        
+        return True

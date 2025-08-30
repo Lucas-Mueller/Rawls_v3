@@ -60,6 +60,42 @@ class Phase2Manager:
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
     
+    def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
+        """
+        Validate that constraint amounts are in a reasonable range.
+        
+        Args:
+            constraint_amount: The constraint amount to validate
+            participant_name: Name of participant for logging (optional)
+            
+        Returns:
+            True if valid or None, False if invalid
+        """
+        if constraint_amount is None:
+            return True  # No constraint is valid
+        
+        # Define reasonable bounds based on typical income distributions
+        MIN_REASONABLE_CONSTRAINT = 1000    # $1,000
+        MAX_REASONABLE_CONSTRAINT = 100000  # $100,000
+        
+        # Check for suspiciously small amounts (likely payoff scale errors)
+        LIKELY_PAYOFF_SCALE_MAX = 10  # $10 is likely a payoff amount, not income constraint
+        
+        if constraint_amount < MIN_REASONABLE_CONSTRAINT:
+            participant_info = f" for {participant_name}" if participant_name else ""
+            if constraint_amount <= LIKELY_PAYOFF_SCALE_MAX:
+                self._log_warning(f"Constraint amount ${constraint_amount}{participant_info} appears to be in payoff scale ($1-$10) rather than income scale ($10,000-$30,000)")
+            else:
+                self._log_warning(f"Constraint amount ${constraint_amount}{participant_info} is below reasonable minimum of ${MIN_REASONABLE_CONSTRAINT:,}")
+            return False
+        
+        if constraint_amount > MAX_REASONABLE_CONSTRAINT:
+            participant_info = f" for {participant_name}" if participant_name else ""
+            self._log_warning(f"Constraint amount ${constraint_amount:,}{participant_info} exceeds reasonable maximum of ${MAX_REASONABLE_CONSTRAINT:,}")
+            return False
+        
+        return True
+    
     def _validate_statement(self, statement: str, participant_name: str) -> bool:
         """
         Validate that a statement is non-empty and meaningful with language awareness.
@@ -532,6 +568,10 @@ Please ensure your response contains a clear statement about your position on th
                                         self._log_warning(f"Preference consensus warning: {warning}")
                                 
                                 if consensus_reached:
+                                    # Validate the consensus constraint amount
+                                    if not self._validate_constraint_amount(agreed_preference.constraint_amount, "group consensus"):
+                                        self._log_warning(f"Consensus reached with invalid constraint amount: ${agreed_preference.constraint_amount}")
+                                    
                                     self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
                                     
                                     # Mark that voting/consensus has been triggered (prevents reminder messages)
@@ -1367,6 +1407,10 @@ Outcome: {'Agreed to proceed with voting' if agrees_to_vote else 'Declined to vo
                         self._log_warning(f"Correcting principle for {participant.name} from {principle_choice.principle.value} to {expected.value}")
                         principle_choice.principle = expected
                 
+                # Validate constraint amount before adding to ballots
+                if not self._validate_constraint_amount(principle_choice.constraint_amount, participant.name):
+                    self._log_warning(f"Invalid constraint amount detected in ballot from {participant.name} - proceeding with validation warnings")
+                
                 ballots.append(principle_choice)
                 self._log_info(f"Secret ballot received from {participant.name}: {principle_choice.principle.value} (constraint: ${principle_choice.constraint_amount if principle_choice.constraint_amount else 'None'})")
                 
@@ -1575,7 +1619,7 @@ Outcome: Vote recorded (secret ballot - results pending)"""
                     clarification_response = result.final_output
                     
                     # Extract constraint amount using existing flexible extraction
-                    extracted_amount = self.utility_agent._extract_constraint_amount_flexible(clarification_response)
+                    extracted_amount = await self.utility_agent._extract_constraint_amount_flexible(clarification_response)
                     
                     if extracted_amount:
                         # Update ballot with extracted amount
