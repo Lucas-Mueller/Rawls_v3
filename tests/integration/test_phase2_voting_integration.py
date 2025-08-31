@@ -16,8 +16,8 @@ from core.phase2_manager import Phase2Manager
 from core.two_stage_voting_manager import TwoStageVotingManager
 from experiment_agents import ParticipantAgent, UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
-from models.logging_types import GroupDiscussionResult
-from models.config_models import ExperimentConfiguration, Phase2Settings, AgentConfiguration
+from models.experiment_types import GroupDiscussionResult
+from config.models import ExperimentConfiguration, Phase2Settings, AgentConfiguration
 from utils.language_manager import create_language_manager, SupportedLanguage
 from tests.fixtures.simplified_fixtures import TestParticipant, TestStatement
 

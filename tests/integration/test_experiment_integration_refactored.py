@@ -26,7 +26,7 @@ from utils.language_manager import SupportedLanguage
 
 # SIMPLE TEST DOUBLES FOR INTEGRATION TESTING
 
-class TestModelProvider:
+class MockModelProvider:
     """Simple test double for model provider without external API calls."""
     
     def __init__(self, provider_name: str, is_litellm: bool = False):
@@ -43,7 +43,7 @@ class TestModelProvider:
         }
 
 
-class TestExperimentRunner:
+class MockExperimentRunner:
     """Simple test runner that simulates experiment execution."""
     
     def __init__(self, config: ExperimentConfiguration):

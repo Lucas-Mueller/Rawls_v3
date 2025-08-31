@@ -1,7 +1,7 @@
 """
 Participant agent system for the Frohlich Experiment.
 """
-from agents import Agent, RunContextWrapper, ModelSettings, Runner
+from agents import Agent, RunContextWrapper, ModelSettings, Runner, function_tool
 
 from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
@@ -9,10 +9,25 @@ from utils.model_provider import create_model_config_with_temperature_detection,
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 
 
-# This will be replaced by dynamic language manager calls
+# Tool factory function for creating localized voting tools with conditional logic
+def create_voting_tool(language_manager, experiment_config):
+    """Create a localized voting tool with built-in conditional logic."""
+    
+    @function_tool
+    async def request_group_vote(reason: Optional[str] = None) -> str:
+        """Request that the group proceed to formal voting on justice principles."""
+        
+        # Since this tool is only registered during Phase 2 complex mode,
+        # we can directly return the confirmation when called
+        return language_manager.get_voting_tool_confirmation()
+    
+    # Set localized tool description
+    request_group_vote.__doc__ = language_manager.get_voting_tool_description()
+    
+    return request_group_vote
 
 
 class ParticipantAgent:
@@ -34,10 +49,19 @@ class ParticipantAgent:
         if self._initialization_complete:
             return
         
-        # Prepare base agent kwargs (without model and model_settings)
+        # Create tools statically if in complex mode
+        tools = []
+        if (self.experiment_config and 
+            self.experiment_config.voting_detection_mode == "complex"):
+            # Create the voting tool with built-in conditional logic
+            voting_tool = create_voting_tool(self.language_manager, self.experiment_config)
+            tools.append(voting_tool)
+        
+        # Prepare base agent kwargs (without model and model_settings) 
         base_kwargs = {
             "name": self.config.name,
             "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config, self.language_manager),
+            "tools": tools
         }
         
         # Use dynamic temperature retry system
@@ -208,6 +232,9 @@ def _generate_dynamic_instructions(
         phase_instructions=phase_instructions,
         experiment_config=experiment_config
     )
+
+
+# Removed _get_conditional_tools - now using static tool registration with internal conditional logic
 
 
 def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_number: int, language_manager, experiment_config=None) -> str:

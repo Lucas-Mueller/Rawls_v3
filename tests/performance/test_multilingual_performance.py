@@ -16,8 +16,15 @@ import psutil
 import sys
 from typing import Dict, List, Any, Optional
 from unittest.mock import MagicMock, AsyncMock
-from memory_profiler import profile
 import pytest
+
+# Skip all tests in this module if memory_profiler is not available
+try:
+    from memory_profiler import profile
+    memory_profiler_available = True
+except ImportError:
+    memory_profiler_available = False
+    profile = lambda func: func  # No-op decorator
 
 from tests.test_multilingual_base import AsyncMultilingualTestBase
 from tests.fixtures.phase2_parsing_fixtures import Phase2ParsingFixtures
@@ -40,6 +47,7 @@ class PerformanceBenchmarkResults:
         self.encoding_overhead: Dict[str, float] = {}
 
 
+@pytest.mark.skipif(not memory_profiler_available, reason="memory_profiler not available")
 class MultilingualPerformanceBenchmarks(AsyncMultilingualTestBase):
     """Performance benchmark tests for multilingual processing."""
     

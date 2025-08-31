@@ -20,14 +20,14 @@ from utils.language_manager import SupportedLanguage
 # TEST DOUBLES (replacing async mocks)
 
 @dataclass  
-class TestResponse:
+class MockResponse:
     """Simple response structure for testing."""
     content: str
     success: bool = True
     error: str = ""
 
 
-class TestModelRunner:
+class MockModelRunner:
     """Synchronous test double for model execution."""
     
     def __init__(self):
@@ -36,28 +36,28 @@ class TestModelRunner:
     
     def set_response(self, prompt_key: str, response: str, success: bool = True):
         """Set predefined response for specific prompt."""
-        self._responses[prompt_key] = TestResponse(content=response, success=success)
+        self._responses[prompt_key] = MockResponse(content=response, success=success)
     
-    def run(self, prompt: str, **kwargs) -> TestResponse:
+    def run(self, prompt: str, **kwargs) -> MockResponse:
         """Synchronous run method (no async needed)."""
         self._call_count += 1
         
         # Simple pattern matching to return appropriate response
         if "ranking" in prompt.lower():
-            return self._responses.get("ranking", TestResponse("1. A\n2. B\n3. C\n4. D"))
+            return self._responses.get("ranking", MockResponse("1. A\n2. B\n3. C\n4. D"))
         elif "principle" in prompt.lower():
-            return self._responses.get("principle", TestResponse("principle A"))
+            return self._responses.get("principle", MockResponse("principle A"))
         elif "constraint" in prompt.lower():
-            return self._responses.get("constraint", TestResponse("60%"))
+            return self._responses.get("constraint", MockResponse("60%"))
         else:
-            return self._responses.get("default", TestResponse("Unknown response"))
+            return self._responses.get("default", MockResponse("Unknown response"))
     
     def get_call_count(self) -> int:
         """Get number of times run was called."""
         return self._call_count
 
 
-class TestLanguageManager:
+class MockLanguageManager:
     """Simple synchronous test double for language manager."""
     
     def __init__(self, language: SupportedLanguage = SupportedLanguage.ENGLISH):
@@ -81,12 +81,12 @@ class TestAsyncToSyncConversion:
     @pytest.fixture
     def model_runner(self):
         """Create synchronous model runner.""" 
-        return TestModelRunner()
+        return MockModelRunner()
     
     @pytest.fixture
     def language_manager(self):
         """Create synchronous language manager."""
-        return TestLanguageManager()
+        return MockLanguageManager()
     
     @pytest.fixture 
     def utility_agent(self, model_runner, language_manager):
@@ -197,7 +197,7 @@ class TestAsyncToSyncConversion:
         languages = [SupportedLanguage.ENGLISH, SupportedLanguage.SPANISH, SupportedLanguage.MANDARIN]
         
         for language in languages:
-            language_manager = TestLanguageManager(language)
+            language_manager = MockLanguageManager(language)
             # Test with different language settings synchronously
             
             prompt = language_manager.get("prompts.ranking")
@@ -315,37 +315,37 @@ class SyncUtilityAgent:
         self.model_runner = model_runner
         self.language_manager = language_manager
     
-    def parse_principle_ranking_enhanced_sync(self, statement: str) -> TestResponse:
+    def parse_principle_ranking_enhanced_sync(self, statement: str) -> MockResponse:
         """Synchronous version of ranking parsing."""
         prompt = self.language_manager.get("prompts.ranking")
         response = self.model_runner.run(prompt)
         
         # Process response synchronously
         if response.success and self._is_valid_ranking(response.content):
-            return TestResponse(content="parsed ranking", success=True)
+            return MockResponse(content="parsed ranking", success=True)
         else:
-            return TestResponse(content="", success=False, error="invalid_ranking")
+            return MockResponse(content="", success=False, error="invalid_ranking")
     
-    def parse_principle_choice_enhanced_sync(self, statement: str) -> TestResponse:
+    def parse_principle_choice_enhanced_sync(self, statement: str) -> MockResponse:
         """Synchronous version of principle choice parsing."""
         prompt = self.language_manager.get("prompts.principle")
         response = self.model_runner.run(prompt)
         
         # Process response synchronously
         if response.success:
-            return TestResponse(content="parsed choice", success=True)
+            return MockResponse(content="parsed choice", success=True)
         else:
-            return TestResponse(content="", success=False, error="parsing_failed")
+            return MockResponse(content="", success=False, error="parsing_failed")
     
-    def parse_with_error_handling_sync(self, statement: str) -> TestResponse:
+    def parse_with_error_handling_sync(self, statement: str) -> MockResponse:
         """Synchronous version with error handling."""
         try:
             response = self.model_runner.run("test prompt")
             return response
         except Exception as e:
-            return TestResponse(content="", success=False, error=str(e))
+            return MockResponse(content="", success=False, error=str(e))
     
-    def generic_parse_sync(self, statement: str) -> TestResponse:
+    def generic_parse_sync(self, statement: str) -> MockResponse:
         """Generic synchronous parsing method."""
         return self.model_runner.run(statement)
     

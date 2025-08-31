@@ -306,6 +306,18 @@ class LanguageManager:
         """Get a translated success message."""
         return self.get(f"prompts.system_success_messages_{success_key}", **format_kwargs)
     
+    def get_voting_tool_description(self) -> str:
+        """Get localized description for the request_group_vote tool."""
+        return self.get("tools.request_group_vote.description")
+
+    def get_voting_tool_confirmation(self) -> str:
+        """Get localized confirmation message for vote requests."""
+        return self.get("tools.request_group_vote.confirmation")
+
+    def get_phase2_voting_tool_instructions(self) -> str:
+        """Get localized voting tool usage instructions."""
+        return self.get("phase2_voting_tool_instructions")
+
     def get_status_message(self, status_key: str, **format_kwargs) -> str:
         """Get a translated status message."""
         return self.get(f"prompts.system_status_messages_{status_key}", **format_kwargs)

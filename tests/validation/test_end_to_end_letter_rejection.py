@@ -18,7 +18,7 @@ from unittest.mock import patch, AsyncMock
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.experiment_manager import ExperimentManager
+from core.experiment_manager import FrohlichExperimentManager
 from config.models import ExperimentConfiguration, AgentConfiguration
 from utils.language_manager import LanguageManager
 
@@ -102,7 +102,7 @@ class TestEndToEndLetterRejection(unittest.TestCase):
         )
         
         with self.assertLogs() as log_context:
-            experiment_manager = ExperimentManager(self.test_configs['english'])
+            experiment_manager = FrohlichExperimentManager(self.test_configs['english'])
             
             # This should fail/reject the letter-based response
             with self.assertRaises((ValueError, AssertionError)):
@@ -116,7 +116,7 @@ class TestEndToEndLetterRejection(unittest.TestCase):
         )
         
         with self.assertLogs() as log_context:
-            experiment_manager = ExperimentManager(self.test_configs['spanish'])
+            experiment_manager = FrohlichExperimentManager(self.test_configs['spanish'])
             
             # This should fail/reject the letter-based response
             with self.assertRaises((ValueError, AssertionError)):
@@ -130,7 +130,7 @@ class TestEndToEndLetterRejection(unittest.TestCase):
         )
         
         with self.assertLogs() as log_context:
-            experiment_manager = ExperimentManager(self.test_configs['mandarin'])
+            experiment_manager = FrohlichExperimentManager(self.test_configs['mandarin'])
             
             # This should fail/reject the letter-based response
             with self.assertRaises((ValueError, AssertionError)):
