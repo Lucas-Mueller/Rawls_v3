@@ -145,6 +145,7 @@
     "timeout_retry": "响应超时。请重试。"
   },
   "memory_field_labels": {
+    "prompt": "提示：",
     "your_response": "您的回复：",
     "your_rankings": "您的排名：", 
     "your_post_explanation_rankings": "您的后解释排名：",

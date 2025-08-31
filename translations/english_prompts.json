@@ -98,7 +98,11 @@
     
     "two_stage_principle_selection": "A vote has been initiated. Which of the four principles do you want to vote for?\n\n1. Maximizing Floor Income\n2. Maximizing Average Income\n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nRespond with ONLY the number (1, 2, 3, or 4):",
     
-    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):"
+    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):",
+    
+    "phase2_voting_no_consensus_principle_disagreement": "No consensus - agents voted for different justice principles - discussion continues",
+    "phase2_voting_no_consensus_constraint_disagreement": "No consensus - agents agreed on {principle_name} but disagreed on constraint amounts - discussion continues",
+    "phase2_voting_no_consensus_mixed_disagreement": "No consensus - mixed disagreement on principles and constraints - discussion continues"
   },
   
   "errors": {
@@ -122,6 +126,7 @@
     "timeout_retry": "Response timed out. Please try again."
   },
   "memory_field_labels": {
+    "prompt": "Prompt:",
     "your_response": "Your Response:",
     "your_rankings": "Your Rankings:", 
     "your_post_explanation_rankings": "Your Post-Explanation Rankings:",

@@ -218,7 +218,7 @@ class Phase2Manager:
                     
                     # Create round content for memory
                     language_manager = self.language_manager
-                    round_content = f"""Prompt: {discussion_prompt}
+                    round_content = f"""{language_manager.get('memory_field_labels.prompt')} {discussion_prompt}
 {language_manager.get('memory_field_labels.your_statement')} {statement}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
                     
@@ -728,7 +728,7 @@ Please ensure your response contains a clear statement about your position on th
         
         # Create round content for memory
         language_manager = self.language_manager
-        round_content = f"""Prompt: {discussion_prompt}
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {discussion_prompt}
 {language_manager.get('memory_field_labels.your_statement')} {statement}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
         

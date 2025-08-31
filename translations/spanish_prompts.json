@@ -142,6 +142,7 @@
     "timeout_retry": "El tiempo de respuesta expiró. Por favor intenta de nuevo."
   },
   "memory_field_labels": {
+    "prompt": "Instrucción:",
     "your_response": "Su respuesta:",
     "your_rankings": "Sus clasificaciones:", 
     "your_post_explanation_rankings": "Sus clasificaciones post-explicación:",

@@ -246,7 +246,7 @@ class Phase1Manager:
         
         # Create round content for memory
         language_manager = self.language_manager
-        round_content = f"""Prompt: {ranking_prompt}
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {ranking_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
 {language_manager.get('memory_field_labels.your_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_initial_ranking')}"""
@@ -269,7 +269,7 @@ class Phase1Manager:
         
         # Create round content for memory
         language_manager = self.language_manager
-        round_content = f"""Prompt: {explanation_prompt}
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {explanation_prompt}
 {language_manager.get('memory_field_labels.your_response')} {result.final_output}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.learned_principle_applications')}"""
         
@@ -456,7 +456,7 @@ class Phase1Manager:
         
         # Create round content for memory
         language_manager = self.language_manager
-        round_content = f"""Prompt: {post_explanation_prompt}
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {post_explanation_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
 {language_manager.get('memory_field_labels.your_post_explanation_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_post_explanation_ranking')}"""
@@ -482,7 +482,7 @@ class Phase1Manager:
         
         # Create round content for memory
         language_manager = self.language_manager
-        round_content = f"""Prompt: {final_ranking_prompt}
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {final_ranking_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
 {language_manager.get('memory_field_labels.your_final_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_final_ranking')}"""
