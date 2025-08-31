@@ -6,14 +6,14 @@ agents:
     
   - name: "Comrade Che" 
     personality: "You are a cuban communist and care for the poor."
-    model: 'gpt-4.1-nano'
+    model: 'gpt-5-nano'
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
   
   - name: "Comrade Lenin"
     personality: "You are a russian communist and care for the poor."
-    model: 'gpt-4.1-nano'
+    model: 'gpt-5-nano'
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0

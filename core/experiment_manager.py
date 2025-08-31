@@ -221,7 +221,7 @@ class FrohlichExperimentManager:
                 
                 if phase2_results.discussion_result.consensus_reached:
                     # Use English principle name for system logging
-                    english_principle_name = get_english_principle_name(phase2_results.discussion_result.agreed_principle.principle.value)
+                    english_principle_name = get_english_principle_name(phase2_results.discussion_result.agreed_principle.principle.value, self.language_manager)
                     logger.info(f"Phase 2 completed with consensus on {english_principle_name}")
                 else:
                     logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")

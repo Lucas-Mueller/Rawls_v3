@@ -507,7 +507,8 @@ class Phase1Manager:
             
             # Build explanation with Sample distributions
             base_explanation = language_manager.get("prompts.phase1_detailed_principles_explanation")
-            return f"{base_explanation}\n\nHere are some example distributions to help you understand:\n\n{distributions_table}"
+            intro_text = language_manager.get("prompts.phase1_distributions_intro")
+            return f"{base_explanation}\n\n{intro_text}\n\n{distributions_table}"
         else:
             return language_manager.get("prompts.phase1_detailed_principles_explanation")
     

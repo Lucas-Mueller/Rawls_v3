@@ -124,7 +124,9 @@
     "phase2_voting_no_consensus_principle_disagreement": "未达成共识 - 代理人投票支持不同的正义原则 - 讨论继续",
     "phase2_voting_no_consensus_constraint_disagreement": "未达成共识 - 代理人就{principle_name}达成一致，但在约束金额上存在分歧 - 讨论继续",
     "phase2_voting_no_consensus_mixed_disagreement": "未达成共识 - 在原则和约束上存在混合分歧 - 讨论继续",
-    "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。"
+    "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。",
+    
+    "phase1_distributions_intro": "以下是一些示例分配，帮助您理解："
   },
   "errors": {
     "two_stage_respond_with_number_only": "无效回答（尝试{attempt}/{max_attempts}）。你必须只回答一个数字：1、2、3或4。",
