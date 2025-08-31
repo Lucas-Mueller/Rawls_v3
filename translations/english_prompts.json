@@ -68,7 +68,7 @@
     "phase1_counterfactual_table_header": "This assigns you to the following income class: {assigned_class}\n\nFor each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.\n\nPrinciple of Justice                          Income    Payoff",
     "phase1_round_memory_template": "Prompt: {application_prompt}\nYour Response: {text_response}\nYour Choice: {chosen_principle_display}\n\nROUND {round_num} OUTCOME:\n{counterfactual_table}\n\nYour actual earnings this round: ${earnings:.2f}\nYour total earnings so far: ${total_earnings:.2f}",
     "two_stage_principle_selection": "A vote has been initiated. Which of the four principles do you want to vote for?\n\n1. Maximizing Floor Income\n2. Maximizing Average Income\n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nRespond with ONLY the number (1, 2, 3, or 4):",
-    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):",
+    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: X or $X):",
     "validation_memory_limit_exceeded": "Your memory exceeds the character limit. Please condense your memory while keeping the most important information.",
     "validation_invalid_principle_choice": "Invalid principle choice detected. Please select one of the four available justice principles.",
     "validation_missing_constraint_amount": "You selected a constraint principle but did not specify the constraint amount. Please provide a dollar amount.",
@@ -99,7 +99,7 @@
     
     "two_stage_principle_selection": "A vote has been initiated. Which of the four principles do you want to vote for?\n\n1. Maximizing Floor Income\n2. Maximizing Average Income\n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nRespond with ONLY the number (1, 2, 3, or 4):",
     
-    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):",
+    "two_stage_amount_specification": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: X or $X):",
     
     "phase2_voting_no_consensus_principle_disagreement": "No consensus - agents voted for different justice principles - discussion continues",
     "phase2_voting_no_consensus_constraint_disagreement": "No consensus - agents agreed on {principle_name} but disagreed on constraint amounts - discussion continues",

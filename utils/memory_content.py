@@ -107,13 +107,9 @@ def build_phase2_delta(
     if speaking_order_position is not None:
         delta_parts.append(f"Speaking #{speaking_order_position}")
     
-    # Add brief statement (truncated if too long)
+    # Add statement (no truncation for memory updates)
     if statement:
-        if len(statement) <= 150:
-            delta_parts.append(f"Statement: {statement}")
-        else:
-            # Truncate long statements
-            delta_parts.append(f"Statement: {statement[:150]}...")
+        delta_parts.append(f"Statement: {statement}")
     
     # Add stance information
     if favored_principle:
@@ -134,12 +130,9 @@ def build_phase2_delta(
         else:
             delta_parts.append("Consensus: NO")
     
-    # Add internal reasoning if enabled and provided
+    # Add internal reasoning if enabled and provided (no truncation for memory updates)
     if include_internal_reasoning and internal_reasoning:
-        if len(internal_reasoning) <= 100:
-            delta_parts.append(f"Reasoning: {internal_reasoning}")
-        else:
-            delta_parts.append(f"Reasoning: {internal_reasoning[:100]}...")
+        delta_parts.append(f"Reasoning: {internal_reasoning}")
     
     return " | ".join(delta_parts)
 

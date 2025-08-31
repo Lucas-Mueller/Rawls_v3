@@ -56,6 +56,12 @@ python run_tests.py --coverage
 python -m pytest tests/unit/test_specific_file.py -v
 python -m pytest -k "test_pattern" -v
 python -m pytest tests/unit/ --tb=short
+
+# Skip slow tests
+python -m pytest -m "not slow"
+
+# Run only integration tests
+python -m pytest -m integration
 ```
 
 ### Batch Experiment Execution
@@ -149,6 +155,8 @@ The `hypothesis_testing/` directory contains organized experimental conditions:
 - `hypothesis_1/`: 33 different experimental conditions
 - `hypothesis_2/`: Cultural variations (American, Chinese) with 34+ conditions each
 - `hypothesis_3/`: Income inequality variations (low, medium, high) with 34+ conditions each
+- `hypothesis_6/`: Additional experimental conditions
+- `utils_hypothesis_testing/`: Shared utilities for hypothesis testing
 
 ### Specialized Components
 - `core/two_stage_voting_manager.py`: Advanced voting system with numerical validation
