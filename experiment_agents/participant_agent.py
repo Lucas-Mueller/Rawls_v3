@@ -7,6 +7,7 @@ from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
 from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
+from experiment_agents.tools import propose_vote
 import asyncio
 import logging
 from typing import List
@@ -38,6 +39,7 @@ class ParticipantAgent:
         base_kwargs = {
             "name": self.config.name,
             "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config, self.language_manager),
+            "tools": [propose_vote],  # Tool has conditional enabling built-in
         }
         
         # Use dynamic temperature retry system
