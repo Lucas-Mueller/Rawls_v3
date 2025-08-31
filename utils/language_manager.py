@@ -365,6 +365,7 @@ class LanguageManager:
                 include_explanation = (experiment_config.include_experiment_explanation_each_turn or is_first_turn)
         
         experiment_explanation = self.get_experiment_explanation() if include_explanation else ""
+        language_instruction = self.get("prompts.language_instruction")
         
         return self.get("prompts.context_context_info_format",
                        name=name,
@@ -375,7 +376,8 @@ class LanguageManager:
                        formatted_memory=formatted_memory,
                        experiment_explanation=experiment_explanation,
                        personality=personality,
-                       phase_instructions=phase_instructions)
+                       phase_instructions=phase_instructions,
+                       language_instruction=language_instruction)
     
     def format_memory_context(self, name: str, bank_balance: float, personality: str) -> str:
         """Format minimal context for memory updates only."""

@@ -1,4 +1,5 @@
 language: "Mandarin" 
+seed: 42
 
 agents:
   - name: "Alice"

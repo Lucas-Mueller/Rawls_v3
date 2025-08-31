@@ -143,7 +143,7 @@ class TestPhase2QuarantineBehavior:
                 mock_memory.return_value = "Updated memory"
                 
                 # Mock language manager for neutral message
-                with patch('core.phase2_manager.get_language_manager') as mock_lang_manager:
+                with patch('core.phase2_manager.create_language_manager') as mock_lang_manager:
                     mock_lang_manager.return_value.get.return_value = "TestAgent1 is temporarily unavailable"
                     
                     # Simulate one round of discussion

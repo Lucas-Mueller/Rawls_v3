@@ -1,4 +1,5 @@
 language: "Spanish" 
+seed: 42
 
 agents:
   - name: "Alice"

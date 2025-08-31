@@ -66,6 +66,7 @@ class UtilityAgent:
                 if brace_count == 0 and start_idx is not None:
                     json_candidates.append(text[start_idx:i+1])
         
+        
         # Try to parse each JSON candidate
         for candidate in json_candidates:
             try:
@@ -83,7 +84,37 @@ class UtilityAgent:
         """Fallback method to extract ranking from participant response using regex patterns."""
         import re
         
-        # Look for numbered lists with principle names
+        # First check for VOTE_PROPOSAL text array format
+        vote_proposal_match = re.search(r'VOTE_PROPOSAL:\s*\[([^\]]+)\]', response)
+        if vote_proposal_match:
+            array_content = vote_proposal_match.group(1)
+            # Split by comma and clean up each item
+            items = [item.strip() for item in array_content.split(',')]
+            
+            if len(items) == 4:
+                # Direct mappings for Chinese principle names
+                principle_mappings = {
+                    '在最低收入约束条件下最大化平均收入': 'maximizing_average_floor_constraint',
+                    '平均收入最大化': 'maximizing_average',
+                    '在范围约束条件下最大化平均收入': 'maximizing_average_range_constraint', 
+                    '最大化最低收入': 'maximizing_floor'
+                }
+                
+                rankings = []
+                for rank, item in enumerate(items, 1):
+                    if item in principle_mappings:
+                        rankings.append({
+                            "principle": principle_mappings[item],
+                            "rank": rank
+                        })
+                
+                if len(rankings) == 4:
+                    return {
+                        "rankings": rankings,
+                        "certainty": "sure"
+                    }
+        
+        # Fall back to numbered list extraction
         lines = response.split('\n')
         rankings = []
         

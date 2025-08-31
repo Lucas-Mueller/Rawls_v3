@@ -4,7 +4,7 @@
 import asyncio
 import unittest
 import os
-from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 from experiment_agents.utility_agent import UtilityAgent
 
 
@@ -103,7 +103,7 @@ class TestMultilingualAgentParsing(unittest.TestCase):
             with self.subTest(language=lang_string):
                 # Set language
                 set_global_language(lang_enum)
-                language_manager = get_language_manager()
+                language_manager = create_language_manager()
                 
                 # Verify language is set correctly
                 self.assertEqual(language_manager.current_language, lang_enum)

@@ -366,8 +366,8 @@ class TestTwoStageVotingManager:
         # Constraint principles should contain "constraint" (in English)
         # Only test this if current language is English
         try:
-            from utils.language_manager import get_language_manager, SupportedLanguage
-            lm = get_language_manager()
+            from utils.language_manager import create_language_manager, SupportedLanguage
+            lm = create_language_manager()
             if lm.current_language == SupportedLanguage.ENGLISH:
                 assert "constraint" in name3.lower() or "floor" in name3.lower()
                 assert "constraint" in name4.lower() or "range" in name4.lower()

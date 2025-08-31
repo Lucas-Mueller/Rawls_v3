@@ -7,7 +7,7 @@ import asyncio
 from typing import Dict, List, Any, Optional
 from unittest.mock import Mock, AsyncMock, patch
 
-from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 from experiment_agents.utility_agent import UtilityAgent
 from experiment_agents.participant_agent import ParticipantAgent
 from tests.integration.utils.async_test_utils import AsyncTestUtils
@@ -59,7 +59,7 @@ class TestLanguageFallbackMechanisms:
         config = ExperimentTestFixture.create_minimal_config(num_agents=2)
         config.agents[0].language = "spanish"
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -94,7 +94,7 @@ class TestLanguageFallbackMechanisms:
     async def test_partial_translation_handling(self):
         """Test handling when only some translations are available."""
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -151,7 +151,7 @@ class TestLanguageFallbackMechanisms:
                     mock_agent.return_value = mock_instance
                     
                     # Mock language validation
-                    with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+                    with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
                         mock_manager = Mock()
                         mock_lang_manager.return_value = mock_manager
                         
@@ -202,7 +202,7 @@ class TestLanguageFallbackMechanisms:
             }
         ]
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -237,7 +237,7 @@ class TestLanguageFallbackMechanisms:
         config = ExperimentTestFixture.create_minimal_config(num_agents=2)
         config.agents[0].language = "spanish"
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -276,7 +276,7 @@ class TestLanguageFallbackMechanisms:
             {"name": "EnglishAgent", "language": "english"}
         ])
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -321,7 +321,7 @@ class TestLanguageFallbackMechanisms:
     async def test_translation_cache_fallback_behavior(self):
         """Test translation caching behavior with fallbacks."""
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -386,7 +386,7 @@ class TestLanguageFallbackErrorHandling:
         
         config = ExperimentTestFixture.create_minimal_config(num_agents=2)
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             # Mock complete translation system failure
             mock_lang_manager.side_effect = Exception("Translation system unavailable")
             
@@ -416,7 +416,7 @@ class TestLanguageFallbackErrorHandling:
     async def test_circular_translation_fallback_prevention(self):
         """Test prevention of circular fallback loops."""
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
@@ -465,7 +465,7 @@ class TestLanguageFallbackErrorHandling:
         
         config = ExperimentTestFixture.create_minimal_config(num_agents=2)
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             

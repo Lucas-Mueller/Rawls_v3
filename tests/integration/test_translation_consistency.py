@@ -7,7 +7,7 @@ import asyncio
 from typing import Dict, List, Any, Optional
 from unittest.mock import Mock, AsyncMock, patch
 
-from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 from experiment_agents.utility_agent import UtilityAgent
 from tests.integration.utils.async_test_utils import AsyncTestUtils
 from tests.integration.utils.test_helpers import validate_utility_agent_methods, get_utility_agent_mock_methods
@@ -291,7 +291,7 @@ class TestTranslationConsistency:
             for pattern in patterns:
                 with self.subTest(language=language, pattern=pattern, sentiment="agreement"):
                     # Mock agreement detection
-                    with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+                    with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
                         mock_manager = Mock()
                         mock_lang_manager.return_value = mock_manager
                         
@@ -320,7 +320,7 @@ class TestTranslationConsistency:
             for pattern in patterns:
                 with self.subTest(language=language, pattern=pattern, sentiment="disagreement"):
                     # Mock disagreement detection
-                    with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+                    with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
                         mock_manager = Mock()
                         mock_lang_manager.return_value = mock_manager
                         
@@ -543,7 +543,7 @@ class TestTranslationConsistencyEdgeCases:
         
         supported_languages = ["english", "spanish", "mandarin"]
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             

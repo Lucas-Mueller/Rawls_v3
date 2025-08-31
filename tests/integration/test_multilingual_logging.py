@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 from pathlib import Path
 
 from utils.language_manager import (
-    get_language_manager, set_global_language, SupportedLanguage,
+    create_language_manager, SupportedLanguage,
     get_english_principle_name, get_english_certainty_name
 )
 from models.principle_types import JusticePrinciple, CertaintyLevel, PrincipleChoice
@@ -27,7 +27,7 @@ class TestMultilingualLogging(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         # Store original language to restore later
-        self.original_language = get_language_manager().current_language
+        self.original_language = create_language_manager().current_language
         
         # Create log capture
         self.log_stream = StringIO()
@@ -57,7 +57,7 @@ class TestMultilingualLogging(unittest.TestCase):
         """Test that Spanish agents generate English principle names in logs."""
         # Set system to Spanish
         set_global_language(SupportedLanguage.SPANISH)
-        lm = get_language_manager()
+        lm = create_language_manager()
         
         # Verify language is set correctly
         assert lm.current_language == SupportedLanguage.SPANISH
@@ -84,7 +84,7 @@ class TestMultilingualLogging(unittest.TestCase):
         """Test that Mandarin agents generate English principle names in logs."""
         # Set system to Mandarin
         set_global_language(SupportedLanguage.MANDARIN)
-        lm = get_language_manager()
+        lm = create_language_manager()
         
         # Verify language is set correctly
         assert lm.current_language == SupportedLanguage.MANDARIN
@@ -140,7 +140,7 @@ class TestMultilingualLogging(unittest.TestCase):
         set_global_language(SupportedLanguage.SPANISH)
         
         # Get principle name through global language (should be Spanish)
-        lm = get_language_manager()
+        lm = create_language_manager()
         spanish_principle = lm.get_justice_principle_name("maximizing_floor")
         
         # Get principle name through English function (should always be English)
@@ -159,7 +159,7 @@ class TestMultilingualLogging(unittest.TestCase):
         set_global_language(SupportedLanguage.MANDARIN)
         
         # Get certainty level through global language (should be Mandarin)
-        lm = get_language_manager()
+        lm = create_language_manager()
         mandarin_certainty = lm.get_certainty_level_name("very_sure")
         
         # Get certainty level through English function (should always be English)
@@ -180,7 +180,7 @@ class TestMultilingualLogging(unittest.TestCase):
         
         for language in SupportedLanguage:
             set_global_language(language)
-            lm = get_language_manager()
+            lm = create_language_manager()
             
             # Test all principle keys exist
             for key in principle_keys:

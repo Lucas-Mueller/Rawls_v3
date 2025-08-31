@@ -14,7 +14,7 @@ Tests verify:
 
 import unittest
 import asyncio
-from utils.language_manager import get_language_manager, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 from experiment_agents.utility_agent import UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice
 
@@ -25,7 +25,7 @@ class TestFullNameParsingOnly(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.utility_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
-        self.language_manager = get_language_manager()
+        self.language_manager = create_language_manager()
     
     def test_language_manager_generates_no_letters(self):
         """Test that Language Manager generates full names only."""

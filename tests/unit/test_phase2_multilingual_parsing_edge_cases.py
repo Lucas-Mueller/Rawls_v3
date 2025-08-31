@@ -22,7 +22,7 @@ from unittest.mock import patch, MagicMock
 
 from experiment_agents.utility_agent import UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
-from utils.language_manager import get_language_manager
+from utils.language_manager import create_language_manager
 
 
 class TestMultilingualParsingEdgeCases(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestMultilingualParsingEdgeCases(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.utility_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
-        self.language_manager = get_language_manager()
+        self.language_manager = create_language_manager()
     
     async def _parse_principle(self, text: str) -> PrincipleChoice:
         """Helper to parse principle choice."""
@@ -362,7 +362,7 @@ class TestMultilingualParsingEdgeCases(unittest.TestCase):
                     self.assertEqual(extracted, expected,
                                    f"Localized number parsing failed for {description}: '{amount_text}'")
     
-    @patch('utils.language_manager.get_language_manager')
+    @patch('utils.language_manager.create_language_manager')
     def test_language_source_inconsistency(self, mock_get_manager):
         """Test handling of language source inconsistency between config and language manager."""
         

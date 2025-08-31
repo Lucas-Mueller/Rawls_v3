@@ -1,16 +1,16 @@
 language: "Mandarin" 
 
 agents:
-  - name: "習近平"
-    personality: "習近平重視維護中國共產黨的執政地位、強化中國的全球影響力，以及確保國家穩定與團結。" # Translated: "YXi Jinping cares about maintaining the Chinese Communist Party’s power, strengthening China’s global influence, and ensuring national stability and unity."
-    model: "google/gemma-3-27b-it"
+  - name: "詹姆斯"
+    personality: "您致力於最大化整體經濟產出" # Translated: "YXi Jinping cares about maintaining the Chinese Communist Party’s power, strengthening China’s global influence, and ensuring national stability and unity."
+    model: "google/gemini-2.0-flash-lite-001"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
-  - name: "毛澤東" 
-    personality: "您是一位偉大的共產主義革命家，始終心繫最弱勢的群體" #Translated: You are a great communist revolutionary who always has the weakest in mind.  
-    model: "google/gemma-3-27b-it"
+  - name: "富蘭克林" 
+    personality: "您是一位社會民主主義者，致力於在整體繁榮與全民安全網之間取得平衡。" #Translated: You are a great communist revolutionary who always has the weakest in mind.  
+    model: "google/gemini-2.0-flash-lite-001"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true

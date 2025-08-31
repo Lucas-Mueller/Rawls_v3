@@ -233,7 +233,7 @@ class TestCoreIntegration:
         assert experiment_manager.participants[0].language == language
         
         # Test that language manager is properly configured
-        language_manager = experiment_manager.get_language_manager()
+        language_manager = experiment_manager.create_language_manager()
         assert language_manager.current_language == SupportedLanguage(language)
 
     def test_mixed_language_experiment_integration(self, multilingual_config):

@@ -15,7 +15,7 @@ from core.phase2_manager import Phase2Manager
 from tests.integration.fixtures.experiment_fixtures import ExperimentTestFixture
 from tests.integration.utils.async_test_utils import AsyncTestUtils, TestDataGenerators
 from tests.integration.utils.test_helpers import validate_utility_agent_methods, get_utility_agent_mock_methods
-from utils.language_manager import get_language_manager, set_global_language, SupportedLanguage
+from utils.language_manager import create_language_manager, SupportedLanguage
 from utils.error_handling import (
     ExperimentError, MemoryError, ValidationError, AgentCommunicationError,
     ErrorSeverity, get_global_error_handler
@@ -318,7 +318,7 @@ class TestPhase2MixedLanguageEdgeCases:
             "私は最低所得の最大化が最良の選択だと思います。"  # Japanese (not Mandarin)
         ]
         
-        with patch('utils.language_manager.get_language_manager') as mock_lang_manager:
+        with patch('utils.language_manager.create_language_manager') as mock_lang_manager:
             mock_manager = Mock()
             mock_lang_manager.return_value = mock_manager
             
