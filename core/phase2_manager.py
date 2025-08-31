@@ -208,6 +208,7 @@ class Phase2Manager:
                 except asyncio.TimeoutError:
                     self._log_warning(f"Timeout waiting for {participant.name} after {self.settings.statement_timeout_seconds}s")
                     statement = ""  # Treat timeout as empty response
+                    result = None  # CRITICAL FIX: Explicitly set result to None on timeout
                 
                 # Validate the statement
                 if self._validate_statement(statement, participant.name):
@@ -516,11 +517,16 @@ Please ensure your response contains a clear statement about your position on th
                     context, new_round=round_num
                 )
                 
-                # CRITICAL: Skip consensus mechanisms if agent failed to respond properly
-                if is_fallback:
-                    self._log_warning(f"Skipping consensus processing for {participant.name} due to agent failure")
+                # CRITICAL FIX: Check for tool calls even with fallback statements
+                # An agent might successfully call request_group_vote() but fail statement generation
+                has_tool_calls = result and hasattr(result, 'tool_calls') and result.tool_calls
+                if is_fallback and not has_tool_calls:
+                    self._log_warning(f"Skipping consensus processing for {participant.name} - fallback with no tool calls")
                     # Continue to next participant without processing vote/preference detection
                     continue
+                elif is_fallback and has_tool_calls:
+                    self._log_info(f"🔧 PROCEEDING with tool call processing for {participant.name} despite fallback statement")
+                    # Continue to consensus detection to process tool calls
                 
                 # CONSENSUS DETECTION WITH PROPER LOCKING
                 async with self._consensus_lock:
@@ -795,10 +801,12 @@ Please ensure your response contains a clear statement about your position on th
                 language_manager = self.language_manager
                 neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
                 # Mark as quarantined internally
+                # CRITICAL FIX: TODO - preserve any result with tool calls from successful attempts
                 return f"__QUARANTINED__{neutral_statement}", internal_reasoning, None
             else:
                 # Legacy behavior: include failure message (not recommended)
                 fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
+                # CRITICAL FIX: TODO - preserve any result with tool calls from successful attempts  
                 return fallback_statement, internal_reasoning, None
     
     def _get_voting_reminder_message(self) -> str:
@@ -1294,18 +1302,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         if not vote_tool_call:
             return False  # No voting tool called
         
-        # Extract reason parameter if provided
-        reason = None
-        if hasattr(vote_tool_call, 'function') and vote_tool_call.function.arguments:
-            try:
-                import json
-                args = json.loads(vote_tool_call.function.arguments)
-                reason = args.get('reason')
-            except (json.JSONDecodeError, AttributeError):
-                pass  # Failed to parse arguments, proceed without reason
-        
-        self._log_info(f"🗳️ VOTING TOOL CALLED by {participant.name}" + 
-                      (f" with reason: {reason}" if reason else ""))
+        self._log_info(f"🗳️ VOTING TOOL CALLED by {participant.name}")
         
         # Mark that voting has been triggered (prevents reminder messages)
         discussion_state.vote_triggered = True

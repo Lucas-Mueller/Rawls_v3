@@ -3,14 +3,14 @@ language: "Mandarin"
 agents:
   - name: "詹姆斯"
     personality: "您致力於最大化整體經濟產出" # Translated: "YXi Jinping cares about maintaining the Chinese Communist Party’s power, strengthening China’s global influence, and ensuring national stability and unity."
-    model: "google/gemini-2.5-flash"
+    model: "google/gemini-2.0-flash-lite-001"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "富蘭克林" 
     personality: "您是一位社會民主主義者，致力於在整體繁榮與全民安全網之間取得平衡。" #Translated: You are a great communist revolutionary who always has the weakest in mind.  
-    model: "google/gemini-2.5-flash"
+    model: "google/gemini-2.0-flash-lite-001"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
@@ -18,7 +18,7 @@ agents:
 voting_detection_mode: "complex"
   
 
-utility_agent_model: 'google/gemini-2.5-flash-lite'
+utility_agent_model: 'google/gemini-2.0-flash-lite-001'
 utility_agent_temperature: 0.0
 
 phase2_rounds: 3

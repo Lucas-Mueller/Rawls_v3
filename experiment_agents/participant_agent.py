@@ -9,7 +9,7 @@ from utils.model_provider import create_model_config_with_temperature_detection,
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 import asyncio
 import logging
-from typing import List, Optional
+from typing import List, Optional, Any
 
 
 # Tool factory function for creating localized voting tools with conditional logic
@@ -17,11 +17,27 @@ def create_voting_tool(language_manager, experiment_config):
     """Create a localized voting tool with built-in conditional logic."""
     
     @function_tool
-    async def request_group_vote(reason: Optional[str] = None) -> str:
+    async def request_group_vote(ctx: RunContextWrapper[Any]) -> str:
         """Request that the group proceed to formal voting on justice principles."""
         
-        # Since this tool is only registered during Phase 2 complex mode,
-        # we can directly return the confirmation when called
+        # Log that the tool was called
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🗳️ VOTING TOOL CALLED by agent in phase {getattr(ctx.context, 'phase', 'unknown')} with role {getattr(ctx.context, 'role_description', 'unknown')}")
+        
+        # Get current context to determine if voting is allowed
+        from models import ExperimentPhase
+        current_context = ctx.context
+        
+        # Only allow during Phase 2 group discussion (not memory updates or Phase 1)
+        if (current_context.phase != ExperimentPhase.PHASE_2):
+            return "Voting is not available in this phase of the experiment."
+        
+        # Block during memory updates (role_description is "MemoryUpdate")
+        if current_context.role_description == "MemoryUpdate":
+            return "Voting is not available during memory updates."
+        
+        # Tool is being called during Phase 2 group discussion - proceed with voting
         return language_manager.get_voting_tool_confirmation()
     
     # Set localized tool description
@@ -56,6 +72,9 @@ class ParticipantAgent:
             # Create the voting tool with built-in conditional logic
             voting_tool = create_voting_tool(self.language_manager, self.experiment_config)
             tools.append(voting_tool)
+            self.logger.info(f"🗳️ VOTING TOOL REGISTERED for {self.config.name}: {voting_tool.__name__ if hasattr(voting_tool, '__name__') else 'voting_tool'}")
+        else:
+            self.logger.info(f"📋 No voting tools registered for {self.config.name} (mode: {getattr(self.experiment_config, 'voting_detection_mode', 'None') if self.experiment_config else 'None'})")
         
         # Prepare base agent kwargs (without model and model_settings) 
         base_kwargs = {

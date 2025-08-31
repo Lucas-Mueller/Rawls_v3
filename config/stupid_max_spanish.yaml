@@ -3,14 +3,14 @@ language: "Spanish"
 agents:
   - name: "Alice"
     personality: "Eres un estudiante universitario estadounidense." # Translated: "You are an American college student."
-    model: "google/gemma-3-27b-it"
+    model: "google/gemini-2.0-flash-lite-001"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
     personality: "Eres un estudiante universitario estadounidense." # Translated: "You are an American college student. You like adventure and risk, pursuing maximum profit."
-    model: "google/gemma-3-27b-it"
+    model: "google/gemini-2.0-flash-lite-001"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
@@ -18,7 +18,7 @@ agents:
 voting_detection_mode: "complex"
   
 
-utility_agent_model: 'google/gemini-2.5-flash-lite'
+utility_agent_model: 'google/gemini-2.0-flash-lite-001'
 utility_agent_temperature: 0.0
 
 phase2_rounds: 3
