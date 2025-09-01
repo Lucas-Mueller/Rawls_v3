@@ -18,7 +18,7 @@ agents:
 voting_detection_mode: "complex"
   
 
-utility_agent_model: 'google/gemini-2.5-flash-lite'
+utility_agent_model: "google/gemini-2.0-flash-lite-001"
 utility_agent_temperature: 0.0
 
 phase2_rounds: 3

@@ -254,7 +254,6 @@ class AgentCentricLogger:
         max_rounds_phase_2: int,
         rounds_conducted_phase_2: int,
         public_conversation: str,
-        final_vote_results: Dict[str, str],
         config_file: str,
         income_class_probabilities: Optional[Dict[str, float]] = None,
         original_values_mode_enabled: Optional[bool] = None
@@ -266,7 +265,6 @@ class AgentCentricLogger:
             max_rounds_phase_2=max_rounds_phase_2,
             rounds_conducted_phase_2=rounds_conducted_phase_2,
             public_conversation_phase_2=public_conversation,
-            final_vote_results=final_vote_results,
             config_file_used=config_file,
             seed_randomness=None,  # Will be set later via set_seed_info
             income_class_probabilities=income_class_probabilities,

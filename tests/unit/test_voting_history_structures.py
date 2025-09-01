@@ -97,7 +97,6 @@ class TestVotingHistoryStructures(unittest.TestCase):
             max_rounds_phase_2=5,
             rounds_conducted_phase_2=2,
             public_conversation_phase_2="Test conversation",
-            final_vote_results={"Agent_1": "Test principle", "Agent_2": "Test principle"},
             config_file_used="test_config.yaml"
         )
         
@@ -146,7 +145,6 @@ class TestVotingHistoryStructures(unittest.TestCase):
             max_rounds_phase_2=3,
             rounds_conducted_phase_2=1,
             public_conversation_phase_2="Test conversation",
-            final_vote_results={"Test_Agent": "Maximizing floor income"},
             config_file_used="test_config.yaml"
         )
         

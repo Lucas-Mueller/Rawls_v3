@@ -171,7 +171,6 @@ class TestAgentCentricLogger:
             max_rounds_phase_2=5,
             rounds_conducted_phase_2=3,
             public_conversation="Agent1: I like A\nAgent2: Me too",
-            final_vote_results={"Agent1": "maximizing the floor income", "Agent2": "maximizing the floor income"},
             config_file="test_config.yaml"
         )
         
@@ -179,7 +178,6 @@ class TestAgentCentricLogger:
         assert self.logger.general_info.consensus_reached == True
         assert self.logger.general_info.consensus_principle == "maximizing the floor income"
         assert "Agent1: I like A" in self.logger.general_info.public_conversation_phase_2
-        assert self.logger.general_info.final_vote_results["Agent1"] == "maximizing the floor income"
         assert self.logger.general_info.config_file_used == "test_config.yaml"
     
     def test_generate_target_state(self):
@@ -208,7 +206,6 @@ class TestAgentCentricLogger:
             max_rounds_phase_2=10,
             rounds_conducted_phase_2=5,
             public_conversation="Test conversation",
-            final_vote_results={"Agent1": "A", "Agent2": "A"},
             config_file="test.yaml"
         )
         
@@ -233,7 +230,6 @@ class TestAgentCentricLogger:
             max_rounds_phase_2=8,
             rounds_conducted_phase_2=8,
             public_conversation="No consensus reached",
-            final_vote_results={"Agent1": "A", "Agent2": "B"},
             config_file="test.yaml"
         )
         

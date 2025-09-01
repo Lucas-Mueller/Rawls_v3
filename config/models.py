@@ -73,7 +73,7 @@ class ExperimentConfiguration(BaseModel):
     phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
     
     # Voting detection configuration
-    voting_detection_mode: str = Field("simple", description="Voting detection mode: 'simple' or 'complex'")
+    voting_detection_mode: str = Field("complex", description="Voting detection mode: 'simple' or 'complex'")
     
     # Reproducibility configuration
     seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")

@@ -237,7 +237,6 @@ class GeneralExperimentInfo(BaseModel):
     max_rounds_phase_2: int
     rounds_conducted_phase_2: int
     public_conversation_phase_2: str
-    final_vote_results: Dict[str, str]
     config_file_used: str
     seed_randomness: Optional[int] = None
     income_class_probabilities: Optional[Dict[str, float]] = None
@@ -272,7 +271,6 @@ class TargetStateStructure(BaseModel):
                 "max_rounds_phase_2": self.general_information.max_rounds_phase_2,
                 "rounds_conducted_phase_2": self.general_information.rounds_conducted_phase_2,
                 "public_conversation_phase_2": self.general_information.public_conversation_phase_2,
-                "final_vote_results": self.general_information.final_vote_results,
                 "config_file_used": self.general_information.config_file_used,
                 "seed_randomness": self.general_information.seed_randomness,
                 "income_class_probabilities": self.general_information.income_class_probabilities,

@@ -32,8 +32,6 @@ class Phase1Manager:
         # Set logger instance for use in helper methods
         self.logger = logger
         
-        # Log available tools for all agents at Phase 1 start
-        self._log_agent_tools("Phase 1")
         
         tasks = []
         for i, participant in enumerate(self.participants):
@@ -68,74 +66,6 @@ class Phase1Manager:
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
     
-    def _log_agent_tools(self, phase_name: str):
-        """Log available tools for all agents at phase start."""
-        import logging
-        from models import ParticipantContext, ExperimentPhase
-        logger = logging.getLogger(__name__)
-        
-        logger.info(f"\n{'='*60}")
-        logger.info(f"🛠  AGENT TOOLS AVAILABLE - {phase_name.upper()}")
-        logger.info(f"{'='*60}")
-        
-        # Log participant agents
-        logger.info(f"📋 PARTICIPANT AGENTS ({len(self.participants)} total):")
-        for i, participant in enumerate(self.participants):
-            logger.info(f"  └─ {participant.config.name} (Model: {participant.config.model})")
-            
-            # Check if agent has tools (Agents SDK exposes `agent.tools`)
-            tools = None
-            if hasattr(participant, 'agent') and participant.agent:
-                tools = getattr(participant.agent, 'tools', None)
-                if not tools:
-                    # Backward-compatibility with older mocks/tests using `_tools`
-                    tools = getattr(participant.agent, '_tools', None)
-
-            if tools:
-                for tool in tools:
-                    tool_name = getattr(tool, 'name', getattr(tool, '__name__', str(tool)))
-
-                    # Dynamically check tool enablement using tool's is_enabled
-                    status = "✅ ENABLED"
-                    status_reason = ""
-
-                    if hasattr(tool, 'is_enabled'):
-                        is_enabled_attr = getattr(tool, 'is_enabled')
-                        mock_context = type('MockContext', (), {
-                            'context': ParticipantContext(
-                                name=participant.config.name,
-                                role_description="",
-                                bank_balance=0.0,
-                                memory="",
-                                round_number=0,
-                                phase=ExperimentPhase.PHASE_1 if phase_name == "Phase 1" else ExperimentPhase.PHASE_2,
-                                memory_character_limit=1000
-                            )
-                        })()
-
-                        try:
-                            is_enabled = is_enabled_attr(mock_context, participant.agent) if callable(is_enabled_attr) else bool(is_enabled_attr)
-                            if not is_enabled:
-                                status = "❌ DISABLED"
-                                if tool_name == 'propose_vote':
-                                    if phase_name == "Phase 1":
-                                        status_reason = " (Phase 1 - not in group discussion)"
-                                    else:
-                                        status_reason = " (conditions not met)"
-                        except Exception as e:
-                            status = "⚠️  UNKNOWN"
-                            status_reason = f" (check failed: {str(e)[:30]}...)"
-
-                    logger.info(f"      🔧 {tool_name}: {status}{status_reason}")
-            else:
-                logger.info(f"      📝 No tools assigned")
-        
-        # Log utility agent
-        logger.info(f"🔧 UTILITY AGENT:")
-        logger.info(f"  └─ UtilityAgent (Model: {getattr(self.utility_agent, 'utility_model', 'Unknown')})")
-        logger.info(f"      📝 No tools assigned (parsing/validation only)")
-        
-        logger.info(f"{'='*60}\n")
     
     async def _run_single_participant_phase1(
         self,

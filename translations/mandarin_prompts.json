@@ -134,9 +134,6 @@
     "phase2_internal_reasoning": "**重要：这一阶段的风险远高于第1阶段。** 这个小组决定将决定每个人的最终收入，其后果远比你在第1阶段的个人选择重要得多。\n\n小组讨论--第{round_number}轮，共{max_rounds}轮（内部推理）\n\n讨论历史：\n{discussion_history}\n\n在发表公开声明之前，请先进行内部思考：\n- 对于小组应该采纳哪条公正原则，你目前的立场是什么？\n- 迄今为止的讨论是如何影响你的想法的？\n- 你想在公开声明中提出哪些论点？\n- 你是否准备好进行表决，还是需要更多的讨论？\n\n提供你的内部理由（不会与其他参与者分享）。",
     "phase2_final_ranking_prompt": "当前任务：四个公正原则：\n最大化最低收入：选择使社会最低收入最大化的分配方式\n最大化平均收入：选择使平均收入最大化的分配\n在最低收入约束条件下最大化平均收入：最大化平均收入，同时确保每个人至少获得规定的最低收入\n在范围约束条件下最大化平均收入：最大化平均收入，同时将最富与最穷之间的差距保持在规定的限制内\n\n你将被要求根据自己的偏好，对这四项公正原则从最佳（1）到最差（4）进行排序。\n提供一个整体确定程度（很不确定，不确定，无意见，确定，很确定）。\n\n回答格式：\n请按以下格式组织你的回答：\n\n[你的最佳选择]\n[你的第二选择]\n[你的第三选择]\n[你最差的选择]\n整体确定性：[很不确定/不确定/无意见/确定/很确定]",
     "vote_initiation_prompt": "你想现在就正义原则进行投票吗？\n\n讨论已经进行了一段时间，你可能感到已经准备好进入正式投票阶段，所有参与者将通过秘密投票选择他们偏爱的原则。\n\n请回答：\n- 1 如果你想现在开始投票\n- 0 如果你想继续讨论\n\n你的回答（1或0）：",
-    "phase2_voting_no_consensus_constraint_disagreement": "无共识 - 代理人在{principle_name}上达成一致，但在约束金额上存在分歧 - 讨论继续",
-    "phase2_voting_no_consensus_mixed_disagreement": "无共识 - 在原则和约束上存在混合分歧 - 讨论继续", 
-    "phase2_voting_no_consensus_principle_disagreement": "无共识 - 代理人投票支持不同的正义原则 - 讨论继续",
     "phase2_detailed_results_header": "第2阶段最终结果\n\n共识状态：{consensus_status}\n您的收入等级分配：{assigned_class}\n您的收入：${earnings:.2f}",
     "phase2_counterfactual_table_header": "反事实分析 - 您在每个原则下的收入情况：\n┌─────────────────────────────────────────┬──────────┬──────────┐\n│ 正义原则                               │ 收入     │ 收益     │\n├─────────────────────────────────────────┼──────────┼──────────┤",
     "phase2_counterfactual_insights_best_more": "- 最佳替代方案：在{best_principle}下您将多获得${best_diff:.2f}",
@@ -145,9 +142,6 @@
     "phase2_counterfactual_insights_worst_same": "- 最差替代方案：当前收入与最差可能结果一致",
     "phase2_consensus_reached": "小组就{principle}达成共识",
     "phase2_no_consensus": "小组未达成共识。收入随机分配",
-    "phase2_voting_no_consensus_principle_disagreement": "未达成共识 - 代理人投票支持不同的正义原则 - 讨论继续",
-    "phase2_voting_no_consensus_constraint_disagreement": "未达成共识 - 代理人就{principle_name}达成一致，但在约束金额上存在分歧 - 讨论继续",
-    "phase2_voting_no_consensus_mixed_disagreement": "未达成共识 - 在原则和约束上存在混合分歧 - 讨论继续",
     "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。",
     
     "phase1_distributions_intro": "以下是一些示例分配，帮助您理解："
@@ -168,6 +162,8 @@
     "two_stage_invalid_amount_format": "金额格式无效（尝试{attempt}/{max_attempts}）。你必须回答一个正整数美元金额。",
     "two_stage_amount_too_low": "金额过低（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最低$1,000）。",
     "two_stage_amount_too_high": "金额过高（尝试{attempt}/{max_attempts}）。请提供合理的美元金额（最高$100,000）。",
+    "two_stage_no_letter_choices": "无效回答（尝试{attempt}/{max_attempts}）。不要使用字母（a、b、c、d）。请使用数字：1、2、3或4。",
+    "two_stage_principle_content_unclear": "原则选择不清楚（尝试{attempt}/{max_attempts}）。请回答你偏爱的原则编号：1、2、3或4。",
     "timeout_retry": "响应超时。请重试。"
   },
   "memory_field_labels": {
@@ -200,6 +196,9 @@
     "consensus_reached": "达成共识：{principle_name}",
     "consensus_with_constraint": "达成共识：{principle_name}（${constraint_amount:,}）"
   },
+  "phase2_voting_no_consensus_principle_disagreement": "无共识 - 代理人投票支持不同的正义原则 - 讨论继续",
+  "phase2_voting_no_consensus_constraint_disagreement": "无共识 - 代理人在{principle_name}上达成一致，但在约束金额上存在分歧 - 讨论继续",
+  "phase2_voting_no_consensus_mixed_disagreement": "无共识 - 在原则和约束上存在混合分歧 - 讨论继续",
   "error_messages": {
     "empty_response_retry": "重要提示：您之前的回复为空或过短。请提供有意义的回复。"
   }

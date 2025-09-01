@@ -312,11 +312,10 @@ class FrohlichExperimentManager:
         else:
             public_conversation = "No public discussion recorded."
         
-        # Build final vote results and track vote timestamps
-        final_vote_results = {}
+        # Track vote timestamps
         vote_timestamps = {}
         
-        # Extract individual votes from voting history if available
+        # Extract vote timestamps from voting history if available
         if (self.agent_logger.voting_history and 
             self.agent_logger.voting_history.vote_rounds and 
             len(self.agent_logger.voting_history.vote_rounds) > 0):
@@ -324,26 +323,20 @@ class FrohlichExperimentManager:
             # Get the most recent vote round
             last_vote_round = self.agent_logger.voting_history.vote_rounds[-1]
             
-            # Extract individual votes from participant_votes array
+            # Extract vote timestamps from participant_votes array
             if last_vote_round.participant_votes:
                 for vote_detail in last_vote_round.participant_votes:
                     participant_name = vote_detail["participant_name"]
-                    assessed_choice = vote_detail["assessed_choice"]
                     vote_timestamp = vote_detail.get("vote_timestamp")
-                    
-                    # Use the assessed choice as the final vote result
-                    final_vote_results[participant_name] = assessed_choice
                     vote_timestamps[participant_name] = vote_timestamp
             
-            # Fill in any missing participants with "No vote"
+            # Fill in any missing participants with no timestamp
             for participant in self.participants:
-                if participant.name not in final_vote_results:
-                    final_vote_results[participant.name] = "No vote"
+                if participant.name not in vote_timestamps:
                     vote_timestamps[participant.name] = None
         else:
-            # Fallback: If no voting history, use participant names with "No vote"
+            # Fallback: If no voting history, set no timestamps
             for participant in self.participants:
-                final_vote_results[participant.name] = "No vote"
                 vote_timestamps[participant.name] = None
         
         # Extract probabilities from config for logging
@@ -373,14 +366,31 @@ class FrohlichExperimentManager:
             max_rounds_phase_2=self.config.phase2_rounds,
             rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
             public_conversation=public_conversation,
-            final_vote_results=final_vote_results,
             config_file=Path(self.config_file_path).name,
             income_class_probabilities=probabilities_dict,
             original_values_mode_enabled=original_values_enabled
         )
         
         # Update individual agent vote information for audit trail
-        self.agent_logger.update_agent_votes(final_vote_results, vote_timestamps)
+        # Extract individual votes from voting history if available
+        agent_votes = {}
+        if (self.agent_logger.voting_history and 
+            self.agent_logger.voting_history.vote_rounds and 
+            len(self.agent_logger.voting_history.vote_rounds) > 0):
+            
+            last_vote_round = self.agent_logger.voting_history.vote_rounds[-1]
+            if last_vote_round.participant_votes:
+                for vote_detail in last_vote_round.participant_votes:
+                    participant_name = vote_detail["participant_name"]
+                    assessed_choice = vote_detail["assessed_choice"]
+                    agent_votes[participant_name] = assessed_choice
+        
+        # Fill in any missing participants
+        for participant in self.participants:
+            if participant.name not in agent_votes:
+                agent_votes[participant.name] = "No vote"
+        
+        self.agent_logger.update_agent_votes(agent_votes, vote_timestamps)
         
         # Store information for later consensus validation
         self._consensus_validation_info = None
@@ -393,11 +403,6 @@ class FrohlichExperimentManager:
     def _set_fallback_general_info(self, phase2_results):
         """Set minimal general information as fallback when main method fails."""
         try:
-            # Create minimal fallback information
-            final_vote_results = {}
-            for participant in self.participants:
-                final_vote_results[participant.name] = "No vote recorded"
-            
             # Set minimal general information
             self.agent_logger.set_general_information(
                 consensus_reached=phase2_results.discussion_result.consensus_reached,
@@ -409,7 +414,6 @@ class FrohlichExperimentManager:
                 max_rounds_phase_2=self.config.phase2_rounds,
                 rounds_conducted_phase_2=phase2_results.discussion_result.final_round,
                 public_conversation=phase2_results.discussion_result.discussion_history or "No discussion recorded",
-                final_vote_results=final_vote_results,
                 config_file=Path(self.config_file_path).name
             )
             
@@ -425,7 +429,6 @@ class FrohlichExperimentManager:
                     max_rounds_phase_2=self.config.phase2_rounds,
                     rounds_conducted_phase_2=0,
                     public_conversation="Logging error occurred",
-                    final_vote_results={},
                     config_file=Path(self.config_file_path).name
                 )
             except Exception as final_e:
