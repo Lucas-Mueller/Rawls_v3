@@ -1,4 +1,23 @@
 {
+  "experiment_title": "Justice Principle Experiment",
+  "experiment_description": "Multi-language experiment for studying distributive justice preferences",
+  "experiment_author": "Research Team",
+  "experiment_version": "3.0",
+  "supported_languages": ["English", "Spanish", "Mandarin"],
+  "default_language": "English",
+  "principle_names": {
+    "maximizing_floor": "最低收入最大化",
+    "maximizing_average": "平均收入最大化",
+    "maximizing_average_floor_constraint": "在最低收入约束条件下最大化平均收入",
+    "maximizing_average_range_constraint": "在范围约束条件下最大化平均收入"
+  },
+  "certainty_levels": {
+    "very_unsure": "很不确定",
+    "unsure": "不确定",
+    "sure": "确定", 
+    "very_sure": "很确定",
+    "no_opinion": "无意见"
+  },
   "common": {
     "principle_names": {
       "maximizing_floor": "最低收入最大化",
