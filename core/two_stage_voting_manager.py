@@ -82,7 +82,7 @@ class TwoStageVotingManager:
     - Stage 2: Amount specification for constraint principles (positive integers)
     """
     
-    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None):
+    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None):
         """
         Initialize the two-stage voting manager.
         
@@ -91,11 +91,13 @@ class TwoStageVotingManager:
             language_manager: LanguageManager instance for multilingual support
             logger: AgentCentricLogger instance for vote tracking
             settings: Phase2Settings instance with voting configuration
+            error_handler: ExperimentErrorHandler instance for error handling
         """
         self.participants = participants
         self.language_manager = language_manager
         self.logger = logger
         self.settings = settings
+        self.error_handler = error_handler
         
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
@@ -893,7 +895,7 @@ Respond with the amount (examples: 25000 or $25000):"""
             # Update participant memory using the MemoryManager
             memory_guidance_style = getattr(self.settings, 'memory_guidance_style', 'narrative') if self.settings else 'narrative'
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, memory_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+                participant, context, memory_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
             )
             
             logger.info(f"Updated memory for {participant.name} after two-stage voting")

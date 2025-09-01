@@ -64,12 +64,18 @@ class FrohlichExperimentManager:
         self.config_file_path = config_file_path
         self.language_manager = language_manager
         self.experiment_id = str(uuid.uuid4())
-        self.error_handler = get_global_error_handler()
         
-        # Initialize error handler with custom logger
+        # Create experiment-scoped instances to prevent parallel experiment interference
+        from utils.dynamic_model_capabilities import TemperatureCache
+        from utils.error_handling import ExperimentErrorHandler
+        from utils.seed_manager import SeedManager
+        
+        self.temperature_cache = TemperatureCache()
+        self.seed_manager = SeedManager()
+        
+        # Create experiment-scoped error handler (no global state)
         experiment_logger = logging.getLogger(f"experiment.{self.experiment_id}")
-        set_global_error_handler(type(self.error_handler)(experiment_logger))
-        self.error_handler = get_global_error_handler()
+        self.error_handler = ExperimentErrorHandler(experiment_logger)
         
         # Initialize managers will be done in async_init
         self.participants = None
@@ -110,13 +116,14 @@ class FrohlichExperimentManager:
                 self.config.utility_agent_model, 
                 self.config.utility_agent_temperature,
                 self.config.language,
-                self.language_manager
+                self.language_manager,
+                self.temperature_cache
             )
             await self.utility_agent.async_init()
             
-            # Initialize phase managers
-            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent, self.language_manager)
-            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager)
+            # Initialize phase managers with experiment-scoped instances
+            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent, self.language_manager, self.error_handler, self.seed_manager)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager, self.error_handler, self.seed_manager)
             
             self._initialization_complete = True
             logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")
@@ -144,9 +151,8 @@ class FrohlichExperimentManager:
         # Ensure experiment manager is initialized
         await self.async_init()
         
-        # ALWAYS initialize reproducibility for every experiment
-        from utils.seed_manager import SeedManager
-        effective_seed = SeedManager.initialize_reproducibility(self.config)
+        # ALWAYS initialize reproducibility for every experiment (instance-based)
+        effective_seed = self.seed_manager.initialize_from_config(self.config)
         seed_source = "explicit" if self.config.seed else "generated"
         logger.info(f"Experiment seed: {effective_seed} ({seed_source})")
         
@@ -297,7 +303,12 @@ class FrohlichExperimentManager:
         logger.info(f"Creating {len(self.config.agents)} participant agents...")
         
         # Use dynamic temperature detection for all participants
-        participants = await create_participant_agents_with_dynamic_temperature(self.config.agents, self.config, self.language_manager)
+        participants = await create_participant_agents_with_dynamic_temperature(
+            self.config.agents, 
+            self.config, 
+            self.language_manager, 
+            self.temperature_cache
+        )
         
         return participants
     

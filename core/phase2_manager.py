@@ -32,13 +32,15 @@ from core.two_stage_voting_manager import TwoStageVotingManager
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None, error_handler=None, seed_manager=None):
         self.participants = participants
         self.utility_agent = utility_agent
         self.config = experiment_config
         self.language_manager = language_manager
+        self.seed_manager = seed_manager
         self.logger = None  # Will be set in run_phase2
-        self.error_handler = ExperimentErrorHandler()
+        # Use provided error handler or create a new one
+        self.error_handler = error_handler if error_handler is not None else ExperimentErrorHandler()
         
         # Load Phase 2 settings
         self.settings = experiment_config.phase2_settings if experiment_config and experiment_config.phase2_settings else Phase2Settings.get_default()
@@ -540,7 +542,7 @@ Please ensure your response contains a clear statement about your position on th
                 
                 # Update participant memory with agent using new guidance style
                 context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+                    participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
                 )
                 contexts[participant_idx] = update_participant_context(
                     context, new_round=round_num
@@ -728,7 +730,10 @@ Please ensure your response contains a clear statement about your position on th
         
         if config.speaking_order_strategy == "random":
             # Random behavior with finisher restriction
-            random.shuffle(participant_indices)
+            if self.seed_manager:
+                self.seed_manager.random.shuffle(participant_indices)
+            else:
+                random.shuffle(participant_indices)
             
             # Apply finisher restriction for all group sizes
             if last_round_finisher is not None and num_participants > 1:
@@ -758,12 +763,18 @@ Please ensure your response contains a clear statement about your position on th
                 
                 # Remove first speaker and shuffle rest
                 remaining = [i for i in participant_indices if i != first_speaker]
-                random.shuffle(remaining)
+                if self.seed_manager:
+                    self.seed_manager.random.shuffle(remaining)
+                else:
+                    random.shuffle(remaining)
                 
                 participant_indices = [first_speaker] + remaining
             else:
                 # Fallback to random for first round or small groups
-                random.shuffle(participant_indices)
+                if self.seed_manager:
+                    self.seed_manager.random.shuffle(participant_indices)
+                else:
+                    random.shuffle(participant_indices)
         
         return participant_indices
 
@@ -1086,7 +1097,10 @@ Please ensure your response contains a clear statement about your position on th
         else:
             # Random assignment - each participant gets random income class from random distribution
             for participant in self.participants:
-                random_distribution = random.choice(distribution_set.distributions)
+                if self.seed_manager:
+                    random_distribution = self.seed_manager.random.choice(distribution_set.distributions)
+                else:
+                    random_distribution = random.choice(distribution_set.distributions)
                 assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities)
                 payoffs[participant.name] = earnings
                 assigned_classes[participant.name] = str(assigned_class)
@@ -1292,7 +1306,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             
             # Update memory with agent
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, f"Final Phase 2 Results: {result_content}", language_manager=self.language_manager
+                participant, context, f"Final Phase 2 Results: {result_content}", language_manager=self.language_manager, error_handler=self.error_handler
             )
             
             updated_context = update_participant_context(
@@ -1686,7 +1700,7 @@ You were asked if you agree to proceed with voting on justice principles.
                 memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
                 
                 context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, confirmation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+                    participant, context, confirmation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
                 )
                 
                 # If anyone disagrees, confirmation phase fails
@@ -1728,7 +1742,8 @@ You were asked if you agree to proceed with voting on justice principles.
             participants=self.participants,
             language_manager=self.language_manager,
             logger=self.logger,
-            settings=self.settings
+            settings=self.settings,
+            error_handler=self.error_handler
         )
         
         # Conduct structured two-stage voting process
@@ -1909,6 +1924,7 @@ You were asked if you agree to proceed with voting on justice principles.
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
                 self.participants[i], context, memory_content,
                 memory_guidance_style=self.config.memory_guidance_style if self.config else "narrative",
-                language_manager=self.language_manager
+                language_manager=self.language_manager,
+                error_handler=self.error_handler
             )
     

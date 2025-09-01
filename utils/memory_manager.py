@@ -32,7 +32,8 @@ class MemoryManager:
         round_content: str,
         max_retries: int = 5,
         memory_guidance_style: str = "narrative",
-        language_manager=None
+        language_manager=None,
+        error_handler=None
     ) -> str:
         """
         Prompt agent to update their memory based on round content.
@@ -50,7 +51,9 @@ class MemoryManager:
         Raises:
             MemoryError: If agent fails to create valid memory after max_retries
         """
-        error_handler = get_global_error_handler()
+        # Use provided error handler or fall back to global one
+        if error_handler is None:
+            error_handler = get_global_error_handler()
         
         for attempt in range(max_retries):
             try:

@@ -20,10 +20,12 @@ from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 class Phase1Manager:
     """Manages Phase 1 execution for all participants."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, language_manager):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, language_manager, error_handler=None, seed_manager=None):
         self.participants = participants
         self.utility_agent = utility_agent
         self.language_manager = language_manager
+        self.error_handler = error_handler
+        self.seed_manager = seed_manager
         self.logger = None  # Will be set in run_phase1
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
@@ -94,7 +96,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -115,7 +117,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -138,7 +140,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -188,7 +190,7 @@ class Phase1Manager:
             memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
             )
             
             # Update context with earnings
@@ -215,7 +217,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number)
         

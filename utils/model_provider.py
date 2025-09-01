@@ -99,7 +99,8 @@ def get_model_provider_info(model_string: str) -> dict:
 async def create_model_config_with_temperature_detection(
     model_string: str, 
     temperature: float = 0.7,
-    skip_temperature_test: bool = False
+    skip_temperature_test: bool = False,
+    temperature_cache=None
 ) -> Tuple[Union[str, LitellmModel], dict]:
     """
     Create model configuration with dynamic temperature compatibility detection.
@@ -117,7 +118,7 @@ async def create_model_config_with_temperature_detection(
     processed_model, is_litellm = detect_model_provider(model_string)
     
     # Check if we already know about this model's temperature support
-    cached_support = supports_temperature_cached(model_string)
+    cached_support = supports_temperature_cached(model_string, temperature_cache)
     
     if cached_support is not None and not skip_temperature_test:
         # Use cached result
@@ -128,7 +129,7 @@ async def create_model_config_with_temperature_detection(
     elif not skip_temperature_test:
         # Run dynamic detection
         logger.info(f"Running dynamic temperature detection for {model_string}")
-        supports_temp, test_reason, test_exception = await test_temperature_support(model_string)
+        supports_temp, test_reason, test_exception = await test_temperature_support(model_string, temperature_cache)
         detection_method = "dynamic_test"
     else:
         # Conservative fallback - assume temperature works for OpenAI models, not for others
@@ -165,7 +166,7 @@ async def create_model_config_with_temperature_detection(
     return model_config, temperature_info
 
 
-def create_model_config_sync(model_string: str, temperature: float = 0.7) -> Tuple[Union[str, LitellmModel], dict]:
+def create_model_config_sync(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, LitellmModel], dict]:
     """
     Synchronous wrapper for model config creation with conservative temperature detection.
     
@@ -178,23 +179,23 @@ def create_model_config_sync(model_string: str, temperature: float = 0.7) -> Tup
             # We're in an async context - create task and run it in the existing loop
             logger.info(f"Already in async context, using conservative temperature detection for {model_string}")
             task = asyncio.create_task(
-                create_model_config_with_temperature_detection(model_string, temperature, skip_temperature_test=True)
+                create_model_config_with_temperature_detection(model_string, temperature, skip_temperature_test=True, temperature_cache=temperature_cache)
             )
             # Since we can't wait for the task in a sync function within an async context,
             # we'll use the conservative fallback immediately
-            return _create_conservative_model_config(model_string, temperature)
+            return _create_conservative_model_config(model_string, temperature, temperature_cache)
         except RuntimeError:
             # No running loop - we can safely use asyncio.run()
             return asyncio.run(
-                create_model_config_with_temperature_detection(model_string, temperature)
+                create_model_config_with_temperature_detection(model_string, temperature, temperature_cache=temperature_cache)
             )
     except Exception as e:
         # Fallback to conservative approach
         logger.warning(f"Failed to run dynamic temperature detection for {model_string}: {e}. Using conservative fallback.")
-        return _create_conservative_model_config(model_string, temperature)
+        return _create_conservative_model_config(model_string, temperature, temperature_cache)
 
 
-def _create_conservative_model_config(model_string: str, temperature: float = 0.7) -> Tuple[Union[str, LitellmModel], dict]:
+def _create_conservative_model_config(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, LitellmModel], dict]:
     """
     Create conservative model configuration without dynamic testing.
     
@@ -206,7 +207,7 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
     processed_model, is_litellm = detect_model_provider(model_string)
     
     # Check cache first
-    cached_support = supports_temperature_cached(model_string)
+    cached_support = supports_temperature_cached(model_string, temperature_cache)
     if cached_support is not None:
         supports_temp = cached_support
         detection_method = "cached_result"
@@ -262,7 +263,7 @@ def create_model_settings(temperature_info: dict) -> Optional[ModelSettings]:
     return None
 
 
-async def batch_test_model_temperatures_for_experiment(model_strings: List[str]) -> Dict[str, dict]:
+async def batch_test_model_temperatures_for_experiment(model_strings: List[str], temperature_cache=None) -> Dict[str, dict]:
     """
     Batch test multiple models for temperature support during experiment startup.
     
@@ -274,4 +275,4 @@ async def batch_test_model_temperatures_for_experiment(model_strings: List[str])
     """
     from utils.dynamic_model_capabilities import batch_test_model_temperatures
     
-    return await batch_test_model_temperatures(model_strings)
+    return await batch_test_model_temperatures(model_strings, temperature_cache)

@@ -14,16 +14,75 @@ logger = logging.getLogger(__name__)
 
 
 class SeedManager:
-    """Centralized seed management for experiment reproducibility."""
+    """Instance-based seed management for experiment reproducibility.
     
-    @staticmethod
-    def set_experiment_seed(seed: int) -> None:
+    Each experiment gets its own Random instance to prevent interference
+    between parallel experiments.
+    """
+    
+    def __init__(self, seed: int = None):
         """
-        Set global random seed for all experiment operations.
+        Initialize seed manager with experiment-scoped random generator.
+        
+        Args:
+            seed: Initial seed value (optional)
+        """
+        self._random = random.Random()
+        self._current_seed = None
+        if seed is not None:
+            self.set_seed(seed)
+    
+    def set_seed(self, seed: int) -> None:
+        """
+        Set seed for this experiment's random operations.
         
         Args:
             seed: Positive integer to use as random seed
         """
+        if not isinstance(seed, int) or seed < 0 or seed >= 2**31:
+            raise ValueError(f"Seed must be a positive integer less than 2^31, got: {seed}")
+        
+        # Set this experiment's random generator seed
+        self._random.seed(seed)
+        self._current_seed = seed
+        
+        logger.info(f"Experiment random seed set to: {seed}")
+    
+    @property
+    def random(self) -> random.Random:
+        """Get the experiment-scoped random generator."""
+        return self._random
+    
+    @property
+    def current_seed(self) -> int:
+        """Get the current seed value."""
+        return self._current_seed
+    
+    def initialize_from_config(self, config: 'ExperimentConfiguration') -> int:
+        """
+        Initialize this seed manager from experiment configuration.
+        
+        Args:
+            config: Experiment configuration
+            
+        Returns:
+            The seed that was set (either explicit or generated)
+        """
+        effective_seed = config.get_effective_seed()
+        self.set_seed(effective_seed)
+        return effective_seed
+    
+    # Static methods kept for backward compatibility
+    @staticmethod
+    def set_experiment_seed(seed: int) -> None:
+        """
+        DEPRECATED: Set global random seed for all experiment operations.
+        Use instance-based seed management instead.
+        
+        Args:
+            seed: Positive integer to use as random seed
+        """
+        logger.warning("set_experiment_seed is deprecated. Use instance-based SeedManager instead.")
         if not isinstance(seed, int) or seed < 0 or seed >= 2**31:
             raise ValueError(f"Seed must be a positive integer less than 2^31, got: {seed}")
         
@@ -88,8 +147,8 @@ class SeedManager:
     @staticmethod
     def initialize_reproducibility(config: 'ExperimentConfiguration') -> int:
         """
-        ALWAYS initialize reproducibility and return the seed used.
-        This is the main entry point for setting up experiment reproducibility.
+        DEPRECATED: ALWAYS initialize reproducibility and return the seed used.
+        Use instance-based approach instead.
         
         Args:
             config: Experiment configuration
@@ -97,6 +156,7 @@ class SeedManager:
         Returns:
             The seed that was set (either explicit or generated)
         """
+        logger.warning("initialize_reproducibility is deprecated. Use instance-based SeedManager instead.")
         effective_seed = config.get_effective_seed()
         SeedManager.set_experiment_seed(effective_seed)
         return effective_seed

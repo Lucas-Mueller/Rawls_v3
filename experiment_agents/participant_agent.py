@@ -19,10 +19,11 @@ from typing import List
 class ParticipantAgent:
     """Wrapper for participant agent with memory management capabilities and dynamic temperature detection."""
     
-    def __init__(self, config: AgentConfiguration, experiment_config=None, language_manager=None):
+    def __init__(self, config: AgentConfiguration, experiment_config=None, language_manager=None, temperature_cache=None):
         self.config = config
         self.experiment_config = experiment_config
         self.language_manager = language_manager
+        self.temperature_cache = temperature_cache
         self.logger = logging.getLogger(__name__)
         
         # We'll initialize the agent asynchronously in async_init
@@ -50,7 +51,8 @@ class ParticipantAgent:
                 agent_class=Agent[ParticipantContext],
                 model_string=self.config.model,
                 temperature=self.config.temperature,
-                agent_kwargs=base_kwargs
+                agent_kwargs=base_kwargs,
+                cache=self.temperature_cache
             )
             
             # Log temperature status
@@ -133,9 +135,9 @@ class ParticipantAgent:
         return self.agent.clone(**kwargs)
 
 
-async def create_participant_agent(config: AgentConfiguration, language_manager=None) -> ParticipantAgent:
+async def create_participant_agent(config: AgentConfiguration, language_manager=None, temperature_cache=None) -> ParticipantAgent:
     """Create a participant agent with the given configuration."""
-    agent = ParticipantAgent(config, language_manager=language_manager)
+    agent = ParticipantAgent(config, language_manager=language_manager, temperature_cache=temperature_cache)
     await agent.async_init()
     return agent
 
@@ -143,7 +145,8 @@ async def create_participant_agent(config: AgentConfiguration, language_manager=
 async def create_participant_agents_with_dynamic_temperature(
     configs: List[AgentConfiguration],
     experiment_config=None,
-    language_manager=None
+    language_manager=None,
+    temperature_cache=None
 ) -> List[ParticipantAgent]:
     """
     Create multiple participant agents with dynamic temperature detection and retry.
@@ -159,7 +162,7 @@ async def create_participant_agents_with_dynamic_temperature(
     for config in configs:
         try:
             logger.info(f"Creating agent: {config.name} (model: {config.model}, temp: {config.temperature})")
-            agent = ParticipantAgent(config, experiment_config, language_manager)
+            agent = ParticipantAgent(config, experiment_config, language_manager, temperature_cache)
             await agent.async_init()
             agents.append(agent)
         except Exception as e:

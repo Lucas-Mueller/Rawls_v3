@@ -30,9 +30,16 @@ class DistributionGenerator:
     ]
     
     @staticmethod
-    def generate_dynamic_distribution(multiplier_range: Tuple[float, float]) -> DistributionSet:
-        """Generate 4 distributions with random multiplier applied to base distributions."""
-        multiplier = random.uniform(multiplier_range[0], multiplier_range[1])
+    def generate_dynamic_distribution(multiplier_range: Tuple[float, float], random_gen: random.Random = None) -> DistributionSet:
+        """Generate 4 distributions with random multiplier applied to base distributions.
+        
+        Args:
+            multiplier_range: Range for random multiplier
+            random_gen: Random generator to use (defaults to global random)
+        """
+        if random_gen is None:
+            random_gen = random
+        multiplier = random_gen.uniform(multiplier_range[0], multiplier_range[1])
         
         distributions = []
         for base_dist in DistributionGenerator.BASE_DISTRIBUTIONS:
@@ -194,14 +201,24 @@ class DistributionGenerator:
     @staticmethod
     def calculate_payoff(
         distribution: IncomeDistribution, 
-        probabilities: Optional[IncomeClassProbabilities] = None
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        random_gen: random.Random = None
     ) -> Tuple[IncomeClass, float]:
-        """Assign participant to income class using weighted probabilities."""
+        """Assign participant to income class using weighted probabilities.
+        
+        Args:
+            distribution: Income distribution to calculate payoff from
+            probabilities: Weighted probabilities for income class assignment
+            random_gen: Random generator to use (defaults to global random)
+        """
+        if random_gen is None:
+            random_gen = random
+        
         income_classes = list(IncomeClass)
         
         if probabilities is None:
             # Backward compatibility: equal probabilities
-            assigned_class = random.choice(income_classes)
+            assigned_class = random_gen.choice(income_classes)
         else:
             # Weighted random selection
             weights = [
@@ -211,7 +228,7 @@ class DistributionGenerator:
                 probabilities.medium_low,
                 probabilities.low
             ]
-            assigned_class = random.choices(income_classes, weights=weights, k=1)[0]
+            assigned_class = random_gen.choices(income_classes, weights=weights, k=1)[0]
         
         # Get income and calculate payoff
         income = distribution.get_income_by_class(assigned_class)
@@ -220,13 +237,18 @@ class DistributionGenerator:
         return assigned_class, payoff
     
     @staticmethod
-    def calculate_alternative_earnings(distributions: List[IncomeDistribution]) -> dict:
-        """Calculate what participant would have earned under each distribution."""
+    def calculate_alternative_earnings(distributions: List[IncomeDistribution], random_gen: random.Random = None) -> dict:
+        """Calculate what participant would have earned under each distribution.
+        
+        Args:
+            distributions: List of distributions to calculate earnings for
+            random_gen: Random generator to use (defaults to global random)
+        """
         alternative_earnings = {}
         
         for i, dist in enumerate(distributions):
             # For each distribution, randomly assign class and calculate earnings
-            assigned_class, earnings = DistributionGenerator.calculate_payoff(dist)
+            assigned_class, earnings = DistributionGenerator.calculate_payoff(dist, random_gen=random_gen)
             alternative_earnings[f"distribution_{i+1}"] = earnings
         
         return alternative_earnings

@@ -32,7 +32,7 @@ async def run_without_tracing(agent, prompt, context=None):
 class UtilityAgent:
     """Simplified utility agent for parsing and validating participant responses."""
     
-    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english", language_manager=None):
+    def __init__(self, utility_model: str = None, temperature: float = 0.0, experiment_language: str = "english", language_manager=None, temperature_cache=None):
         # Use environment variable or default for utility agents
         if utility_model is None:
             utility_model = os.getenv("UTILITY_AGENT_MODEL", "gpt-4.1-mini")
@@ -41,6 +41,7 @@ class UtilityAgent:
         self.temperature = temperature
         self.experiment_language = experiment_language.lower()
         self.language_manager = language_manager
+        self.temperature_cache = temperature_cache
         
         # Agents will be created in async_init
         self.parser_agent = None
@@ -263,7 +264,8 @@ class UtilityAgent:
                     agent_class=Agent,
                     model_string=self.utility_model,
                     temperature=self.temperature,
-                    agent_kwargs=parser_kwargs
+                    agent_kwargs=parser_kwargs,
+                    cache=self.temperature_cache
                 )
 
                 # Create validator agent
@@ -276,7 +278,8 @@ class UtilityAgent:
                     agent_class=Agent,
                     model_string=self.utility_model,
                     temperature=self.temperature,
-                    agent_kwargs=validator_kwargs
+                    agent_kwargs=validator_kwargs,
+                    cache=self.temperature_cache
                 )
 
             self._initialization_complete = True
