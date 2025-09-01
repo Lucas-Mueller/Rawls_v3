@@ -173,6 +173,37 @@ async def create_participant_agents_with_dynamic_temperature(
     return agents
 
 
+def _detect_memory_context_type(context: ParticipantContext, role_description: str) -> str:
+    """
+    Detect the appropriate context type for memory summarization.
+    
+    Args:
+        context: Participant context with phase and round information
+        role_description: Current role description
+        
+    Returns:
+        Context type: "voting", "discussion", "application", or "general"
+    """
+    # Check for voting-related contexts
+    if any(keyword in role_description.lower() for keyword in ["vote", "ballot", "consensus"]):
+        return "voting"
+    
+    # Phase 1 application contexts
+    if context.phase == ExperimentPhase.PHASE_1 and context.round_number >= 1:
+        return "application"
+    
+    # Phase 2 discussion contexts
+    if context.phase == ExperimentPhase.PHASE_2:
+        # If we're in Phase 2, it's primarily discussion unless voting
+        if "vote" not in role_description.lower():
+            return "discussion"
+        else:
+            return "voting"
+    
+    # Default to general context
+    return "general"
+
+
 def _generate_dynamic_instructions(
     ctx: RunContextWrapper[ParticipantContext], 
     agent: Agent, 
@@ -193,9 +224,19 @@ def _generate_dynamic_instructions(
         )
     
     # Standard context formatting for regular operations
-    # Format memory for display using language manager
-    memory_content = context.memory if context.memory.strip() else None
-    formatted_memory = language_manager.format_memory_section(memory_content or "")
+    # Detect memory context type for appropriate summarization
+    memory_context_type = _detect_memory_context_type(context, context.role_description)
+    
+    # Determine display mode - use full memory during voting to preserve compromise details
+    display_mode = "full" if memory_context_type == "voting" else "compact"
+    
+    # Format memory for display using language manager with context awareness
+    memory_content = context.memory if context.memory and context.memory.strip() else None
+    formatted_memory = language_manager.format_memory_section(
+        memory_content or "", 
+        display_mode=display_mode,
+        context_type=memory_context_type
+    )
     
     # Get phase-specific instructions using language manager
     phase_instructions = _get_phase_specific_instructions_translated(
@@ -222,7 +263,8 @@ def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_nu
     if phase == ExperimentPhase.PHASE_1:
         return language_manager.get_phase1_instructions(round_number)
     elif phase == ExperimentPhase.PHASE_2:
-        return language_manager.get_phase2_instructions(round_number)
+        max_rounds = experiment_config.phase2_rounds if experiment_config else 5
+        return language_manager.get_phase2_instructions(round_number, max_rounds)
     else:
         return language_manager.get_prompt("fallback", "default_phase_instructions")
 

@@ -268,7 +268,6 @@ class Phase1Manager:
         language_manager = self.language_manager
         round_content = f"""{language_manager.get('memory_field_labels.prompt')} {ranking_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.your_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_initial_ranking')}"""
         
         return parsed_ranking, round_content
@@ -426,13 +425,6 @@ class Phase1Manager:
             alt_income = int(alt_earnings * 10000)
             counterfactual_table += f"\n{principle_label:<40}  ${alt_income:,}    ${alt_earnings:.2f}"
         
-        # Extract counterfactual highlights instead of full table
-        from utils.memory_content import build_phase1_delta, extract_counterfactual_highlights
-        
-        counterfactual_highlights = extract_counterfactual_highlights(
-            alternative_earnings_same_class, earnings
-        )
-        
         # Check if original values mode was used
         original_values_mode = getattr(config, 'original_values_mode', None)
         is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
@@ -442,18 +434,30 @@ class Phase1Manager:
             situation_map = {1: "A", 2: "B", 3: "C", 4: "D"}
             original_situation = situation_map.get(round_num, "Unknown")
         
-        # Create delta-focused round content
-        round_content = build_phase1_delta(
-            round_number=round_num,
-            principle_choice=parsed_choice,
-            assigned_class=assigned_class,
-            earnings=earnings,
-            distribution_multiplier=distribution_set.multiplier,
-            rationale=text_response if len(text_response) <= 200 else None,
-            top_counterfactuals=counterfactual_highlights,
-            original_values_mode=is_original_values,
-            original_values_situation=original_situation
-        )
+        # Create complete round content with full counterfactual information
+        language_manager = self.language_manager
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {application_prompt}
+{language_manager.get('memory_field_labels.your_response')} {text_response}
+{language_manager.get('memory_field_labels.chosen_principle')} {parsed_choice.principle.value}"""
+        
+        # Add constraint info if relevant
+        if parsed_choice.constraint_amount is not None:
+            round_content += f"\n{language_manager.get('memory_field_labels.constraint_amount')} {parsed_choice.constraint_amount}"
+        
+        # Add class and earnings info
+        round_content += f"\n{language_manager.get('memory_field_labels.assigned_class')} {assigned_class.value}"
+        round_content += f"\n{language_manager.get('memory_field_labels.earnings')} ${earnings:.2f}"
+        
+        # Add distribution context
+        if is_original_values and original_situation:
+            round_content += f"\n{language_manager.get('memory_field_labels.original_values_situation')} {original_situation}"
+        else:
+            round_content += f"\n{language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
+        
+        # Add complete counterfactual table
+        round_content += f"\n\n{counterfactual_table}"
+        
+        round_content += f"\n{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"
         
         return application_result, round_content
     
@@ -478,7 +482,6 @@ class Phase1Manager:
         language_manager = self.language_manager
         round_content = f"""{language_manager.get('memory_field_labels.prompt')} {post_explanation_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.your_post_explanation_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_post_explanation_ranking')}"""
         
         return parsed_ranking, round_content
@@ -504,7 +507,6 @@ class Phase1Manager:
         language_manager = self.language_manager
         round_content = f"""{language_manager.get('memory_field_labels.prompt')} {final_ranking_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.your_final_rankings')} {parsed_ranking.model_dump() if hasattr(parsed_ranking, 'model_dump') else str(parsed_ranking)}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_final_ranking')}"""
         
         return parsed_ranking, round_content

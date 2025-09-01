@@ -144,7 +144,7 @@ class TestAgentCentricLogger:
             1,  # speaking_order
             "I think we should choose A",
             "I propose maximizing the floor income",
-            "Yes",  # initiate_vote
+            "N/A",  # initiate_vote - vote detection removed
             "maximizing the floor income",
             "Memory before discussion",
             100.0
@@ -158,7 +158,7 @@ class TestAgentCentricLogger:
         assert round_log.speaking_order == 1
         assert round_log.internal_reasoning == "I think we should choose A"
         assert round_log.public_message == "I propose maximizing the floor income"
-        assert round_log.initiate_vote == "Yes"
+        assert round_log.initiate_vote == "N/A"
         assert round_log.favored_principle == "maximizing the floor income"
         assert round_log.memory_coming_in_this_round == "Memory before discussion"
         assert round_log.bank_balance == 100.0
@@ -285,13 +285,8 @@ class TestMemoryStateCapture:
         pytest.skip("Method removed - confidence now handled by PrincipleRanking objects")
     
     def test_extract_vote_intention(self):
-        """Test extracting vote intention from response."""
-        assert MemoryStateCapture.extract_vote_intention("I call for vote now") == "Yes"
-        assert MemoryStateCapture.extract_vote_intention("Let's vote on this") == "Yes"
-        assert MemoryStateCapture.extract_vote_intention("I want to initiate vote") == "Yes"
-        assert MemoryStateCapture.extract_vote_intention("We should vote now") == "Yes"
-        assert MemoryStateCapture.extract_vote_intention("I think we need more discussion") == "No"
-        assert MemoryStateCapture.extract_vote_intention("Random statement") == "No"
+        """Test removed - vote intention detection no longer used."""
+        pytest.skip("Vote intention detection removed - using formal voting system instead")
 
 
 class TestTargetStateFormat:

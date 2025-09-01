@@ -128,6 +128,17 @@ class VotingHistoryLog(BaseModel):
     
     vote_rounds: List[VoteRoundDetails] = Field(default_factory=list, description="Details of each vote round")
     
+    # NEW: Round-level vote initiation tracking
+    vote_initiation_requests: Dict[int, Dict[str, str]] = Field(default_factory=dict, description="Vote initiation requests per round: round_number -> {agent_name: Yes/No}")
+    
+    # NEW: Vote confirmation attempts tracking
+    vote_confirmation_attempts: List[Dict[str, Any]] = Field(default_factory=list, description="Vote confirmation attempts with initiator and responses")
+    # Each confirmation attempt contains:
+    # - round_number: int
+    # - initiator: str
+    # - confirmation_responses: Dict[str, str] (agent_name -> Yes/No)
+    # - confirmation_succeeded: bool
+    
     # Summary statistics
     vote_statistics: Dict[str, Any] = Field(default_factory=dict, description="Voting statistics")
     # Contains:
@@ -302,6 +313,8 @@ class TargetStateStructure(BaseModel):
                     }
                     for vote_round in self.voting_history.vote_rounds
                 ],
+                "vote_initiation_requests": self.voting_history.vote_initiation_requests,
+                "vote_confirmation_attempts": self.voting_history.vote_confirmation_attempts,
                 "vote_statistics": self.voting_history.vote_statistics
             }
         

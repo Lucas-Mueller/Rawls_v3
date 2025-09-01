@@ -231,112 +231,281 @@ class AmountFormattingManager:
     
     def _extract_amount_from_text(self, text: str) -> tuple[Optional[int], Optional[str]]:
         """
-        Extract monetary amounts from verbose text in multiple languages.
-        Handles English, Spanish, and Mandarin number patterns.
+        Extract monetary amounts from verbose text using simplified robust approach.
+        Extracts all numbers, normalizes them, and deduplicates identical values.
         """
-        amounts = []
+        # Use a comprehensive approach to find all potential amounts
+        normalized_amounts = []
         
-        # English/Spanish patterns: Find monetary amounts with proper word boundaries
-        # Match formats like: $10,000 or $10000 or 25000 dollars
-        amount_patterns = [
-            r'\$(\d{1,3}(?:,\d{3})+)',        # $10,000 (requires at least one comma)
-            r'\$(\d{4,})',                    # $10000 (without commas, 4+ digits)
-            r'(\d{4,})\s+(?:dollars?|dólares?)', # 25000 dollars
-        ]
+        # Pattern 1: Currency symbol with number and optional k
+        currency_k_matches = re.finditer(r'[$¥€]\s*(\d[\d,.]*)\s*k\b', text, re.IGNORECASE)
+        for match in currency_k_matches:
+            amount = self._normalize_and_validate_number(match.group(1), multiply_k=True)
+            if amount:
+                normalized_amounts.append(amount)
         
-        matches = []
-        for pattern in amount_patterns:
-            pattern_matches = re.findall(pattern, text, re.IGNORECASE)
-            matches.extend(pattern_matches)
+        # Pattern 2: Currency symbol with number (no k)  
+        currency_matches = re.finditer(r'[$¥€]\s*(\d[\d,.]*)', text, re.IGNORECASE)
+        for match in currency_matches:
+            # Skip if this was already handled by k pattern
+            if not re.search(r'k\b', text[match.end():match.end()+5], re.IGNORECASE):
+                amount = self._normalize_and_validate_number(match.group(1))
+                if amount:
+                    normalized_amounts.append(amount)
         
-        for match in matches:
-            try:
-                # Remove commas and convert
-                amount = int(match.replace(',', ''))
-                # Filter to reasonable amounts (avoid small numbers, etc.)
-                if 100 <= amount <= 1000000:  # Reasonable range for experiment amounts
-                    amounts.append(amount)
-            except ValueError:
-                continue
+        # Pattern 3: Number with currency word and optional k
+        word_k_matches = re.finditer(r'(\d[\d,.]*)\s*k?\s*(?:dollars?|dólares?|美元|元|USD)\b', text, re.IGNORECASE)
+        for match in word_k_matches:
+            has_k = 'k' in match.group(0).lower()
+            amount = self._normalize_and_validate_number(match.group(1), multiply_k=has_k)
+            if amount:
+                normalized_amounts.append(amount)
         
-        # Chinese patterns: Only run on text that contains Chinese characters
-        if re.search(r'[\u4e00-\u9fff]', text):  # Check if text contains Chinese characters
-            chinese_patterns = [
-                # Regular Arabic numerals in Chinese text context
-                r'(\d{4,})(?=\s*(?:美元|元))',    # Numbers followed by currency in Chinese
-                # Chinese number words (basic patterns)
-                r'([一二三四五六七八九十百千万]+)(?=\s*(?:美元|元))?',
-            ]
+        # Pattern 4: Standalone numbers with k
+        standalone_k_matches = re.finditer(r'\b(\d[\d,.]*)\s*k\b', text, re.IGNORECASE)
+        for match in standalone_k_matches:
+            # Only if it's not already covered by currency patterns
+            start, end = match.span()
+            if not re.search(r'[$¥€]', text[max(0, start-10):start]):
+                amount = self._normalize_and_validate_number(match.group(1), multiply_k=True)
+                if amount:
+                    normalized_amounts.append(amount)
+        
+        # Pattern 5: Standalone numbers (4+ digits, context-aware)
+        standalone_matches = re.finditer(r'\b(\d{4,}[\d,.]*)\b', text, re.IGNORECASE)
+        for match in standalone_matches:
+            number_str = match.group(1)
             
-            for pattern in chinese_patterns:
-                chinese_matches = re.findall(pattern, text)
-                for match in chinese_matches:
-                    if match.isdigit():
-                        try:
-                            amount = int(match)
-                            if 100 <= amount <= 1000000:
-                                amounts.append(amount)
-                        except ValueError:
-                            continue
-                    else:
-                        # Basic Chinese number conversion (limited set)
-                        amount = self._convert_chinese_number(match)
-                        if amount and 100 <= amount <= 1000000:
-                            amounts.append(amount)
+            # Skip obvious years (1900-2099)
+            try:
+                num_val = int(number_str.replace(',', '').replace('.', ''))
+                if 1900 <= num_val <= 2099:
+                    continue
+            except ValueError:
+                pass
+            
+            # Skip if near "page", "year", etc.
+            context = text[max(0, match.start()-20):match.end()+20].lower()
+            if any(word in context for word in ['page', 'year', 'chapter', 'section', 'verse']):
+                continue
+                
+            # Include if in monetary context or seems like a monetary amount
+            monetary_context_words = ['constraint', 'amount', 'dollar', 'income', 'floor', 'limit', 'thinking', 'choose', 'prefer', 'select']
+            if any(word in context for word in monetary_context_words):
+                amount = self._normalize_and_validate_number(number_str)
+                if amount:
+                    normalized_amounts.append(amount)
+        
+        # Also try Chinese number extraction if Chinese characters present
+        if re.search(r'[\u4e00-\u9fff]', text):
+            chinese_amounts = self._extract_chinese_amounts(text)
+            normalized_amounts.extend(chinese_amounts)
         
         # Evaluate extracted amounts
-        return self._evaluate_extracted_amounts(amounts)
+        return self._evaluate_extracted_amounts(normalized_amounts)
+    
+    def _normalize_and_validate_number(self, number_str: str, multiply_k: bool = False) -> Optional[int]:
+        """
+        Helper method to normalize and validate a number string.
+        Returns the integer value if valid, None otherwise.
+        """
+        try:
+            # Clean the number: remove commas and handle periods
+            cleaned = number_str.replace(',', '')
+            
+            # Handle periods - assume decimal if ≤2 digits after period, else remove
+            if '.' in cleaned:
+                parts = cleaned.split('.')
+                if len(parts) == 2 and len(parts[1]) <= 2:
+                    # Decimal format
+                    amount = int(float(cleaned))
+                else:
+                    # Thousand separator format - remove periods
+                    amount = int(cleaned.replace('.', ''))
+            else:
+                amount = int(cleaned)
+            
+            # Apply k multiplier if needed
+            if multiply_k:
+                amount *= 1000
+            
+            # Filter to reasonable amounts
+            if 100 <= amount <= 1000000:
+                return amount
+            
+        except (ValueError, TypeError):
+            pass
+        
+        return None
+    
+    def _extract_chinese_amounts(self, text: str) -> list[int]:
+        """
+        Extract amounts from Chinese text using non-overlapping approach.
+        Process in order of complexity to avoid double-counting.
+        """
+        amounts = []
+        processed_positions = set()  # Track processed character positions
+        
+        # Pattern 1: Mixed Arabic-Chinese numbers (like 15万) - highest priority
+        mixed_pattern = r'(\d+万)(?:\s*(?:美元|元|块))?'
+        for match in re.finditer(mixed_pattern, text):
+            start, end = match.span()
+            if not any(pos in processed_positions for pos in range(start, end)):
+                # Extract the number before 万
+                num_part = match.group(1).replace('万', '')
+                try:
+                    base_num = int(num_part)
+                    amount = base_num * 10000
+                    if 100 <= amount <= 1000000:
+                        amounts.append(amount)
+                        processed_positions.update(range(start, end))
+                except ValueError:
+                    continue
+        
+        # Pattern 2: Complex Chinese numbers like "二万五千美元" - second priority  
+        complex_pattern = r'([一二三四五六七八九十万千百]+)(?:\s*(?:美元|元|块))'
+        for match in re.finditer(complex_pattern, text):
+            start, end = match.span()
+            if not any(pos in processed_positions for pos in range(start, end)):
+                amount = self._convert_chinese_number(match.group(1))
+                if amount and 100 <= amount <= 1000000:
+                    amounts.append(amount)
+                    processed_positions.update(range(start, end))
+        
+        # Pattern 3: Simple Chinese numbers with currency - third priority
+        simple_patterns = [
+            r'([一二三四五六七八九十]+万)(?:\s*(?:美元|元|块))?',  # X万 pattern
+            r'([一二三四五六七八九十]+千)(?:\s*(?:美元|元|块))?',  # X千 pattern  
+        ]
+        
+        for pattern in simple_patterns:
+            for match in re.finditer(pattern, text):
+                start, end = match.span()
+                if not any(pos in processed_positions for pos in range(start, end)):
+                    amount = self._convert_chinese_number(match.group(1))
+                    if amount and 100 <= amount <= 1000000:
+                        amounts.append(amount)
+                        processed_positions.update(range(start, end))
+        
+        # Pattern 4: Pure Arabic numerals (lowest priority, only if no Chinese context)
+        if not amounts:  # Only if we haven't found any Chinese-style amounts
+            arabic_pattern = r'(\d{3,})(?:\s*(?:美元|元|块|人民币))'
+            for match in re.finditer(arabic_pattern, text):
+                start, end = match.span() 
+                if not any(pos in processed_positions for pos in range(start, end)):
+                    try:
+                        amount = int(match.group(1))
+                        if 100 <= amount <= 1000000:
+                            amounts.append(amount)
+                            processed_positions.update(range(start, end))
+                    except ValueError:
+                        continue
+        
+        return amounts
     
     def _convert_chinese_number(self, chinese_num: str) -> Optional[int]:
         """
-        Convert basic Chinese numbers to integers.
-        Limited implementation for common experiment amounts.
+        Convert basic Chinese numbers to integers using simplified approach.
+        Handles common patterns like 一万, 五千, 十五万, etc.
         """
-        # Basic Chinese number mappings
-        chinese_digits = {
+        # Basic digit mappings
+        digit_map = {
             '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
-            '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
-            '百': 100, '千': 1000, '万': 10000
+            '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
         }
         
-        # Handle simple patterns like 一万 (10000), 五千 (5000)
-        if '万' in chinese_num:
-            if chinese_num == '一万':
-                return 10000
-            elif chinese_num == '二万':
-                return 20000
-            elif chinese_num == '三万':
-                return 30000
-            elif chinese_num == '五万':
-                return 50000
-            elif chinese_num == '十万':
-                return 100000
-        elif '千' in chinese_num:
-            if chinese_num == '一千':
-                return 1000
-            elif chinese_num == '五千':
-                return 5000
-            elif chinese_num == '十千':
-                return 10000
+        try:
+            # Handle 万 (10,000) patterns
+            if '万' in chinese_num:
+                base_part = chinese_num.replace('万', '')
+                if not base_part:  # Just '万' 
+                    return 10000
+                elif base_part in digit_map:
+                    return digit_map[base_part] * 10000
+                elif base_part == '十':
+                    return 100000
+                elif base_part == '十五':  # 十五万 = 150000
+                    return 150000
+                else:
+                    # Try to parse complex patterns like "二万五千"
+                    # First check if there's a 千 part after 万
+                    remaining = chinese_num
+                    total = 0
+                    
+                    # Extract 万 part
+                    if '万' in remaining:
+                        parts = remaining.split('万')
+                        wan_part = parts[0]
+                        if wan_part in digit_map:
+                            total += digit_map[wan_part] * 10000
+                        remaining = parts[1] if len(parts) > 1 else ''
+                    
+                    # Extract 千 part  
+                    if '千' in remaining:
+                        parts = remaining.split('千')
+                        qian_part = parts[0]
+                        if qian_part in digit_map:
+                            total += digit_map[qian_part] * 1000
+                        remaining = parts[1] if len(parts) > 1 else ''
+                    
+                    # Extract 百 part
+                    if '百' in remaining:
+                        parts = remaining.split('百')
+                        bai_part = parts[0]  
+                        if bai_part in digit_map:
+                            total += digit_map[bai_part] * 100
+                        remaining = parts[1] if len(parts) > 1 else ''
+                    
+                    # Extract remaining digits
+                    if remaining and remaining in digit_map:
+                        total += digit_map[remaining]
+                    
+                    return total if total > 0 else None
+            
+            # Handle 千 (1,000) patterns  
+            elif '千' in chinese_num:
+                base_part = chinese_num.replace('千', '')
+                if not base_part:  # Just '千'
+                    return 1000
+                elif base_part in digit_map:
+                    return digit_map[base_part] * 1000
+                elif base_part == '十':
+                    return 10000
+                elif len(base_part) == 2:  # Try two-digit combinations
+                    if base_part[0] in digit_map and base_part[1] in digit_map:
+                        return (digit_map[base_part[0]] * 10 + digit_map[base_part[1]]) * 1000
+            
+            # Handle 百 (100) patterns
+            elif '百' in chinese_num:
+                base_part = chinese_num.replace('百', '')
+                if not base_part:
+                    return 100
+                elif base_part in digit_map:
+                    return digit_map[base_part] * 100
+            
+        except (KeyError, ValueError):
+            pass
         
-        # Return None for complex patterns not implemented
+        # Return None for patterns we can't parse
         return None
     
     def _evaluate_extracted_amounts(self, amounts: list[int]) -> tuple[Optional[int], Optional[str]]:
         """
-        Evaluate a list of extracted amounts and determine the result.
+        Evaluate a list of extracted amounts with deduplication of identical values.
+        This implements the simplified logic: if same number appears multiple times, 
+        use it once. Only fail if truly different amounts are found.
         """
         if not amounts:
             return None, "no_amount_found"
         
-        # Remove duplicates while preserving order
-        unique_amounts = list(dict.fromkeys(amounts))
+        # Remove duplicates - if same amount appears multiple times, that's fine
+        unique_amounts = list(set(amounts))
         
         if len(unique_amounts) == 1:
-            # Single unique amount found
+            # Single unique amount found (possibly repeated in text)
             return self._validate_amount_range(unique_amounts[0])
         
-        # Multiple different amounts found
+        # Multiple different amounts found - this is ambiguous
         return None, "multiple_different_amounts_found"
     
     def _validate_amount_range(self, amount: int) -> tuple[Optional[int], Optional[str]]:

@@ -227,12 +227,13 @@ class LanguageManager:
         else:
             return self.get("prompts.fallback_default_phase_instructions")
     
-    def get_phase2_instructions(self, round_number: int) -> str:
+    def get_phase2_instructions(self, round_number: int, max_rounds: int = 5) -> str:
         """
         Get Phase 2 instructions for group discussion (always uses complex voting).
         
         Args:
             round_number: Discussion round number
+            max_rounds: Total number of discussion rounds
             
         Returns:
             Translated instructions for group discussion
@@ -240,7 +241,7 @@ class LanguageManager:
         # Always use unified prompt (previously complex voting prompt)
         return self.get("prompts.phase2_discussion_prompt", 
                        round_number=round_number,
-                       max_rounds=5,  # Default max rounds
+                       max_rounds=max_rounds,
                        discussion_history="",
                        group_participants="")
     
@@ -262,10 +263,6 @@ class LanguageManager:
         return self.get("prompts.utility_parse_principle_ranking",
                        response=response)
     
-    def get_vote_detection_prompt(self, statement: str) -> str:
-        """Get prompt for detecting vote proposals."""
-        return self.get("prompts.utility_vote_detection", 
-                       statement=statement)
     
     def get_constraint_re_prompt(self, participant_name: str, principle_name: str, constraint_type: str) -> str:
         """Get re-prompt for missing constraint specification."""
@@ -377,13 +374,65 @@ class LanguageManager:
                        bank_balance=bank_balance,
                        personality=personality)
     
-    def format_memory_section(self, memory: str) -> str:
-        """Format the memory section display."""
-        if not memory or not memory.strip():
-            memory = self.get("prompts.context_memory_empty_placeholder")
+    def format_memory_section(self, memory: str, display_mode: str = "full", context_type: str = "general") -> str:
+        """
+        Format the memory section display.
         
-        return self.get("prompts.context_memory_section_format", 
-                       memory=memory)
+        Args:
+            memory: The memory content to format
+            display_mode: Display mode ("full", "compact", "adaptive")
+            context_type: Context type for summary ("general", "voting", "discussion", "application")
+            
+        Returns:
+            Formatted memory section
+        """
+        if not memory or not memory.strip():
+            # Handle empty memory case
+            if display_mode == "compact":
+                empty_placeholder = self.get("prompts.context_memory_summary_empty_placeholder")
+                return self.get("prompts.context_memory_summary_format", 
+                               memory_summary=empty_placeholder)
+            else:
+                empty_placeholder = self.get("prompts.context_memory_empty_placeholder")
+                return self.get("prompts.context_memory_section_format", 
+                               memory=empty_placeholder)
+        
+        if display_mode == "compact":
+            # Use memory summarization
+            from utils.memory_summarizer import MemorySummarizer, SummaryContext
+            
+            # Convert context_type to SummaryContext enum
+            context_map = {
+                "voting": SummaryContext.VOTING,
+                "discussion": SummaryContext.DISCUSSION,
+                "application": SummaryContext.APPLICATION,
+                "general": SummaryContext.GENERAL
+            }
+            summary_context = context_map.get(context_type, SummaryContext.GENERAL)
+            
+            try:
+                memory_summary = MemorySummarizer.create_summary(
+                    memory, 
+                    context_type=summary_context, 
+                    max_lines=4
+                )
+                
+                # If summary is empty or too short, fallback to full memory
+                if not memory_summary or len(memory_summary.strip()) < 20:
+                    return self.get("prompts.context_memory_section_format", 
+                                   memory=memory)
+                
+                return self.get("prompts.context_memory_summary_format", 
+                               memory_summary=memory_summary)
+            except Exception as e:
+                # Fallback to full memory display if summarization fails
+                logger.warning(f"Memory summarization failed: {e}, falling back to full display")
+                return self.get("prompts.context_memory_section_format", 
+                               memory=memory)
+        else:
+            # Full display mode
+            return self.get("prompts.context_memory_section_format", 
+                           memory=memory)
     
     def get_principle_list_formatted(self, list_type: str = "detailed") -> str:
         """

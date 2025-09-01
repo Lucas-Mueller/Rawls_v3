@@ -551,22 +551,6 @@ class UtilityAgent:
             
         return None
 
-    async def detect_vote_intention_enhanced(self, response: str) -> Optional[str]:
-        """Compatibility method for legacy vote intention detection."""
-        # Simple vote intention detection for backward compatibility
-        response_lower = response.lower().strip()
-        
-        vote_intentions = [
-            'vote', 'voting', 'ballot', 'poll',
-            'let\'s vote', 'should we vote', 'ready to vote',
-            'call for a vote', 'time to vote', 'proceed with voting'
-        ]
-        
-        for intention in vote_intentions:
-            if intention in response_lower:
-                return response  # Return original response if vote intention detected
-        
-        return None  # No vote intention detected
 
     async def detect_agreement(self, response: str) -> bool:
         """Detect yes/no agreement in responses."""
@@ -665,3 +649,36 @@ class UtilityAgent:
             principle_name=principle_name,
             constraint_type=constraint_type
         )
+
+    async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
+        """
+        Validate that the recorded consensus aligns with the discussion content.
+        Returns (is_valid, warnings_list)
+        """
+        warnings = []
+        
+        # Use LLM to analyze discussion content for principle preferences
+        validation_prompt = self.language_manager.get(
+            "prompts.utility_consensus_validation",
+            discussion_content=discussion_content,
+            consensus_principle=consensus_principle
+        )
+        
+        try:
+            await self.async_init()
+            result = await run_without_tracing(self.parser_agent, validation_prompt)
+            response = result.final_output.strip()
+            
+            if "CONSENSUS_MISMATCH" in response:
+                warnings.append("Consensus validation failed: Final consensus doesn't match discussion content")
+                return False, warnings
+            elif "CONSENSUS_VALID" in response:
+                return True, warnings
+            else:
+                warnings.append("Consensus validation inconclusive: Unable to determine alignment")
+                return True, warnings  # Default to valid if inconclusive
+                
+        except Exception as e:
+            logger.warning(f"Consensus validation failed due to error: {e}")
+            warnings.append(f"Consensus validation error: {str(e)}")
+            return True, warnings  # Default to valid if error occurs

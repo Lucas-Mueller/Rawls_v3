@@ -102,7 +102,7 @@ class QuarantineTestFixture:
         
         # Set up expected async methods
         utility_agent.async_init = AsyncMock()
-        utility_agent.detect_vote_intention_enhanced = AsyncMock(return_value=None)
+        # detect_vote_intention_enhanced removed - using formal voting system
         utility_agent.detect_preference_statement = AsyncMock(return_value=None)
         utility_agent.parse_principle_choice_enhanced = AsyncMock()
         utility_agent.validate_constraint_specification = AsyncMock(return_value=True)

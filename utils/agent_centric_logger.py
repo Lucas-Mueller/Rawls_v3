@@ -430,10 +430,79 @@ class AgentCentricLogger:
         
         self.current_vote_round.two_stage_failures.append(failure_info)
     
+    def log_round_vote_requests(
+        self,
+        round_number: int,
+        vote_requests: Dict[str, str]
+    ):
+        """
+        Log vote initiation requests for a discussion round.
+        
+        Args:
+            round_number: The discussion round number
+            vote_requests: Dict mapping agent_name -> "Yes"/"No" for wanting to initiate a vote
+        """
+        if not self.voting_history:
+            self.initialize_voting_history()
+        
+        # Store the vote requests for this round
+        self.voting_history.vote_initiation_requests[round_number] = vote_requests.copy()
+    
+    def log_vote_confirmation_attempt(
+        self,
+        round_number: int,
+        initiator: str,
+        confirmation_responses: Dict[str, str],
+        confirmation_succeeded: bool
+    ):
+        """
+        Log a vote confirmation attempt.
+        
+        Args:
+            round_number: The discussion round when confirmation was attempted
+            initiator: Name of the agent who initiated the vote
+            confirmation_responses: Dict mapping agent_name -> "Yes"/"No" for agreeing to vote
+            confirmation_succeeded: Whether all agents agreed to vote
+        """
+        if not self.voting_history:
+            self.initialize_voting_history()
+        
+        confirmation_attempt = {
+            "round_number": round_number,
+            "initiator": initiator,
+            "confirmation_responses": confirmation_responses.copy(),
+            "confirmation_succeeded": confirmation_succeeded,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        self.voting_history.vote_confirmation_attempts.append(confirmation_attempt)
+    
+    def collect_vote_initiation_from_rounds(self):
+        """
+        Auto-collect vote initiation data from existing agent round logs.
+        This method scans through all agent round logs and extracts initiate_vote responses.
+        """
+        if not self.voting_history:
+            self.initialize_voting_history()
+        
+        for agent_log in self.agent_logs.values():
+            for round_log in agent_log.phase_2.rounds:
+                round_num = round_log.number_discussion_round
+                
+                # Initialize round if not exists
+                if round_num not in self.voting_history.vote_initiation_requests:
+                    self.voting_history.vote_initiation_requests[round_num] = {}
+                
+                # Record this agent's vote initiation response
+                self.voting_history.vote_initiation_requests[round_num][agent_log.name] = round_log.initiate_vote
+    
     def generate_target_state(self) -> TargetStateStructure:
         """Generate the complete target state structure."""
         if not self.general_info:
             raise ValueError("General experiment information not set")
+        
+        # Auto-collect vote initiation data from agent round logs before generating target state
+        self.collect_vote_initiation_from_rounds()
         
         agent_data = [
             agent_log.to_target_format() 
@@ -507,35 +576,3 @@ class MemoryStateCapture:
     
     # Removed extract_confidence_from_response - no longer needed with structured data
     
-    @staticmethod
-    async def extract_vote_intention(response_text: str, utility_agent=None) -> str:
-        """Extract vote initiation intention from response using enhanced detection."""
-        if utility_agent is not None:
-            # Use the enhanced vote detection from utility agent for consistency
-            try:
-                vote_result = await utility_agent.detect_vote_intention_enhanced(response_text)
-                return "Yes" if vote_result is not None else "No"
-            except Exception as e:
-                # Fallback to basic detection if utility agent fails
-                import logging
-                logging.getLogger(__name__).warning(f"Enhanced vote detection failed, using fallback: {e}")
-        
-        # Fallback: Basic pattern matching (preserved for backward compatibility)
-        response_lower = response_text.lower()
-        vote_positive = [
-            "i propose we vote",
-            "let's vote",
-            "lets vote",
-            "vote now",
-            "call for a vote",
-            "time to vote",
-            "we should vote",
-            "proceed with a vote",
-        ]
-        vote_negative_context = [
-            "should we vote?",
-            "no constraints",  # domain phrase, not a refusal
-        ]
-        if any(p in response_lower for p in vote_positive) and not any(n in response_lower for n in vote_negative_context):
-            return "Yes"
-        return "No"

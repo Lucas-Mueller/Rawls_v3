@@ -25,6 +25,7 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.simple_memory_manager import SimpleMemoryManager
+from utils.selective_memory_manager import SelectiveMemoryManager, MemoryEventType
 from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
 from core.two_stage_voting_manager import TwoStageVotingManager
@@ -68,6 +69,35 @@ class Phase2Manager:
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
+    
+    def _get_localized_message(self, key: str, **kwargs) -> str:
+        """Get localized message with fallback handling."""
+        try:
+            return self.language_manager.get(key, **kwargs)
+        except Exception as e:
+            self._log_warning(f"Missing translation key: {key} - {str(e)}")
+            # Return English fallback or key name
+            return f"[MISSING: {key}]"
+    
+    def _format_voting_tag_message(self, tag_key: str, message_key: str = None, **kwargs) -> str:
+        """Format voting system messages with consistent tagging."""
+        tag = self._get_localized_message(f"system_messages.voting.{tag_key}")
+        if message_key:
+            message = self._get_localized_message(f"system_messages.voting.{message_key}", **kwargs)
+            return f"{tag} {message}"
+        return tag
+    
+    def _format_group_composition(self, participants: List[str]) -> str:
+        """Format group composition message with proper localization."""
+        participant_list = ", ".join(participants[:-1]) + f" and {participants[-1]}" if len(participants) > 1 else participants[0]
+        return self._get_localized_message(
+            "system_messages.discussion.group_composition", 
+            participants=participant_list
+        )
+    
+    def _get_localized_income_class(self, income_class: str) -> str:
+        """Get localized income class label."""
+        return self._get_localized_message(f"results.income_classes.{income_class}")
     
     
     def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
@@ -521,7 +551,6 @@ Please ensure your response contains a clear statement about your position on th
                 
                 # Log discussion round
                 if logger:
-                    vote_intention = await MemoryStateCapture.extract_vote_intention(statement, self.utility_agent)
                     favored_principle = await self._extract_favored_principle(statement)
                     
                     logger.log_discussion_round(
@@ -530,7 +559,7 @@ Please ensure your response contains a clear statement about your position on th
                         speaking_order_position + 1,  # 1-indexed speaking order
                         internal_reasoning,
                         statement,
-                        vote_intention,
+                        "N/A",  # Vote intention detection removed - using formal voting system instead
                         favored_principle,
                         memory_before,
                         balance_before
@@ -553,12 +582,22 @@ Please ensure your response contains a clear statement about your position on th
                     statement=statement,
                     speaking_order_position=speaking_order_position + 1,
                     internal_reasoning=internal_reasoning,
-                    include_internal_reasoning=include_reasoning
+                    include_internal_reasoning=include_reasoning,
+                    favored_principle=favored_principle
                 )
                 
-                # Update participant memory with agent using new guidance style
-                context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                    participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+                # Update participant memory using selective routing for optimization
+                context.memory = await SelectiveMemoryManager.update_memory_selective(
+                    agent=participant, 
+                    context=context, 
+                    content=round_content, 
+                    event_type=MemoryEventType.DISCUSSION_STATEMENT,
+                    event_metadata={'round_number': round_num, 'participant_name': participant.name},
+                    config=self.config,
+                    language_manager=self.language_manager, 
+                    error_handler=self.error_handler, 
+                    utility_agent=self.utility_agent,
+                    memory_guidance_style=memory_guidance_style
                 )
                 contexts[participant_idx] = update_participant_context(
                     context, new_round=round_num
@@ -686,6 +725,19 @@ Please ensure your response contains a clear statement about your position on th
                 self._log_info(f"   • Result: Continuing to next round")
             else:
                 self._log_info(f"📊 End-of-round vote summary for round {round_num}: Voting was initiated")
+                
+            # Log vote initiation requests to voting history
+            if self.logger:
+                # Convert None responses to "Error" for logging
+                clean_responses = {}
+                for agent_name, response in vote_responses.items():
+                    if response is True:
+                        clean_responses[agent_name] = "Yes"
+                    elif response is False:
+                        clean_responses[agent_name] = "No"
+                    else:
+                        clean_responses[agent_name] = "Error"
+                self.logger.log_round_vote_requests(round_num, clean_responses)
                 
             # Log round completion for ProcessFlowLogger
             if process_logger:
@@ -904,7 +956,7 @@ Please ensure your response contains a clear statement about your position on th
                 if attempt > 0:
                     self._log_info(f"Vote prompt retry {attempt + 1}/{max_retries} for {participant.name}")
                     # Add gentle retry instruction for subsequent attempts
-                    retry_prompt = f"{vote_prompt}\n\n⚠️ Please respond with exactly 1 (to vote now) or 0 (to continue discussion)."
+                    retry_prompt = f"{vote_prompt}\n\n{self._get_localized_message('voting_prompts.retry_instruction')}"
                 else:
                     retry_prompt = vote_prompt
                 
@@ -998,7 +1050,7 @@ Please ensure your response contains a clear statement about your position on th
                 )
             
             # Add immediate notification to all agents that voting has started
-            discussion_state.public_history += f"\n[VOTING INITIATED] {initiator.name} has initiated formal voting."
+            discussion_state.public_history += f"\n{self._format_voting_tag_message('initiated_tag', 'initiated_message', name=initiator.name)}"
             
             # Update all agent memories with voting start
             await self._update_all_memories_for_voting_phase(
@@ -1065,7 +1117,7 @@ Please ensure your response contains a clear statement about your position on th
             keep_length = int(max_length * 0.75)
             
             # Add marker to indicate truncation and keep recent discussion
-            truncated_history = "...[earlier discussion truncated]...\n" + discussion_state.public_history[-keep_length:]
+            truncated_history = self._get_localized_message("system_messages.discussion.truncation_marker") + "\n" + discussion_state.public_history[-keep_length:]
             discussion_state.public_history = truncated_history
             
             # Log the truncation for debugging
@@ -1221,31 +1273,28 @@ Please ensure your response contains a clear statement about your position on th
         
         # Build consensus status message
         if consensus_result.consensus_reached:
-            consensus_status = f"Group reached consensus on {consensus_result.agreed_principle.principle.value}"
             if consensus_result.agreed_principle.constraint_amount:
-                consensus_status += f" (${consensus_result.agreed_principle.constraint_amount:,})"
+                consensus_status = self._get_localized_message("voting_results.consensus_with_constraint", 
+                                                             principle_name=consensus_result.agreed_principle.principle.value,
+                                                             constraint_amount=consensus_result.agreed_principle.constraint_amount)
+            else:
+                consensus_status = self._get_localized_message("voting_results.consensus_reached", 
+                                                             principle_name=consensus_result.agreed_principle.principle.value)
         else:
-            consensus_status = "Group did not reach consensus. Earnings were randomly assigned"
+            consensus_status = self._get_localized_message("phase2_no_consensus")
         
-        # Format the class name for display
-        class_display_map = {
-            "very_high": "VERY HIGH",
-            "high": "HIGH",
-            "medium": "MEDIUM",
-            "low": "LOW",
-            "very_low": "VERY LOW"
-        }
-        formatted_class = class_display_map.get(assigned_class.lower(), assigned_class)
+        # Format the class name for display using localization
+        formatted_class = self._get_localized_income_class(assigned_class.lower())
         
         # Build the header
         language_manager = self.language_manager
-        result_content = f"""PHASE 2 FINAL RESULTS
+        result_content = f"""{self._get_localized_message('results.phase2_header')}
 
-Consensus Status: {consensus_status}
+{self._get_localized_message('results.consensus_status')} {consensus_status}
 {language_manager.get('memory_field_labels.your_income_assignment')} {formatted_class}
 {language_manager.get('memory_field_labels.your_earnings')} ${final_earnings:.2f}
 
-COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
+{self._get_localized_message('results.counterfactual_header')}"""
         
         # Get principle display names
         principle_display_names = {
@@ -1256,9 +1305,13 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         }
         
         # Add table header
-        result_content += """
+        principle_header = self._get_localized_message('results.table_headers.principle')
+        income_header = self._get_localized_message('results.table_headers.income')
+        earnings_header = self._get_localized_message('results.table_headers.earnings')
+        
+        result_content += f"""
 ┌─────────────────────────────────────────┬──────────┬──────────┐
-│ Justice Principle                       │ Income   │ Earnings │
+│ {principle_header:<39} │ {income_header:>8} │ {earnings_header:>8} │
 ├─────────────────────────────────────────┼──────────┼──────────┤"""
         
         # Add each principle's earnings
@@ -1288,19 +1341,19 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             best_diff = best_earnings - current_earnings
             worst_diff = current_earnings - worst_earnings
             
-            result_content += f"\n\nKey Insights:"
+            result_content += f"\n\n{self._get_localized_message('results.key_insights')}"
             
             if best_diff > 0:
-                result_content += f"\n- Best alternative: Would have earned ${best_diff:.2f} more under {best_principle_name}"
+                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_more', best_principle=best_principle_name, best_diff=best_diff)}"
             elif best_diff == 0:
-                result_content += f"\n- Best alternative: Current earnings match the best possible outcome"
+                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_same')}"
             else:
-                result_content += f"\n- Best alternative: All other principles would have yielded less"
+                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_same')}"
                 
             if worst_diff > 0:
-                result_content += f"\n- Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle_name}"
+                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_worst_more', worst_principle=worst_principle_name, worst_diff=worst_diff)}"
             elif worst_diff == 0:
-                result_content += f"\n- Worst alternative: Current earnings match the worst possible outcome"
+                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_worst_same')}"
         
         return result_content
     
@@ -1345,15 +1398,23 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 )
             else:
                 # Use basic results (original behavior)
-                result_content = f"FINAL RESULTS: Phase 2 earnings: ${final_earnings:.2f}. "
+                result_content = f"{self._get_localized_message('results.phase2_header')}: Phase 2 earnings: ${final_earnings:.2f}. "
                 if discussion_result.consensus_reached:
-                    result_content += f"Group reached consensus on {discussion_result.agreed_principle.principle.value}."
+                    result_content += self._get_localized_message("voting_results.consensus_reached", principle_name=discussion_result.agreed_principle.principle.value) + "."
                 else:
-                    result_content += "Group did not reach consensus. Earnings were randomly assigned."
+                    result_content += self._get_localized_message("phase2_no_consensus") + "."
             
-            # Update memory with agent
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, f"Final Phase 2 Results: {result_content}", language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            # Update memory with final results using selective routing
+            context.memory = await SelectiveMemoryManager.update_memory_selective(
+                agent=participant, 
+                context=context, 
+                content=f"Final Phase 2 Results: {result_content}",
+                event_type=MemoryEventType.FINAL_RESULTS,
+                event_metadata={'final_earnings': final_earnings, 'consensus_reached': discussion_result.consensus_reached},
+                config=self.config,
+                language_manager=self.language_manager, 
+                error_handler=self.error_handler, 
+                utility_agent=self.utility_agent
             )
             
             updated_context = update_participant_context(
@@ -1490,14 +1551,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         num_participants = len(self.participants)
         participant_names = [participant.name for participant in self.participants]
         
-        if num_participants == 1:
-            group_participants = f"The current group consists of 1 participant: {participant_names[0]}"
-        elif num_participants == 2:
-            group_participants = f"The current group consists of 2 participants: {participant_names[0]} and {participant_names[1]}"
-        else:
-            # For 3 or more participants: "Name1, Name2, and Name3"
-            names_except_last = ", ".join(participant_names[:-1])
-            group_participants = f"The current group consists of {num_participants} participants: {names_except_last}, and {participant_names[-1]}"
+        group_participants = self._format_group_composition(participant_names)
         
         # Always use complex mode prompts (formal voting system)
         base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
@@ -1508,7 +1562,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
         # If internal reasoning is provided, include it in the prompt
         if internal_reasoning and internal_reasoning.strip():
-            return f"{base_prompt}\n\n=== YOUR INTERNAL REASONING ===\n{internal_reasoning}\n================================\n\nBased on your internal reasoning above, what is your statement to the group for this round?"
+            return f"{base_prompt}\n\n{self._get_localized_message('voting_prompts.internal_reasoning_section')}\n{internal_reasoning}\n================================\n\n{self._get_localized_message('voting_prompts.reasoning_prompt')}"
         else:
             return base_prompt
     
@@ -1628,7 +1682,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                         'response': "1 (auto-confirmed as initiator)",
                         'agrees': True
                     })
-                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: Confirmed (initiated vote)"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: Confirmed (initiated vote)"
                     self._log_info(f"Auto-confirmed vote initiator: {participant.name}")
                     continue  # Skip to next participant
                 
@@ -1663,8 +1717,8 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
                 if is_fallback:
                     self._log_warning(f"Fallback response detected for {participant.name} - voting confirmation failed")
-                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
-                    discussion_state.public_history += f"\n[VOTING RESULT] Agent failure detected - confirmation failed"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} Agent failure detected - confirmation failed"
                     return False
                 
                 # Use numerical agreement detection (1=yes, 0=no)
@@ -1673,8 +1727,8 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 # Handle malformed responses
                 if parse_error is not None:
                     self._log_warning(f"Malformed confirmation response from {participant.name}: {parse_error}")
-                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
-                    discussion_state.public_history += f"\n[VOTING RESULT] Invalid response format - confirmation failed. {parse_error}"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} Invalid response format - confirmation failed. {parse_error}"
                     return False
                 
                 confirmations.append({
@@ -1684,7 +1738,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 })
                 
                 # Add to public history (visible to all)
-                discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+                discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
                 
                 # Update participant memory with their confirmation response using simple insertion
                 SimpleMemoryManager.insert_confirmation_response(
@@ -1694,15 +1748,48 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                 # If anyone disagrees, confirmation phase fails
                 if not agrees_to_vote:
                     self._log_info(f"{participant.name} declined voting - confirmation failed")
-                    discussion_state.public_history += f"\n[VOTING RESULT] Confirmation failed - returning to discussion"
+                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} {self._get_localized_message('system_messages.voting.confirmation_failed')}"
+                    
+                    # Log the failed confirmation attempt with all responses collected so far
+                    if self.logger:
+                        confirmation_responses = {}
+                        for confirmation in confirmations:
+                            participant_name = confirmation['participant']
+                            agrees = confirmation['agrees']
+                            confirmation_responses[participant_name] = "Yes" if agrees else "No"
+                        
+                        self.logger.log_vote_confirmation_attempt(
+                            round_number=discussion_state.round_number,
+                            initiator=initiator_name,
+                            confirmation_responses=confirmation_responses,
+                            confirmation_succeeded=False
+                        )
+                    
                     return False
             
             self._log_info("All participants agreed to vote - proceeding to secret ballot")
-            discussion_state.public_history += f"\n[VOTING RESULT] All participants agreed - proceeding to secret ballot"
+            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} {self._get_localized_message('system_messages.voting.confirmation_success')}"
         
             # Log confirmation results
             if self.logger:
                 self.logger.log_confirmation_phase(confirmations)
+                
+                # Also log vote confirmation attempt for new voting history tracking
+                confirmation_responses = {}
+                confirmation_succeeded = True
+                for confirmation in confirmations:
+                    participant_name = confirmation['participant']
+                    agrees = confirmation['agrees']
+                    confirmation_responses[participant_name] = "Yes" if agrees else "No"
+                    if not agrees:
+                        confirmation_succeeded = False
+                
+                self.logger.log_vote_confirmation_attempt(
+                    round_number=discussion_state.round_number,
+                    initiator=initiator_name,
+                    confirmation_responses=confirmation_responses,
+                    confirmation_succeeded=confirmation_succeeded
+                )
             
             return True
             
@@ -1742,7 +1829,7 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         if vote_result is None:
             # Voting process failed - log and return to discussion
             self._log_warning("Two-stage voting process failed - returning to discussion")
-            discussion_state.public_history += f"\n[VOTING ERROR] Two-stage voting process failed - returning to discussion"
+            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.error_tag')} {self._get_localized_message('system_messages.voting.process_failed')}"
             return False
         
         # Store vote result in discussion state (maintains compatibility with existing code)
@@ -1909,12 +1996,17 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             if additional_info:
                 memory_content += f" {additional_info}"
             
-            # Update participant memory
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                self.participants[i], context, memory_content,
-                memory_guidance_style=self.config.memory_guidance_style if self.config else "narrative",
+            # Update participant memory using selective routing
+            context.memory = await SelectiveMemoryManager.update_memory_selective(
+                agent=self.participants[i], 
+                context=context, 
+                content=memory_content,
+                event_type=MemoryEventType.PHASE_TRANSITION,
+                event_metadata={'phase_name': phase_name, 'initiator_name': initiator_name if 'initiator_name' in locals() else None},
+                config=self.config,
                 language_manager=self.language_manager,
                 error_handler=self.error_handler,
-                utility_agent=self.utility_agent
+                utility_agent=self.utility_agent,
+                memory_guidance_style=self.config.memory_guidance_style if self.config else "narrative"
             )
     

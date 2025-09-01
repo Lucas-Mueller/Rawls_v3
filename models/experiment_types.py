@@ -182,13 +182,24 @@ class GroupDiscussionState(BaseModel):
             # Fallback to simple format when no language manager provided
             self.public_history += f"\n{participant_name}: {statement}"
     
-    def add_vote_result(self, vote_result: VoteResult):
+    def add_vote_result(self, vote_result: VoteResult, language_manager=None):
         """Add vote result to public history."""
         self.vote_history.append(vote_result)
-        vote_summary = f"Vote conducted - Consensus: {'Yes' if vote_result.consensus_reached else 'No'}"
-        if vote_result.consensus_reached and vote_result.agreed_principle:
-            vote_summary += f" (Agreed on: {vote_result.agreed_principle.principle.value})"
-        self.public_history += f"\n[VOTE RESULT] {vote_summary}"
+        
+        if language_manager:
+            consensus_status = "Yes" if vote_result.consensus_reached else "No"
+            vote_summary = language_manager.get("system_messages.voting.result_summary", consensus=consensus_status)
+            if vote_result.consensus_reached and vote_result.agreed_principle:
+                vote_summary += language_manager.get("system_messages.voting.agreed_principle", principle=vote_result.agreed_principle.principle.value)
+            result_tag = language_manager.get("system_messages.voting.result_tag")
+        else:
+            # Fallback to English
+            vote_summary = f"Vote conducted - Consensus: {'Yes' if vote_result.consensus_reached else 'No'}"
+            if vote_result.consensus_reached and vote_result.agreed_principle:
+                vote_summary += f" (Agreed on: {vote_result.agreed_principle.principle.value})"
+            result_tag = "[VOTING RESULT]"
+            
+        self.public_history += f"\n{result_tag} {vote_summary}"
 
 
 class GroupDiscussionResult(BaseModel):

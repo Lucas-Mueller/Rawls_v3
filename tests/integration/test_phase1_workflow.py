@@ -153,47 +153,8 @@ class TestPhase1Workflow(unittest.TestCase):
             self.test_result("Agreement detection workflow", False, f"Exception: {str(e)}")
     
     async def test_vote_detection_workflow(self):
-        """Test vote detection workflow with various formats."""
-        await self.async_setUp()
-        
-        try:
-            # Test cases: (statement, should_detect_vote)
-            test_cases = [
-                ("I propose we vote on maximizing the floor income", True),
-                ("Let's vote now", True),
-                ("Ready to vote", True),
-                ("Time to vote", True),
-                ("We should proceed with a vote", True),
-                ("Let's finalize this with a vote", True),
-                ("I think we need more discussion", False),
-                ("What do you think about this principle?", False),
-                ("I'm not sure yet", False),
-                ("VOTE: I formally propose maximizing the average income with a floor constraint", True),
-                ("Let me think about this more", False),
-            ]
-            
-            correct_detections = 0
-            total_tests = len(test_cases)
-            
-            for statement, should_detect in test_cases:
-                try:
-                    result = await self.utility_agent.detect_vote_intention_enhanced(statement)
-                    detected = result is not None
-                    
-                    if detected == should_detect:
-                        correct_detections += 1
-                except Exception:
-                    pass  # Count as incorrect
-            
-            accuracy = correct_detections / total_tests
-            self.test_result(
-                "Vote detection workflow accuracy",
-                accuracy >= 0.8,  # 80% accuracy threshold
-                f"Accuracy: {accuracy:.1%} ({correct_detections}/{total_tests})"
-            )
-            
-        except Exception as e:
-            self.test_result("Vote detection workflow", False, f"Exception: {str(e)}")
+        """Test removed - vote detection no longer used."""
+        pytest.skip("Vote detection removed - using formal voting system instead")
     
     def test_constraint_validation_workflow(self):
         """Test constraint validation workflow."""
@@ -325,7 +286,7 @@ class TestPhase1Workflow(unittest.TestCase):
         # Run tests
         self.test_pydantic_validation_workflow()
         await self.test_agreement_detection_workflow()
-        await self.test_vote_detection_workflow()
+        # Vote detection test removed - using formal voting system instead
         self.test_constraint_validation_workflow()
         await self.test_end_to_end_parsing_workflow()
         await self.test_error_recovery_workflow()

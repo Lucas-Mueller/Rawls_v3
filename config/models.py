@@ -89,6 +89,11 @@ class ExperimentConfiguration(BaseModel):
     include_experiment_explanation_each_turn: bool = Field(False, description="Whether to include experiment explanation on every turn (default: only first turn per phase)")
     phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
     
+    # Selective memory update optimization
+    selective_memory_updates: bool = Field(True, description="Enable selective memory updates to reduce LLM calls for simple events")
+    memory_update_threshold: str = Field("moderate", description="Memory update threshold: 'minimal', 'moderate', or 'comprehensive'")
+    batch_simple_events: bool = Field(False, description="Batch multiple simple memory events together (future enhancement)")
+    
     # Voting detection configuration - removed (always uses complex mode)
     
     # Reproducibility configuration
@@ -122,6 +127,15 @@ class ExperimentConfiguration(BaseModel):
         valid_styles = ["narrative", "structured"]
         if v not in valid_styles:
             raise ValueError(f"Invalid memory guidance style: {v}. Must be one of {valid_styles}")
+        return v
+    
+    @field_validator('memory_update_threshold')
+    @classmethod
+    def validate_memory_update_threshold(cls, v):
+        """Validate memory update threshold is supported."""
+        valid_thresholds = ["minimal", "moderate", "comprehensive"]
+        if v not in valid_thresholds:
+            raise ValueError(f"Invalid memory update threshold: {v}. Must be one of {valid_thresholds}")
         return v
     
     
