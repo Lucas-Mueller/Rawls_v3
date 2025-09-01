@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The Frohlich Experiment is a Python-based framework for conducting experiments with AI agents simulating distributive justice scenarios. It's inspired by economist Norman Frohlich's experiments and implements a "veil of ignorance" scenario where AI agents engage in two-phase experiments to reach consensus on principles of justice.
 
+The framework uses OpenAI Agents SDK for participant agents and integrates sophisticated voting systems, multilingual support, and comprehensive experiment orchestration.
+
 ## Core Architecture
 
 ### Two-Phase Experiment Structure
@@ -74,6 +76,12 @@ pip install -r requirements.txt
 # Set up environment variables (create .env file)
 OPENAI_API_KEY=your_key_here
 ```
+
+### Code Quality
+The project does not have dedicated linting commands configured. When working on the codebase:
+- Follow existing code style and patterns
+- Run the test suite to ensure changes don't break functionality
+- Use the import test in `run_tests.py` to verify module integrity
 
 ## Multi-Language Support
 
@@ -155,3 +163,12 @@ The `hypothesis_testing/` directory contains organized experimental conditions:
 - `core/principle_name_manager.py`: Consistent justice principle terminology
 - `utils/cultural_adaptation.py`: Multilingual number formatting and cultural context
 - `experiment_agents/`: Participant and utility agent implementations
+- `utils/experiment_runner.py`: Utility for batch experiment execution
+- `hypothesis_testing/utils_hypothesis_testing/runner.py`: Framework for hypothesis testing workflows
+
+## Important-Instruction-Reminders
+
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one  
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested by the User
