@@ -260,20 +260,7 @@ class TwoStageVotingManager:
                     )
                     logger.debug(f"Received result from agent {participant.name}: type={type(result)}")
                     
-                    # Check for re-entrant tool calls (defensive detection)
-                    has_tool_call, tool_call_info = self._check_for_tool_calls(result)
-                    if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
-                        logger.info(f"Re-entrant vote proposal during principle selection from {participant.name} (attempt {attempt})")
-                        # Create gentle re-prompting message
-                        current_prompt = f"""Voting is already in progress. Please respond with only a number (1-4):
-
-1 = Maximizing Floor Income
-2 = Maximizing Average Income 
-3 = Maximizing Average with Floor Constraint
-4 = Maximizing Average with Range Constraint
-
-Please enter your choice (1, 2, 3, or 4):"""
-                        continue  # Retry without counting as hard failure
+                    # Tool detection removed - no more tool calls to check
                     
                     response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
                 
@@ -394,15 +381,7 @@ Please enter your choice (1, 2, 3, or 4):"""
                     )
                     logger.debug(f"Received amount result from agent {participant.name}: type={type(result)}")
                     
-                    # Check for re-entrant tool calls (defensive detection)
-                    has_tool_call, tool_call_info = self._check_for_tool_calls(result)
-                    if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
-                        logger.info(f"Re-entrant vote proposal during amount specification from {participant.name} (attempt {attempt})")
-                        # Create gentle re-prompting message
-                        current_prompt = f"""Voting is already in progress. Please respond with only a dollar amount.
-
-For principle {principle_num} ({principle_name}), please specify the constraint amount as a whole dollar amount (e.g., 15000, 20000, 25000):"""
-                        continue  # Retry without counting as hard failure
+                    # Tool detection removed - no more tool calls to check
                     
                     response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
                     
@@ -785,41 +764,6 @@ For principle {principle_num} ({principle_name}), please specify the constraint 
         Run agent with given prompt and context using the actual Runner system.
         """
         return await Runner.run(agent, prompt, context=context)
-    
-    def _check_for_tool_calls(self, result) -> tuple[bool, dict]:
-        """
-        Check if the Runner result contains tool calls (simplified version for voting manager).
-        
-        Args:
-            result: Result from Runner.run()
-            
-        Returns:
-            Tuple of (has_tool_calls, tool_call_info)
-        """
-        if not hasattr(result, 'new_items') or not result.new_items:
-            return False, {}
-        
-        for item in result.new_items:
-            # Check for tool call by class name (fallback approach)
-            item_class = item.__class__.__name__
-            if item_class in ['ToolCallItem', 'ToolCallOutputItem']:
-                # Extract tool information
-                tool_info = {}
-                
-                # Try to get tool name from various attributes
-                tool_name = None
-                if hasattr(item, 'function_name'):
-                    tool_name = item.function_name
-                elif hasattr(item, 'raw_item') and hasattr(item.raw_item, 'function'):
-                    if hasattr(item.raw_item.function, 'name'):
-                        tool_name = item.raw_item.function.name
-                
-                if tool_name:
-                    tool_info['tool_name'] = tool_name
-                    tool_info['function_name'] = tool_name
-                    return True, tool_info
-        
-        return False, {}
 
     # Fallback methods for when language manager is not available
     def _get_fallback_principle_prompt(self) -> str:

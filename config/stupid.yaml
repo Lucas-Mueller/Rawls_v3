@@ -1,18 +1,18 @@
-language: "English" 
+language: "Mandarin" 
 
 seed: 420
 
 agents:
   - name: "Alice"
-    personality: "You are an american college student"
-    model:  "google/gemini-2.5-flash"
+    personality: "You are an  college student"
+    model:  "google/gemini-2.0-flash-lite-001"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
-    personality: "You are an american college student."
-    model: "google/gemini-2.5-flash"
+    personality: "You are an college student."
+    model: "google/gemini-2.0-flash-lite-001"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true
@@ -20,7 +20,7 @@ agents:
 
 voting_detection_mode: "complex"
 
-utility_agent_model: "google/gemini-2.5-flash"
+utility_agent_model: "google/gemini-2.0-flash-lite-001"
 utility_agent_temperature: 0.0
 
 phase2_rounds: 5

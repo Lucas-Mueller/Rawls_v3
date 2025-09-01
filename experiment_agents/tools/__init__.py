@@ -1,6 +1,8 @@
 """
 Tools package for participant agents.
-"""
-from .voting_tools import propose_vote
 
-__all__ = ["propose_vote"]
+NOTE: All voting tools have been removed as part of the migration to 
+prompt-based voting. Agents no longer need tool access for voting.
+"""
+
+__all__ = []

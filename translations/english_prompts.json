@@ -51,6 +51,7 @@
     "phase2_agent_unavailable": "{participant_name} is currently unavailable to provide a statement.",
     "phase2_favored_principle_unspecified": "unspecified",
     "phase2_final_ranking_prompt": "CURRENT TASK: The Four Justice Principles:\nMaximizing the floor income: The most just distribution of income is that which maximizes the floor (or lowest) income in the society. This principle considers only the welfare of the worst-off individual in society.\nMaximizing the average income: The most just distribution of income is that which maximizes the average income in the society. For any society maximizing the average income maximizes the total income in the society.\nMaximizing the average income with a floor constraint: The most just distribution of income is that which maximizes the average income only after a certain specified minimum income is guaranteed to everyone. To choose this principle one must specify the value of the floor (lowest income).\nMaximizing the average income with a range constraint: The most just distribution of income is that which attempts to maximize the average income only after guaranteeing that the difference between the poorest and the richest individuals (i.e., the range of income) in the society is not greater than a specified amount. To choose this principle one must specify the dollar difference between the high and low incomes.\n\nYou will be asked to rank these four justice principles from best (1) to worst (4) based on your preference.\nProvide an overall certainty level (very unsure, unsure, no opinion, sure, very sure).\n\nRESPONSE FORMAT:\nPlease structure your response as follows:\n\n[Your best choice]\n[Your second choice]\n[Your third choice]\n[Your worst choice]\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]",
+    "vote_initiation_prompt": "Do you want to initiate a vote on the justice principles now?\n\nThe discussion has progressed, and you may feel ready to move to formal voting where all participants will select their preferred principle through a secret ballot.\n\nPlease respond with:\n- 1 if you want to initiate voting now\n- 0 if you want to continue the discussion\n\nYour response (1 or 0):",
     "phase2_internal_reasoning": "**IMPORTANT: The stakes are much higher in this phase than in Phase 1.** Your payoffs in this section of the experiment will conform to the principle which you, as a group, adopt. This group decision will determine everyone's final earnings and has far greater consequences than your individual Phase 1 choices. If you, as a group, do not adopt any principle, then we will select one of the income distributions at random for you as a group. That choice of income distribution will conform to no particular characteristics.\n\nGROUP DISCUSSION - Round {round_number} of {max_rounds} (Internal Reasoning)\n\nDiscussion History:\n{discussion_history}\n\nBefore making your public statement, consider internally:\n- What is your current position on which justice principle the group should adopt?\n- How has the discussion so far influenced your thinking?\n- What arguments do you want to make in your public statement?\n- Are you ready to call for a vote, or do you need more discussion?\n\nProvide your internal reasoning (this will not be shared with other participants).",
     "context_context_info_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\nRound: {round_number}\n\n{formatted_memory}\n\n{experiment_explanation}\n\nPERSONALITY: {personality}\n\n{phase_instructions}\n\n{language_instruction}\n\nProvide clear, reasoned responses that explain your thinking.\n",
     "context_memory_update_format": "\nName: {name}\nBank Balance: ${bank_balance:.2f}\n\nPERSONALITY: {personality}\n\nYou are updating your memory.\n",
@@ -147,6 +148,16 @@
     "made_discussion_statement": "Made statement in Round {round_number} of group discussion.",
     "agreed_to_vote": "Agreed to proceed with voting",
     "declined_to_vote": "Declined to vote"
+  },
+  "voting_phases": {
+    "initiation": "Voting has been initiated by {initiator_name}. Formal voting process is starting.",
+    "confirmation": "Confirmation phase: Participants are being asked to confirm whether they agree to proceed with voting.",
+    "secret_ballot": "Secret ballot phase: All participants are casting their votes on justice principles.",
+    "results": "Voting results phase: The voting outcome has been determined and communicated to all participants."
+  },
+  "voting_results": {
+    "consensus_reached": "Consensus reached: {principle_name}",
+    "consensus_with_constraint": "Consensus reached: {principle_name} (${constraint_amount:,})"
   },
   "error_messages": {
     "empty_response_retry": "IMPORTANT: Your previous response was empty or too short. Please provide a meaningful response."

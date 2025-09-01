@@ -7,7 +7,7 @@ from config import AgentConfiguration
 from models import ParticipantContext, ExperimentPhase
 from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
-from experiment_agents.tools import propose_vote
+# Voting tools removed - now using prompt-based voting
 import asyncio
 import logging
 from typing import List
@@ -39,7 +39,7 @@ class ParticipantAgent:
         base_kwargs = {
             "name": self.config.name,
             "instructions": lambda ctx, agent: _generate_dynamic_instructions(ctx, agent, self.config, self.experiment_config, self.language_manager),
-            "tools": [propose_vote],  # Tool has conditional enabling built-in
+            "tools": [],  # All voting tools removed - now using prompt-based voting
         }
         
         # Use dynamic temperature retry system
@@ -120,7 +120,7 @@ class ParticipantAgent:
             round_number=0,
             phase=ExperimentPhase.PHASE_1,
             memory_character_limit=self.config.memory_character_limit,
-            interaction_type="memory_update"  # Disable propose_vote tool during memory updates
+            interaction_type="memory_update"  # For consistency with existing interaction types
         )
         
         result = await Runner.run(self.agent, prompt, context=temp_context)
@@ -247,7 +247,8 @@ def update_participant_context(
         memory=context.memory,  # Memory updated separately by agent
         round_number=new_round if new_round is not None else context.round_number,
         phase=new_phase if new_phase is not None else context.phase,
-        memory_character_limit=context.memory_character_limit
+        memory_character_limit=context.memory_character_limit,
+        interaction_type=context.interaction_type  # Preserve interaction_type for tool availability
     )
     
     return updated_context

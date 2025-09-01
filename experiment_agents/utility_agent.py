@@ -584,6 +584,7 @@ class UtilityAgent:
                 
         return False
     
+
     def detect_numerical_agreement(self, response: str) -> tuple[bool, Optional[str]]:
         """
         Detect numerical agreement in responses (1=yes, 0=no).

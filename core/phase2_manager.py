@@ -282,8 +282,8 @@ class Phase2Manager:
                     )
                     statement = result.final_output
                     
-                    # Check for tool calls in the result
-                    has_tool_call, tool_call_info = self._check_for_tool_calls(result)
+                    # Tool detection removed - no more tool calls to check
+                    has_tool_call, tool_call_info = False, {}
                     
                 except asyncio.TimeoutError:
                     self._log_warning(f"Timeout waiting for {participant.name} after {self.settings.statement_timeout_seconds}s")
@@ -539,6 +539,7 @@ Please ensure your response contains a clear statement about your position on th
                     participant, context, discussion_state, agent_config
                 )
                 
+                
                 # Check if response is quarantined
                 is_quarantined = statement.startswith("__QUARANTINED__")
                 if is_quarantined:
@@ -630,22 +631,24 @@ Please ensure your response contains a clear statement about your position on th
                     
                     # Check voting detection mode
                     if config.voting_detection_mode == "complex":
-                        # Use unified voting handler for complex mode
-                        consensus_via_voting = await self._check_and_handle_voting(
-                            participant, statement, tool_call_info, discussion_state, contexts
-                        )
-                        
-                        if consensus_via_voting and discussion_state.last_vote_result:
-                            # Mark consensus as reached to prevent race conditions
-                            discussion_state._consensus_reached = True
-                            discussion_state._consensus_result = GroupDiscussionResult(
-                                consensus_reached=True,
-                                agreed_principle=discussion_state.last_vote_result.agreed_principle,
-                                final_round=round_num,
-                                discussion_history=discussion_state.public_history,
-                                vote_history=discussion_state.vote_history
+                        # Use keyword-based detection for complex mode
+                        if self._is_voting_trigger_phrase(statement):
+                            self._log_info(f"Keyword-based voting detected from {participant.name}")
+                            consensus_via_voting = await self._handle_complex_voting_mode(
+                                participant, statement, discussion_state, contexts
                             )
-                            return discussion_state._consensus_result
+                            
+                            if consensus_via_voting and discussion_state.last_vote_result:
+                                # Mark consensus as reached to prevent race conditions
+                                discussion_state._consensus_reached = True
+                                discussion_state._consensus_result = GroupDiscussionResult(
+                                    consensus_reached=True,
+                                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                                    final_round=round_num,
+                                    discussion_history=discussion_state.public_history,
+                                    vote_history=discussion_state.vote_history
+                                )
+                                return discussion_state._consensus_result
                     
                     elif config.voting_detection_mode == "simple":
                         # Simple mode: Try preference detection for consensus
@@ -722,8 +725,34 @@ Please ensure your response contains a clear statement about your position on th
             # Update last round finisher for next round
             last_round_finisher = current_round_finisher
             
+            # Prompt each participant for vote initiation at end of round
+            for participant_idx, participant in enumerate(self.participants):
+                context = contexts[participant_idx]
+                
+                # Prompt for vote initiation
+                self._log_info(f"Prompting {participant.name} for vote initiation at end of round {round_num}")
+                wants_vote = await self._prompt_for_vote_initiation(participant, context)
+                
+                if wants_vote:
+                    self._log_info(f"{participant.name} wants to initiate voting")
+                    # Start voting process using existing infrastructure
+                    consensus_reached = await self._conduct_voting_process(
+                        participant, contexts, discussion_state
+                    )
+                    
+                    if consensus_reached:
+                        # End discussion - consensus found
+                        self._log_info("Consensus reached through prompted voting - ending discussion")
+                        return discussion_state._consensus_result
+                    else:
+                        self._log_info("No consensus reached through voting - continuing discussion")
+                    # Exit the vote prompting loop after first vote attempt
+                    break
+                else:
+                    self._log_info(f"{participant.name} wants to continue discussion")
+            
             # Add voting reminder after round 3 if no vote has been triggered
-            if round_num == 3 and not hasattr(discussion_state, 'vote_triggered'):
+            if round_num == 3 and not discussion_state.vote_triggered:
                 voting_reminder = self._get_voting_reminder_message()
                 discussion_state.public_history += f"\n\n[系统提醒] {voting_reminder}"
                 self._log_info("Added voting reminder after round 3 - no voting attempts detected")
@@ -846,20 +875,14 @@ Please ensure your response contains a clear statement about your position on th
         if agent_config.reasoning_enabled:
             try:
                 reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
-                # Set interaction type for internal reasoning (disables propose_vote tool)
-                context.interaction_type = "internal_reasoning"
                 reasoning_result = await asyncio.wait_for(
                     Runner.run(participant.agent, reasoning_prompt, context=context),
                     timeout=self.settings.statement_timeout_seconds
                 )
                 internal_reasoning = reasoning_result.final_output
                 
-                # Check for tool calls in reasoning phase
-                has_tool_call, tool_call_info = self._check_for_tool_calls(reasoning_result)
-                if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
-                    self._log_info(f"Tool call detected in reasoning phase for {participant.name}")
-                    # Don't return early - let it continue to public statement phase
-                    # Tool call will be handled in main discussion loop where it can properly control flow
+                # Tool calls during reasoning are now tracked via global state
+                # No need to detect them here - they'll be picked up after statement processing
                     
             except Exception as e:
                 # Log reasoning timeout/error but continue with empty reasoning
@@ -873,6 +896,7 @@ Please ensure your response contains a clear statement about your position on th
                 participant, context, discussion_state, agent_config, internal_reasoning
             )
             
+            # Tool calls are now tracked via global state - no need to detect from results
             return statement, internal_reasoning, tool_call_info
             
         except AgentCommunicationError as e:
@@ -892,166 +916,102 @@ Please ensure your response contains a clear statement about your position on th
                 # Legacy behavior: include failure message (not recommended)
                 fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
                 return fallback_statement, internal_reasoning, {}
-    
-    def _check_for_tool_calls(self, result) -> tuple[bool, dict]:
-        """
-        Check if the Runner result contains tool calls using SDK types.
-        
-        Args:
-            result: Result from Runner.run()
-            
-        Returns:
-            Tuple of (has_tool_calls, tool_call_info)
-        """
-        # Log result structure for debugging
-        self._log_info(f"Checking for tool calls in result with type: {type(result)}")
-        
-        if not hasattr(result, 'new_items') or not result.new_items:
-            self._log_info("No new_items found in result")
-            return False, {}
-        
-        self._log_info(f"Result has new_items with {len(result.new_items)} items")
-        
-        for i, item in enumerate(result.new_items):
-            self._log_info(f"Item {i}: type={type(item)}, class_name={item.__class__.__name__}")
-            
-            # Use isinstance if SDK types available, fallback to string check
-            if HAS_SDK_TYPES:
-                is_tool_call = isinstance(item, (ToolCallItem, ToolCallOutputItem))
-            else:
-                is_tool_call = item.__class__.__name__ in ['ToolCallItem', 'ToolCallOutputItem']
-            
-            if is_tool_call:
-                self._log_info(f"Found tool call item: {item.__class__.__name__}")
-                # Extract tool information robustly
-                tool_info = self._extract_tool_info(item)
-                if tool_info:
-                    self._log_info(f"✅ Detected tool call: {tool_info}")
-                    # Return true for any valid tool call (caller will check if it's propose_vote)
-                    return True, tool_info
-        
-        self._log_info("❌ No tool calls detected")
-        return False, {}
-    
-    def _extract_tool_info(self, item) -> dict:
-        """
-        Extract tool information from item with multiple fallbacks.
-        
-        Args:
-            item: Tool call item from Runner result
-            
-        Returns:
-            Dictionary with tool information, empty if no valid tool found
-        """
-        tool_info = {}
-        
-        # Try standard attributes first
-        for attr in ['function_name', 'name', 'tool_name']:
-            if hasattr(item, attr):
-                value = getattr(item, attr)
-                if value:
-                    tool_info['tool_name'] = value
-                    self._log_info(f"Found tool name from {attr}: {value}")
-                    break
-        
-        # Try nested structures in raw_item
-        if hasattr(item, 'raw_item') and item.raw_item:
-            raw = item.raw_item
-            self._log_info(f"Raw item type: {type(raw)}")
-            
-            # Check if raw item has function info
-            if hasattr(raw, 'function'):
-                if hasattr(raw.function, 'name') and raw.function.name:
-                    tool_info['tool_name'] = raw.function.name
-                    self._log_info(f"Found tool name from raw.function.name: {raw.function.name}")
-                    
-                # Extract arguments if available
-                if hasattr(raw.function, 'arguments'):
-                    tool_info['arguments'] = raw.function.arguments
-            
-            # Extract tool call ID if available
-            if hasattr(raw, 'id'):
-                tool_info['tool_call_id'] = raw.id
-        
-        # Try tool_call nested structure (alternative SDK layout)
-        if hasattr(item, 'tool_call'):
-            if hasattr(item.tool_call, 'function'):
-                if hasattr(item.tool_call.function, 'name'):
-                    tool_info['tool_name'] = item.tool_call.function.name
-                    self._log_info(f"Found tool name from tool_call.function.name: {item.tool_call.function.name}")
-        
-        # Extract arguments from various possible locations
-        if 'arguments' not in tool_info:
-            for attr in ['arguments', 'args', 'parameters']:
-                if hasattr(item, attr):
-                    tool_info['arguments'] = getattr(item, attr)
-                    break
-        
-        # Extract ID from item itself if not found in raw_item
-        if 'tool_call_id' not in tool_info and hasattr(item, 'id'):
-            tool_info['tool_call_id'] = item.id
-        
-        # Ensure function_name is set for compatibility
-        if 'tool_name' in tool_info:
-            tool_info['function_name'] = tool_info['tool_name']
-        
-        return tool_info if 'tool_name' in tool_info else {}
 
-    async def handle_vote_proposal_tool(
+    async def _prompt_for_vote_initiation(
         self,
         participant: 'ParticipantAgent',
-        tool_call_info: dict,
-        discussion_state: GroupDiscussionState,
-        contexts: List[ParticipantContext]
+        context: ParticipantContext
     ) -> bool:
         """
-        Handle vote proposal tool call.
-        This mirrors the logic of _handle_complex_voting_mode but triggered by tool call.
+        Ask participant if they want to initiate voting at end of discussion round.
         
         Args:
-            participant: The participant who called the tool
-            tool_call_info: Information about the tool call
-            discussion_state: Current discussion state
-            contexts: List of participant contexts
+            participant: The participant agent to prompt
+            context: The participant's context
             
         Returns:
-            True if consensus was reached through voting, False otherwise
+            True if agent wants to vote, False otherwise
         """
+        language_manager = self.language_manager
+        vote_prompt = language_manager.get("prompts.vote_initiation_prompt")
         
-        # Ensure we're not already in a voting process
-        if self._voting_in_progress:
-            self._log_info("Voting already in progress, ignoring new vote proposal tool")
+        try:
+            # Set interaction type for vote prompting
+            context.interaction_type = "vote_prompt"
+            
+            result = await asyncio.wait_for(
+                Runner.run(participant.agent, vote_prompt, context=context),
+                timeout=self.settings.statement_timeout_seconds
+            )
+            response = result.final_output.strip()
+            
+            # Use numerical agreement detection (1=Yes, 0=No)
+            wants_vote, parse_error = self.utility_agent.detect_numerical_agreement(response)
+            
+            if parse_error is not None:
+                # Invalid response - default to No (continue discussion)
+                self._log_warning(f"Invalid vote prompt response from {participant.name}: {parse_error}")
+                return False
+                
+            self._log_info(f"Vote initiation prompt result for {participant.name}: {'Yes' if wants_vote else 'No'}")
+            return wants_vote
+            
+        except asyncio.TimeoutError:
+            self._log_warning(f"Vote prompt timeout for {participant.name}")
+            return False  # Default to continue discussion
+        except Exception as e:
+            self._log_warning(f"Error during vote prompting for {participant.name}: {str(e)}")
             return False
+
+    async def _conduct_voting_process(
+        self,
+        initiator: 'ParticipantAgent',
+        contexts: List[ParticipantContext],
+        discussion_state: GroupDiscussionState
+    ) -> bool:
+        """
+        Conduct complete voting process using existing infrastructure.
         
-        self._log_info(f"Vote proposal tool called by {participant.name}")
-        
-        # Mark that voting has been triggered (prevents reminder messages)
+        Args:
+            initiator: Agent who initiated the vote
+            contexts: All participant contexts
+            discussion_state: Current discussion state
+            
+        Returns:
+            True if consensus reached, False otherwise
+        """
+        # Mark voting as triggered
         discussion_state.vote_triggered = True
-        
-        # Set voting flag to prevent concurrent votes
         self._voting_in_progress = True
         
         try:
-            # Start vote round tracking
+            # Log voting initiation
             if self.logger:
                 self.logger.start_vote_round(
                     round_number=discussion_state.round_number,
-                    vote_type="formal_vote_tool",
-                    trigger_participant=participant.name,
-                    trigger_statement=f"Used propose_vote tool: {tool_call_info.get('tool_name', 'propose_vote')}"
+                    vote_type="prompted_vote",
+                    trigger_participant=initiator.name,
+                    trigger_statement=f"Responded 'Yes' to vote initiation prompt"
                 )
             
-            # Set active vote flag
-            discussion_state.active_vote_in_progress = True
+            # Add immediate notification to all agents that voting has started
+            discussion_state.public_history += f"\n[VOTING INITIATED] {initiator.name} has initiated formal voting."
             
-            # Step A: Confirmation Phase with timeout
+            # Update all agent memories with voting start
+            await self._update_all_memories_for_voting_phase(
+                "initiation", contexts, initiator_name=initiator.name
+            )
+            
+            # Phase 1: Confirmation (all others must agree)
             confirmation_success = await self._conduct_confirmation_phase(
-                participant.name, f"Tool call: {participant.name} used propose_vote tool", contexts, discussion_state
+                initiator.name, 
+                f"Vote initiation: {initiator.name} wants to vote", 
+                contexts, 
+                discussion_state
             )
             
             if not confirmation_success:
-                self._log_info("Voting confirmation failed - returning to discussion")
-                # Complete failed vote round
+                self._log_info("Vote confirmation failed - continuing discussion")
                 if self.logger:
                     self.logger.complete_vote_round(
                         consensus_reached=False,
@@ -1059,27 +1019,26 @@ Please ensure your response contains a clear statement about your position on th
                     )
                 return False
             
-            # Step B: Enhanced Secret Ballot Phase using streamlined method
-            consensus_reached = await self._conduct_secret_ballot_phase(contexts, discussion_state)
-        finally:
-            # Always reset voting flags
-            self._voting_in_progress = False
-            discussion_state.active_vote_in_progress = False
-        
-        # Complete vote round with results
-        if self.logger and discussion_state.last_vote_result:
-            vote_result = discussion_state.last_vote_result
-            self.logger.complete_vote_round(
-                consensus_reached=vote_result.consensus_reached,
-                agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
-                agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None,
-                vote_counts=vote_result.vote_counts
+            # Phase 2: Secret Ballot
+            consensus_reached = await self._conduct_secret_ballot_phase(
+                contexts, discussion_state
             )
-        
-        # Complete voting process
-        discussion_state.active_vote_in_progress = False
-        
-        return consensus_reached
+            
+            # Log results
+            if self.logger and discussion_state.last_vote_result:
+                vote_result = discussion_state.last_vote_result
+                self.logger.complete_vote_round(
+                    consensus_reached=vote_result.consensus_reached,
+                    agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
+                    agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None,
+                    vote_counts=vote_result.vote_counts
+                )
+            
+            return consensus_reached
+            
+        finally:
+            self._voting_in_progress = False
+
     
     def _get_voting_reminder_message(self) -> str:
         """Get voting reminder message in appropriate language and mode."""
@@ -1088,22 +1047,13 @@ Please ensure your response contains a clear statement about your position on th
         # Check current language to provide appropriate reminder
         current_language = getattr(language_manager, 'current_language', 'mandarin')
         
-        # Use tool-based messaging for complex mode, text-based for simple mode
-        if self.config.voting_detection_mode == "complex":
-            if current_language == 'mandarin':
-                return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。使用 'propose_vote' 工具来开始正式投票程序。"
-            elif current_language == 'spanish':
-                return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Usen la herramienta 'propose_vote' para iniciar el proceso de votación formal."
-            else:  # English
-                return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Use the 'propose_vote' tool to initiate the formal voting process."
-        else:
-            # Keep text-based reminders for simple mode
-            if current_language == 'mandarin':
-                return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。说出'我们投票吧'或'我认为我们应该投票'来开始投票程序。"
-            elif current_language == 'spanish':
-                return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Digan 'Votemos' o 'Creo que deberíamos votar' para iniciar el proceso de votación."
-            else:  # English
-                return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Say 'Let's vote' or 'I think we should vote' to begin the voting process."
+        # Simplified reminders since tools are removed - text-based for all modes
+        if current_language == 'mandarin':
+            return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。说出'我们投票吧'或'我认为我们应该投票'来开始投票程序。"
+        elif current_language == 'spanish':
+            return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Digan 'Votemos' o 'Creo que deberíamos votar' para iniciar el proceso de votación."
+        else:  # English
+            return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Say 'Let's vote' or 'I think we should vote' to begin the voting process."
     
     def _manage_discussion_history_length(self, discussion_state: GroupDiscussionState) -> None:
         """
@@ -1719,6 +1669,18 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             for i, context in enumerate(contexts):
                 participant = self.participants[i]
                 
+                # Auto-confirm initiator since they proposed the vote
+                if participant.name == initiator_name:
+                    # Auto-confirm for initiator
+                    confirmations.append({
+                        'participant': participant.name,
+                        'response': "1 (auto-confirmed as initiator)",
+                        'agrees': True
+                    })
+                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: Confirmed (initiated vote)"
+                    self._log_info(f"Auto-confirmed vote initiator: {participant.name}")
+                    continue  # Skip to next participant
+                
                 # Store original setting and disable vote tool during confirmation
                 original_tool_settings.append(getattr(context, 'allow_vote_tool', True))
                 context.allow_vote_tool = False
@@ -1737,19 +1699,8 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
                         )
                         confirmation_response = result.final_output
                         
-                        # Check for re-entrant tool calls (defensive detection)
-                        has_tool_call, tool_call_info = self._check_for_tool_calls(result)
-                        if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
-                            self._log_info(f"Re-entrant vote proposal during confirmation from {participant.name} (attempt {attempt + 1})")
-                            # Create gentle re-prompting message
-                            confirmation_prompt = f"""Voting is already in progress. Please respond with only a number:
-1 = Yes, I agree to proceed with voting
-0 = No, I do not agree to proceed with voting
-
-Original question: {confirmation_prompt}"""
-                            continue  # Retry without counting as hard failure
-                        else:
-                            break  # Got valid response, exit retry loop
+                        # Tool detection removed - no tool calls to check
+                        break  # Got valid response, exit retry loop
                             
                     except asyncio.TimeoutError:
                         self._log_warning(f"Timeout waiting for confirmation from {participant.name} (attempt {attempt + 1})")
@@ -1858,10 +1809,22 @@ You were asked if you agree to proceed with voting on justice principles.
         if vote_result.consensus_reached:
             self._log_info(f"Consensus reached via enhanced two-stage voting: {vote_result.agreed_principle.principle.value}")
             
-            # Add to public history (aggregate result only, no individual ballots)
-            consensus_msg = f"Two-stage voting consensus: {vote_result.agreed_principle.principle.value}"
+            # Get localized principle name
+            principle_key = vote_result.agreed_principle.principle.value
+            localized_principle_name = self.language_manager.get(f"principle_names.{principle_key}")
+            
+            # Add to public history using localized consensus message
             if vote_result.agreed_principle.constraint_amount:
-                consensus_msg += f" (${vote_result.agreed_principle.constraint_amount:,})"
+                consensus_msg = self.language_manager.get(
+                    "voting_results.consensus_with_constraint",
+                    principle_name=localized_principle_name,
+                    constraint_amount=vote_result.agreed_principle.constraint_amount
+                )
+            else:
+                consensus_msg = self.language_manager.get(
+                    "voting_results.consensus_reached",
+                    principle_name=localized_principle_name
+                )
             discussion_state.public_history += f"\n[VOTING RESULT] {consensus_msg}"
             
             # Additional logging for transparency
@@ -1869,9 +1832,32 @@ You were asked if you agree to proceed with voting on justice principles.
         else:
             self._log_info("No consensus reached in enhanced two-stage voting")
             
-            # Analyze disagreement using existing method (maintains compatibility)
-            disagreement_message = self._analyze_ballot_disagreement(vote_result.votes)
-            discussion_state.public_history += f"\n[VOTING RESULT] {disagreement_message}"
+            # Enhanced direct messaging for clearer vote results
+            principles = [v.principle for v in vote_result.votes]
+            unique_principles = set(p.value for p in principles)
+            
+            if len(unique_principles) == 1:
+                # Same principle, different constraints - use localized constraint disagreement message
+                principle_name = principles[0].value
+                constraints = [v.constraint_amount for v in vote_result.votes if v.constraint_amount]
+                if constraints:
+                    # Use existing localized constraint disagreement message
+                    message = self.language_manager.get(
+                        "phase2_voting_no_consensus_constraint_disagreement",
+                        principle_name=principle_name
+                    )
+                    # Add detailed constraint info for debugging in logs
+                    self._log_info(f"Constraint amounts that differed: {constraints}")
+                else:
+                    # Same principle, no constraints - use general disagreement message
+                    message = self.language_manager.get("phase2_voting_no_consensus_principle_disagreement")
+            else:
+                # Different principles - use localized principle disagreement message
+                message = self.language_manager.get("phase2_voting_no_consensus_principle_disagreement")
+                # Add detailed vote breakdown for debugging in logs
+                self._log_info(f"Vote distribution: {vote_result.vote_counts}")
+            
+            discussion_state.public_history += f"\n[VOTING RESULT] {message}"
             
             # Log vote distribution for debugging
             if vote_result.vote_counts:
@@ -1948,36 +1934,41 @@ You were asked if you agree to proceed with voting on justice principles.
             # but disagreement between groups
             return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
     
-    async def _check_and_handle_voting(
-        self,
-        participant: 'ParticipantAgent',
-        statement: str,
-        tool_call_info: dict,
-        discussion_state: GroupDiscussionState,
-        contexts: List[ParticipantContext]
-    ) -> bool:
+    
+    async def _update_all_memories_for_voting_phase(
+        self, 
+        phase_name: str,
+        contexts: List[ParticipantContext],
+        additional_info: str = "",
+        initiator_name: str = None
+    ):
         """
-        Unified voting detection and handling for complex mode.
-        Returns True if consensus reached, False otherwise.
+        Update all participant memories for voting phase transitions with multilingual support.
+        
+        Args:
+            phase_name: Name of the voting phase ("initiation", "confirmation", "secret_ballot", "results")
+            contexts: List of participant contexts to update
+            additional_info: Additional information to include in memory update
+            initiator_name: Name of the participant who initiated voting (for initiation phase)
         """
-        # Ensure we're not already in a voting process
-        if self._voting_in_progress:
-            self._log_info("Voting already in progress, skipping new vote detection")
-            return False
-        
-        # Check for tool-based voting first (higher priority)
-        if tool_call_info and tool_call_info.get('tool_name') == 'propose_vote':
-            self._log_info(f"Tool-based voting proposal detected from {participant.name}")
-            return await self.handle_vote_proposal_tool(
-                participant, tool_call_info, discussion_state, contexts
+        for i, context in enumerate(contexts):
+            # Get localized voting phase message
+            if phase_name == "initiation" and initiator_name:
+                memory_content = self.language_manager.get(
+                    f"voting_phases.{phase_name}", 
+                    initiator_name=initiator_name
+                )
+            else:
+                memory_content = self.language_manager.get(f"voting_phases.{phase_name}")
+            
+            # Add any additional information
+            if additional_info:
+                memory_content += f" {additional_info}"
+            
+            # Update participant memory
+            context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                self.participants[i], context, memory_content,
+                memory_guidance_style=self.config.memory_guidance_style if self.config else "narrative",
+                language_manager=self.language_manager
             )
-        
-        # Fall back to keyword-based detection for backward compatibility
-        if self._is_voting_trigger_phrase(statement):
-            self._log_info(f"Keyword-based voting detected from {participant.name}")
-            return await self._handle_complex_voting_mode(
-                participant, statement, discussion_state, contexts
-            )
-        
-        return False
     
