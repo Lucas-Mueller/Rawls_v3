@@ -227,31 +227,22 @@ class LanguageManager:
         else:
             return self.get("prompts.fallback_default_phase_instructions")
     
-    def get_phase2_instructions(self, round_number: int, voting_mode: str = "simple") -> str:
+    def get_phase2_instructions(self, round_number: int) -> str:
         """
-        Get Phase 2 instructions for group discussion based on voting detection mode.
+        Get Phase 2 instructions for group discussion (always uses complex voting).
         
         Args:
             round_number: Discussion round number
-            voting_mode: "simple" or "complex" voting detection mode
             
         Returns:
             Translated instructions for group discussion
         """
-        if voting_mode == "complex":
-            # Use complex voting prompt (not used for instructions, but for consistency)
-            return self.get("prompts.phase2_discussion_prompt_complex", 
-                           round_number=round_number,
-                           max_rounds=5,  # Default max rounds
-                           discussion_history="",
-                           group_participants="")
-        else:
-            # Use simple voting prompt for consistency
-            return self.get("prompts.phase2_discussion_prompt_simple", 
-                           round_number=round_number,
-                           max_rounds=5,  # Default max rounds  
-                           discussion_history="",
-                           group_participants="")
+        # Always use unified prompt (previously complex voting prompt)
+        return self.get("prompts.phase2_discussion_prompt", 
+                       round_number=round_number,
+                       max_rounds=5,  # Default max rounds
+                       discussion_history="",
+                       group_participants="")
     
     def get_parser_instructions(self) -> str:
         """Get utility agent parser instructions."""

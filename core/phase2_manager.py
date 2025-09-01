@@ -317,7 +317,7 @@ Please ensure your response contains a clear statement about your position on th
         
         # Initialize voting history tracking if logger is provided
         if logger:
-            logger.initialize_voting_history(config.voting_detection_mode)
+            logger.initialize_voting_history()
         
         # CRITICAL: Initialize participants with CONTINUOUS memory from Phase 1
         participant_contexts = self._initialize_phase2_contexts(phase1_results, config)
@@ -439,9 +439,7 @@ Please ensure your response contains a clear statement about your position on th
         for round_num in range(1, config.phase2_rounds + 1):
             discussion_state.round_number = round_num
             
-            # Initialize preference tracking for simple mode (reset each round)
-            if config.voting_detection_mode == "simple":
-                self._current_round_preferences = {}
+            # Always use complex voting mode
             
             # Generate speaking order based on configuration
             speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_finisher)
@@ -561,81 +559,24 @@ Please ensure your response contains a clear statement about your position on th
                         self._log_info("Consensus already reached, skipping further detection")
                         return discussion_state._consensus_result
                     
-                    # Check voting detection mode
-                    if config.voting_detection_mode == "complex":
-                        # Use keyword-based detection for complex mode
-                        if self._is_voting_trigger_phrase(statement):
-                            self._log_info(f"Keyword-based voting detected from {participant.name}")
-                            consensus_via_voting = await self._handle_complex_voting_mode(
-                                participant, statement, discussion_state, contexts
-                            )
-                            
-                            if consensus_via_voting and discussion_state.last_vote_result:
-                                # Mark consensus as reached to prevent race conditions
-                                discussion_state._consensus_reached = True
-                                discussion_state._consensus_result = GroupDiscussionResult(
-                                    consensus_reached=True,
-                                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
-                                    final_round=round_num,
-                                    discussion_history=discussion_state.public_history,
-                                    vote_history=discussion_state.vote_history
-                                )
-                                return discussion_state._consensus_result
-                    
-                    elif config.voting_detection_mode == "simple":
-                        # Simple mode: Try preference detection for consensus
-                        preference = await self.utility_agent.detect_preference_statement(statement)
+                    # Use complex voting mode (keyword-based detection)
+                    if self._is_voting_trigger_phrase(statement):
+                        self._log_info(f"Keyword-based voting detected from {participant.name}")
+                        consensus_via_voting = await self._handle_complex_voting_mode(
+                            participant, statement, discussion_state, contexts
+                        )
                         
-                        if preference:
-                            # Store preference in local round tracking (not in discussion_state)
-                            if not hasattr(self, '_current_round_preferences'):
-                                self._current_round_preferences = {}
-                            self._current_round_preferences[participant.name] = preference
-                            
-                            self._log_info(f"[PREFERENCE] {participant.name}: {preference.principle.value}")
-                            
-                            # Check if all participants have stated preferences
-                            if len(self._current_round_preferences) == len(self.participants):
-                                preferences_list = list(self._current_round_preferences.values())
-                                consensus_reached, agreed_preference, warnings = self.utility_agent.check_preference_consensus_simple_mode(preferences_list)
-                                
-                                if warnings:
-                                    for warning in warnings:
-                                        self._log_warning(f"Preference consensus warning: {warning}")
-                                
-                                if consensus_reached:
-                                    # Validate the consensus constraint amount
-                                    if not self._validate_constraint_amount(agreed_preference.constraint_amount, "group consensus"):
-                                        self._log_warning(f"Consensus reached with invalid constraint amount: ${agreed_preference.constraint_amount}")
-                                    
-                                    self._log_info(f"Simple mode consensus reached via preferences: {agreed_preference.principle.value}")
-                                    
-                                    # Mark that voting/consensus has been triggered (prevents reminder messages)
-                                    discussion_state.vote_triggered = True
-                                    
-                                    # Add consensus message to discussion history
-                                    consensus_msg = f"[CONSENSUS] Preference-based consensus reached: {agreed_preference.principle.value}"
-                                    if agreed_preference.constraint_amount:
-                                        consensus_msg += f" with constraint of ${agreed_preference.constraint_amount:,}"
-                                    
-                                    if discussion_state.public_history:
-                                        discussion_state.public_history += f"\n\n{consensus_msg}"
-                                    else:
-                                        discussion_state.public_history = consensus_msg
-                                    
-                                    # Mark consensus as reached to prevent race conditions
-                                    discussion_state._consensus_reached = True
-                                    discussion_state._consensus_result = GroupDiscussionResult(
-                                        consensus_reached=True,
-                                        agreed_principle=agreed_preference,
-                                        final_round=round_num,
-                                        discussion_history=discussion_state.public_history,
-                                        vote_history=discussion_state.vote_history
-                                    )
-                                    return discussion_state._consensus_result
-                                
-                                # Clear preferences for next round if no consensus
-                                self._current_round_preferences = {}
+                        if consensus_via_voting and discussion_state.last_vote_result:
+                            # Mark consensus as reached to prevent race conditions
+                            discussion_state._consensus_reached = True
+                            discussion_state._consensus_result = GroupDiscussionResult(
+                                consensus_reached=True,
+                                agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                                final_round=round_num,
+                                discussion_history=discussion_state.public_history,
+                                vote_history=discussion_state.vote_history
+                            )
+                            return discussion_state._consensus_result
                 
                 # Continue with discussion if no consensus mechanism applies
             
@@ -1452,21 +1393,12 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
             names_except_last = ", ".join(participant_names[:-1])
             group_participants = f"The current group consists of {num_participants} participants: {names_except_last}, and {participant_names[-1]}"
         
-        # Use different prompts based on voting detection mode
-        if self.config.voting_detection_mode == "complex":
-            # For complex mode: allow voting proposals
-            base_prompt = language_manager.get("prompts.phase2_discussion_prompt_complex",
-                                              round_number=round_num,
-                                              max_rounds=self.config.phase2_rounds,
-                                              discussion_history=discussion_state.public_history or "No previous discussion.",
-                                              group_participants=group_participants)
-        else:
-            # For simple mode: use preference-based consensus (FIXED to use correct prompt)
-            base_prompt = language_manager.get("prompts.phase2_discussion_prompt_simple",
-                                              round_number=round_num,
-                                              max_rounds=self.config.phase2_rounds,
-                                              discussion_history=discussion_state.public_history or "No previous discussion.",
-                                              group_participants=group_participants)
+        # Always use complex mode prompts (formal voting system)
+        base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
+                                          round_number=round_num,
+                                          max_rounds=self.config.phase2_rounds,
+                                          discussion_history=discussion_state.public_history or "No previous discussion.",
+                                          group_participants=group_participants)
         
         # If internal reasoning is provided, include it in the prompt
         if internal_reasoning and internal_reasoning.strip():

@@ -72,8 +72,7 @@ class ExperimentConfiguration(BaseModel):
     include_experiment_explanation_each_turn: bool = Field(False, description="Whether to include experiment explanation on every turn (default: only first turn per phase)")
     phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
     
-    # Voting detection configuration
-    voting_detection_mode: str = Field("complex", description="Voting detection mode: 'simple' or 'complex'")
+    # Voting detection configuration - removed (always uses complex mode)
     
     # Reproducibility configuration
     seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")
@@ -108,14 +107,6 @@ class ExperimentConfiguration(BaseModel):
             raise ValueError(f"Invalid memory guidance style: {v}. Must be one of {valid_styles}")
         return v
     
-    @field_validator('voting_detection_mode')
-    @classmethod
-    def validate_voting_detection_mode(cls, v):
-        """Validate voting detection mode is supported."""
-        valid_modes = ["simple", "complex"]
-        if v not in valid_modes:
-            raise ValueError(f"Invalid voting detection mode: {v}. Must be one of {valid_modes}")
-        return v
     
     @field_validator('distribution_range_phase1', 'distribution_range_phase2')
     @classmethod

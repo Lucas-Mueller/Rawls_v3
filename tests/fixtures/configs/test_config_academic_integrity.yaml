@@ -22,7 +22,6 @@ utility_agent_temperature: 0.0
 phase2_rounds: 3
 distribution_range_phase2: [4, 6]
 
-voting_detection_mode: "simple"
 
 income_class_probabilities:
   high: 0.05

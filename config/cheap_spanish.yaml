@@ -23,7 +23,6 @@ utility_agent_model: 'google/gemini-2.5-flash'
 utility_agent_temperature: 0.0
 
 # Voting detection mode: "simple" (preference-based) or "complex" (formal voting)
-voting_detection_mode: "complex"
 
 phase2_rounds: 5
 distribution_range_phase2: [4, 8]

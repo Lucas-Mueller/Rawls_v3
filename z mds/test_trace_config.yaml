@@ -27,4 +27,3 @@ utility_agent_model: "gpt-4.1-mini"
 utility_agent_temperature: 0.0
 
 # Phase 2 settings
-voting_detection_mode: "simple"  # Simple mode for faster testing

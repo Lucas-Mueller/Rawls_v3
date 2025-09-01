@@ -27,7 +27,6 @@ phase2_rounds: 2
 distribution_range_phase2: [4, 8]
 
 # Voting detection mode: "simple" (current behavior) or "complex" (new two-phase voting)
-voting_detection_mode: "complex"
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
 income_class_probabilities:

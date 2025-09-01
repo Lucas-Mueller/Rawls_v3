@@ -60,7 +60,6 @@ class TestCoreIntegration:
             ],
             phase1_rounds=2,  # Minimal rounds for testing
             phase2_max_rounds=3,
-            voting_detection_mode="simple",
             seed=12345,
             temperature=0.1
         )
@@ -85,7 +84,6 @@ class TestCoreIntegration:
             ],
             phase1_rounds=2,
             phase2_max_rounds=3,
-            voting_detection_mode="simple",
             seed=12345
         )
     
@@ -106,7 +104,6 @@ class TestCoreIntegration:
             ],
             "phase1_rounds": minimal_config.phase1_rounds,
             "phase2_max_rounds": minimal_config.phase2_max_rounds,
-            "voting_detection_mode": minimal_config.voting_detection_mode,
             "seed": minimal_config.seed
         }
         
@@ -130,7 +127,6 @@ class TestCoreIntegration:
         assert config.agents[0].name == "Alice"
         assert config.agents[1].name == "Bob"
         assert config.phase1_rounds == 2
-        assert config.voting_detection_mode == "simple"
         
         # Test configuration validation
         assert config.is_valid()
@@ -152,7 +148,6 @@ class TestCoreIntegration:
             # Invalid voting mode
             {
                 "agents": [{"name": "Alice", "personality": "Test", "model": "gpt-4.1-mini"}],
-                "voting_detection_mode": "invalid_mode"
             }
         ]
         
@@ -255,28 +250,10 @@ class TestCoreIntegration:
         assert len(mandarin_prompt) > 0
 
     # CONSENSUS MECHANISM INTEGRATION TESTS
-    def test_simple_mode_consensus_detection(self, minimal_config):
-        """Test consensus detection in simple mode."""
-        # Set up simple mode configuration
-        minimal_config.voting_detection_mode = "simple"
-        experiment_manager = FrohlichExperimentManager(minimal_config)
-        
-        # Mock participant preferences
-        mock_preferences = {
-            "Alice": JusticePrinciple.MAXIMIZING_FLOOR,
-            "Bob": JusticePrinciple.MAXIMIZING_FLOOR
-        }
-        
-        # Test consensus detection
-        consensus_result = experiment_manager.phase2_manager.check_consensus_simple(mock_preferences)
-        
-        assert consensus_result.has_consensus is True
-        assert consensus_result.agreed_principle == JusticePrinciple.MAXIMIZING_FLOOR
 
     def test_complex_mode_voting_integration(self, minimal_config):
         """Test voting mechanism integration in complex mode.""" 
         # Set up complex mode configuration
-        minimal_config.voting_detection_mode = "complex"
         experiment_manager = FrohlichExperimentManager(minimal_config)
         
         # Test voting initiation

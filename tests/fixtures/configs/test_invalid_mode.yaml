@@ -1,5 +1,4 @@
 language: "English" 
-voting_detection_mode: "invalid"  # This should trigger validation error
 agents:
   - name: "Test"
     personality: "Test"

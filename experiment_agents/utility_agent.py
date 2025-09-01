@@ -620,31 +620,6 @@ class UtilityAgent:
         # No valid numerical response found
         return False, f"No valid number found. Please respond with exactly: 1 (to vote now) or 0 (to continue discussion)."
 
-    def check_preference_consensus_simple_mode(self, preferences: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
-        """Check if preference statements reached consensus in simple mode."""
-        if not preferences or len(preferences) == 0:
-            return False, None, ["No preferences to check"]
-        
-        # Check if all preferences are for the same principle
-        first_principle = preferences[0].principle
-        constraint_amounts = []
-        
-        for pref in preferences:
-            if pref.principle != first_principle:
-                return False, None, ["Participants have different principle preferences"]
-            
-            if pref.constraint_amount is not None:
-                constraint_amounts.append(pref.constraint_amount)
-        
-        # For constraint principles, check if constraint amounts match
-        if first_principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                              JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
-            if constraint_amounts and len(set(constraint_amounts)) > 1:
-                return False, None, ["Different constraint amounts specified"]
-        
-        # Consensus reached
-        consensus_preference = preferences[0]  # All have same principle
-        return True, consensus_preference, []
 
     def check_ballot_consensus(self, ballots: List[PrincipleChoice]) -> tuple[bool, Optional[PrincipleChoice], List[str]]:
         """Check if ballots reached consensus in complex mode."""

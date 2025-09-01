@@ -271,10 +271,10 @@ class AgentCentricLogger:
             original_values_mode_enabled=original_values_mode_enabled
         )
     
-    def initialize_voting_history(self, voting_detection_mode: str):
-        """Initialize voting history tracking."""
+    def initialize_voting_history(self):
+        """Initialize voting history tracking (always uses complex mode)."""
         self.voting_history = VotingHistoryLog(
-            voting_detection_mode=voting_detection_mode,
+            voting_detection_mode="complex",
             total_vote_attempts=0,
             successful_votes=0
         )

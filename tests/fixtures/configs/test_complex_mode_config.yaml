@@ -19,7 +19,6 @@ utility_agent_model: 'gpt-4.1-mini'
 utility_agent_temperature: 0.0
 
 # Testing complex mode
-voting_detection_mode: "complex"
 
 phase2_rounds: 2  # Short test
 distribution_range_phase2: [4, 8]

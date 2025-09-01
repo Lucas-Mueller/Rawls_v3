@@ -55,7 +55,6 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-voting_detection_mode: complex
 manipulator:
   name: Agent_4
   intelligence_level: low

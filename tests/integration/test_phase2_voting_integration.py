@@ -4,7 +4,7 @@ Phase 2 Voting Integration Tests
 Integration tests covering the complete voting flow from discussion
 through vote triggering, confirmation, ballot collection, and consensus.
 
-Tests both simple mode (preference-based) and complex mode (formal voting).
+Tests the formal voting system with vote triggering, confirmation, and consensus.
 """
 
 import pytest
@@ -23,7 +23,7 @@ from tests.fixtures.simplified_fixtures import TestParticipant, TestStatement
 
 
 class TestCompleteVotingFlow:
-    """Test complete voting flows for both simple and complex modes."""
+    """Test complete voting flows for the formal voting system."""
     
     @pytest.fixture
     def mock_participants(self):
@@ -78,56 +78,11 @@ class TestCompleteVotingFlow:
             language_manager=language_manager
         )
 
-    @pytest.mark.asyncio
-    async def test_simple_mode_preference_consensus_flow(self, phase2_manager, utility_agent):
-        """Test simple mode: discussion → preferences → consensus."""
-        # Mock configuration for simple mode
-        phase2_manager.config.voting_detection_mode = "simple"
-        
-        # Mock participant responses with clear preferences
-        participant_statements = [
-            "I think maximizing floor income is the best approach. My preference is maximizing floor income.",
-            "After consideration, I agree. My preference is maximizing floor income."
-        ]
-        
-        # Mock utility agent preference detection
-        floor_preference = PrincipleChoice(
-            principle=JusticePrinciple.MAXIMIZING_FLOOR,
-            certainty=CertaintyLevel.SURE,
-            constraint_amount=None,
-            reasoning="Best for fairness"
-        )
-        
-        utility_agent.detect_preference_statement = AsyncMock(return_value=floor_preference)
-        utility_agent.check_preference_consensus_simple_mode = MagicMock(
-            return_value=(True, floor_preference, [])
-        )
-        
-        # Mock participant agent responses
-        for i, participant in enumerate(phase2_manager.participants):
-            participant.agent.return_value = MagicMock()
-            participant.agent.return_value.final_output = participant_statements[i]
-        
-        # Mock participant contexts
-        mock_contexts = [MagicMock() for _ in phase2_manager.participants]
-        
-        # Run Phase 2 discussion
-        with patch.object(phase2_manager, '_collect_final_rankings') as mock_final_rankings:
-            mock_final_rankings.return_value = [MagicMock(), MagicMock()]
-            
-            result = await phase2_manager.run_group_discussion_sequential(
-                phase2_manager.config, mock_contexts
-            )
-            
-            # Verify consensus was reached
-            assert result.consensus_reached == True
-            assert result.agreed_principle.principle == JusticePrinciple.MAXIMIZING_FLOOR
 
     @pytest.mark.asyncio
-    async def test_complex_mode_voting_flow(self, phase2_manager, utility_agent):
-        """Test complex mode: discussion → vote trigger → confirmation → ballot → consensus."""
-        # Configure for complex mode
-        phase2_manager.config.voting_detection_mode = "complex"
+    async def test_voting_flow(self, phase2_manager, utility_agent):
+        """Test voting flow: discussion → vote trigger → confirmation → ballot → consensus."""
+        # System always uses complex mode
         phase2_manager._voting_in_progress = False
         
         # Mock voting trigger detection
