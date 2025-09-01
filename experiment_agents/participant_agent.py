@@ -119,7 +119,8 @@ class ParticipantAgent:
             memory="",
             round_number=0,
             phase=ExperimentPhase.PHASE_1,
-            memory_character_limit=self.config.memory_character_limit
+            memory_character_limit=self.config.memory_character_limit,
+            interaction_type="memory_update"  # Disable propose_vote tool during memory updates
         )
         
         result = await Runner.run(self.agent, prompt, context=temp_context)

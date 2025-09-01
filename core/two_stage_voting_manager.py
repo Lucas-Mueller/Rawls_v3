@@ -239,76 +239,105 @@ class TwoStageVotingManager:
         
         current_prompt = base_prompt
         
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                logger.debug(f"Principle selection attempt {attempt}/{self.max_retries} for {participant.name}")
-                
-                # Get response from agent with timeout
-                logger.debug(f"Calling agent {participant.name} with prompt length {len(current_prompt)}")
-                result = await asyncio.wait_for(
-                    self._run_agent(participant.agent, current_prompt, context),
-                    timeout=self.timeout_seconds
-                )
-                logger.debug(f"Received result from agent {participant.name}: type={type(result)}")
-                
-                response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
-                
-                # Validate response
-                validated_value, error_type = self._validate_principle_selection(response)
-                
-                if validated_value is not None:
-                    # Success
-                    voting_result = VotingStageResult(
-                        participant_name=participant.name,
-                        stage=stage,
-                        success=True,
-                        value=validated_value,
-                        raw_response=response,
-                        attempts_used=attempt
-                    )
+        # Store original tool setting to restore later
+        original_tool_setting = getattr(context, 'allow_vote_tool', True)
+        
+        try:
+            # Disable voting tool during ballot phase
+            context.allow_vote_tool = False
+            
+            for attempt in range(1, self.max_retries + 1):
+                try:
+                    logger.debug(f"Principle selection attempt {attempt}/{self.max_retries} for {participant.name}")
                     
-                    self._log_voting_success(participant.name, stage, response, validated_value, attempt)
-                    return voting_result
-                else:
-                    # Validation failed - prepare retry prompt
+                    # Get response from agent with timeout
+                    logger.debug(f"Calling agent {participant.name} with prompt length {len(current_prompt)}")
+                    # Set interaction type for ballot (disables propose_vote tool)
+                    context.interaction_type = "ballot"
+                    result = await asyncio.wait_for(
+                        self._run_agent(participant.agent, current_prompt, context),
+                        timeout=self.timeout_seconds
+                    )
+                    logger.debug(f"Received result from agent {participant.name}: type={type(result)}")
+                    
+                    # Check for re-entrant tool calls (defensive detection)
+                    has_tool_call, tool_call_info = self._check_for_tool_calls(result)
+                    if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
+                        logger.info(f"Re-entrant vote proposal during principle selection from {participant.name} (attempt {attempt})")
+                        # Create gentle re-prompting message
+                        current_prompt = f"""Voting is already in progress. Please respond with only a number (1-4):
+
+1 = Maximizing Floor Income
+2 = Maximizing Average Income 
+3 = Maximizing Average with Floor Constraint
+4 = Maximizing Average with Range Constraint
+
+Please enter your choice (1, 2, 3, or 4):"""
+                        continue  # Retry without counting as hard failure
+                    
+                    response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
+                
+                    # Validate response
+                    validated_value, error_type = self._validate_principle_selection(response)
+                    
+                    if validated_value is not None:
+                        # Success
+                        voting_result = VotingStageResult(
+                            participant_name=participant.name,
+                            stage=stage,
+                            success=True,
+                            value=validated_value,
+                            raw_response=response,
+                            attempts_used=attempt
+                        )
+                        
+                        self._log_voting_success(participant.name, stage, response, validated_value, attempt)
+                        return voting_result
+                    else:
+                        # Validation failed - prepare retry prompt
+                        if attempt < self.max_retries:
+                            try:
+                                # Use enhanced language manager method for two-stage error messages
+                                error_msg = self.language_manager.get_two_stage_error_message(
+                                    error_type, attempt, self.max_retries
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed to get two-stage error message: {e}")
+                                error_msg = self._get_fallback_error_message(error_type, attempt)
+                            
+                            current_prompt = f"{error_msg}\n\n{base_prompt}"
+                            self._log_voting_retry(participant.name, stage, response, error_type, attempt)
+                    
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout in principle selection for {participant.name}, attempt {attempt}")
                     if attempt < self.max_retries:
                         try:
-                            # Use enhanced language manager method for two-stage error messages
-                            error_msg = self.language_manager.get_two_stage_error_message(
-                                error_type, attempt, self.max_retries
-                            )
+                            # Use enhanced language manager method for timeout messages
+                            timeout_msg = self.language_manager.get_two_stage_timeout_message()
                         except Exception as e:
-                            logger.warning(f"Failed to get two-stage error message: {e}")
-                            error_msg = self._get_fallback_error_message(error_type, attempt)
-                        
-                        current_prompt = f"{error_msg}\n\n{base_prompt}"
-                        self._log_voting_retry(participant.name, stage, response, error_type, attempt)
+                            logger.warning(f"Failed to get timeout message: {e}")
+                            timeout_msg = "Response timed out. Please try again."
+                        current_prompt = f"{timeout_msg}\n\n{base_prompt}"
                     
-            except asyncio.TimeoutError:
-                logger.warning(f"Timeout in principle selection for {participant.name}, attempt {attempt}")
-                if attempt < self.max_retries:
-                    try:
-                        # Use enhanced language manager method for timeout messages
-                        timeout_msg = self.language_manager.get_two_stage_timeout_message()
-                    except Exception as e:
-                        logger.warning(f"Failed to get timeout message: {e}")
-                        timeout_msg = "Response timed out. Please try again."
-                    current_prompt = f"{timeout_msg}\n\n{base_prompt}"
-                    
-            except Exception as e:
-                logger.error(f"Error in principle selection for {participant.name}, attempt {attempt}: {e}")
-        
-        # All retries exhausted
-        self._log_voting_failure(participant.name, stage, self.max_retries)
-        return VotingStageResult(
-            participant_name=participant.name,
-            stage=stage,
-            success=False,
-            value=None,
-            raw_response="",
-            attempts_used=self.max_retries,
-            error_type="retries_exhausted"
-        )
+                except Exception as e:
+                    logger.error(f"Error in principle selection for {participant.name}, attempt {attempt}: {e}")
+            
+            # All retries exhausted
+            self._log_voting_failure(participant.name, stage, self.max_retries)
+            return VotingStageResult(
+                participant_name=participant.name,
+                stage=stage,
+                success=False,
+                value=None,
+                raw_response="",
+                attempts_used=self.max_retries,
+                error_type="retries_exhausted"
+            )
+            
+        finally:
+            # Always restore original tool setting
+            context.allow_vote_tool = original_tool_setting
+            logger.debug(f"Restored vote tool setting for {participant.name}: {original_tool_setting}")
 
     async def _conduct_amount_specification_with_retry(
         self, 
@@ -344,76 +373,100 @@ class TwoStageVotingManager:
         
         current_prompt = base_prompt
         
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                logger.debug(f"Amount specification attempt {attempt}/{self.max_retries} for {participant.name}")
-                
-                # Get response from agent with timeout
-                logger.debug(f"Calling agent {participant.name} for amount with prompt length {len(current_prompt)}")
-                result = await asyncio.wait_for(
-                    self._run_agent(participant.agent, current_prompt, context),
-                    timeout=self.timeout_seconds
-                )
-                logger.debug(f"Received amount result from agent {participant.name}: type={type(result)}")
-                
-                response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
-                
-                # Validate response
-                validated_value, error_type = self._validate_amount_specification(response)
-                
-                if validated_value is not None:
-                    # Success
-                    voting_result = VotingStageResult(
-                        participant_name=participant.name,
-                        stage=stage,
-                        success=True,
-                        value=validated_value,
-                        raw_response=response,
-                        attempts_used=attempt
-                    )
+        # Store original tool setting to restore later
+        original_tool_setting = getattr(context, 'allow_vote_tool', True)
+        
+        try:
+            # Disable voting tool during ballot phase
+            context.allow_vote_tool = False
+            
+            for attempt in range(1, self.max_retries + 1):
+                try:
+                    logger.debug(f"Amount specification attempt {attempt}/{self.max_retries} for {participant.name}")
                     
-                    self._log_voting_success(participant.name, stage, response, validated_value, attempt)
-                    return voting_result
-                else:
-                    # Validation failed - prepare retry prompt
+                    # Get response from agent with timeout
+                    logger.debug(f"Calling agent {participant.name} for amount with prompt length {len(current_prompt)}")
+                    # Set interaction type for ballot (disables propose_vote tool)
+                    context.interaction_type = "ballot"
+                    result = await asyncio.wait_for(
+                        self._run_agent(participant.agent, current_prompt, context),
+                        timeout=self.timeout_seconds
+                    )
+                    logger.debug(f"Received amount result from agent {participant.name}: type={type(result)}")
+                    
+                    # Check for re-entrant tool calls (defensive detection)
+                    has_tool_call, tool_call_info = self._check_for_tool_calls(result)
+                    if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
+                        logger.info(f"Re-entrant vote proposal during amount specification from {participant.name} (attempt {attempt})")
+                        # Create gentle re-prompting message
+                        current_prompt = f"""Voting is already in progress. Please respond with only a dollar amount.
+
+For principle {principle_num} ({principle_name}), please specify the constraint amount as a whole dollar amount (e.g., 15000, 20000, 25000):"""
+                        continue  # Retry without counting as hard failure
+                    
+                    response = result.final_output.strip() if hasattr(result, 'final_output') else str(result).strip()
+                    
+                    # Validate response
+                    validated_value, error_type = self._validate_amount_specification(response)
+                    
+                    if validated_value is not None:
+                        # Success
+                        voting_result = VotingStageResult(
+                            participant_name=participant.name,
+                            stage=stage,
+                            success=True,
+                            value=validated_value,
+                            raw_response=response,
+                            attempts_used=attempt
+                        )
+                        
+                        self._log_voting_success(participant.name, stage, response, validated_value, attempt)
+                        return voting_result
+                    else:
+                        # Validation failed - prepare retry prompt
+                        if attempt < self.max_retries:
+                            try:
+                                # Use enhanced language manager method for two-stage error messages
+                                error_msg = self.language_manager.get_two_stage_error_message(
+                                    error_type, attempt, self.max_retries
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed to get two-stage error message: {e}")
+                                error_msg = self._get_fallback_error_message(error_type, attempt)
+                            
+                            current_prompt = f"{error_msg}\n\n{base_prompt}"
+                            self._log_voting_retry(participant.name, stage, response, error_type, attempt)
+                    
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout in amount specification for {participant.name}, attempt {attempt}")
                     if attempt < self.max_retries:
                         try:
-                            # Use enhanced language manager method for two-stage error messages
-                            error_msg = self.language_manager.get_two_stage_error_message(
-                                error_type, attempt, self.max_retries
-                            )
+                            # Use enhanced language manager method for timeout messages
+                            timeout_msg = self.language_manager.get_two_stage_timeout_message()
                         except Exception as e:
-                            logger.warning(f"Failed to get two-stage error message: {e}")
-                            error_msg = self._get_fallback_error_message(error_type, attempt)
-                        
-                        current_prompt = f"{error_msg}\n\n{base_prompt}"
-                        self._log_voting_retry(participant.name, stage, response, error_type, attempt)
+                            logger.warning(f"Failed to get timeout message: {e}")
+                            timeout_msg = "Response timed out. Please try again."
+                        current_prompt = f"{timeout_msg}\n\n{base_prompt}"
                     
-            except asyncio.TimeoutError:
-                logger.warning(f"Timeout in amount specification for {participant.name}, attempt {attempt}")
-                if attempt < self.max_retries:
-                    try:
-                        # Use enhanced language manager method for timeout messages
-                        timeout_msg = self.language_manager.get_two_stage_timeout_message()
-                    except Exception as e:
-                        logger.warning(f"Failed to get timeout message: {e}")
-                        timeout_msg = "Response timed out. Please try again."
-                    current_prompt = f"{timeout_msg}\n\n{base_prompt}"
-                    
-            except Exception as e:
-                logger.error(f"Error in amount specification for {participant.name}, attempt {attempt}: {e}")
-        
-        # All retries exhausted
-        self._log_voting_failure(participant.name, stage, self.max_retries)
-        return VotingStageResult(
-            participant_name=participant.name,
-            stage=stage,
-            success=False,
-            value=None,
-            raw_response="",
-            attempts_used=self.max_retries,
-            error_type="retries_exhausted"
-        )
+                except Exception as e:
+                    logger.error(f"Error in amount specification for {participant.name}, attempt {attempt}: {e}")
+            
+            # All retries exhausted
+            self._log_voting_failure(participant.name, stage, self.max_retries)
+            return VotingStageResult(
+                participant_name=participant.name,
+                stage=stage,
+                success=False,
+                value=None,
+                raw_response="",
+                attempts_used=self.max_retries,
+                error_type="retries_exhausted"
+            )
+            
+        finally:
+            # Always restore original tool setting
+            context.allow_vote_tool = original_tool_setting
+            logger.debug(f"Restored vote tool setting for {participant.name}: {original_tool_setting}")
 
     def _validate_principle_selection(self, response: str) -> Tuple[Optional[int], Optional[str]]:
         """
@@ -732,6 +785,41 @@ class TwoStageVotingManager:
         Run agent with given prompt and context using the actual Runner system.
         """
         return await Runner.run(agent, prompt, context=context)
+    
+    def _check_for_tool_calls(self, result) -> tuple[bool, dict]:
+        """
+        Check if the Runner result contains tool calls (simplified version for voting manager).
+        
+        Args:
+            result: Result from Runner.run()
+            
+        Returns:
+            Tuple of (has_tool_calls, tool_call_info)
+        """
+        if not hasattr(result, 'new_items') or not result.new_items:
+            return False, {}
+        
+        for item in result.new_items:
+            # Check for tool call by class name (fallback approach)
+            item_class = item.__class__.__name__
+            if item_class in ['ToolCallItem', 'ToolCallOutputItem']:
+                # Extract tool information
+                tool_info = {}
+                
+                # Try to get tool name from various attributes
+                tool_name = None
+                if hasattr(item, 'function_name'):
+                    tool_name = item.function_name
+                elif hasattr(item, 'raw_item') and hasattr(item.raw_item, 'function'):
+                    if hasattr(item.raw_item.function, 'name'):
+                        tool_name = item.raw_item.function.name
+                
+                if tool_name:
+                    tool_info['tool_name'] = tool_name
+                    tool_info['function_name'] = tool_name
+                    return True, tool_info
+        
+        return False, {}
 
     # Fallback methods for when language manager is not available
     def _get_fallback_principle_prompt(self) -> str:

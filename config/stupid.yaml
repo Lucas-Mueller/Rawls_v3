@@ -4,7 +4,7 @@ seed: 420
 
 agents:
   - name: "Alice"
-    personality: "You are an american college student."
+    personality: "You are an american college student"
     model:  "google/gemini-2.5-flash"
     memory_character_limit: 25000
     reasoning_enabled: true

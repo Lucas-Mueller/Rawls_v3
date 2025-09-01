@@ -7,6 +7,11 @@ import re
 import time
 from typing import List, Dict, Optional
 from agents import Agent, Runner
+try:
+    from agents.items import ToolCallItem, ToolCallOutputItem
+    HAS_SDK_TYPES = True
+except ImportError:
+    HAS_SDK_TYPES = False
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
@@ -61,6 +66,75 @@ class Phase2Manager:
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
     
+    def _log_agent_tools(self, phase_name: str):
+        """Log available tools for all agents at phase start."""
+        import logging
+        from models import ParticipantContext, ExperimentPhase
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"\n{'='*60}")
+        logger.info(f"🛠  AGENT TOOLS AVAILABLE - {phase_name.upper()}")
+        logger.info(f"{'='*60}")
+        
+        # Log participant agents
+        logger.info(f"📋 PARTICIPANT AGENTS ({len(self.participants)} total):")
+        for i, participant in enumerate(self.participants):
+            logger.info(f"  └─ {participant.config.name} (Model: {participant.config.model})")
+            
+            # Check if agent has tools (Agents SDK exposes `agent.tools`)
+            tools = None
+            if hasattr(participant, 'agent') and participant.agent:
+                tools = getattr(participant.agent, 'tools', None)
+                if not tools:
+                    # Backward-compatibility with older mocks/tests using `_tools`
+                    tools = getattr(participant.agent, '_tools', None)
+
+            if tools:
+                for tool in tools:
+                    tool_name = getattr(tool, 'name', getattr(tool, '__name__', str(tool)))
+
+                    # Dynamically check tool enablement using tool's is_enabled
+                    status = "✅ ENABLED"
+                    status_reason = ""
+
+                    if hasattr(tool, 'is_enabled'):
+                        is_enabled_attr = getattr(tool, 'is_enabled')
+                        mock_context = type('MockContext', (), {
+                            'context': ParticipantContext(
+                                name=participant.config.name,
+                                role_description="",
+                                bank_balance=0.0,
+                                memory="",
+                                round_number=0,
+                                phase=ExperimentPhase.PHASE_1 if phase_name == "Phase 1" else ExperimentPhase.PHASE_2,
+                                memory_character_limit=1000
+                            )
+                        })()
+
+                        try:
+                            is_enabled = is_enabled_attr(mock_context, participant.agent) if callable(is_enabled_attr) else bool(is_enabled_attr)
+                            if not is_enabled:
+                                status = "❌ DISABLED"
+                                if tool_name == 'propose_vote':
+                                    if phase_name == "Phase 1":
+                                        status_reason = " (Phase 1 - not in group discussion)"
+                                    else:
+                                        status_reason = " (conditions not met)"
+                        except Exception as e:
+                            status = "⚠️  UNKNOWN"
+                            status_reason = f" (check failed: {str(e)[:30]}...)"
+
+                    logger.info(f"      🔧 {tool_name}: {status}{status_reason}")
+            else:
+                logger.info(f"      📝 No tools assigned")
+        
+        # Log utility agent
+        logger.info(f"🔧 UTILITY AGENT:")
+        logger.info(f"  └─ UtilityAgent (Model: {getattr(self.utility_agent, 'utility_model', 'Unknown')})")
+        logger.info(f"      📝 No tools assigned (parsing/validation only)")
+        
+        logger.info(f"{'='*60}\n")
+    
     def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
         """
         Validate that constraint amounts are in a reasonable range.
@@ -76,8 +150,8 @@ class Phase2Manager:
             return True  # No constraint is valid
         
         # Define reasonable bounds based on typical income distributions
-        MIN_REASONABLE_CONSTRAINT = 1000    # $1,000
-        MAX_REASONABLE_CONSTRAINT = 100000  # $100,000
+        MIN_REASONABLE_CONSTRAINT = 10    # $1,000
+        MAX_REASONABLE_CONSTRAINT = 1000000000  # $100,000
         
         # Check for suspiciously small amounts (likely payoff scale errors)
         LIKELY_PAYOFF_SCALE_MAX = 10  # $10 is likely a payoff amount, not income constraint
@@ -200,6 +274,8 @@ class Phase2Manager:
                 
                 # Get statement from agent with timeout
                 try:
+                    # Set interaction type for public statement (enables propose_vote tool)
+                    context.interaction_type = "public_statement"
                     result = await asyncio.wait_for(
                         Runner.run(participant.agent, discussion_prompt, context=context),
                         timeout=self.settings.statement_timeout_seconds
@@ -303,6 +379,9 @@ Please ensure your response contains a clear statement about your position on th
         
         # Store logger for use in consensus methods
         self.logger = logger
+        
+        # Log available tools for all agents at Phase 2 start
+        self._log_agent_tools("Phase 2")
         
         # Initialize voting history tracking if logger is provided
         if logger:
@@ -479,6 +558,9 @@ Please ensure your response contains a clear statement about your position on th
                 statement_preview = statement[:preview_length] + "..." if len(statement) > preview_length else statement
                 self._log_info(f"Statement preview: {statement_preview}")
                 
+                # Manage discussion history length before adding new content
+                self._manage_discussion_history_length(discussion_state)
+                
                 # Add statement to discussion (quarantined responses get neutral message)
                 if not is_quarantined or not self.settings.quarantine_failed_responses:
                     discussion_state.add_statement(participant.name, statement)
@@ -548,33 +630,22 @@ Please ensure your response contains a clear statement about your position on th
                     
                     # Check voting detection mode
                     if config.voting_detection_mode == "complex":
-                        # Try complex voting detection only if not already voting
-                        if not self._voting_in_progress:
-                            consensus_via_voting = False
-                            
-                            # Check for tool-based voting first
-                            if tool_call_info and tool_call_info.get('tool_name') == 'propose_vote':
-                                self._log_info(f"Tool-based voting proposal detected from {participant.name}")
-                                consensus_via_voting = await self.handle_vote_proposal_tool(
-                                    participant, tool_call_info, discussion_state, contexts
-                                )
-                            else:
-                                # Fall back to keyword-based detection
-                                consensus_via_voting = await self._handle_complex_voting_mode(
-                                    participant, statement, discussion_state, contexts
-                                )
-                            
-                            if consensus_via_voting and discussion_state.last_vote_result:
-                                # Mark consensus as reached to prevent race conditions
-                                discussion_state._consensus_reached = True
-                                discussion_state._consensus_result = GroupDiscussionResult(
-                                    consensus_reached=True,
-                                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
-                                    final_round=round_num,
-                                    discussion_history=discussion_state.public_history,
-                                    vote_history=discussion_state.vote_history
-                                )
-                                return discussion_state._consensus_result
+                        # Use unified voting handler for complex mode
+                        consensus_via_voting = await self._check_and_handle_voting(
+                            participant, statement, tool_call_info, discussion_state, contexts
+                        )
+                        
+                        if consensus_via_voting and discussion_state.last_vote_result:
+                            # Mark consensus as reached to prevent race conditions
+                            discussion_state._consensus_reached = True
+                            discussion_state._consensus_result = GroupDiscussionResult(
+                                consensus_reached=True,
+                                agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                                final_round=round_num,
+                                discussion_history=discussion_state.public_history,
+                                vote_history=discussion_state.vote_history
+                            )
+                            return discussion_state._consensus_result
                     
                     elif config.voting_detection_mode == "simple":
                         # Simple mode: Try preference detection for consensus
@@ -775,11 +846,21 @@ Please ensure your response contains a clear statement about your position on th
         if agent_config.reasoning_enabled:
             try:
                 reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
+                # Set interaction type for internal reasoning (disables propose_vote tool)
+                context.interaction_type = "internal_reasoning"
                 reasoning_result = await asyncio.wait_for(
                     Runner.run(participant.agent, reasoning_prompt, context=context),
                     timeout=self.settings.statement_timeout_seconds
                 )
                 internal_reasoning = reasoning_result.final_output
+                
+                # Check for tool calls in reasoning phase
+                has_tool_call, tool_call_info = self._check_for_tool_calls(reasoning_result)
+                if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
+                    self._log_info(f"Tool call detected in reasoning phase for {participant.name}")
+                    # Don't return early - let it continue to public statement phase
+                    # Tool call will be handled in main discussion loop where it can properly control flow
+                    
             except Exception as e:
                 # Log reasoning timeout/error but continue with empty reasoning
                 # This catches all exceptions including TimeoutError, asyncio.TimeoutError, etc.
@@ -814,7 +895,7 @@ Please ensure your response contains a clear statement about your position on th
     
     def _check_for_tool_calls(self, result) -> tuple[bool, dict]:
         """
-        Check if the Runner result contains tool calls.
+        Check if the Runner result contains tool calls using SDK types.
         
         Args:
             result: Result from Runner.run()
@@ -824,74 +905,97 @@ Please ensure your response contains a clear statement about your position on th
         """
         # Log result structure for debugging
         self._log_info(f"Checking for tool calls in result with type: {type(result)}")
-        if hasattr(result, 'new_items'):
-            self._log_info(f"Result has new_items with {len(result.new_items) if result.new_items else 0} items")
         
-        # Check new_items for tool calls (OpenAI Agents SDK structure)
-        if hasattr(result, 'new_items') and result.new_items:
-            for i, item in enumerate(result.new_items):
-                self._log_info(f"Item {i}: type={type(item)}, class_name={item.__class__.__name__}")
-                
-                # Check for ToolCallItem or ToolCallOutputItem by class name
-                item_class = item.__class__.__name__
-                if item_class in ['ToolCallItem', 'ToolCallOutputItem']:
-                    self._log_info(f"Found tool call item: {item_class}")
-                    
-                    # Try to extract tool information from the item
-                    tool_name = None
-                    tool_id = None
-                    arguments = {}
-                    
-                    # Check various possible attributes where tool info might be stored
-                    if hasattr(item, 'raw_item') and item.raw_item:
-                        raw = item.raw_item
-                        self._log_info(f"Raw item type: {type(raw)}")
-                        
-                        # Check if raw item has function info
-                        if hasattr(raw, 'function'):
-                            if hasattr(raw.function, 'name'):
-                                tool_name = raw.function.name
-                                self._log_info(f"Found tool name from raw.function.name: {tool_name}")
-                            if hasattr(raw.function, 'arguments'):
-                                arguments = raw.function.arguments
-                        
-                        # Check if raw item has id
-                        if hasattr(raw, 'id'):
-                            tool_id = raw.id
-                    
-                    # Also check direct item attributes
-                    if hasattr(item, 'function_name'):
-                        tool_name = item.function_name
-                        self._log_info(f"Found tool name from item.function_name: {tool_name}")
-                    
-                    if hasattr(item, 'id'):
-                        tool_id = item.id
-                        
-                    # If we found a propose_vote tool call
-                    if tool_name == 'propose_vote':
-                        self._log_info(f"✅ Detected propose_vote tool call!")
-                        return True, {
-                            'tool_name': 'propose_vote',
-                            'tool_call_id': tool_id,
-                            'function_name': tool_name,
-                            'arguments': arguments
-                        }
-                
-                # Also check for any item that has tool-related attributes
-                elif hasattr(item, 'raw_item') and item.raw_item:
-                    raw = item.raw_item
-                    if hasattr(raw, 'function') and hasattr(raw.function, 'name'):
-                        if raw.function.name == 'propose_vote':
-                            self._log_info(f"✅ Detected propose_vote tool call from raw_item!")
-                            return True, {
-                                'tool_name': 'propose_vote',
-                                'tool_call_id': getattr(raw, 'id', None),
-                                'function_name': raw.function.name,
-                                'arguments': getattr(raw.function, 'arguments', {})
-                            }
+        if not hasattr(result, 'new_items') or not result.new_items:
+            self._log_info("No new_items found in result")
+            return False, {}
+        
+        self._log_info(f"Result has new_items with {len(result.new_items)} items")
+        
+        for i, item in enumerate(result.new_items):
+            self._log_info(f"Item {i}: type={type(item)}, class_name={item.__class__.__name__}")
+            
+            # Use isinstance if SDK types available, fallback to string check
+            if HAS_SDK_TYPES:
+                is_tool_call = isinstance(item, (ToolCallItem, ToolCallOutputItem))
+            else:
+                is_tool_call = item.__class__.__name__ in ['ToolCallItem', 'ToolCallOutputItem']
+            
+            if is_tool_call:
+                self._log_info(f"Found tool call item: {item.__class__.__name__}")
+                # Extract tool information robustly
+                tool_info = self._extract_tool_info(item)
+                if tool_info:
+                    self._log_info(f"✅ Detected tool call: {tool_info}")
+                    # Return true for any valid tool call (caller will check if it's propose_vote)
+                    return True, tool_info
         
         self._log_info("❌ No tool calls detected")
         return False, {}
+    
+    def _extract_tool_info(self, item) -> dict:
+        """
+        Extract tool information from item with multiple fallbacks.
+        
+        Args:
+            item: Tool call item from Runner result
+            
+        Returns:
+            Dictionary with tool information, empty if no valid tool found
+        """
+        tool_info = {}
+        
+        # Try standard attributes first
+        for attr in ['function_name', 'name', 'tool_name']:
+            if hasattr(item, attr):
+                value = getattr(item, attr)
+                if value:
+                    tool_info['tool_name'] = value
+                    self._log_info(f"Found tool name from {attr}: {value}")
+                    break
+        
+        # Try nested structures in raw_item
+        if hasattr(item, 'raw_item') and item.raw_item:
+            raw = item.raw_item
+            self._log_info(f"Raw item type: {type(raw)}")
+            
+            # Check if raw item has function info
+            if hasattr(raw, 'function'):
+                if hasattr(raw.function, 'name') and raw.function.name:
+                    tool_info['tool_name'] = raw.function.name
+                    self._log_info(f"Found tool name from raw.function.name: {raw.function.name}")
+                    
+                # Extract arguments if available
+                if hasattr(raw.function, 'arguments'):
+                    tool_info['arguments'] = raw.function.arguments
+            
+            # Extract tool call ID if available
+            if hasattr(raw, 'id'):
+                tool_info['tool_call_id'] = raw.id
+        
+        # Try tool_call nested structure (alternative SDK layout)
+        if hasattr(item, 'tool_call'):
+            if hasattr(item.tool_call, 'function'):
+                if hasattr(item.tool_call.function, 'name'):
+                    tool_info['tool_name'] = item.tool_call.function.name
+                    self._log_info(f"Found tool name from tool_call.function.name: {item.tool_call.function.name}")
+        
+        # Extract arguments from various possible locations
+        if 'arguments' not in tool_info:
+            for attr in ['arguments', 'args', 'parameters']:
+                if hasattr(item, attr):
+                    tool_info['arguments'] = getattr(item, attr)
+                    break
+        
+        # Extract ID from item itself if not found in raw_item
+        if 'tool_call_id' not in tool_info and hasattr(item, 'id'):
+            tool_info['tool_call_id'] = item.id
+        
+        # Ensure function_name is set for compatibility
+        if 'tool_name' in tool_info:
+            tool_info['function_name'] = tool_info['tool_name']
+        
+        return tool_info if 'tool_name' in tool_info else {}
 
     async def handle_vote_proposal_tool(
         self,
@@ -978,18 +1082,46 @@ Please ensure your response contains a clear statement about your position on th
         return consensus_reached
     
     def _get_voting_reminder_message(self) -> str:
-        """Get voting reminder message in appropriate language."""
+        """Get voting reminder message in appropriate language and mode."""
         language_manager = self.language_manager
         
         # Check current language to provide appropriate reminder
         current_language = getattr(language_manager, 'current_language', 'mandarin')
         
-        if current_language == 'mandarin':
-            return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。说出'我们投票吧'或'我认为我们应该投票'来开始投票程序。"
-        elif current_language == 'spanish':
-            return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Digan 'Votemos' o 'Creo que deberíamos votar' para iniciar el proceso de votación."
-        else:  # English
-            return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Say 'Let's vote' or 'I think we should vote' to begin the voting process."
+        # Use tool-based messaging for complex mode, text-based for simple mode
+        if self.config.voting_detection_mode == "complex":
+            if current_language == 'mandarin':
+                return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。使用 'propose_vote' 工具来开始正式投票程序。"
+            elif current_language == 'spanish':
+                return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Usen la herramienta 'propose_vote' para iniciar el proceso de votación formal."
+            else:  # English
+                return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Use the 'propose_vote' tool to initiate the formal voting process."
+        else:
+            # Keep text-based reminders for simple mode
+            if current_language == 'mandarin':
+                return "提醒：如果你们已经讨论充分，记住只能通过正式投票达成有约束力的协议。说出'我们投票吧'或'我认为我们应该投票'来开始投票程序。"
+            elif current_language == 'spanish':
+                return "Recordatorio: Si han discutido lo suficiente, recuerden que solo pueden llegar a un acuerdo vinculante a través de votación formal. Digan 'Votemos' o 'Creo que deberíamos votar' para iniciar el proceso de votación."
+            else:  # English
+                return "Reminder: If you have discussed sufficiently, remember that you can only reach binding agreement through formal voting. Say 'Let's vote' or 'I think we should vote' to begin the voting process."
+    
+    def _manage_discussion_history_length(self, discussion_state: GroupDiscussionState) -> None:
+        """
+        Keep discussion history under limit by trimming oldest content.
+        Preserves recent conversation while preventing excessive memory usage.
+        """
+        max_length = 100000  # 100k chars - much higher than agent memory limits (25k)
+        
+        if len(discussion_state.public_history) > max_length:
+            # Keep the most recent 75% of content to provide buffer
+            keep_length = int(max_length * 0.75)
+            
+            # Add marker to indicate truncation and keep recent discussion
+            truncated_history = "...[earlier discussion truncated]...\n" + discussion_state.public_history[-keep_length:]
+            discussion_state.public_history = truncated_history
+            
+            # Log the truncation for debugging
+            self._log_info(f"Discussion history truncated: kept {keep_length} of {len(discussion_state.public_history)} characters")
     
     async def _extract_favored_principle(self, statement: str) -> str:
         """Extract favored principle from participant statement using multilingual parsing."""
@@ -1580,75 +1712,113 @@ COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:"""
         
         confirmations = []
         
-        for i, context in enumerate(contexts):
-            participant = self.participants[i]
-            
-            # Get confirmation response from participant with timeout
-            try:
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, confirmation_prompt, context=context),
-                    timeout=self.settings.confirmation_timeout_seconds
-                )
-                confirmation_response = result.final_output
-            except asyncio.TimeoutError:
-                self._log_warning(f"Timeout waiting for confirmation from {participant.name}")
-                confirmation_response = f"[{participant.name} timed out during confirmation]"
-            
-            # CRITICAL: Check if response is a fallback statement (agent failure)
-            is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
-            if is_fallback:
-                self._log_warning(f"Fallback response detected for {participant.name} - voting confirmation failed")
+        # Store original tool settings to restore later
+        original_tool_settings = []
+        
+        try:
+            for i, context in enumerate(contexts):
+                participant = self.participants[i]
+                
+                # Store original setting and disable vote tool during confirmation
+                original_tool_settings.append(getattr(context, 'allow_vote_tool', True))
+                context.allow_vote_tool = False
+                
+                # Get confirmation response from participant with timeout
+                confirmation_response = None
+                max_retries = 3  # Allow retries for re-entrant tool calls
+                
+                for attempt in range(max_retries):
+                    try:
+                        # Set interaction type for confirmation (disables propose_vote tool)
+                        context.interaction_type = "confirmation"
+                        result = await asyncio.wait_for(
+                            Runner.run(participant.agent, confirmation_prompt, context=context),
+                            timeout=self.settings.confirmation_timeout_seconds
+                        )
+                        confirmation_response = result.final_output
+                        
+                        # Check for re-entrant tool calls (defensive detection)
+                        has_tool_call, tool_call_info = self._check_for_tool_calls(result)
+                        if has_tool_call and tool_call_info.get('tool_name') == 'propose_vote':
+                            self._log_info(f"Re-entrant vote proposal during confirmation from {participant.name} (attempt {attempt + 1})")
+                            # Create gentle re-prompting message
+                            confirmation_prompt = f"""Voting is already in progress. Please respond with only a number:
+1 = Yes, I agree to proceed with voting
+0 = No, I do not agree to proceed with voting
+
+Original question: {confirmation_prompt}"""
+                            continue  # Retry without counting as hard failure
+                        else:
+                            break  # Got valid response, exit retry loop
+                            
+                    except asyncio.TimeoutError:
+                        self._log_warning(f"Timeout waiting for confirmation from {participant.name} (attempt {attempt + 1})")
+                        if attempt == max_retries - 1:
+                            confirmation_response = f"[{participant.name} timed out during confirmation]"
+                        continue
+                
+                # CRITICAL: Check if response is a fallback statement (agent failure)
+                is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
+                if is_fallback:
+                    self._log_warning(f"Fallback response detected for {participant.name} - voting confirmation failed")
+                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+                    discussion_state.public_history += f"\n[VOTING RESULT] Agent failure detected - confirmation failed"
+                    return False
+                
+                # Use numerical agreement detection (1=yes, 0=no)
+                agrees_to_vote, parse_error = self.utility_agent.detect_numerical_agreement(confirmation_response)
+                
+                # Handle malformed responses
+                if parse_error is not None:
+                    self._log_warning(f"Malformed confirmation response from {participant.name}: {parse_error}")
+                    discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
+                    discussion_state.public_history += f"\n[VOTING RESULT] Invalid response format - confirmation failed. {parse_error}"
+                    return False
+                
+                confirmations.append({
+                    'participant': participant.name,
+                    'response': confirmation_response,
+                    'agrees': agrees_to_vote
+                })
+                
+                # Add to public history (visible to all)
                 discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
-                discussion_state.public_history += f"\n[VOTING RESULT] Agent failure detected - confirmation failed"
-                return False
-            
-            # Use numerical agreement detection (1=yes, 0=no)
-            agrees_to_vote, parse_error = self.utility_agent.detect_numerical_agreement(confirmation_response)
-            
-            # Handle malformed responses
-            if parse_error is not None:
-                self._log_warning(f"Malformed confirmation response from {participant.name}: {parse_error}")
-                discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
-                discussion_state.public_history += f"\n[VOTING RESULT] Invalid response format - confirmation failed. {parse_error}"
-                return False
-            
-            confirmations.append({
-                'participant': participant.name,
-                'response': confirmation_response,
-                'agrees': agrees_to_vote
-            })
-            
-            # Add to public history (visible to all)
-            discussion_state.public_history += f"\n[VOTING CONFIRMATION] {participant.name}: {confirmation_response}"
-            
-            # Update participant memory with their confirmation response
-            language_manager = self.language_manager
-            confirmation_content = f"""Voting Confirmation Round {discussion_state.round_number}:
+                
+                # Update participant memory with their confirmation response
+                language_manager = self.language_manager
+                confirmation_content = f"""Voting Confirmation Round {discussion_state.round_number}:
 You were asked if you agree to proceed with voting on justice principles.
 {language_manager.get('memory_field_labels.your_response')} {confirmation_response}
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.agreed_to_vote') if agrees_to_vote else language_manager.get('memory_outcomes.declined_to_vote')}"""
+                
+                # Extract configuration for memory guidance
+                memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+                
+                context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                    participant, context, confirmation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
+                )
+                
+                # If anyone disagrees, confirmation phase fails
+                if not agrees_to_vote:
+                    self._log_info(f"{participant.name} declined voting - confirmation failed")
+                    discussion_state.public_history += f"\n[VOTING RESULT] Confirmation failed - returning to discussion"
+                    return False
             
-            # Extract configuration for memory guidance
-            memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+            self._log_info("All participants agreed to vote - proceeding to secret ballot")
+            discussion_state.public_history += f"\n[VOTING RESULT] All participants agreed - proceeding to secret ballot"
+        
+            # Log confirmation results
+            if self.logger:
+                self.logger.log_confirmation_phase(confirmations)
             
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, confirmation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager
-            )
+            return True
             
-            # If anyone disagrees, confirmation phase fails
-            if not agrees_to_vote:
-                self._log_info(f"{participant.name} declined voting - confirmation failed")
-                discussion_state.public_history += f"\n[VOTING RESULT] Confirmation failed - returning to discussion"
-                return False
-        
-        self._log_info("All participants agreed to vote - proceeding to secret ballot")
-        discussion_state.public_history += f"\n[VOTING RESULT] All participants agreed - proceeding to secret ballot"
-        
-        # Log confirmation results
-        if self.logger:
-            self.logger.log_confirmation_phase(confirmations)
-        
-        return True
+        finally:
+            # Always restore original tool settings, even if method exits early
+            for i, context in enumerate(contexts):
+                if i < len(original_tool_settings):
+                    context.allow_vote_tool = original_tool_settings[i]
+                    self._log_info(f"Restored vote tool setting for {context.name}: {original_tool_settings[i]}")
     
     async def _conduct_secret_ballot_phase(
         self,
@@ -1777,4 +1947,37 @@ You were asked if you agree to proceed with voting on justice principles.
             # This could happen when there are multiple small groups with principle agreement
             # but disagreement between groups
             return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
+    
+    async def _check_and_handle_voting(
+        self,
+        participant: 'ParticipantAgent',
+        statement: str,
+        tool_call_info: dict,
+        discussion_state: GroupDiscussionState,
+        contexts: List[ParticipantContext]
+    ) -> bool:
+        """
+        Unified voting detection and handling for complex mode.
+        Returns True if consensus reached, False otherwise.
+        """
+        # Ensure we're not already in a voting process
+        if self._voting_in_progress:
+            self._log_info("Voting already in progress, skipping new vote detection")
+            return False
+        
+        # Check for tool-based voting first (higher priority)
+        if tool_call_info and tool_call_info.get('tool_name') == 'propose_vote':
+            self._log_info(f"Tool-based voting proposal detected from {participant.name}")
+            return await self.handle_vote_proposal_tool(
+                participant, tool_call_info, discussion_state, contexts
+            )
+        
+        # Fall back to keyword-based detection for backward compatibility
+        if self._is_voting_trigger_phrase(statement):
+            self._log_info(f"Keyword-based voting detected from {participant.name}")
+            return await self._handle_complex_voting_mode(
+                participant, statement, discussion_state, contexts
+            )
+        
+        return False
     

@@ -121,6 +121,8 @@ class ParticipantContext(BaseModel):
     round_number: int
     phase: ExperimentPhase
     memory_character_limit: int = 50000
+    allow_vote_tool: bool = Field(default=True, description="Controls availability of propose_vote tool during voting sub-phases")
+    interaction_type: Optional[str] = Field(default=None, description="Type of interaction: 'public_statement', 'internal_reasoning', 'memory_update', 'confirmation', 'ballot'")
 
 
 class DiscussionStatement(BaseModel):
