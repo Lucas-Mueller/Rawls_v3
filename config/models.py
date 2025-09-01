@@ -52,6 +52,22 @@ class Phase2TransparencyConfig(BaseModel):
         return v
 
 
+class LoggingConfig(BaseModel):
+    """Configuration for terminal output and logging."""
+    verbosity_level: str = Field("standard", description="Terminal output verbosity: 'minimal', 'standard', 'detailed', 'debug'")
+    use_colors: bool = Field(True, description="Enable colored terminal output")
+    show_progress_bars: bool = Field(True, description="Show progress bars during execution")
+    
+    @field_validator('verbosity_level')
+    @classmethod
+    def validate_verbosity_level(cls, v):
+        """Validate verbosity level is supported."""
+        valid_levels = ["minimal", "standard", "detailed", "debug"]
+        if v.lower() not in valid_levels:
+            raise ValueError(f"Invalid verbosity level: {v}. Must be one of {valid_levels}")
+        return v.lower()
+
+
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     language: str = Field("English", description="Language for experiment prompts and messages")
@@ -66,6 +82,7 @@ class ExperimentConfiguration(BaseModel):
     income_class_probabilities: Optional[IncomeClassProbabilities] = Field(None, description="Income class assignment probabilities (defaults to equal if not specified)")
     original_values_mode: Optional[OriginalValuesModeConfig] = Field(None, description="Original values mode configuration")
     phase2_enhanced_transparency: Optional[Phase2TransparencyConfig] = Field(None, description="Phase 2 enhanced transparency configuration")
+    logging: Optional[LoggingConfig] = Field(None, description="Terminal output and logging configuration")
     
     # Memory optimization config options
     memory_guidance_style: str = Field("narrative", description="Memory guidance style: 'narrative' or 'structured'")

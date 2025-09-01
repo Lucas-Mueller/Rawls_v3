@@ -172,7 +172,7 @@ class ExperimentErrorHandler:
             ExperimentErrorCategory.AGENT_COMMUNICATION_ERROR: RetryConfig(3, 1.0, True),
             ExperimentErrorCategory.MEMORY_ERROR: RetryConfig(5, 0.5, False),
             ExperimentErrorCategory.VALIDATION_ERROR: RetryConfig(2, 0.0, False),
-            ExperimentErrorCategory.SYSTEM_ERROR: RetryConfig(3, 2.0, True),
+            ExperimentErrorCategory.SYSTEM_ERROR: RetryConfig(4, 20.0, False),
             ExperimentErrorCategory.EXPERIMENT_LOGIC_ERROR: RetryConfig(1, 0.0, False)
         }
     

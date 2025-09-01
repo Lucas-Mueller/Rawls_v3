@@ -16,8 +16,9 @@ from core.phase2_manager import Phase2Manager
 from core.two_stage_voting_manager import TwoStageVotingManager
 from experiment_agents import ParticipantAgent, UtilityAgent
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
-from models.logging_types import GroupDiscussionResult
-from models.config_models import ExperimentConfiguration, Phase2Settings, AgentConfiguration
+from models.experiment_types import GroupDiscussionResult
+from config.models import ExperimentConfiguration, AgentConfiguration
+from config.phase2_settings import Phase2Settings
 from utils.language_manager import create_language_manager, SupportedLanguage
 from tests.fixtures.simplified_fixtures import TestParticipant, TestStatement
 
@@ -56,15 +57,14 @@ class TestCompleteVotingFlow:
     def phase2_config(self):
         """Create Phase 2 configuration."""
         return ExperimentConfiguration(
-            voting_detection_mode="complex",
             phase2_settings=Phase2Settings(
                 max_discussion_rounds=5,
                 enable_memory_guidance=True,
                 memory_guidance_style="structured"
             ),
             agents=[
-                AgentConfiguration(name="Alice", model="gpt-4o-mini", language="english"),
-                AgentConfiguration(name="Bob", model="gpt-4o-mini", language="english")
+                AgentConfiguration(name="Alice", personality="Test personality A", model="gpt-4o-mini", language="english"),
+                AgentConfiguration(name="Bob", personality="Test personality B", model="gpt-4o-mini", language="english")
             ]
         )
 
@@ -170,46 +170,44 @@ class TestCompleteVotingFlow:
         }
         
         for language in languages:
-            with self.subTest(language=language):
-                # Create language-specific components
-                lang_manager = create_language_manager(SupportedLanguage(language.title()))
-                lang_utility_agent = UtilityAgent(
-                    utility_model="gpt-4o-mini",
-                    temperature=0.0,
-                    experiment_language=language,
-                    language_manager=lang_manager
-                )
-                
-                # Mock participants for this language
-                mock_participants = []
-                for name in ["Alice", "Bob"]:
-                    participant = MagicMock()
-                    participant.name = name
-                    participant.agent = AsyncMock()
-                    mock_participants.append(participant)
-                
-                # Create phase2 manager for this language
-                config = ExperimentConfiguration(
-                    voting_detection_mode="complex",
-                    phase2_settings=Phase2Settings(max_discussion_rounds=3),
-                    agents=[
-                        AgentConfiguration(name="Alice", model="gpt-4o-mini", language=language),
-                        AgentConfiguration(name="Bob", model="gpt-4o-mini", language=language)
-                    ]
-                )
-                
-                lang_phase2_manager = Phase2Manager(
-                    participants=mock_participants,
-                    utility_agent=lang_utility_agent,
-                    experiment_config=config,
-                    language_manager=lang_manager
-                )
-                
-                # Test vote trigger detection for this language
-                trigger_phrase = vote_trigger_phrases[language]
-                is_trigger = lang_phase2_manager._is_voting_trigger_phrase(trigger_phrase)
-                
-                assert is_trigger == True, f"Vote trigger not detected for {language}: {trigger_phrase}"
+            # Create language-specific components
+            lang_manager = create_language_manager(SupportedLanguage(language.title()))
+            lang_utility_agent = UtilityAgent(
+                utility_model="gpt-4o-mini",
+                temperature=0.0,
+                experiment_language=language,
+                language_manager=lang_manager
+            )
+            
+            # Mock participants for this language
+            mock_participants = []
+            for name in ["Alice", "Bob"]:
+                participant = MagicMock()
+                participant.name = name
+                participant.agent = AsyncMock()
+                mock_participants.append(participant)
+            
+            # Create phase2 manager for this language
+            config = ExperimentConfiguration(
+                phase2_settings=Phase2Settings(max_discussion_rounds=3),
+                agents=[
+                    AgentConfiguration(name="Alice", personality="Test personality A", model="gpt-4o-mini", language=language),
+                    AgentConfiguration(name="Bob", personality="Test personality B", model="gpt-4o-mini", language=language)
+                ]
+            )
+            
+            lang_phase2_manager = Phase2Manager(
+                participants=mock_participants,
+                utility_agent=lang_utility_agent,
+                experiment_config=config,
+                language_manager=lang_manager
+            )
+            
+            # Test vote trigger detection for this language
+            trigger_phrase = vote_trigger_phrases[language]
+            is_trigger = lang_phase2_manager._is_voting_trigger_phrase(trigger_phrase)
+            
+            assert is_trigger == True, f"Vote trigger not detected for {language}: {trigger_phrase}"
 
     @pytest.mark.asyncio
     async def test_vote_parsing_with_context_regression(self, utility_agent):

@@ -499,7 +499,7 @@ class UtilityAgent:
         )
 
     async def detect_preference_statement(self, statement: str) -> Optional[PrincipleChoice]:
-        """Detect preference statements for simple mode consensus."""
+        """Detect preference statements for consensus building."""
         await self.async_init()
         
         # Reject letter-based preferences immediately

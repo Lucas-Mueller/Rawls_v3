@@ -91,7 +91,6 @@ class TestEndToEndLetterRejection(unittest.TestCase):
                 )
             ],
             phase2_rounds=5,
-            voting_detection_mode="simple"
         )
 
     @patch('experiment_agents.participant_agent.ParticipantAgent.run')

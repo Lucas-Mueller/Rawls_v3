@@ -28,7 +28,7 @@ class Phase1Manager:
         self.seed_manager = seed_manager
         self.logger = None  # Will be set in run_phase1
     
-    async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None) -> List[Phase1Results]:
+    async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
         
         # Set logger instance for use in helper methods
@@ -40,7 +40,7 @@ class Phase1Manager:
             agent_config = config.agents[i]
             context = self._create_initial_participant_context(agent_config)
             task = asyncio.create_task(
-                self._run_single_participant_phase1(participant, context, config, agent_config, logger)
+                self._run_single_participant_phase1(participant, context, config, agent_config, logger, process_logger)
             )
             tasks.append(task)
         
@@ -75,12 +75,15 @@ class Phase1Manager:
         context: ParticipantContext,
         config: ExperimentConfiguration,
         agent_config: AgentConfiguration,
-        logger: AgentCentricLogger = None
+        logger: AgentCentricLogger = None,
+        process_logger=None
     ) -> Phase1Results:
         """Run complete Phase 1 for a single participant."""
         
         # 1.1 Initial Principle Ranking
         context.round_number = 0
+        if process_logger:
+            process_logger.phase1_agent_progress(participant.name, "Initial ranking", 0.1)
         initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
         
         # Log initial ranking with current memory state
@@ -96,12 +99,14 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
         )
         context = update_participant_context(context, new_round=context.round_number)
         
         # 1.2 Detailed Explanation (informational only)
         context.round_number = -1  # Special round for learning
+        if process_logger:
+            process_logger.phase1_agent_progress(participant.name, "Learning principles", 0.25)
         explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config, config)
         
         # Log detailed explanation
@@ -117,12 +122,14 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
         )
         context = update_participant_context(context, new_round=context.round_number)
         
         # 1.2b Post-explanation ranking
         context.round_number = 0  # Reset to 0 for second ranking
+        if process_logger:
+            process_logger.phase1_agent_progress(participant.name, "Post-explanation ranking", 0.4)
         post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
             participant, context, agent_config
         )
@@ -140,7 +147,7 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -148,6 +155,10 @@ class Phase1Manager:
         application_results = []
         for round_num in range(1, 5):
             context.round_number = round_num
+            
+            if process_logger:
+                progress = 0.4 + (round_num * 0.1)  # 0.5, 0.6, 0.7, 0.8
+                process_logger.phase1_agent_progress(participant.name, f"Application round {round_num}", progress)
             
             # Capture state before round
             balance_before = context.bank_balance
@@ -190,7 +201,7 @@ class Phase1Manager:
             memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
+                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
             )
             
             # Update context with earnings
@@ -202,6 +213,8 @@ class Phase1Manager:
         
         # 1.4 Final Ranking
         context.round_number = 5
+        if process_logger:
+            process_logger.phase1_agent_progress(participant.name, "Final ranking", 0.9)
         final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
         
         # Log final ranking
@@ -217,9 +230,12 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler
+            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
         )
         context = update_participant_context(context, new_round=context.round_number)
+        
+        if process_logger:
+            process_logger.phase1_agent_progress(participant.name, "Completed", 1.0)
         
         return Phase1Results(
             participant_name=participant.name,

@@ -251,9 +251,8 @@ class TestCoreIntegration:
 
     # CONSENSUS MECHANISM INTEGRATION TESTS
 
-    def test_complex_mode_voting_integration(self, minimal_config):
-        """Test voting mechanism integration in complex mode.""" 
-        # Set up complex mode configuration
+    def test_voting_integration(self, minimal_config):
+        """Test voting mechanism integration.""" 
         experiment_manager = FrohlichExperimentManager(minimal_config)
         
         # Test voting initiation

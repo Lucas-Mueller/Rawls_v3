@@ -60,13 +60,13 @@ class TestVotingHistoryStructures(unittest.TestCase):
         )
         
         voting_history = VotingHistoryLog(
-            voting_detection_mode="simple",
+            voting_detection_mode="complex",
             total_vote_attempts=1,
             successful_votes=1,
             vote_rounds=[vote_round]
         )
         
-        self.assertEqual(voting_history.voting_detection_mode, "simple")
+        self.assertEqual(voting_history.voting_detection_mode, "complex")
         self.assertEqual(voting_history.total_vote_attempts, 1)
         self.assertEqual(voting_history.successful_votes, 1)
         self.assertEqual(len(voting_history.vote_rounds), 1)
@@ -134,7 +134,7 @@ class TestVotingHistoryStructures(unittest.TestCase):
         )
         
         voting_history = VotingHistoryLog(
-            voting_detection_mode="simple",
+            voting_detection_mode="complex",
             total_vote_attempts=1,
             successful_votes=1,
             vote_rounds=[vote_round]
@@ -164,7 +164,7 @@ class TestVotingHistoryStructures(unittest.TestCase):
         
         # Verify voting history details
         vh = result_dict['voting_history']
-        self.assertEqual(vh['voting_detection_mode'], "simple")
+        self.assertEqual(vh['voting_detection_mode'], "complex")
         self.assertEqual(vh['total_vote_attempts'], 1)
         self.assertEqual(vh['successful_votes'], 1)
         self.assertEqual(len(vh['vote_rounds']), 1)
@@ -193,17 +193,17 @@ class TestAgentCentricLoggerVotingHistory(unittest.TestCase):
     
     def test_initialize_voting_history(self):
         """Test voting history initialization."""
-        self.logger.initialize_voting_history("simple")
+        self.logger.initialize_voting_history()
         
         self.assertIsNotNone(self.logger.voting_history)
-        self.assertEqual(self.logger.voting_history.voting_detection_mode, "simple")
+        self.assertEqual(self.logger.voting_history.voting_detection_mode, "complex")
         self.assertEqual(self.logger.voting_history.total_vote_attempts, 0)
         self.assertEqual(self.logger.voting_history.successful_votes, 0)
         self.assertEqual(len(self.logger.voting_history.vote_rounds), 0)
     
     def test_start_vote_round(self):
         """Test starting a vote round."""
-        self.logger.initialize_voting_history("complex")
+        self.logger.initialize_voting_history()
         self.logger.start_vote_round(round_number=2, vote_type="formal_vote")
         
         self.assertIsNotNone(self.logger.current_vote_round)
@@ -214,7 +214,7 @@ class TestAgentCentricLoggerVotingHistory(unittest.TestCase):
     
     def test_log_vote_response(self):
         """Test logging vote responses."""
-        self.logger.initialize_voting_history("simple")
+        self.logger.initialize_voting_history()
         self.logger.start_vote_round(round_number=1, vote_type="formal_vote")
         
         # Log first response
@@ -252,7 +252,7 @@ class TestAgentCentricLoggerVotingHistory(unittest.TestCase):
     
     def test_complete_vote_round(self):
         """Test completing a vote round."""
-        self.logger.initialize_voting_history("simple")
+        self.logger.initialize_voting_history()
         self.logger.start_vote_round(round_number=3, vote_type="formal_vote")
         
         # Add some responses
@@ -289,7 +289,7 @@ class TestAgentCentricLoggerVotingHistory(unittest.TestCase):
     
     def test_multiple_vote_rounds(self):
         """Test handling multiple vote rounds."""
-        self.logger.initialize_voting_history("complex")
+        self.logger.initialize_voting_history()
         
         # First round (unsuccessful)
         self.logger.start_vote_round(round_number=1, vote_type="initial_vote")

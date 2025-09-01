@@ -33,7 +33,8 @@ class MemoryManager:
         max_retries: int = 5,
         memory_guidance_style: str = "narrative",
         language_manager=None,
-        error_handler=None
+        error_handler=None,
+        utility_agent=None
     ) -> str:
         """
         Prompt agent to update their memory based on round content.
@@ -73,40 +74,40 @@ class MemoryManager:
                 # Get updated memory from agent
                 updated_memory = await agent.update_memory(prompt, context.bank_balance)
                 
-                # Validate memory length
-                is_valid, length = MemoryManager._validate_memory_length(
-                    updated_memory, agent.config.memory_character_limit
-                )
+                # Check memory length with 15% tolerance buffer
+                char_limit = agent.config.memory_character_limit
+                tolerance_limit = int(char_limit * 1.15)  # 15% tolerance
+                memory_length = len(updated_memory)
                 
-                if is_valid:
+                if memory_length <= char_limit:
+                    # Memory is within normal limits
                     if attempt > 0:
                         logger.info(f"Memory update succeeded for {agent.name} after {attempt + 1} attempts")
                     return updated_memory
+                elif memory_length <= tolerance_limit:
+                    # Memory exceeds base limit but within tolerance - allow it
+                    logger.info(f"Memory for {agent.name} exceeds base limit ({memory_length} > {char_limit}) but within tolerance ({tolerance_limit})")
+                    return updated_memory
                 else:
-                    # Memory too long - create specific error for retry
-                    memory_error = MemoryError(
-                        f"Memory length {length} exceeds limit {agent.config.memory_character_limit}",
-                        ErrorSeverity.RECOVERABLE,
-                        {
-                            "agent_name": agent.name,
-                            "attempted_length": length,
-                            "limit": agent.config.memory_character_limit,
-                            "attempt": attempt + 1,
-                            "max_retries": max_retries
-                        }
-                    )
-                    memory_error.operation = "memory_length_validation"
+                    # Memory exceeds 15% tolerance - compress using utility agent
+                    logger.info(f"Memory for {agent.name} exceeds tolerance ({memory_length} > {tolerance_limit}) - compressing using utility agent")
                     
-                    # Log the error
-                    error_handler._log_error(memory_error)
+                    # Use provided utility agent or fallback to basic truncation
+                    if utility_agent is None:
+                        logger.warning(f"No utility agent provided for memory compression of {agent.name} - using basic truncation")
+                        # Fallback to basic truncation
+                        target_length = int(char_limit * 0.5)
+                        compressed_memory = updated_memory[:target_length] + "\n[Memory compressed due to length limit]"
+                        return compressed_memory
                     
-                    # Create error message for next attempt
-                    error_msg = (
-                        f"Your memory is {length} characters, which exceeds the limit of "
-                        f"{agent.config.memory_character_limit} characters. Please shorten "
-                        f"your memory by {length - agent.config.memory_character_limit} characters."
+                    # Use utility agent to compress memory to 50% of limit
+                    target_length = int(char_limit * 0.5)
+                    compressed_memory = await MemoryManager._compress_memory_with_utility_agent(
+                        utility_agent, updated_memory, target_length, language_manager, agent.name
                     )
-                    round_content = f"ERROR: {error_msg}\n\nPlease update your memory again, making it shorter."
+                    
+                    logger.info(f"Memory compressed for {agent.name}: {memory_length} -> {len(compressed_memory)} characters")
+                    return compressed_memory
                     
             except MemoryError:
                 raise  # Re-raise memory errors as-is
@@ -231,3 +232,57 @@ class MemoryManager:
         except Exception as e:
             logger.error(f"Memory compression failed: {e}, using original memory")
             return current_memory
+
+    @staticmethod
+    async def _compress_memory_with_utility_agent(
+        utility_agent,
+        memory_content: str,
+        target_length: int,
+        language_manager,
+        agent_name: str = "Agent"
+    ) -> str:
+        """
+        Compress memory using utility agent to target length.
+        
+        Args:
+            utility_agent: The utility agent to use for compression
+            memory_content: The memory content to compress
+            target_length: Target length for compressed memory
+            language_manager: Language manager for localized prompts
+            agent_name: Name of agent for logging
+            
+        Returns:
+            Compressed memory string
+        """
+        
+        try:
+            # Create compression prompt in the appropriate language using existing localized prompt
+            compression_prompt = language_manager.get(
+                "memory_compression_prompt",
+                current_memory=memory_content,
+                memory_limit=target_length * 2,  # Set a reasonable "limit" for the prompt
+                target_length=target_length
+            )
+            
+            # Import the run_without_tracing function for utility agent processing
+            from experiment_agents.utility_agent import run_without_tracing
+            
+            # Use utility agent to compress the memory
+            result = await run_without_tracing(utility_agent.parser_agent, compression_prompt)
+            compressed_memory = result.final_output.strip()
+            
+            # Validate compression was effective
+            if len(compressed_memory) <= target_length:
+                logger.info(f"Utility agent successfully compressed memory from {len(memory_content)} to {len(compressed_memory)} characters")
+                return compressed_memory
+            else:
+                # Compression didn't achieve target - do basic truncation as fallback
+                logger.warning(f"Utility agent compression insufficient ({len(compressed_memory)} > {target_length}), using truncation fallback")
+                truncated_memory = compressed_memory[:target_length - 50] + "\n[Memory compressed and truncated due to length limit]"
+                return truncated_memory
+                
+        except Exception as e:
+            logger.error(f"Utility agent compression failed for {agent_name}: {e}")
+            # Fallback to basic truncation
+            truncated_memory = memory_content[:target_length - 50] + "\n[Memory compressed due to length limit]"
+            return truncated_memory

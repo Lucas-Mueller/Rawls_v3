@@ -109,7 +109,6 @@ class TestExperimentIntegration:
             ],
             phase1_rounds=2,
             phase2_max_rounds=3,
-            voting_detection_mode="simple",
             seed=12345
         )
     

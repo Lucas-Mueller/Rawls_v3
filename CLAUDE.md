@@ -90,17 +90,15 @@ The framework supports English, Spanish, and Mandarin experiments:
 - Language manager handles localization (`utils/language_manager.py`)
 - Agent language preferences configured per-agent in YAML
 
-## Voting Detection Modes
+## Voting System
 
-### Simple Mode
-- Agents express preferences using "My preference is [principle]" 
-- Consensus reached when all agents state matching preferences
-- Faster, preference-based detection
+The framework uses a single **formal voting system** with structured consensus building:
 
-### Complex Mode  
-- Formal voting system with "Let's vote" triggers
-- Two-stage process: vote initiation + confirmation, then secret ballot
-- Requires unanimous confirmation and voting participation
+### Formal Voting Process
+- **Initiation**: Via end-of-round prompts only ("Do you want to initiate voting?")
+- **Confirmation Phase**: All agents must agree to participate (1=Yes, 0=No)
+- **Secret Ballot**: Two-stage structured voting with numerical validation
+- **Consensus**: Requires unanimous agreement on principle and constraints
 
 ## Two-Stage Voting System
 

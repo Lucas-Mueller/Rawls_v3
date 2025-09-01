@@ -41,19 +41,19 @@ class Phase2Settings(BaseModel):
     
     # Timeout settings
     statement_timeout_seconds: int = Field(
-        default=60,
+        default=180,
         ge=10,
         le=300,
         description="Timeout for agent statement responses"
     )
     confirmation_timeout_seconds: int = Field(
-        default=30,
+        default=90,
         ge=10,
         le=120,
         description="Timeout for voting confirmation responses"
     )
     ballot_timeout_seconds: int = Field(
-        default=45,
+        default=135,
         ge=10,
         le=180,
         description="Timeout for secret ballot responses"
@@ -102,7 +102,7 @@ class Phase2Settings(BaseModel):
         description="Enable constraint correction for principles C and D"
     )
     constraint_correction_timeout_seconds: int = Field(
-        default=30,
+        default=90,
         ge=10,
         le=120,
         description="Timeout for constraint correction attempts"
@@ -126,7 +126,7 @@ class Phase2Settings(BaseModel):
         description="Maximum retry attempts per voting stage"
     )
     two_stage_timeout_seconds: float = Field(
-        default=30.0,
+        default=90.0,
         ge=10.0,
         le=300.0,
         description="Timeout for each voting stage"
@@ -148,10 +148,10 @@ class Phase2Settings(BaseModel):
         description="Maximum reasonable constraint amount"
     )
     
-    # Trigger phrase settings
-    simple_trigger_phrases: bool = Field(
+    # Vote initiation settings (formal voting only)
+    prompt_based_voting: bool = Field(
         default=True,
-        description="Use simple trigger phrases for vote initiation"
+        description="Use prompt-based voting initiation (only supported method)"
     )
     
     # Logging settings

@@ -122,7 +122,7 @@ class VoteRoundDetails(BaseModel):
 
 class VotingHistoryLog(BaseModel):
     """Complete voting history for the experiment."""
-    voting_detection_mode: str = Field(..., description="Mode used: 'simple' or 'complex'")
+    voting_system: str = Field(default="formal_voting", description="Voting system used (formal voting with prompts)")
     total_vote_attempts: int = Field(0, description="Total number of vote attempts")
     successful_votes: int = Field(0, description="Number of votes that reached consensus")
     
@@ -282,7 +282,7 @@ class TargetStateStructure(BaseModel):
         # Add voting history if present
         if self.voting_history:
             result["voting_history"] = {
-                "voting_detection_mode": self.voting_history.voting_detection_mode,
+                "voting_system": self.voting_history.voting_system,
                 "total_vote_attempts": self.voting_history.total_vote_attempts,
                 "successful_votes": self.voting_history.successful_votes,
                 "vote_rounds": [

@@ -246,52 +246,6 @@ class TestConsensusDetection(unittest.TestCase):
         """Set up test fixtures."""
         self.utility_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
 
-    def test_preference_consensus_simple_mode(self):
-        """Test preference-based consensus detection."""
-        # All participants agree
-        matching_preferences = [
-            PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_FLOOR,
-                certainty=CertaintyLevel.SURE,
-                constraint_amount=None,
-                reasoning="Good choice"
-            ),
-            PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_FLOOR, 
-                certainty=CertaintyLevel.VERY_SURE,
-                constraint_amount=None,
-                reasoning="Agreed"
-            )
-        ]
-        
-        consensus, agreed_choice, warnings = self.utility_agent.check_preference_consensus_simple_mode(matching_preferences)
-        
-        self.assertTrue(consensus)
-        self.assertEqual(agreed_choice.principle, JusticePrinciple.MAXIMIZING_FLOOR)
-        self.assertEqual(len(warnings), 0)
-
-    def test_no_consensus_different_principles(self):
-        """Test no consensus when participants choose different principles."""
-        different_preferences = [
-            PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_FLOOR,
-                certainty=CertaintyLevel.SURE,
-                constraint_amount=None,
-                reasoning="Good choice"
-            ),
-            PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE,
-                certainty=CertaintyLevel.SURE, 
-                constraint_amount=None,
-                reasoning="Different choice"
-            )
-        ]
-        
-        consensus, agreed_choice, warnings = self.utility_agent.check_preference_consensus_simple_mode(different_preferences)
-        
-        self.assertFalse(consensus)
-        self.assertIsNone(agreed_choice)
-        self.assertGreater(len(warnings), 0)
 
     def test_ballot_consensus(self):
         """Test ballot-based consensus detection."""

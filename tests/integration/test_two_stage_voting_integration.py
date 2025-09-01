@@ -40,7 +40,6 @@ class TestTwoStageVotingIntegration:
         """Create experiment configuration for testing."""
         config = Mock(spec=ExperimentConfiguration)
         config.phase2_settings = phase2_settings
-        config.voting_detection_mode = "complex"
         config.memory_guidance_style = "narrative"
         return config
 

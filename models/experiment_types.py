@@ -149,8 +149,8 @@ class GroupDiscussionState(BaseModel):
     last_vote_result: Optional[VoteResult] = None
     vote_triggered: bool = False  # Track if voting has been initiated (prevents reminder messages)
     
-    def add_statement(self, participant_name: str, statement: str):
-        """Add statement to public history with participant validation."""
+    def add_statement(self, participant_name: str, statement: str, language_manager=None):
+        """Add statement to public history with participant validation and round number formatting."""
         # Validate participant if valid_participants is set
         if self.valid_participants and participant_name not in self.valid_participants:
             raise ValueError(
@@ -164,7 +164,23 @@ class GroupDiscussionState(BaseModel):
             round_number=self.round_number
         )
         self.statements.append(statement_obj)
-        self.public_history += f"\n{participant_name}: {statement}"
+        
+        # Format statement with round number if language manager is available
+        if language_manager:
+            try:
+                formatted_statement = language_manager.get(
+                    "discussion_format.round_speaker_format",
+                    round_number=self.round_number,
+                    speaker_name=participant_name,
+                    statement=statement
+                )
+                self.public_history += f"\n{formatted_statement}"
+            except Exception:
+                # Fallback to simple format if translation key is missing or other error
+                self.public_history += f"\n{participant_name}: {statement}"
+        else:
+            # Fallback to simple format when no language manager provided
+            self.public_history += f"\n{participant_name}: {statement}"
     
     def add_vote_result(self, vote_result: VoteResult):
         """Add vote result to public history."""

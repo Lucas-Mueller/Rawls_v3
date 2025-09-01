@@ -480,13 +480,11 @@ class Phase2ParsingFixtures:
     @staticmethod
     def create_test_experiment_config(
         num_agents: int = 3,
-        voting_mode: str = "complex",
         language: str = "English"
     ) -> ExperimentConfiguration:
         """Create test experiment configuration."""
         config = MagicMock(spec=ExperimentConfiguration)
         config.phase2_rounds = 5
-        config.voting_detection_mode = voting_mode
         config.language = language
         config.phase2_settings = Phase2Settings.get_default()
         

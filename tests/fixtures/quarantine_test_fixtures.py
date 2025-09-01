@@ -76,7 +76,6 @@ class QuarantineTestFixture:
             utility_agent_temperature=0.0,
             phase2_rounds=3,
             phase2_settings=phase2_settings,
-            voting_detection_mode="complex"
         )
     
     @staticmethod

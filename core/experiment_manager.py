@@ -145,16 +145,34 @@ class FrohlichExperimentManager:
         severity=ErrorSeverity.FATAL,
         operation_name="run_complete_experiment"
     )
-    async def run_complete_experiment(self) -> ExperimentResults:
+    async def run_complete_experiment(self, process_logger=None) -> ExperimentResults:
         """Run complete two-phase experiment with tracing."""
         
         # Ensure experiment manager is initialized
+        start_init_time = time.time()
+        
+        # Initialize agent creation with ProcessFlowLogger
+        if process_logger:
+            agent_configs = [{'name': a.name, 'model': a.model} for a in self.config.agents]
+            process_logger.initialize_agents(agent_configs)
+        
         await self.async_init()
+        
+        # Log agent initialization completion
+        if process_logger:
+            init_time = time.time() - start_init_time
+            for i, participant in enumerate(self.participants):
+                config = self.config.agents[i]
+                process_logger.agent_initialized(participant.name, config.model, 0.0)  # Individual timing not available
+            process_logger.agents_ready(init_time)
         
         # ALWAYS initialize reproducibility for every experiment (instance-based)
         effective_seed = self.seed_manager.initialize_from_config(self.config)
         seed_source = "explicit" if self.config.seed else "generated"
-        logger.info(f"Experiment seed: {effective_seed} ({seed_source})")
+        if process_logger:
+            process_logger.log_technical(f"Experiment seed: {effective_seed} ({seed_source})")
+        else:
+            logger.info(f"Experiment seed: {effective_seed} ({seed_source})")
         
         # Create trace for the entire experiment
         trace_name = f"Frohlich Experiment - {self.experiment_id}"
@@ -163,7 +181,7 @@ class FrohlichExperimentManager:
             "participant_count": str(len(self.participants)),
             "config_file": str(Path(self.config_file_path).name),
             "language": str(getattr(self.config, 'language', 'en')),
-            "voting_detection_mode": str(getattr(self.config, 'voting_detection_mode', 'simple')),
+            "voting_system": "formal_voting",
             "phase2_max_rounds": str(getattr(self.config, 'phase2_rounds', 10)),
             "participant_names": ", ".join([p.name for p in self.participants]),
             "participant_models": ", ".join([p.config.model for p in self.participants])
@@ -172,8 +190,12 @@ class FrohlichExperimentManager:
         start_time = time.time()
         
         with trace(trace_name, metadata=trace_metadata) as experiment_trace:
-            logger.info(f"🔍 Tracing experiment: {trace_name}")
-            logger.info(f"🔗 Trace ID: {experiment_trace.trace_id}")
+            if process_logger:
+                process_logger.log_technical(f"Tracing experiment: {trace_name}")
+                process_logger.log_technical(f"Trace ID: {experiment_trace.trace_id}")
+            else:
+                logger.info(f"🔍 Tracing experiment: {trace_name}")
+                logger.info(f"🔗 Trace ID: {experiment_trace.trace_id}")
             
             # Store trace_id for later display
             self._trace_id = experiment_trace.trace_id
@@ -184,10 +206,14 @@ class FrohlichExperimentManager:
                 
                 # Phase execution begins
                 # Phase 1: Individual familiarization (parallel)
-                logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
+                if process_logger:
+                    process_logger.start_phase1(len(self.participants))
+                else:
+                    logger.info(f"Starting Phase 1 for experiment {self.experiment_id}")
                 
+                phase1_start_time = time.time()
                 try:
-                    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger)
+                    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger, process_logger)
                 except Exception as e:
                     raise ExperimentLogicError(
                         f"Phase 1 execution failed: {str(e)}",
@@ -201,16 +227,26 @@ class FrohlichExperimentManager:
                         cause=e
                     )
                 
-                logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
-                for result in phase1_results:
-                    logger.info(f"{result.participant_name}: ${result.total_earnings:.2f} earned")
+                phase1_duration = time.time() - phase1_start_time
+                
+                if process_logger:
+                    results_summary = [{'name': r.participant_name, 'earnings': r.total_earnings} for r in phase1_results]
+                    process_logger.phase1_completed(results_summary, phase1_duration)
+                else:
+                    logger.info(f"Phase 1 completed. {len(phase1_results)} participants finished.")
+                    for result in phase1_results:
+                        logger.info(f"{result.participant_name}: ${result.total_earnings:.2f} earned")
                 
                 # Phase 2: Group discussion (sequential)  
-                logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
+                if process_logger:
+                    process_logger.start_phase2(self.config.phase2_rounds)
+                else:
+                    logger.info(f"Starting Phase 2 for experiment {self.experiment_id}")
                 
+                phase2_start_time = time.time()
                 try:
                     phase2_results = await self.phase2_manager.run_phase2(
-                        self.config, phase1_results, self.agent_logger
+                        self.config, phase1_results, self.agent_logger, process_logger
                     )
                 except Exception as e:
                     raise ExperimentLogicError(
@@ -225,19 +261,33 @@ class FrohlichExperimentManager:
                         cause=e
                     )
                 
-                if phase2_results.discussion_result.consensus_reached:
-                    # Use English principle name for system logging
-                    english_principle_name = get_english_principle_name(phase2_results.discussion_result.agreed_principle.principle.value, self.language_manager)
-                    logger.info(f"Phase 2 completed with consensus on {english_principle_name}")
+                phase2_duration = time.time() - phase2_start_time
+                
+                if process_logger:
+                    payoff_summary = phase2_results.payoff_results if hasattr(phase2_results, 'payoff_results') else None
+                    process_logger.phase2_completed(
+                        phase2_results.discussion_result.consensus_reached,
+                        phase2_results.discussion_result.final_round,
+                        phase2_duration,
+                        payoff_summary
+                    )
                 else:
-                    logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")
+                    if phase2_results.discussion_result.consensus_reached:
+                        # Use English principle name for system logging
+                        english_principle_name = get_english_principle_name(phase2_results.discussion_result.agreed_principle.principle.value, self.language_manager)
+                        logger.info(f"Phase 2 completed with consensus on {english_principle_name}")
+                    else:
+                        logger.info(f"Phase 2 completed without consensus after {phase2_results.discussion_result.final_round} rounds")
                 
                 # Set general experiment information for logging
                 try:
                     self._set_general_logging_info(phase2_results)
                 except Exception as e:
                     # Log the error but don't fail the experiment
-                    logger.warning(f"Failed to set general logging info: {e}")
+                    if process_logger:
+                        process_logger.log_warning(f"Failed to set general logging info: {e}")
+                    else:
+                        logger.warning(f"Failed to set general logging info: {e}")
                     # Set minimal fallback general information to prevent save failure
                     self._set_fallback_general_info(phase2_results)
                 
@@ -252,7 +302,10 @@ class FrohlichExperimentManager:
                     seed_source=seed_source
                 )
                 
-                logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
+                if process_logger:
+                    process_logger.log_technical(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
+                else:
+                    logger.info(f"Experiment {self.experiment_id} completed successfully in {results.total_runtime:.2f} seconds")
                 
                 # Validate consensus against discussion content if applicable
                 if hasattr(self, '_consensus_validation_info') and self._consensus_validation_info:
@@ -263,19 +316,34 @@ class FrohlichExperimentManager:
                         )
                         
                         if not consensus_valid:
-                            logger.warning("Consensus validation failed - final consensus may not align with discussion content")
-                            for warning in validation_warnings:
-                                logger.warning(f"Consensus validation: {warning}")
+                            if process_logger:
+                                process_logger.log_warning("Consensus validation failed - final consensus may not align with discussion content")
+                                for warning in validation_warnings:
+                                    process_logger.log_technical(f"Consensus validation: {warning}")
+                            else:
+                                logger.warning("Consensus validation failed - final consensus may not align with discussion content")
+                                for warning in validation_warnings:
+                                    logger.warning(f"Consensus validation: {warning}")
                         else:
-                            logger.info("Consensus validation successful - discussion aligns with recorded consensus")
+                            if process_logger:
+                                process_logger.log_technical("Consensus validation successful - discussion aligns with recorded consensus")
+                            else:
+                                logger.info("Consensus validation successful - discussion aligns with recorded consensus")
                             
                     except Exception as e:
-                        logger.warning(f"Consensus validation encountered error: {e}")
+                        if process_logger:
+                            process_logger.log_warning(f"Consensus validation encountered error: {e}")
+                        else:
+                            logger.warning(f"Consensus validation encountered error: {e}")
                 
                 # Log error statistics
                 error_stats = self.error_handler.get_error_statistics()
-                if error_stats.get("total_errors", 0) > 0:
-                    logger.info(f"Experiment completed with {error_stats['total_errors']} recoverable errors")
+                total_errors = error_stats.get("total_errors", 0)
+                if total_errors > 0:
+                    if process_logger:
+                        process_logger.log_technical(f"Experiment completed with {total_errors} recoverable errors")
+                    else:
+                        logger.info(f"Experiment completed with {total_errors} recoverable errors")
                 
                 return results
                 
@@ -300,8 +368,7 @@ class FrohlichExperimentManager:
             
     async def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration with dynamic temperature detection."""
-        logger.info(f"Creating {len(self.config.agents)} participant agents...")
-        
+        # ProcessFlowLogger handles agent creation logging at higher level
         # Use dynamic temperature detection for all participants
         participants = await create_participant_agents_with_dynamic_temperature(
             self.config.agents, 

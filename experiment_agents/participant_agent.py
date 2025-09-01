@@ -222,9 +222,7 @@ def _get_phase_specific_instructions_translated(phase: ExperimentPhase, round_nu
     if phase == ExperimentPhase.PHASE_1:
         return language_manager.get_phase1_instructions(round_number)
     elif phase == ExperimentPhase.PHASE_2:
-        # Pass voting detection mode to language manager for Phase 2
-        voting_mode = getattr(experiment_config, 'voting_detection_mode', 'simple') if experiment_config else 'simple'
-        return language_manager.get_phase2_instructions(round_number, voting_mode)
+        return language_manager.get_phase2_instructions(round_number)
     else:
         return language_manager.get_prompt("fallback", "default_phase_instructions")
 

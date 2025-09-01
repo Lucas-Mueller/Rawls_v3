@@ -62,7 +62,6 @@ class TestPhase2ConstraintCorrectionScenarios:
         config = MagicMock(spec=ExperimentConfiguration)
         config.phase2_settings = phase2_settings
         config.phase2_rounds = 3
-        config.voting_detection_mode = "complex"
         config.language = "English"
         config.agents = [
             MagicMock(spec=AgentConfiguration, name="Agent1"),
