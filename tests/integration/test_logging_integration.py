@@ -192,7 +192,6 @@ class TestLoggingIntegration:
                 max_rounds_phase_2=5,
                 rounds_conducted_phase_2=3,
                 public_conversation="Test conversation",
-                final_vote_results={"TestAgent1": "A", "TestAgent2": "B"},
                 config_file="test_config.yaml"
             )
             
@@ -287,7 +286,6 @@ class TestLoggingIntegration:
             max_rounds_phase_2=10,
             rounds_conducted_phase_2=8, 
             public_conversation="TestAgent1: Let's choose A\nTestAgent2: I agree",
-            final_vote_results={"TestAgent1": "maximizing the floor income", "TestAgent2": "maximizing the floor income"},
             config_file="default_config.yaml"
         )
         
@@ -308,7 +306,7 @@ class TestLoggingIntegration:
         general_info = target_dict["general_information"]
         required_general_fields = [
             "consensus_reached", "consensus_principle", "public_conversation_phase_2",
-            "final_vote_results", "config_file_used"
+            "config_file_used"
         ]
         for field in required_general_fields:
             assert field in general_info, f"Missing field: {field}"
