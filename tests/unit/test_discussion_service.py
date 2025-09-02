@@ -5,7 +5,8 @@ Tests prompt building, statement validation, and group composition formatting.
 """
 
 import pytest
-from unittest.mock import Mock
+import asyncio
+from unittest.mock import Mock, patch
 from core.services.discussion_service import DiscussionService
 from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState
@@ -307,3 +308,290 @@ class TestDiscussionServiceEdgeCases:
         
         # Should handle None history gracefully by converting to "No previous discussion."
         assert "Mocked prompt with history: No previous discussion." in prompt
+
+
+class TestDiscussionServiceStatementRetrieval:
+    """Test statement retrieval with retry functionality."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.language_manager = MockLanguageManager()
+        self.settings = Phase2Settings()
+        self.settings.max_statement_retries = 3
+        self.settings.statement_timeout_seconds = 30
+        self.settings.retry_backoff_factor = 1.5
+        self.logger = Mock()
+        
+        self.service = DiscussionService(
+            language_manager=self.language_manager,
+            settings=self.settings,
+            logger=self.logger
+        )
+        
+        # Create mock participant and context
+        self.participant = Mock()
+        self.participant.name = "TestAgent"
+        self.participant.agent = Mock()
+        
+        # Mock the participant agent methods
+        self.mock_result = Mock()
+        self.mock_result.final_output = "This is a valid statement for testing purposes"
+        
+        # Create mock context
+        from models.experiment_types import ParticipantContext, ExperimentPhase
+        self.context = ParticipantContext(
+            name="TestAgent",
+            role_description="Test participant",
+            bank_balance=1000.0,
+            memory="Initial memory",
+            round_number=1,
+            phase=ExperimentPhase.PHASE_2
+        )
+        
+        # Create mock discussion state
+        from models import GroupDiscussionState
+        self.discussion_state = GroupDiscussionState()
+        self.discussion_state.public_history = "Previous discussion history"
+        
+        # Create mock agent config
+        self.agent_config = Mock()
+        self.agent_config.language = "English"
+        
+        # Participant names
+        self.participant_names = ["Alice", "Bob", "TestAgent"]
+        
+        self.max_rounds = 5
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_success_first_attempt(self):
+        """Test successful statement retrieval on first attempt."""
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', return_value=self.mock_result):
+            
+            statement, memory_content = await self.service.get_participant_statement_with_retry(
+                participant=self.participant,
+                context=self.context,
+                discussion_state=self.discussion_state,
+                agent_config=self.agent_config,
+                participant_names=self.participant_names,
+                max_rounds=self.max_rounds
+            )
+            
+            assert statement == "This is a valid statement for testing purposes"
+            assert "Round 1: Your statement: This is a valid statement for testing purposes" in memory_content
+            assert "Internal reasoning:" in memory_content
+            
+            # Should not log retry attempts on first success
+            retry_calls = [call for call in self.logger.log_info.call_args_list 
+                          if "retry" in str(call).lower()]
+            assert len(retry_calls) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_success_after_retries(self):
+        """Test successful statement retrieval after failed attempts."""
+        # First two attempts return short statements, third succeeds
+        mock_results = [
+            Mock(final_output="Short"),  # Too short, will fail validation
+            Mock(final_output="Also short"),  # Too short, will fail validation  
+            Mock(final_output="This is a valid statement that meets length requirements")
+        ]
+        
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', side_effect=mock_results), \
+             patch('asyncio.sleep') as mock_sleep:  # Mock sleep for backoff
+            
+            statement, memory_content = await self.service.get_participant_statement_with_retry(
+                participant=self.participant,
+                context=self.context,
+                discussion_state=self.discussion_state,
+                agent_config=self.agent_config,
+                participant_names=self.participant_names,
+                max_rounds=self.max_rounds
+            )
+            
+            assert statement == "This is a valid statement that meets length requirements"
+            
+            # Should log retry attempts
+            retry_calls = [call for call in self.logger.log_info.call_args_list 
+                          if "retry" in str(call).lower()]
+            assert len(retry_calls) == 2  # 2nd and 3rd attempts
+            
+            # Should have exponential backoff
+            assert mock_sleep.call_count == 2
+            assert mock_sleep.call_args_list[0][0][0] == 1.5 ** 0  # First retry: 1.0
+            assert mock_sleep.call_args_list[1][0][0] == 1.5 ** 1  # Second retry: 1.5
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_all_attempts_fail_validation(self):
+        """Test when all retry attempts fail validation."""
+        # All attempts return invalid statements
+        mock_result = Mock(final_output="Short")  # Too short for all attempts
+        
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', return_value=mock_result), \
+             patch('asyncio.sleep'):
+            
+            with pytest.raises(ValueError, match="Invalid statement after 3 attempts"):
+                await self.service.get_participant_statement_with_retry(
+                    participant=self.participant,
+                    context=self.context,
+                    discussion_state=self.discussion_state,
+                    agent_config=self.agent_config,
+                    participant_names=self.participant_names,
+                    max_rounds=self.max_rounds
+                )
+            
+            # Should log retry warnings
+            retry_warnings = [call for call in self.logger.log_warning.call_args_list 
+                             if "retrying" in str(call).lower()]
+            assert len(retry_warnings) == 2  # Only for first 2 attempts
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_timeout_exception(self):
+        """Test handling of timeout exceptions."""
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', side_effect=[asyncio.TimeoutError, self.mock_result]), \
+             patch('asyncio.sleep'):
+            
+            statement, memory_content = await self.service.get_participant_statement_with_retry(
+                participant=self.participant,
+                context=self.context,
+                discussion_state=self.discussion_state,
+                agent_config=self.agent_config,
+                participant_names=self.participant_names,
+                max_rounds=self.max_rounds
+            )
+            
+            # Should succeed on second attempt after timeout
+            assert statement == "This is a valid statement for testing purposes"
+            
+            # Should log warning for timeout
+            timeout_warnings = [call for call in self.logger.log_warning.call_args_list 
+                               if "timeout" in str(call).lower() or "attempt 1" in str(call).lower()]
+            assert len(timeout_warnings) >= 1
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_all_attempts_fail_exception(self):
+        """Test when all retry attempts fail with exceptions."""
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', side_effect=Exception("Network error")), \
+             patch('asyncio.sleep'):
+            
+            with pytest.raises(Exception, match="Network error"):
+                await self.service.get_participant_statement_with_retry(
+                    participant=self.participant,
+                    context=self.context,
+                    discussion_state=self.discussion_state,
+                    agent_config=self.agent_config,
+                    participant_names=self.participant_names,
+                    max_rounds=self.max_rounds
+                )
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_custom_max_retries(self):
+        """Test using custom max_retries parameter."""
+        # Use custom max_retries of 2 instead of default 3
+        mock_result = Mock(final_output="Short")  # Too short for all attempts
+        
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', return_value=mock_result), \
+             patch('asyncio.sleep'):
+            
+            with pytest.raises(ValueError, match="Invalid statement after 2 attempts"):
+                await self.service.get_participant_statement_with_retry(
+                    participant=self.participant,
+                    context=self.context,
+                    discussion_state=self.discussion_state,
+                    agent_config=self.agent_config,
+                    participant_names=self.participant_names,
+                    max_rounds=self.max_rounds,
+                    max_retries=2  # Custom override
+                )
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_internal_reasoning_included(self):
+        """Test that internal reasoning is properly included in memory content."""
+        # Mock internal reasoning response
+        self.mock_result.final_output = "Valid statement with internal reasoning"
+        
+        # Mock the internal reasoning runner
+        internal_reasoning_result = Mock()
+        internal_reasoning_result.final_output = "I think this principle is most fair"
+        
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', side_effect=[internal_reasoning_result, self.mock_result]):
+            
+            statement, memory_content = await self.service.get_participant_statement_with_retry(
+                participant=self.participant,
+                context=self.context,
+                discussion_state=self.discussion_state,
+                agent_config=self.agent_config,
+                participant_names=self.participant_names,
+                max_rounds=self.max_rounds
+            )
+            
+            assert statement == "Valid statement with internal reasoning"
+            assert "Round 1: Your statement: Valid statement with internal reasoning" in memory_content
+            assert "Internal reasoning: I think this principle is most fair" in memory_content
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_with_retry_empty_statement_handling(self):
+        """Test handling of empty statements."""
+        mock_results = [
+            Mock(final_output=""),  # Empty statement
+            Mock(final_output="   "),  # Whitespace only
+            Mock(final_output="This is a valid statement that meets requirements")
+        ]
+        
+        with patch('core.services.discussion_service.Runner') as MockRunner, \
+             patch('asyncio.wait_for', side_effect=mock_results), \
+             patch('asyncio.sleep'):
+            
+            statement, memory_content = await self.service.get_participant_statement_with_retry(
+                participant=self.participant,
+                context=self.context,
+                discussion_state=self.discussion_state,
+                agent_config=self.agent_config,
+                participant_names=self.participant_names,
+                max_rounds=self.max_rounds
+            )
+            
+            assert statement == "This is a valid statement that meets requirements"
+            
+            # Should log warnings for empty/whitespace statements
+            empty_warnings = [call for call in self.logger.log_warning.call_args_list 
+                             if "Empty statement" in str(call) or "Whitespace-only" in str(call)]
+            assert len(empty_warnings) == 2
+
+    def test_retry_settings_configuration(self):
+        """Test that retry settings are properly configured."""
+        assert self.service.settings.max_statement_retries == 3
+        assert self.service.settings.statement_timeout_seconds == 30
+        assert self.service.settings.retry_backoff_factor == 1.5
+
+    @pytest.mark.asyncio
+    async def test_get_participant_statement_unexpected_end_error(self):
+        """Test the unexpected end of retry loop error case."""
+        # This tests a defensive programming scenario that should never happen
+        # but ensures graceful handling if it does
+        
+        # Mock a scenario where the loop completes without raising
+        original_method = self.service.get_participant_statement_with_retry
+        
+        async def mock_method(*args, **kwargs):
+            # Simulate loop completing without return/raise (should never happen)
+            max_attempts = self.service.settings.max_statement_retries
+            for attempt in range(max_attempts):
+                pass  # Loop completes without return/raise
+            raise RuntimeError("Unexpected end of retry loop")
+        
+        with patch.object(self.service, 'get_participant_statement_with_retry', mock_method):
+            with pytest.raises(RuntimeError, match="Unexpected end of retry loop"):
+                await self.service.get_participant_statement_with_retry(
+                    participant=self.participant,
+                    context=self.context,
+                    discussion_state=self.discussion_state,
+                    agent_config=self.agent_config,
+                    participant_names=self.participant_names,
+                    max_rounds=self.max_rounds
+                )

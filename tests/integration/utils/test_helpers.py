@@ -59,5 +59,6 @@ def get_utility_agent_mock_methods() -> List[str]:
         'parse_principle_ranking_enhanced',
         'parse_principle_choice_enhanced', 
         'validate_constraint_specification',
-        'extract_vote_from_statement'
+        'detect_numerical_agreement',
+        'check_ballot_consensus'
     ]

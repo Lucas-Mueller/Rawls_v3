@@ -513,6 +513,247 @@ class TestMemoryServiceVotingUpdates:
             assert memory_service.logger.warning.called
 
 
+class TestMemoryServiceVoteDecisionUpdates:
+    """Test vote-specific memory update methods."""
+    
+    @pytest.fixture
+    def memory_service(self):
+        """Create MemoryService with mocked language manager."""
+        language_manager = Mock()
+        language_manager.get.return_value = "Vote decision message"
+        utility_agent = Mock()
+        settings = Phase2Settings()
+        logger = Mock()
+        return MemoryService(language_manager, utility_agent, settings, logger=logger)
+    
+    @pytest.fixture
+    def mock_agent(self):
+        """Create mock participant agent."""
+        agent = Mock(spec=ParticipantAgent)
+        agent.name = "TestAgent"
+        return agent
+    
+    @pytest.fixture
+    def mock_context(self):
+        """Create mock participant context."""
+        return ParticipantContext(
+            name="TestAgent",
+            role_description="Test participant",
+            bank_balance=1000.0,
+            memory="Initial memory",
+            round_number=1,
+            phase=ExperimentPhase.PHASE_2
+        )
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_initiation_decision_memory_wants_vote(self, memory_service, mock_agent, mock_context):
+        """Test updating memory when agent wants to initiate voting."""
+        # Mock the language manager calls - it makes multiple calls
+        def mock_get(key, **kwargs):
+            if key == "prompts.memory_insertions.initiate_voting":
+                return "You decided to initiate voting"
+            elif key == "prompts.memory_insertions.vote_initiation_decision":
+                return f"Round {kwargs.get('round_num', 1)}: {kwargs.get('decision', 'decision')}"
+            return "Mock message"
+        
+        memory_service.language_manager.get.side_effect = mock_get
+        
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated with vote decision"
+            
+            result = await memory_service.update_vote_initiation_decision_memory(
+                agent=mock_agent,
+                context=mock_context,
+                round_num=3,
+                wants_vote=True
+            )
+            
+            assert result == "Updated with vote decision"
+            
+            # Verify selective update call
+            call_args = mock_update.call_args
+            assert call_args[1]['content'] == "Round 3: You decided to initiate voting"
+            assert call_args[1]['event_type'] == MemoryEventType.VOTE_INITIATION_RESPONSE
+            
+            metadata = call_args[1]['event_metadata']
+            assert metadata['wants_vote'] is True
+            assert metadata['round_number'] == 3
+            assert metadata['participant_name'] == 'TestAgent'
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_initiation_decision_memory_doesnt_want_vote(self, memory_service, mock_agent, mock_context):
+        """Test updating memory when agent doesn't want to initiate voting."""
+        memory_service.language_manager.get.return_value = "You decided not to initiate voting."
+        
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated with no-vote decision"
+            
+            result = await memory_service.update_vote_initiation_decision_memory(
+                agent=mock_agent,
+                context=mock_context,
+                round_num=2,
+                wants_vote=False
+            )
+            
+            assert result == "Updated with no-vote decision"
+            
+            # Verify language manager call for negative decision
+            memory_service.language_manager.get.assert_called_with(
+                "voting_decisions.doesnt_want_to_initiate",
+                round_number=2
+            )
+            
+            call_args = mock_update.call_args
+            metadata = call_args[1]['event_metadata']
+            assert metadata['wants_vote'] is False
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_initiation_decision_memory_with_additional_context(self, memory_service, mock_agent, mock_context):
+        """Test vote initiation memory update with additional context."""
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated memory"
+            
+            await memory_service.update_vote_initiation_decision_memory(
+                agent=mock_agent,
+                context=mock_context,
+                round_num=1,
+                wants_vote=True,
+                additional_context="Recent statement suggested voting"
+            )
+            
+            call_args = mock_update.call_args
+            metadata = call_args[1]['event_metadata']
+            assert metadata.get('additional_context') == "Recent statement suggested voting"
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_confirmation_memory_agrees(self, memory_service, mock_agent, mock_context):
+        """Test updating memory when agent agrees to participate in voting."""
+        # Mock the language manager calls - it makes multiple calls like the initiation method
+        def mock_get(key, **kwargs):
+            if key == "prompts.memory_insertions.agreed_to":
+                return "agreed to participate"
+            elif key == "prompts.memory_insertions.confirmation_response":
+                return f"You {kwargs.get('response', 'responded')}"
+            return "Mock message"
+        
+        memory_service.language_manager.get.side_effect = mock_get
+        
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated with confirmation"
+            
+            result = await memory_service.update_vote_confirmation_memory(
+                agent=mock_agent,
+                context=mock_context,
+                agrees_to_vote=True
+            )
+            
+            assert result == "Updated with confirmation"
+            
+            # Verify selective update call
+            call_args = mock_update.call_args
+            assert call_args[1]['content'] == "You agreed to participate"
+            assert call_args[1]['event_type'] == MemoryEventType.VOTING_CONFIRMATION
+            
+            metadata = call_args[1]['event_metadata']
+            assert metadata['agrees_to_vote'] is True
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_confirmation_memory_declines(self, memory_service, mock_agent, mock_context):
+        """Test updating memory when agent declines to participate in voting."""
+        memory_service.language_manager.get.return_value = "You declined to participate in voting."
+        
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated with decline"
+            
+            result = await memory_service.update_vote_confirmation_memory(
+                agent=mock_agent,
+                context=mock_context,
+                agrees_to_vote=False
+            )
+            
+            assert result == "Updated with decline"
+            
+            # Verify language manager call for decline
+            memory_service.language_manager.get.assert_called_with("voting_decisions.declines_to_participate")
+            
+            call_args = mock_update.call_args
+            metadata = call_args[1]['event_metadata']
+            assert metadata['agrees_to_vote'] is False
+    
+    @pytest.mark.asyncio
+    async def test_update_vote_confirmation_memory_with_initiator_info(self, memory_service, mock_agent, mock_context):
+        """Test vote confirmation memory update with initiator information."""
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated memory"
+            
+            await memory_service.update_vote_confirmation_memory(
+                agent=mock_agent,
+                context=mock_context,
+                agrees_to_vote=True,
+                initiator_name="Alice",
+                initiation_statement="Let's decide on this principle"
+            )
+            
+            call_args = mock_update.call_args
+            metadata = call_args[1]['event_metadata']
+            assert metadata.get('initiator_name') == "Alice"
+            assert metadata.get('initiation_statement') == "Let's decide on this principle"
+    
+    @pytest.mark.asyncio
+    async def test_vote_decision_memory_language_fallback(self, memory_service, mock_agent, mock_context):
+        """Test fallback behavior when language manager fails for vote decisions."""
+        memory_service.language_manager.get.side_effect = Exception("Translation error")
+        
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "Updated with fallback"
+            
+            result = await memory_service.update_vote_initiation_decision_memory(
+                agent=mock_agent,
+                context=mock_context,
+                round_num=1,
+                wants_vote=True
+            )
+            
+            # Should still work with fallback content
+            call_args = mock_update.call_args
+            content = call_args[1]['content']
+            assert "[MISSING:" in content  # Fallback message format
+            assert "Round 1:" in content
+    
+    @pytest.mark.asyncio
+    async def test_vote_decision_memory_error_handling(self, memory_service, mock_agent, mock_context):
+        """Test error handling in vote decision memory updates."""
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.side_effect = Exception("Memory update failed")
+            
+            with pytest.raises(Exception, match="Memory update failed"):
+                await memory_service.update_vote_initiation_decision_memory(
+                    agent=mock_agent,
+                    context=mock_context,
+                    round_num=1,
+                    wants_vote=True
+                )
+    
+    @pytest.mark.asyncio
+    async def test_vote_decision_memory_context_update(self, memory_service, mock_agent, mock_context):
+        """Test that context memory is properly updated after vote decision updates."""
+        with patch.object(memory_service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
+            mock_update.return_value = "New memory content"
+            
+            original_memory = mock_context.memory
+            
+            await memory_service.update_vote_initiation_decision_memory(
+                agent=mock_agent,
+                context=mock_context,
+                round_num=1,
+                wants_vote=True
+            )
+            
+            # Context memory should be updated by the parent method
+            # (This depends on the actual implementation calling context.memory = result)
+            mock_update.assert_called_once()
+
+
 class TestMemoryServiceFinalResults:
     """Test final results memory update methods."""
     

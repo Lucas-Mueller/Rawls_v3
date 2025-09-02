@@ -378,6 +378,130 @@ class MemoryService:
         # For non-discussion events, return content as-is (no truncation needed)
         return content
     
+    async def update_vote_initiation_decision_memory(
+        self,
+        agent: "ParticipantAgent",
+        context: "ParticipantContext", 
+        round_num: int,
+        wants_vote: bool,
+        **kwargs
+    ) -> str:
+        """
+        Update memory with vote initiation decision.
+        
+        Args:
+            agent: The participant agent
+            context: Current participant context
+            round_num: Round number when decision was made
+            wants_vote: Whether agent wants to initiate voting
+            **kwargs: Additional arguments
+            
+        Returns:
+            Updated memory string
+        """
+        # Build decision content using language manager - matching SimpleMemoryManager format
+        decision_key = "initiate_voting" if wants_vote else "continue_discussion"
+        decision_text = self.language_manager.get(f"prompts.memory_insertions.{decision_key}")
+        
+        memory_content = self.language_manager.get(
+            "prompts.memory_insertions.vote_initiation_decision",
+            round_num=round_num,
+            decision=decision_text
+        )
+        
+        event_metadata = {
+            'round_number': round_num,
+            'wants_vote': wants_vote,
+            'participant_name': agent.name
+        }
+        
+        return await self.update_memory_selective(
+            agent=agent,
+            context=context,
+            content=memory_content,
+            event_type=MemoryEventType.VOTE_INITIATION_RESPONSE,
+            event_metadata=event_metadata,
+            **kwargs
+        )
+
+    async def update_vote_confirmation_memory(
+        self,
+        agent: "ParticipantAgent",
+        context: "ParticipantContext",
+        agrees_to_vote: bool,
+        **kwargs
+    ) -> str:
+        """
+        Update memory with vote confirmation decision.
+        
+        Args:
+            agent: The participant agent
+            context: Current participant context
+            agrees_to_vote: Whether agent agrees to participate in voting
+            **kwargs: Additional arguments
+            
+        Returns:
+            Updated memory string
+        """
+        # Build confirmation content using language manager - matching SimpleMemoryManager format
+        response_key = "agreed_to" if agrees_to_vote else "declined_to"
+        response_text = self.language_manager.get(f"prompts.memory_insertions.{response_key}")
+        
+        memory_content = self.language_manager.get(
+            "prompts.memory_insertions.confirmation_response",
+            response=response_text
+        )
+        
+        event_metadata = {
+            'agrees_to_vote': agrees_to_vote,
+            'participant_name': agent.name
+        }
+        
+        return await self.update_memory_selective(
+            agent=agent,
+            context=context,
+            content=memory_content,
+            event_type=MemoryEventType.VOTING_CONFIRMATION,
+            event_metadata=event_metadata,
+            **kwargs
+        )
+    
+    def validate_and_sanitize_memory(self, memory: str, character_limit: int, participant_name: str) -> str:
+        """
+        Validate and sanitize memory for safe Phase 2 initialization.
+        
+        Args:
+            memory: Raw memory string from Phase 1
+            character_limit: Maximum allowed characters
+            participant_name: Name of participant for logging
+            
+        Returns:
+            Sanitized memory string
+        """
+        # Check if memory is None or corrupted
+        if memory is None:
+            self.logger.warning(f"Null memory detected for {participant_name}, initializing empty")
+            return ""
+        
+        # Ensure string type
+        if not isinstance(memory, str):
+            self.logger.warning(f"Non-string memory detected for {participant_name}, converting")
+            try:
+                memory = str(memory)
+            except Exception as e:
+                self.logger.warning(f"Failed to convert memory for {participant_name}: {e}")
+                return ""
+        
+        # Log memory size but don't truncate - let memory manager handle overflow
+        if len(memory) > character_limit:
+            self.logger.info(f"Memory exceeds base limit for {participant_name}: {len(memory)} > {character_limit} (will be handled by memory manager)")
+        
+        # Remove any null bytes or control characters that could cause issues
+        memory = memory.replace('\x00', '')
+        memory = ''.join(char for char in memory if ord(char) >= 32 or char in '\n\r\t')
+        
+        return memory
+    
     def _create_config_fallback(self):
         """
         Create fallback config object when none provided.

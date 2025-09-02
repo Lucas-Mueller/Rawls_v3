@@ -223,19 +223,16 @@ class SelectiveMemoryManager:
         
         try:
             if event_type == MemoryEventType.VOTE_INITIATION_RESPONSE:
-                # Extract decision from content or metadata
-                wants_vote = SelectiveMemoryManager._extract_vote_decision(content, metadata)
-                round_num = metadata.get('round_number', 1) if metadata else 1
-                SimpleMemoryManager.insert_vote_initiation_decision(
-                    context, round_num, wants_vote, language_manager
-                )
+                # Content already formatted by MemoryService - just append to memory
+                if context.memory and not context.memory.endswith('\n'):
+                    context.memory += '\n'
+                context.memory += content.strip()
             
             elif event_type == MemoryEventType.VOTING_CONFIRMATION:
-                # Extract agreement from content or metadata
-                agrees_to_vote = SelectiveMemoryManager._extract_confirmation_decision(content, metadata)
-                SimpleMemoryManager.insert_confirmation_response(
-                    context, agrees_to_vote, language_manager
-                )
+                # Content already formatted by MemoryService - just append to memory
+                if context.memory and not context.memory.endswith('\n'):
+                    context.memory += '\n'
+                context.memory += content.strip()
             
             elif event_type == MemoryEventType.BALLOT_SELECTION:
                 # Extract principle choice
