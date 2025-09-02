@@ -141,7 +141,7 @@ class CounterfactualsService:
                 for participant in participants:
                     assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities)
                     payoffs[participant.name] = earnings
-                    assigned_classes[participant.name] = str(assigned_class)
+                    assigned_classes[participant.name] = assigned_class.value
             else:
                 # Random assignment - each participant gets random income class from random distribution
                 for participant in participants:
@@ -151,7 +151,7 @@ class CounterfactualsService:
                         random_distribution = random.choice(distribution_set.distributions)
                     assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities)
                     payoffs[participant.name] = earnings
-                    assigned_classes[participant.name] = str(assigned_class)
+                    assigned_classes[participant.name] = assigned_class.value
             
             # Calculate counterfactual earnings for transparency
             alternative_earnings_by_agent = await self.calculate_phase2_counterfactuals(

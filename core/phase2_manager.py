@@ -66,14 +66,31 @@ class Phase2Manager:
         
         # Create logger adapters for services
         class LoggerAdapter:
+            """Adapter to unify logging interfaces expected by services.
+
+            Supports both custom methods (log_info/log_warning) and
+            standard logging interface (info/warning/debug).
+            """
             def __init__(self, phase2_manager):
                 self.manager = phase2_manager
-            
+
+            # Custom interface used by some services
             def log_info(self, message: str):
                 self.manager._log_info(message)
-            
+
             def log_warning(self, message: str):
                 self.manager._log_warning(message)
+
+            # Standard logging-like interface used by others
+            def info(self, message: str):
+                self.manager._log_info(message)
+
+            def warning(self, message: str):
+                self.manager._log_warning(message)
+
+            def debug(self, message: str):
+                # Route debug to info-level channel on the manager
+                self.manager._log_info(message)
         
         logger_adapter = LoggerAdapter(self)
         
@@ -190,6 +207,41 @@ class Phase2Manager:
             return await self._conduct_voting_process(
                 initiator, contexts, discussion_state
             )
+
+    async def _prompt_for_vote_initiation(
+        self,
+        participant: 'ParticipantAgent',
+        context: ParticipantContext,
+        agent_recent_statement: str = None,
+        max_retries: int = 3
+    ) -> bool:
+        """Fallback implementation delegating to VotingService."""
+        self._initialize_services()
+        return await self.voting_service.prompt_for_vote_initiation(
+            participant=participant,
+            context=context,
+            agent_recent_statement=agent_recent_statement,
+            max_retries=max_retries
+        )
+
+    async def _conduct_voting_process(
+        self,
+        initiator: 'ParticipantAgent',
+        contexts: List[ParticipantContext],
+        discussion_state: GroupDiscussionState,
+        agent_recent_statement: str = None
+    ) -> bool:
+        """Fallback implementation delegating to VotingService."""
+        self._initialize_services()
+        return await self.voting_service.conduct_voting_process(
+            participants=self.participants,
+            initiating_participant=initiator,
+            contexts=contexts,
+            discussion_state=discussion_state,
+            agent_recent_statement=agent_recent_statement,
+            error_handler=self.error_handler,
+            utility_agent=self.utility_agent
+        )
     
     # Memory service wrapper methods (with feature flag support)
     async def _update_memory_selective_with_service(
@@ -286,9 +338,13 @@ class Phase2Manager:
                 **kwargs
             )
         else:
-            # Original implementation
+            # Original implementation with corrected argument order
             await self._update_all_memories_for_voting_phase(
-                contexts, phase_name, additional_info, initiator_name, **kwargs
+                phase_name=phase_name,
+                contexts=contexts,
+                additional_info=additional_info,
+                initiator_name=initiator_name,
+                **kwargs
             )
     
     async def _update_final_results_memory_with_service(
