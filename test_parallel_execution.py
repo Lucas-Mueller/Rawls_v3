@@ -21,7 +21,8 @@ async def run_single_experiment(experiment_id: int, config_path: str = "config/f
     try:
         # Load configuration
         config = ExperimentConfiguration.from_yaml(config_path)
-        language_manager = create_language_manager(SupportedLanguage(config.language))
+        effective_seed = config.get_effective_seed()
+        language_manager = create_language_manager(SupportedLanguage(config.language), effective_seed)
         
         # Create experiment manager - each gets its own instances
         manager = FrohlichExperimentManager(config, config_path, language_manager)

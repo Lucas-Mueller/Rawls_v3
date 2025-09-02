@@ -175,7 +175,10 @@ async def create_participant_agents_with_dynamic_temperature(
 
 def _detect_memory_context_type(context: ParticipantContext, role_description: str) -> str:
     """
-    Detect the appropriate context type for memory summarization.
+    Detect the appropriate context type for memory operations.
+    
+    NOTE: Currently only used for logging/debugging since display_mode is always "full".
+    Kept for potential future features like context-aware memory processing.
     
     Args:
         context: Participant context with phase and round information
@@ -227,8 +230,8 @@ def _generate_dynamic_instructions(
     # Detect memory context type for appropriate summarization
     memory_context_type = _detect_memory_context_type(context, context.role_description)
     
-    # Determine display mode - use full memory during voting to preserve compromise details
-    display_mode = "full" if memory_context_type == "voting" else "compact"
+    # Always use full memory display to ensure agents have complete context
+    display_mode = "full"
     
     # Format memory for display using language manager with context awareness
     memory_content = context.memory if context.memory and context.memory.strip() else None

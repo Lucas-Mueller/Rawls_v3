@@ -8,7 +8,8 @@ based on the configured language setting.
 import json
 import os
 import logging
-from typing import Dict, Any, Optional
+import random
+from typing import Dict, Any, Optional, List
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -24,16 +25,18 @@ class SupportedLanguage(Enum):
 class LanguageManager:
     """Manages loading and retrieval of translated experiment content."""
     
-    def __init__(self, translations_dir: str = "translations"):
+    def __init__(self, translations_dir: str = "translations", seed: Optional[int] = None):
         """
         Initialize the language manager.
         
         Args:
             translations_dir: Directory containing translation JSON files
+            seed: Random seed for deterministic example generation (optional)
         """
         self.translations_dir = translations_dir
         self.translations_cache: Dict[str, Dict[str, Any]] = {}
         self.current_language = SupportedLanguage.ENGLISH
+        self.seed = seed
         
         # Language file mappings
         self.language_files = {
@@ -205,6 +208,41 @@ class LanguageManager:
         """Get the main experiment explanation."""
         return self.get("prompts.experiment_explanation")
     
+    def _generate_randomized_example(self) -> str:
+        """
+        Generate a randomized ranking example using the configured seed.
+        
+        Returns:
+            Formatted example with randomly ordered principles
+        """
+        if self.seed is None:
+            # Fallback to fixed order if no seed provided
+            principles = [
+                self.get("common.principle_names.maximizing_average_floor_constraint"),
+                self.get("common.principle_names.maximizing_floor"), 
+                self.get("common.principle_names.maximizing_average"),
+                self.get("common.principle_names.maximizing_average_range_constraint")
+            ]
+        else:
+            # Create deterministic random order based on seed
+            principles = [
+                self.get("common.principle_names.maximizing_floor"),
+                self.get("common.principle_names.maximizing_average"),
+                self.get("common.principle_names.maximizing_average_floor_constraint"), 
+                self.get("common.principle_names.maximizing_average_range_constraint")
+            ]
+            
+            # Use seed-based randomization for consistent results
+            rng = random.Random(self.seed)
+            rng.shuffle(principles)
+        
+        # Format as numbered example
+        example_lines = []
+        for i, principle in enumerate(principles, 1):
+            example_lines.append(f"{i}. {principle}")
+        
+        return "\n".join(example_lines)
+    
     def get_phase1_instructions(self, round_number: int) -> str:
         """
         Get Phase 1 instructions for a specific round.
@@ -216,7 +254,10 @@ class LanguageManager:
             Translated instructions for the round
         """
         if round_number == 0:
-            return self.get("prompts.phase1_round0_initial_ranking")
+            # Generate randomized example for initial ranking
+            randomized_example = self._generate_randomized_example()
+            return self.get("prompts.phase1_round0_initial_ranking", 
+                          randomized_example=randomized_example)
         elif round_number == -1:
             return self.get("prompts.phase1_round_neg1_detailed_explanation")  
         elif 1 <= round_number <= 4:
@@ -602,17 +643,18 @@ class LanguageManager:
         return results
 
 
-def create_language_manager(language: SupportedLanguage) -> LanguageManager:
+def create_language_manager(language: SupportedLanguage, seed: Optional[int] = None) -> LanguageManager:
     """
-    Create a new language manager instance with specified language.
+    Create a new language manager instance with specified language and seed.
     
     Args:
         language: Language to set for this instance
+        seed: Random seed for deterministic example generation (optional)
         
     Returns:
-        New LanguageManager instance configured with the specified language
+        New LanguageManager instance configured with the specified language and seed
     """
-    manager = LanguageManager()
+    manager = LanguageManager(seed=seed)
     manager.set_language(language)
     return manager
 

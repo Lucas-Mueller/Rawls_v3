@@ -101,14 +101,16 @@ async def main():
         # Configuration already loaded above
         process_logger.log_technical(f"Loading configuration from: {config_path}")
         
-        # Create language manager for this experiment
+        # Create language manager for this experiment with seed
         try:
             language_enum = SupportedLanguage(config.language)
-            language_manager = create_language_manager(language_enum)
+            effective_seed = config.get_effective_seed()
+            language_manager = create_language_manager(language_enum, effective_seed)
             process_logger.log_technical(f"Language set to: {config.language}")
         except ValueError:
             process_logger.log_error(f"Unsupported language: {config.language}. Using English as fallback.")
-            language_manager = create_language_manager(SupportedLanguage.ENGLISH)
+            effective_seed = config.get_effective_seed()
+            language_manager = create_language_manager(SupportedLanguage.ENGLISH, effective_seed)
         
         # Initialize and run experiment
         experiment_manager = FrohlichExperimentManager(config, config_path, language_manager)
