@@ -2,14 +2,13 @@
 Phase 2 manager for group discussion and consensus building.
 """
 import asyncio
-import random
 import time
 from typing import List, Dict, Optional
 from agents import Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
-    ExperimentPhase, PrincipleChoice, Phase1Results, PrincipleRanking
+    ExperimentPhase, Phase1Results, PrincipleRanking
 )
 from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
@@ -17,8 +16,7 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from utils.simple_memory_manager import SimpleMemoryManager
 from utils.selective_memory_manager import SelectiveMemoryManager, MemoryEventType
 from utils.agent_centric_logger import AgentCentricLogger
-from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
-from core.two_stage_voting_manager import TwoStageVotingManager
+from utils.error_handling import ExperimentErrorHandler
 
 
 class Phase2Manager:
@@ -59,8 +57,8 @@ class Phase2Manager:
         }
     
     def _initialize_services(self):
-        """Initialize refactored services if the feature flag is enabled."""
-        if not self.settings.refactored_services_enabled or self._services_initialized:
+        """Initialize refactored services."""
+        if self._services_initialized:
             return
         
         # Import services only when needed to avoid circular imports
@@ -136,13 +134,6 @@ class Phase2Manager:
             # Return English fallback or key name
             return f"[MISSING: {key}]"
     
-    def _format_voting_tag_message(self, tag_key: str, message_key: str = None, **kwargs) -> str:
-        """Format voting system messages with consistent tagging."""
-        tag = self._get_localized_message(f"system_messages.voting.{tag_key}")
-        if message_key:
-            message = self._get_localized_message(f"system_messages.voting.{message_key}", **kwargs)
-            return f"{tag} {message}"
-        return tag
     
     def _format_group_composition(self, participants: List[str]) -> str:
         """Format group composition message with proper localization."""
@@ -349,6 +340,25 @@ class Phase2Manager:
             )
         else:
             return await self._apply_group_principle_and_calculate_payoffs(discussion_result, config)
+
+    async def _apply_group_principle_and_calculate_payoffs(
+        self,
+        discussion_result: GroupDiscussionResult,
+        config: ExperimentConfiguration
+    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]]]:
+        """
+        Fallback implementation that delegates to CounterfactualsService.
+
+        This preserves backward compatibility when refactored services are disabled
+        while keeping payoff logic centralized in the service.
+        """
+        # Ensure services are available
+        self._initialize_services()
+        return await self.counterfactuals_service.apply_group_principle_and_calculate_payoffs(
+            discussion_result=discussion_result,
+            config=config,
+            participants=self.participants
+        )
     
     async def _collect_final_rankings_with_service(
         self,
@@ -378,42 +388,37 @@ class Phase2Manager:
                 contexts, discussion_result, payoff_results, assigned_classes, 
                 alternative_earnings_by_agent, config, logger
             )
+
+    async def _collect_final_rankings(
+        self,
+        contexts: List[ParticipantContext],
+        discussion_result: GroupDiscussionResult,
+        payoff_results: Dict[str, float],
+        assigned_classes: Dict[str, str],
+        alternative_earnings_by_agent: Dict[str, Dict[str, float]],
+        config: ExperimentConfiguration,
+        logger: Optional[AgentCentricLogger] = None
+    ) -> Dict[str, PrincipleRanking]:
+        """
+        Fallback implementation that delegates to CounterfactualsService.
+
+        Maintains compatibility when refactored services are disabled, while
+        reusing the unified service logic for rankings collection.
+        """
+        # Ensure services are available
+        self._initialize_services()
+        return await self.counterfactuals_service.collect_final_rankings(
+            contexts=contexts,
+            discussion_result=discussion_result,
+            payoff_results=payoff_results,
+            assigned_classes=assigned_classes,
+            alternative_earnings_by_agent=alternative_earnings_by_agent,
+            config=config,
+            participants=self.participants,
+            utility_agent=self.utility_agent,
+            logger=logger
+        )
     
-    def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
-        """
-        Validate that constraint amounts are in a reasonable range.
-        
-        Args:
-            constraint_amount: The constraint amount to validate
-            participant_name: Name of participant for logging (optional)
-            
-        Returns:
-            True if valid or None, False if invalid
-        """
-        if constraint_amount is None:
-            return True  # No constraint is valid
-        
-        # Define reasonable bounds based on typical income distributions
-        MIN_REASONABLE_CONSTRAINT = 10    # $1,000
-        MAX_REASONABLE_CONSTRAINT = 1000000000  # $100,000
-        
-        # Check for suspiciously small amounts (likely payoff scale errors)
-        LIKELY_PAYOFF_SCALE_MAX = 10  # $10 is likely a payoff amount, not income constraint
-        
-        if constraint_amount < MIN_REASONABLE_CONSTRAINT:
-            participant_info = f" for {participant_name}" if participant_name else ""
-            if constraint_amount <= LIKELY_PAYOFF_SCALE_MAX:
-                self._log_warning(f"Constraint amount ${constraint_amount}{participant_info} appears to be in payoff scale ($1-$10) rather than income scale ($10,000-$30,000)")
-            else:
-                self._log_warning(f"Constraint amount ${constraint_amount}{participant_info} is below reasonable minimum of ${MIN_REASONABLE_CONSTRAINT:,}")
-            return False
-        
-        if constraint_amount > MAX_REASONABLE_CONSTRAINT:
-            participant_info = f" for {participant_name}" if participant_name else ""
-            self._log_warning(f"Constraint amount ${constraint_amount:,}{participant_info} exceeds reasonable maximum of ${MAX_REASONABLE_CONSTRAINT:,}")
-            return False
-        
-        return True
     
     def _validate_statement(self, statement: str, participant_name: str) -> bool:
         """
@@ -456,169 +461,6 @@ class Phase2Manager:
         self._log_info(f"Valid statement received from {participant_name} ({statement_length} characters, language: {language})")
         return True
     
-    def _log_validation_statistics(self):
-        """Log final validation statistics for the experiment."""
-        self._log_info("=== STATEMENT VALIDATION STATISTICS ===")
-        self._log_info(f"Total statement requests: {self.validation_stats['total_statement_requests']}")
-        self._log_info(f"Successful statements: {self.validation_stats['successful_statements']}")
-        self._log_info(f"Failed validations: {self.validation_stats['failed_validations']}")
-        self._log_info(f"Total retry attempts: {self.validation_stats['retry_attempts']}")
-        self._log_info(f"Fallback statements used: {self.validation_stats['fallback_statements']}")
-        
-        if self.validation_stats['total_statement_requests'] > 0:
-            success_rate = (self.validation_stats['successful_statements'] / 
-                          self.validation_stats['total_statement_requests']) * 100
-            self._log_info(f"Success rate: {success_rate:.1f}%")
-        
-        if self.validation_stats['successful_statements'] > 0:
-            avg_retries = (self.validation_stats['retry_attempts'] / 
-                          self.validation_stats['successful_statements'])
-            self._log_info(f"Average retries per successful statement: {avg_retries:.2f}")
-        
-        self._log_info("=== END VALIDATION STATISTICS ===")
-        
-        return self.validation_stats.copy()
-    
-    async def _get_participant_statement_with_retry(
-        self,
-        participant: ParticipantAgent,
-        context: ParticipantContext,
-        discussion_state: GroupDiscussionState,
-        agent_config: AgentConfiguration,
-        internal_reasoning: str = "",
-        max_retries: int = None
-    ) -> tuple[str, str, dict]:
-        """
-        Get participant statement with retry logic, timeout, and exponential backoff.
-        
-        Args:
-            participant: The participant agent
-            context: Current participant context
-            discussion_state: Current discussion state
-            agent_config: Agent configuration
-            internal_reasoning: Internal reasoning to include in prompt (if reasoning enabled)
-            max_retries: Maximum number of retry attempts (uses settings if not specified)
-            
-        Returns:
-            tuple: (statement, round_content, tool_call_info)
-            
-        Raises:
-            AgentCommunicationError: If all retry attempts fail
-        """
-        if max_retries is None:
-            max_retries = self.settings.max_statement_retries
-            
-        discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number, internal_reasoning)
-        self.validation_stats["total_statement_requests"] += 1
-        
-        backoff_delay = 1.0  # Initial backoff delay in seconds
-        
-        for attempt in range(max_retries):
-            try:
-                self._log_info(f"Getting statement from {participant.name} (attempt {attempt + 1}/{max_retries})")
-                
-                # Add exponential backoff for retries
-                if attempt > 0:
-                    await asyncio.sleep(backoff_delay)
-                    backoff_delay *= self.settings.retry_backoff_factor
-                    self._log_info(f"Waited {backoff_delay:.1f}s before retry")
-                
-                # Get statement from agent with timeout
-                try:
-                    # Set interaction type for public statement (enables propose_vote tool)
-                    context.interaction_type = "public_statement"
-                    result = await asyncio.wait_for(
-                        Runner.run(participant.agent, discussion_prompt, context=context),
-                        timeout=self.settings.statement_timeout_seconds
-                    )
-                    statement = result.final_output
-                    
-                    # Tool detection removed - no more tool calls to check
-                    has_tool_call, tool_call_info = False, {}
-                    
-                except asyncio.TimeoutError:
-                    self._log_warning(f"Timeout waiting for {participant.name} after {self.settings.statement_timeout_seconds}s")
-                    statement = ""  # Treat timeout as empty response
-                    has_tool_call, tool_call_info = False, {}
-                
-                # Validate the statement (or allow empty if there's a tool call)
-                if self._validate_statement(statement, participant.name) or has_tool_call:
-                    # Update statistics
-                    self.validation_stats["successful_statements"] += 1
-                    if attempt > 0:
-                        self.validation_stats["retry_attempts"] += attempt
-                    
-                    # Create round content for memory
-                    language_manager = self.language_manager
-                    
-                    # Include tool call information in memory if present
-                    if has_tool_call:
-                        tool_action = f" (Used {tool_call_info.get('tool_name', 'tool')} tool)"
-                        outcome_key = 'memory_outcomes.made_discussion_statement_with_tool'
-                    else:
-                        tool_action = ""
-                        outcome_key = 'memory_outcomes.made_discussion_statement'
-                    
-                    round_content = f"""{language_manager.get('memory_field_labels.prompt')} {discussion_prompt}
-{language_manager.get('memory_field_labels.your_statement')} {statement}{tool_action}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get(outcome_key, round_number=context.round_number)}"""
-                    
-                    if attempt > 0:
-                        self._log_info(f"Valid statement received from {participant.name} after {attempt + 1} attempts")
-                    
-                    if has_tool_call:
-                        self._log_info(f"Tool call detected: {tool_call_info}")
-                    
-                    return statement, round_content, tool_call_info
-                else:
-                    # Statement validation failed
-                    self.validation_stats["failed_validations"] += 1
-                    
-                    if attempt < max_retries - 1:
-                        self._log_warning(f"Invalid statement from {participant.name}, retrying... (attempt {attempt + 1}/{max_retries})")
-                        
-                        # Modify prompt for retry to be more explicit
-                        language_manager = self.language_manager
-                        discussion_prompt = f"""
-{language_manager.get('error_messages.empty_response_retry')}
-
-{self._build_discussion_prompt(discussion_state, context.round_number)}
-
-Please ensure your response contains a clear statement about your position on the justice principles.
-                        """.strip()
-                    else:
-                        # All retries exhausted
-                        error_msg = f"Agent {participant.name} failed to provide valid statement after {max_retries} attempts"
-                        self._log_warning(error_msg)
-                        raise AgentCommunicationError(
-                            error_msg,
-                            ErrorSeverity.DEGRADED,
-                            context={
-                                "participant": participant.name,
-                                "round": context.round_number,
-                                "attempts": max_retries,
-                                "last_response": statement
-                            }
-                        )
-                        
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    # Final attempt failed with exception
-                    error_msg = f"Exception getting statement from {participant.name}: {str(e)}"
-                    self._log_warning(error_msg)
-                    raise AgentCommunicationError(
-                        error_msg,
-                        ErrorSeverity.DEGRADED,
-                        context={
-                            "participant": participant.name,
-                            "round": context.round_number,
-                            "attempts": max_retries,
-                            "exception": str(e)
-                        },
-                        cause=e
-                    )
-                else:
-                    self._log_warning(f"Exception on attempt {attempt + 1} for {participant.name}: {str(e)}, retrying...")
     
     async def run_phase2(
         self, 
@@ -745,7 +587,9 @@ Please ensure your response contains a clear statement about your position on th
         process_logger=None
     ) -> GroupDiscussionResult:
         """Run sequential group discussion with voting."""
-        
+        # Ensure services are initialized (needed for speaking order service)
+        self._initialize_services()
+
         discussion_state = GroupDiscussionState()
         # Set valid participants for isolation protection
         discussion_state.valid_participants = [agent.name for agent in config.agents]
@@ -757,7 +601,13 @@ Please ensure your response contains a clear statement about your position on th
             # Always use complex voting mode
             
             # Generate speaking order based on configuration
-            speaking_order = self._generate_speaking_order(round_num, contexts, config, last_round_finisher)
+            speaking_order = self.speaking_order_service.generate_speaking_order(
+                round_num=round_num,
+                num_participants=len(contexts),
+                randomize_speaking_order=config.randomize_speaking_order,
+                strategy=getattr(config, 'speaking_order_strategy', 'fixed'),
+                last_round_finisher=last_round_finisher
+            )
             
             if process_logger:
                 speaking_names = [self.participants[i].name for i in speaking_order]
@@ -792,7 +642,7 @@ Please ensure your response contains a clear statement about your position on th
                 self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
                 
                 start_time = time.time()
-                statement, internal_reasoning, _ = await self._get_participant_statement_enhanced(
+                statement, internal_reasoning = await self._get_participant_statement(
                     participant, context, discussion_state, agent_config
                 )
                 response_time = time.time() - start_time
@@ -1017,8 +867,6 @@ Please ensure your response contains a clear statement about your position on th
             
         
         # No consensus reached
-        # Log validation statistics before returning
-        self._log_validation_statistics()
         
         return GroupDiscussionResult(
             consensus_reached=False,
@@ -1027,96 +875,6 @@ Please ensure your response contains a clear statement about your position on th
             vote_history=discussion_state.vote_history
         )
     
-    def _generate_speaking_order(
-        self, 
-        round_num: int, 
-        contexts: List[ParticipantContext],
-        config: ExperimentConfiguration,
-        last_round_finisher: int = None
-    ) -> List[int]:
-        """Generate speaking order based on configuration strategy.
-        
-        Implements restriction from master plan: if one round ends with Agent X, 
-        the next round cannot start with Agent X.
-        """
-        # Initialize services if needed
-        self._initialize_services()
-        
-        # Use refactored service if enabled
-        if self.settings.refactored_services_enabled and self.speaking_order_service:
-            return self.speaking_order_service.generate_speaking_order(
-                round_num=round_num,
-                num_participants=len(contexts),
-                randomize_speaking_order=config.randomize_speaking_order,
-                strategy=config.speaking_order_strategy,
-                last_round_finisher=last_round_finisher
-            )
-        participant_indices = list(range(len(contexts)))
-        num_participants = len(participant_indices)
-        
-        # Validate minimum participants
-        if num_participants < self.settings.min_agents_for_experiment:
-            self._log_warning(f"Only {num_participants} agents, below minimum of {self.settings.min_agents_for_experiment}")
-            # Continue anyway but log warning
-        
-        if not config.randomize_speaking_order or config.speaking_order_strategy == "fixed":
-            # Fixed order: same sequence every round, but apply rotation for small groups
-            if last_round_finisher is not None and num_participants > 1:
-                # Rotate the list to avoid same finisher-starter pattern
-                rotation_amount = (round_num - 1) % num_participants
-                participant_indices = participant_indices[rotation_amount:] + participant_indices[:rotation_amount]
-            return participant_indices
-        
-        if config.speaking_order_strategy == "random":
-            # Random behavior with finisher restriction
-            if self.seed_manager:
-                self.seed_manager.random.shuffle(participant_indices)
-            else:
-                random.shuffle(participant_indices)
-            
-            # Apply finisher restriction for all group sizes
-            if last_round_finisher is not None and num_participants > 1:
-                # Find position of last finisher in new order
-                if participant_indices[0] == last_round_finisher:
-                    if num_participants == 2:
-                        # For 2 agents, just swap them
-                        participant_indices[0], participant_indices[1] = participant_indices[1], participant_indices[0]
-                    else:
-                        # For larger groups, find a non-adjacent position
-                        # Move the last finisher to middle of the list
-                        mid_position = num_participants // 2
-                        participant_indices[0], participant_indices[mid_position] = participant_indices[mid_position], participant_indices[0]
-        
-        elif config.speaking_order_strategy == "conversational":
-            # Enhanced conversational order based on discussion flow
-            if last_round_finisher is not None and num_participants > 2:
-                # Start with someone who hasn't spoken recently
-                # Create weighted selection excluding last finisher
-                weights = [1.0] * num_participants
-                weights[last_round_finisher] = 0.0  # Exclude last finisher from starting
-                
-                # Weighted random selection for first speaker
-                import numpy as np
-                probabilities = np.array(weights) / sum(weights)
-                first_speaker = np.random.choice(participant_indices, p=probabilities)
-                
-                # Remove first speaker and shuffle rest
-                remaining = [i for i in participant_indices if i != first_speaker]
-                if self.seed_manager:
-                    self.seed_manager.random.shuffle(remaining)
-                else:
-                    random.shuffle(remaining)
-                
-                participant_indices = [first_speaker] + remaining
-            else:
-                # Fallback to random for first round or small groups
-                if self.seed_manager:
-                    self.seed_manager.random.shuffle(participant_indices)
-                else:
-                    random.shuffle(participant_indices)
-        
-        return participant_indices
-
     
     async def _get_participant_statement(
         self,
@@ -1141,253 +899,6 @@ Please ensure your response contains a clear statement about your position on th
         
         return statement, round_content
 
-    async def _get_participant_statement_enhanced(
-        self,
-        participant: ParticipantAgent,
-        context: ParticipantContext,
-        discussion_state: GroupDiscussionState,
-        agent_config: AgentConfiguration
-    ) -> tuple[str, str, dict]:
-        """Get participant's statement with internal reasoning. Returns (statement, internal_reasoning, tool_call_info)."""
-        
-        # If reasoning is enabled, ask for internal reasoning first
-        internal_reasoning = ""
-        if agent_config.reasoning_enabled:
-            try:
-                reasoning_prompt = self._build_internal_reasoning_prompt(discussion_state, context.round_number)
-                reasoning_result = await asyncio.wait_for(
-                    Runner.run(participant.agent, reasoning_prompt, context=context),
-                    timeout=self.settings.statement_timeout_seconds
-                )
-                internal_reasoning = reasoning_result.final_output
-                
-                # Tool calls during reasoning are now tracked via global state
-                # No need to detect them here - they'll be picked up after statement processing
-                    
-            except Exception as e:
-                # Log reasoning timeout/error but continue with empty reasoning
-                # This catches all exceptions including TimeoutError, asyncio.TimeoutError, etc.
-                self._log_warning(f"Reasoning timeout/error for {participant.name}: {str(e)}")
-                internal_reasoning = ""
-        
-        # Get public statement with validation and retry logic
-        try:
-            statement, _, tool_call_info = await self._get_participant_statement_with_retry(
-                participant, context, discussion_state, agent_config, internal_reasoning
-            )
-            
-            # Tool calls are now tracked via global state - no need to detect from results
-            return statement, internal_reasoning, tool_call_info
-            
-        except AgentCommunicationError as e:
-            # Log the error
-            self._log_warning(f"Agent communication error for {participant.name}: {str(e)}")
-            self.validation_stats["fallback_statements"] += 1
-            
-            # Quarantine failed responses if enabled
-            if self.settings.quarantine_failed_responses:
-                self.validation_stats["quarantined_responses"] += 1
-                # Return a neutral statement that doesn't contaminate discussion
-                language_manager = self.language_manager
-                neutral_statement = language_manager.get("prompts.phase2_agent_unavailable", participant_name=participant.name)
-                # Mark as quarantined internally
-                return f"__QUARANTINED__{neutral_statement}", internal_reasoning, {}
-            else:
-                # Legacy behavior: include failure message (not recommended)
-                fallback_statement = f"[{participant.name} failed to provide a valid response after multiple attempts]"
-                return fallback_statement, internal_reasoning, {}
-
-    async def _prompt_for_vote_initiation(
-        self,
-        participant: 'ParticipantAgent',
-        context: ParticipantContext,
-        agent_recent_statement: str = None,
-        max_retries: int = 3
-    ) -> bool:
-        """
-        Enhanced vote initiation prompting with recent statement context.
-        
-        Args:
-            participant: The participant agent to prompt
-            context: The participant's context
-            agent_recent_statement: Agent's recent statement for consistency (optional)
-            max_retries: Maximum number of retry attempts for invalid responses
-            
-        Returns:
-            True if agent wants to vote, False otherwise
-        """
-        language_manager = self.language_manager
-        
-        # Use enhanced prompt with statement context if available
-        if agent_recent_statement and agent_recent_statement.strip():
-            vote_prompt = language_manager.get(
-                "prompts.vote_initiation_with_statement_prompt",
-                agent_recent_statement=agent_recent_statement
-            )
-        else:
-            vote_prompt = language_manager.get("prompts.vote_initiation_prompt")
-        
-        # Enhanced timeout specifically for vote prompts (shorter than statement timeout)
-        vote_prompt_timeout = min(self.settings.statement_timeout_seconds, 60)  # Cap at 60 seconds
-        
-        for attempt in range(max_retries):
-            try:
-                # Set interaction type for vote prompting
-                context.interaction_type = "vote_prompt"
-                
-                # Add attempt information to logging for retries
-                if attempt > 0:
-                    self._log_info(f"Vote prompt retry {attempt + 1}/{max_retries} for {participant.name}")
-                    # Add gentle retry instruction for subsequent attempts
-                    retry_prompt = f"{vote_prompt}\n\n{self._get_localized_message('voting_prompts.retry_instruction')}"
-                else:
-                    retry_prompt = vote_prompt
-                
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, retry_prompt, context=context),
-                    timeout=vote_prompt_timeout
-                )
-                response = result.final_output.strip()
-                
-                # Enhanced logging for debugging
-                self._log_info(f"Vote prompt response from {participant.name} (attempt {attempt + 1}): '{response[:50]}{'...' if len(response) > 50 else ''}'")
-                
-                # Use numerical agreement detection (1=Yes, 0=No)
-                wants_vote, parse_error = self.utility_agent.detect_numerical_agreement(response)
-                
-                if parse_error is not None:
-                    # Invalid response - try retry if attempts remain
-                    self._log_warning(f"Invalid vote prompt response from {participant.name}: {parse_error}")
-                    if attempt < max_retries - 1:
-                        continue  # Try again with clearer prompt
-                    else:
-                        # All retries exhausted - default to No (continue discussion)
-                        self._log_warning(f"All vote prompt retries exhausted for {participant.name}, defaulting to continue discussion")
-                        return False
-                
-                # Successful response
-                result_text = 'Yes' if wants_vote else 'No'
-                self._log_info(f"✅ Vote initiation prompt result for {participant.name}: {result_text}")
-                
-                # Additional logging for analytics
-                if wants_vote:
-                    self._log_info(f"📊 Vote Analytics: {participant.name} chose to initiate voting (attempt {attempt + 1})")
-                else:
-                    self._log_info(f"📊 Vote Analytics: {participant.name} chose to continue discussion (attempt {attempt + 1})")
-                    
-                return wants_vote
-                
-            except asyncio.TimeoutError:
-                self._log_warning(f"Vote prompt timeout for {participant.name} (attempt {attempt + 1}/{max_retries}, {vote_prompt_timeout}s timeout)")
-                if attempt < max_retries - 1:
-                    continue  # Try again with same timeout
-                else:
-                    # Final timeout - default to continue discussion
-                    self._log_warning(f"Final vote prompt timeout for {participant.name}, defaulting to continue discussion")
-                    return False
-                    
-            except Exception as e:
-                self._log_warning(f"Error during vote prompting for {participant.name} (attempt {attempt + 1}): {str(e)}")
-                if attempt < max_retries - 1:
-                    # Wait a bit before retry to handle transient errors
-                    await asyncio.sleep(1.0)
-                    continue
-                else:
-                    # Final error - default to continue discussion
-                    self._log_warning(f"Final vote prompt error for {participant.name}, defaulting to continue discussion")
-                    return False
-        
-        # Should not reach here, but safety fallback
-        self._log_warning(f"Unexpected end of vote prompt method for {participant.name}, defaulting to continue discussion")
-        return False
-
-    async def _conduct_voting_process(
-        self,
-        initiator: 'ParticipantAgent',
-        contexts: List[ParticipantContext],
-        discussion_state: GroupDiscussionState
-    ) -> bool:
-        """
-        Conduct complete voting process using existing infrastructure.
-        
-        Args:
-            initiator: Agent who initiated the vote
-            contexts: All participant contexts
-            discussion_state: Current discussion state
-            
-        Returns:
-            True if consensus reached, False otherwise
-        """
-        # Mark voting as triggered
-        discussion_state.vote_triggered = True
-        self._voting_in_progress = True
-        
-        try:
-            # Log voting initiation
-            if self.logger:
-                self.logger.start_vote_round(
-                    round_number=discussion_state.round_number,
-                    vote_type="prompted_vote",
-                    trigger_participant=initiator.name,
-                    trigger_statement=f"Responded 'Yes' to vote initiation prompt"
-                )
-            
-            # Add immediate notification to all agents that voting has started
-            discussion_state.public_history += f"\n{self._format_voting_tag_message('initiated_tag', 'initiated_message', name=initiator.name)}"
-            
-            # Update all agent memories with voting start
-            await self._update_all_memories_for_voting_phase(
-                "initiation", contexts, initiator_name=initiator.name
-            )
-            
-            # Phase 1: Confirmation (all others must agree)
-            confirmation_success = await self._conduct_confirmation_phase(
-                initiator.name, 
-                f"Vote initiation: {initiator.name} wants to vote", 
-                contexts, 
-                discussion_state
-            )
-            
-            if not confirmation_success:
-                self._log_info("Vote confirmation failed - continuing discussion")
-                if self.logger:
-                    self.logger.complete_vote_round(
-                        consensus_reached=False,
-                        warnings=["Confirmation phase failed"]
-                    )
-                return False
-            
-            # Phase 2: Secret Ballot
-            consensus_reached = await self._conduct_secret_ballot_phase(
-                contexts, discussion_state
-            )
-            
-            # Set _consensus_result when consensus is reached (required for prompt-based voting)
-            if consensus_reached and discussion_state.last_vote_result:
-                discussion_state._consensus_result = GroupDiscussionResult(
-                    consensus_reached=True,
-                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
-                    final_round=discussion_state.round_number,
-                    discussion_history=discussion_state.public_history,
-                    vote_history=discussion_state.vote_history
-                )
-            
-            # Log results
-            if self.logger and discussion_state.last_vote_result:
-                vote_result = discussion_state.last_vote_result
-                self.logger.complete_vote_round(
-                    consensus_reached=vote_result.consensus_reached,
-                    agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
-                    agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None,
-                    vote_counts=vote_result.vote_counts
-                )
-            
-            return consensus_reached
-            
-        finally:
-            self._voting_in_progress = False
-
-    
     def _manage_discussion_history_length(self, discussion_state: GroupDiscussionState) -> None:
         """
         Keep discussion history under limit by trimming oldest content.
@@ -1502,403 +1013,7 @@ Please ensure your response contains a clear statement about your position on th
             return base_prompt
     
     
-    async def _handle_complex_voting_mode(
-        self,
-        participant: 'ParticipantAgent',
-        statement: str,
-        discussion_state: GroupDiscussionState,
-        contexts: List[ParticipantContext]
-    ) -> bool:
-        """
-        Handle complex voting detection and process if needed.
-        Returns True if consensus was reached through voting, False otherwise.
-        """
-        
-        # Ensure we're not already in a voting process (prevent double voting)
-        if self._voting_in_progress:
-            self._log_info("Voting already in progress, skipping new vote detection")
-            return False
-        
-        # Formal voting process initiated via prompts only
-        self._log_info(f"Complex voting initiated from {participant.name}")
-        
-        # Mark that voting has been triggered (prevents reminder messages)
-        discussion_state.vote_triggered = True
-        
-        # Set voting flag to prevent concurrent votes
-        self._voting_in_progress = True
-        
-        try:
-            # Start vote round tracking
-            if self.logger:
-                self.logger.start_vote_round(
-                    round_number=discussion_state.round_number,
-                    vote_type="formal_vote",
-                    trigger_participant=participant.name,
-                    trigger_statement=statement
-                )
-            
-            # Set active vote flag
-            discussion_state.active_vote_in_progress = True
-            
-            # Step A: Confirmation Phase with timeout
-            confirmation_success = await self._conduct_confirmation_phase(
-                participant.name, statement, contexts, discussion_state
-            )
-            
-            if not confirmation_success:
-                self._log_info("Voting confirmation failed - returning to discussion")
-                # Complete failed vote round
-                if self.logger:
-                    self.logger.complete_vote_round(
-                        consensus_reached=False,
-                        warnings=["Confirmation phase failed"]
-                    )
-                return False
-            
-            # Step B: Enhanced Secret Ballot Phase using streamlined method
-            consensus_reached = await self._conduct_secret_ballot_phase(contexts, discussion_state)
-        finally:
-            # Always reset voting flags
-            self._voting_in_progress = False
-            discussion_state.active_vote_in_progress = False
-        
-        # Complete vote round with results
-        if self.logger and discussion_state.last_vote_result:
-            vote_result = discussion_state.last_vote_result
-            self.logger.complete_vote_round(
-                consensus_reached=vote_result.consensus_reached,
-                agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
-                agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None,
-                vote_counts=vote_result.vote_counts
-            )
-        
-        # Complete voting process
-        discussion_state.active_vote_in_progress = False
-        
-        return consensus_reached
     
-    async def _conduct_confirmation_phase(
-        self,
-        initiator_name: str,
-        initiation_statement: str,
-        contexts: List[ParticipantContext],
-        discussion_state: GroupDiscussionState
-    ) -> bool:
-        """
-        Conduct public confirmation phase using existing agreement detection.
-        Returns True if all participants agree to vote.
-        """
-        
-        self._log_info("=== COMPLEX VOTING: CONFIRMATION PHASE ===")
-        
-        language_manager = self.language_manager
-        
-        # Create confirmation prompt using new language manager key
-        confirmation_prompt = language_manager.get(
-            "prompts.utility_voting_confirmation_request",
-            initiation_statement=initiation_statement
-        )
-        
-        confirmations = []
-        
-        # Store original tool settings to restore later
-        original_tool_settings = []
-        
-        try:
-            for i, context in enumerate(contexts):
-                participant = self.participants[i]
-                
-                # Auto-confirm initiator since they proposed the vote
-                if participant.name == initiator_name:
-                    # Auto-confirm for initiator
-                    confirmations.append({
-                        'participant': participant.name,
-                        'response': "1 (auto-confirmed as initiator)",
-                        'agrees': True
-                    })
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: Confirmed (initiated vote)"
-                    self._log_info(f"Auto-confirmed vote initiator: {participant.name}")
-                    continue  # Skip to next participant
-                
-                # Store original setting and disable vote tool during confirmation
-                original_tool_settings.append(getattr(context, 'allow_vote_tool', True))
-                context.allow_vote_tool = False
-                
-                # Get confirmation response from participant with timeout
-                confirmation_response = None
-                max_retries = 3  # Allow retries for re-entrant tool calls
-                
-                for attempt in range(max_retries):
-                    try:
-                        # Set interaction type for confirmation (disables propose_vote tool)
-                        context.interaction_type = "confirmation"
-                        result = await asyncio.wait_for(
-                            Runner.run(participant.agent, confirmation_prompt, context=context),
-                            timeout=self.settings.confirmation_timeout_seconds
-                        )
-                        confirmation_response = result.final_output
-                        
-                        # Tool detection removed - no tool calls to check
-                        break  # Got valid response, exit retry loop
-                            
-                    except asyncio.TimeoutError:
-                        self._log_warning(f"Timeout waiting for confirmation from {participant.name} (attempt {attempt + 1})")
-                        if attempt == max_retries - 1:
-                            confirmation_response = f"[{participant.name} timed out during confirmation]"
-                        continue
-                
-                # CRITICAL: Check if response is a fallback statement (agent failure)
-                is_fallback = confirmation_response.startswith(f"[{participant.name} failed to provide")
-                if is_fallback:
-                    self._log_warning(f"Fallback response detected for {participant.name} - voting confirmation failed")
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} Agent failure detected - confirmation failed"
-                    return False
-                
-                # Use numerical agreement detection (1=yes, 0=no)
-                agrees_to_vote, parse_error = self.utility_agent.detect_numerical_agreement(confirmation_response)
-                
-                # Handle malformed responses
-                if parse_error is not None:
-                    self._log_warning(f"Malformed confirmation response from {participant.name}: {parse_error}")
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} Invalid response format - confirmation failed. {parse_error}"
-                    return False
-                
-                confirmations.append({
-                    'participant': participant.name,
-                    'response': confirmation_response,
-                    'agrees': agrees_to_vote
-                })
-                
-                # Add to public history (visible to all)
-                discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: {confirmation_response}"
-                
-                # Update participant memory with their confirmation response using simple insertion
-                SimpleMemoryManager.insert_confirmation_response(
-                    context, agrees_to_vote, self.language_manager
-                )
-                
-                # If anyone disagrees, confirmation phase fails
-                if not agrees_to_vote:
-                    self._log_info(f"{participant.name} declined voting - confirmation failed")
-                    discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} {self._get_localized_message('system_messages.voting.confirmation_failed')}"
-                    
-                    # Log the failed confirmation attempt with all responses collected so far
-                    if self.logger:
-                        confirmation_responses = {}
-                        for confirmation in confirmations:
-                            participant_name = confirmation['participant']
-                            agrees = confirmation['agrees']
-                            confirmation_responses[participant_name] = "Yes" if agrees else "No"
-                        
-                        self.logger.log_vote_confirmation_attempt(
-                            round_number=discussion_state.round_number,
-                            initiator=initiator_name,
-                            confirmation_responses=confirmation_responses,
-                            confirmation_succeeded=False
-                        )
-                    
-                    return False
-            
-            self._log_info("All participants agreed to vote - proceeding to secret ballot")
-            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.result_tag')} {self._get_localized_message('system_messages.voting.confirmation_success')}"
-        
-            # Log confirmation results
-            if self.logger:
-                self.logger.log_confirmation_phase(confirmations)
-                
-                # Also log vote confirmation attempt for new voting history tracking
-                confirmation_responses = {}
-                confirmation_succeeded = True
-                for confirmation in confirmations:
-                    participant_name = confirmation['participant']
-                    agrees = confirmation['agrees']
-                    confirmation_responses[participant_name] = "Yes" if agrees else "No"
-                    if not agrees:
-                        confirmation_succeeded = False
-                
-                self.logger.log_vote_confirmation_attempt(
-                    round_number=discussion_state.round_number,
-                    initiator=initiator_name,
-                    confirmation_responses=confirmation_responses,
-                    confirmation_succeeded=confirmation_succeeded
-                )
-            
-            return True
-            
-        finally:
-            # Always restore original tool settings, even if method exits early
-            for i, context in enumerate(contexts):
-                if i < len(original_tool_settings):
-                    context.allow_vote_tool = original_tool_settings[i]
-                    self._log_info(f"Restored vote tool setting for {context.name}: {original_tool_settings[i]}")
-    
-    async def _conduct_secret_ballot_phase(
-        self,
-        contexts: List[ParticipantContext],
-        discussion_state: GroupDiscussionState
-    ) -> bool:
-        """
-        Conduct secret ballot phase using enhanced TwoStageVotingManager.
-        Returns True if consensus is reached.
-        """
-        
-        self._log_info("=== COMPLEX VOTING: SECRET BALLOT PHASE (ENHANCED) ===")
-        
-        # Initialize enhanced two-stage voting manager
-        voting_manager = TwoStageVotingManager(
-            participants=self.participants,
-            language_manager=self.language_manager,
-            logger=self.logger,
-            settings=self.settings,
-            error_handler=self.error_handler,
-            utility_agent=self.utility_agent
-        )
-        
-        # Conduct structured two-stage voting process
-        # This replaces 100+ lines of complex LLM parsing with deterministic validation
-        vote_result = await voting_manager.conduct_full_voting_process(contexts, discussion_state)
-        
-        if vote_result is None:
-            # Voting process failed - log and return to discussion
-            self._log_warning("Two-stage voting process failed - returning to discussion")
-            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.error_tag')} {self._get_localized_message('system_messages.voting.process_failed')}"
-            return False
-        
-        # Store vote result in discussion state (maintains compatibility with existing code)
-        discussion_state.last_vote_result = vote_result
-        discussion_state.vote_history.append(vote_result)
-        
-        # Log and update discussion history based on consensus result
-        if vote_result.consensus_reached:
-            self._log_info(f"Consensus reached via enhanced two-stage voting: {vote_result.agreed_principle.principle.value}")
-            
-            # Get localized principle name
-            principle_key = vote_result.agreed_principle.principle.value
-            localized_principle_name = self.language_manager.get(f"principle_names.{principle_key}")
-            
-            # Add to public history using localized consensus message
-            if vote_result.agreed_principle.constraint_amount:
-                consensus_msg = self.language_manager.get(
-                    "voting_results.consensus_with_constraint",
-                    principle_name=localized_principle_name,
-                    constraint_amount=vote_result.agreed_principle.constraint_amount
-                )
-            else:
-                consensus_msg = self.language_manager.get(
-                    "voting_results.consensus_reached",
-                    principle_name=localized_principle_name
-                )
-            discussion_state.public_history += f"\n[VOTING RESULT] {consensus_msg}"
-            
-            # Additional logging for transparency
-            self._log_info(f"Vote counts: {vote_result.vote_counts}")
-        else:
-            self._log_info("No consensus reached in enhanced two-stage voting")
-            
-            # Enhanced direct messaging for clearer vote results
-            principles = [v.principle for v in vote_result.votes]
-            unique_principles = set(p.value for p in principles)
-            
-            if len(unique_principles) == 1:
-                # Same principle, different constraints - use localized constraint disagreement message
-                principle_name = principles[0].value
-                constraints = [v.constraint_amount for v in vote_result.votes if v.constraint_amount]
-                if constraints:
-                    # Use existing localized constraint disagreement message
-                    message = self.language_manager.get(
-                        "phase2_voting_no_consensus_constraint_disagreement",
-                        principle_name=principle_name
-                    )
-                    # Add detailed constraint info for debugging in logs
-                    self._log_info(f"Constraint amounts that differed: {constraints}")
-                else:
-                    # Same principle, no constraints - use general disagreement message
-                    message = self.language_manager.get("phase2_voting_no_consensus_principle_disagreement")
-            else:
-                # Different principles - use localized principle disagreement message
-                message = self.language_manager.get("phase2_voting_no_consensus_principle_disagreement")
-                # Add detailed vote breakdown for debugging in logs
-                self._log_info(f"Vote distribution: {vote_result.vote_counts}")
-            
-            discussion_state.public_history += f"\n[VOTING RESULT] {message}"
-            
-            # Log vote distribution for debugging
-            if vote_result.vote_counts:
-                self._log_info(f"Vote distribution: {vote_result.vote_counts}")
-        
-        return vote_result.consensus_reached
-    
-    def _calculate_vote_counts(self, ballots: List[PrincipleChoice]) -> Dict[str, int]:
-        """Calculate vote counts for VoteResult."""
-        counts = {}
-        for ballot in ballots:
-            key = ballot.principle.value
-            if ballot.constraint_amount:
-                key += f" (${ballot.constraint_amount:,})"
-            counts[key] = counts.get(key, 0) + 1
-        return counts
-    
-    def _analyze_ballot_disagreement(self, ballots: List[PrincipleChoice]) -> str:
-        """
-        Analyze the nature of disagreement in failed ballot consensus.
-        
-        Returns a localized message describing the specific type of disagreement:
-        - Principle disagreement: agents voted for different principles
-        - Constraint disagreement: agents agreed on principle but differed on constraint amounts
-        - Mixed disagreement: combination of principle and constraint disagreements
-        
-        Args:
-            ballots: List of ballot choices from all participants
-            
-        Returns:
-            Localized announcement message describing the disagreement type
-        """
-        language_manager = self.language_manager
-        
-        if not ballots:
-            # Fallback to generic message if no ballots
-            return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
-        
-        # Group ballots by principle only (ignoring constraint amounts)
-        principle_groups = {}
-        for ballot in ballots:
-            principle = ballot.principle.value
-            if principle not in principle_groups:
-                principle_groups[principle] = []
-            principle_groups[principle].append(ballot)
-        
-        # Analyze disagreement patterns
-        if len(principle_groups) == 1:
-            # All agents agreed on the same principle but disagreed on constraints
-            principle_name = list(principle_groups.keys())[0]
-            
-            # Get display name for the agreed principle
-            principle_display_names = {
-                "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
-                "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
-                "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
-                "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
-            }
-            
-            principle_display_name = principle_display_names.get(principle_name, principle_name)
-            
-            return language_manager.get(
-                "prompts.phase2_voting_no_consensus_constraint_disagreement",
-                principle_name=principle_display_name
-            )
-            
-        elif len(principle_groups) == len(ballots):
-            # Every agent voted for a different principle - complete principle disagreement
-            return language_manager.get("prompts.phase2_voting_no_consensus_principle_disagreement")
-            
-        else:
-            # Mixed situation: some agents agreed on principles, others disagreed
-            # This could happen when there are multiple small groups with principle agreement
-            # but disagreement between groups
-            return language_manager.get("prompts.phase2_voting_no_consensus_mixed_disagreement")
     
     
     async def _update_all_memories_for_voting_phase(
