@@ -69,8 +69,8 @@ class DiscussionService:
         self.settings = settings or Phase2Settings.get_default()
         self.logger = logger
         
-        # Discussion history management settings
-        self.max_history_length = 100000  # 100k chars - much higher than agent memory limits (25k)
+        # Discussion history management settings - now configurable through Phase2Settings
+        # Use the configurable public_history_max_length from settings
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger is available."""
@@ -336,9 +336,9 @@ class DiscussionService:
         Args:
             discussion_state: Discussion state to manage
         """
-        if len(discussion_state.public_history) > self.max_history_length:
+        if len(discussion_state.public_history) > self.settings.public_history_max_length:
             # Keep the most recent 75% of content to provide buffer
-            keep_length = int(self.max_history_length * 0.75)
+            keep_length = int(self.settings.public_history_max_length * 0.75)
             
             # Add marker to indicate truncation and keep recent discussion
             truncated_history = self._get_localized_message("system_messages.discussion.truncation_marker") + "\n" + discussion_state.public_history[-keep_length:]

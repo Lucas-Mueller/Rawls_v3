@@ -193,6 +193,12 @@
     "your_statement": "您的发言：",
     "your_income_assignment": "您的收入类别分配：",
     "your_earnings": "您的收入：",
+    "chosen_principle": "选择的原则：",
+    "constraint_amount": "约束金额：",
+    "assigned_class": "分配的类别：",
+    "earnings": "收入：",
+    "original_values_situation": "情况：",
+    "distribution_multiplier": "分配乘数：",
     "outcome": "结果："
   },
   "memory_outcomes": {
@@ -204,6 +210,14 @@
     "agreed_to_vote": "同意进行投票",
     "declined_to_vote": "拒绝投票"
   },
+  "memory": {
+    "round_statement_format": "第{round_num}轮：你的陈述：{statement}",
+    "internal_reasoning_format": "内部推理：{reasoning}",
+    "final_results_format": "第2阶段最终结果：{result_content}",
+    "round_prefix": "第",
+    "statement_key": "陈述：",
+    "reasoning_prefix": "内部推理："
+  },
   "voting_phases": {
     "initiation": "投票已由{initiator_name}发起。正式投票程序开始。",
     "confirmation": "确认阶段：正在要求参与者确认是否同意进行投票。",
@@ -213,6 +227,31 @@
   "voting_results": {
     "consensus_reached": "达成共识：{principle_name}",
     "consensus_with_constraint": "达成共识：{principle_name}（${constraint_amount:,}）"
+  },
+  "voting": {
+    "timeout_fallback": "响应超时。请重试。",
+    "fallback_principle_prompt": "投票已开始。你想投票支持四个原则中的哪一个？\n\n1. 最大化最低收入\n2. 最大化平均收入\n3. 有最低收入约束的最大化平均收入\n4. 有收入范围约束的最大化平均收入\n\n请只回答数字（1、2、3或4）：",
+    "fallback_amount_prompt": "你选择了{principle_name}。请以正整数美元金额表示数量。\n\n请回答数量（例如：25000或$25000）：",
+    "error_messages": {
+      "respond_with_number_only": "无效回应（尝试{attempt}/{max_retries}）。你必须准确回答一个数字：1、2、3或4。",
+      "use_digits_not_words": "无效回应（尝试{attempt}/{max_retries}）。请使用数字（1、2、3或4），而不是文字。",
+      "number_out_of_range": "无效回应（尝试{attempt}/{max_retries}）。你必须只回答1、2、3或4。",
+      "zero_not_valid": "无效回应（尝试{attempt}/{max_retries}）。零不是有效的原则选择。请使用1、2、3或4。",
+      "multiple_valid_numbers": "检测到多个数字（尝试{attempt}/{max_retries}）。请只回答一个数字：1、2、3或4。",
+      "response_too_long": "无效回应（尝试{attempt}/{max_retries}）。请只回答数字。",
+      "empty_response": "空回应（尝试{attempt}/{max_retries}）。请回答1、2、3或4。",
+      "no_letter_choices": "无效回应（尝试{attempt}/{max_retries}）。不要使用字母（a、b、c、d）。请使用数字：1、2、3或4。",
+      "principle_content_unclear": "原则选择不清楚（尝试{attempt}/{max_retries}）。请回答你偏好原则的数字：1、2、3或4。",
+      "invalid_format_general": "无效回应（尝试{attempt}/{max_retries}）。你必须准确回答一个数字：1、2、3或4。",
+      "amount_must_be_positive": "无效金额（尝试{attempt}/{max_retries}）。你必须回答正整数美元金额。",
+      "whole_numbers_only": "无效金额格式（尝试{attempt}/{max_retries}）。你必须回答整数美元金额（无小数）。",
+      "no_negative_amounts": "无效金额（尝试{attempt}/{max_retries}）。不允许负数金额。",
+      "no_text_in_amount": "无效金额格式（尝试{attempt}/{max_retries}）。你必须只回答数字。",
+      "empty_amount_response": "空回应（尝试{attempt}/{max_retries}）。请提供美元金额。",
+      "invalid_amount_format": "无效金额格式（尝试{attempt}/{max_retries}）。你必须回答正整数美元金额。",
+      "no_amount_found": "未找到货币金额（尝试{attempt}/{max_retries}）。请清楚地说明美元金额（例如$10,000或25000）。",
+      "multiple_different_amounts_found": "检测到多个不同金额（尝试{attempt}/{max_retries}）。请清楚地指定一个美元金额。"
+    }
   },
   "phase2_voting_no_consensus_principle_disagreement": "无共识 - 代理人投票支持不同的正义原则 - 讨论继续",
   "phase2_voting_no_consensus_constraint_disagreement": "无共识 - 代理人在{principle_name}上达成一致，但在约束金额上存在分歧 - 讨论继续",
@@ -231,7 +270,11 @@
       "confirmation_failed": "确认失败 - 继续讨论",
       "process_failed": "两阶段投票过程失败",
       "result_summary": "投票进行 - 共识：{consensus}",
-      "agreed_principle": " (达成一致：{principle})"
+      "agreed_principle": " (达成一致：{principle})",
+      "all_confirmed": "全部确认",
+      "voting_declined": "投票被拒绝",
+      "consensus_tag": "[共识]",
+      "no_consensus_tag": "[无共识]"
     },
     "discussion": {
       "truncation_marker": "...早期讨论被截断...",
@@ -249,6 +292,8 @@
     },
     "consensus_status": "共识状态：",
     "key_insights": "关键见解：",
+    "assigned_income_class": "分配的收入类别：",
+    "counterfactuals_header": "反事实分析：",
     "income_classes": {
       "very_high": "非常高",
       "high": "高", 

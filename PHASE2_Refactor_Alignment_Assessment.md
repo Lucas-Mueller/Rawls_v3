@@ -5,13 +5,13 @@ This assessment reviews how the current Phase 2 implementation aligns with `phas
 ## Executive Summary
 
 - Core services exist and are substantially implemented: SpeakingOrder, Discussion, Voting, Memory, Counterfactuals.
-- Phase2Manager is not yet a lean orchestrator (~200 LOC as planned). It remains large at ~1,122 LOC with several legacy concerns in place (grew slightly with recent edits).
-- Speaking order is routed through SpeakingOrderService and services are now initialized early in `_run_group_discussion` (fixes the previous NoneType crash). Additional defensive `_initialize_services()` calls were added in multiple helpers.
-- Voting and Memory are partially integrated via wrapper methods; however, some direct legacy calls remain (e.g., `SimpleMemoryManager.insert_vote_initiation_decision`).
-- DiscussionService still lacks the planned “get statement with retry/backoff” implementation; Phase2Manager continues to fetch statements directly via `Runner` without retry/backoff.
-- Feature-flag (`refactored_services_enabled`) behavior remains inconsistent: some fallbacks delegate to services regardless of the flag, reducing rollback semantics.
+- Phase2Manager has been significantly slimmed to ~534 LOC and now acts primarily as an orchestrator; most legacy responsibilities have been moved into services.
+- Speaking order is routed through SpeakingOrderService and services are initialized early in `_run_group_discussion` (fixes the previous NoneType crash).
+- DiscussionService now implements `get_participant_statement_with_retry`, and Phase2Manager calls it in the discussion loop; legacy direct `Runner` calls have been removed from the manager.
+- MemoryService now provides vote-decision updates (`update_vote_initiation_decision_memory`) and Phase2Manager uses it; direct `SimpleMemoryManager` usage in the manager has been removed.
+- Feature-flag toggling has effectively been retired in Phase2Manager: the orchestrator calls services directly for speaking order, discussion, memory, voting, and counterfactuals. This simplifies behavior and aligns with the target architecture.
 
-Overall: Service extraction is strong and improving, but Phase2Manager remains a hybrid orchestrator with legacy responsibilities. Finish integrating DiscussionService for statement retrieval, remove direct SimpleMemoryManager usage, and normalize feature-flag semantics to fully align with the plan.
+Overall: The implementation now closely matches the refactoring plan. Remaining refinements are minor (e.g., unify a configurable discussion history limit and audit SelectiveMemoryManager’s remaining simple inserts) compared to the earlier state.
 
 ---
 
@@ -21,8 +21,8 @@ Overall: Service extraction is strong and improving, but Phase2Manager remains a
 - Plan: Pure logic service with deterministic strategies and finisher restriction; used from Phase2Manager.
 - Implementation:
   - File: `core/services/speaking_order_service.py` (present, ~8.4 kB; strategies: fixed/random/conversational with finisher restriction and seed support).
-  - Usage: `core/phase2_manager.py` calls `self.speaking_order_service.generate_speaking_order(...)` in `_run_group_discussion` at lines ~664–670 (current).
-  - Init: `self._initialize_services()` is called at the start of `_run_group_discussion` (line ~651) to avoid `NoneType` errors. Similar defensive calls appear in other helpers.
+  - Usage: `core/phase2_manager.py` calls `self.speaking_order_service.generate_speaking_order(...)` in `_run_group_discussion` (lines ~430–444).
+  - Init: `self._initialize_services()` is called at the start of `_run_group_discussion` to avoid `NoneType` errors.
 - Alignment: High. Service is implemented and actively used. Determinism and finisher restriction are covered.
 
 ### 2) DiscussionService
@@ -32,8 +32,8 @@ Overall: Service extraction is strong and improving, but Phase2Manager remains a
     - `build_discussion_prompt`, `build_internal_reasoning_prompt`, `validate_statement`, formatting helpers.
     - Does NOT implement `get_participant_statement_with_retry` (missing planned retry/backoff path).
   - In Phase2Manager:
-    - `_build_discussion_prompt` and `_build_internal_reasoning_prompt` call DiscussionService when `refactored_services_enabled` is True; otherwise include legacy prompt building inline (now around lines ~1,022–1,061 and ~1,042–1,061 respectively).
-    - Statement retrieval remains in `_get_participant_statement` (around lines ~939–1,000), directly calling `Runner.run(...)` without retry/backoff or DiscussionService involvement.
+    - Statement retrieval is delegated to `DiscussionService.get_participant_statement_with_retry` via `_process_participant_statement` (lines ~254–280), eliminating the legacy direct `Runner` call in the manager.
+    - History truncation is delegated to `DiscussionService.manage_discussion_history_length`.
 - Alignment: Partial. Prompt generation and validation are in the service, but statement retrieval + retry logic are still legacy in Phase2Manager.
 
 ### 3) VotingService
@@ -56,9 +56,9 @@ Overall: Service extraction is strong and improving, but Phase2Manager remains a
     - `update_memory_selective`, `update_discussion_memory`, `update_voting_phase_memory`, `update_all_memories_for_voting_phase`, `update_final_results_memory`, and `apply_content_truncation`.
     - Applies truncation and unifies memory guidance style.
   - In Phase2Manager:
-    - Wrappers (`_update_memory_selective_with_service`, `_update_discussion_memory_with_service`, `_update_voting_phase_memories_with_service`, `_update_final_results_memory_with_service`) correctly delegate when enabled.
-    - Discussion updates within the main loop route through `_update_discussion_memory_with_service` (lines ~652–668).
-    - However, Phase2Manager also directly uses `SimpleMemoryManager.insert_vote_initiation_decision` (line ~842), bypassing MemoryService for that event; similar direct calls also exist in `utils/selective_memory_manager.py`.
+    - Discussion updates use `memory_service.update_discussion_memory` within `_update_participant_memory_and_context` (lines ~322–342).
+    - End-of-round voting decisions use `memory_service.update_vote_initiation_decision_memory` (lines ~347–367).
+    - All direct `SimpleMemoryManager` calls were removed from the manager. Some simple inserts still exist in `utils/selective_memory_manager.py` for unrelated events (e.g., secret ballot choice, amount specification).
 - Alignment: Partial to High. Service is robust and mostly integrated; remaining direct `SimpleMemoryManager` usage is a legacy artifact.
 
 ### 5) CounterfactualsService
@@ -67,8 +67,7 @@ Overall: Service extraction is strong and improving, but Phase2Manager remains a
   - File: `core/services/counterfactuals_service.py` (present). Implements:
     - `apply_group_principle_and_calculate_payoffs`, `calculate_phase2_counterfactuals`, `collect_final_rankings`, plus detailed results building.
   - In Phase2Manager:
-    - Wrappers `_apply_group_principle_and_calculate_payoffs_with_service` and `_collect_final_rankings_with_service` exist.
-    - Fallbacks (`_apply_group_principle_and_calculate_payoffs` and `_collect_final_rankings`) exist and simply delegate to the service anyway (lines ~344–420), ensuring consistent behavior regardless of flag.
+    - Orchestrator now calls `counterfactuals_service.apply_group_principle_and_calculate_payoffs` and `collect_final_rankings` directly in `run_phase2`, removing wrapper and fallback complexity.
 - Alignment: High. Contracts are preserved and the service is used both when enabled and via fallbacks.
 
 ---
@@ -77,35 +76,19 @@ Overall: Service extraction is strong and improving, but Phase2Manager remains a
 
 The following responsibilities remain in `core/phase2_manager.py` and should ultimately be owned by services for a pure orchestrator design:
 
-- Statement retrieval and prompt usage
-  - `_get_participant_statement` (now ~939–1,000): Direct `Runner.run(...)` without retry/backoff.
-  - `_build_discussion_prompt` and `_build_internal_reasoning_prompt`: Contain legacy prompt-building logic when the flag is disabled (now ~1,022–1,061 and ~1,042–1,061), though they already delegate to DiscussionService when enabled.
-
-- Validation duplication
-  - `_validate_statement` (lines ~374–417): Duplicates logic that also exists in DiscussionService; currently delegates when flag enabled, else uses inline validation.
-
-- Voting-related memory updates
-  - `_update_all_memories_for_voting_phase` and `_build_voting_phase_memory_content` (now ~988–1,061): Logic that overlaps with MemoryService’s `update_voting_phase_memory` and `update_all_memories_for_voting_phase`.
-  - Direct `SimpleMemoryManager.insert_vote_initiation_decision` usage in the discussion loop (line ~842) bypasses MemoryService.
-
-- Discussion history management
-  - `_manage_discussion_history_length` (lines ~853+): History trimming should become MemoryService or DiscussionService concern.
-
-- Context initialization and memory sanitization
-  - `_validate_and_sanitize_memory` and `_initialize_phase2_contexts` (lines ~457–628): Reasonable to keep in orchestrator, but could be partially moved into MemoryService or a dedicated helper if desired.
-
-- Orchestrator size
-  - File length ~1,122 lines (`wc -l core/phase2_manager.py`), far above the ~200 lines target in the plan.
+- Statement retrieval and history management: Delegated to DiscussionService (implemented and used).
+- Voting/memory updates: Delegated to VotingService and MemoryService (manager calls services directly).
+- Context initialization and memory sanitization: Validation now handled by MemoryService (`validate_and_sanitize_memory`).
+- Orchestrator size: ~534 lines. This is much closer to plan (still above ~200 target, but now primarily sequencing and logging).
 
 ---
 
 ## Feature Flag Consistency Review
 
 - Intended behavior: `phase2_settings.refactored_services_enabled` toggles use of services with safe fallbacks.
-- Current behavior (post-changes):
-  - Voting and Memory wrappers honor the flag.
-  - Speaking order is unconditionally routed to SpeakingOrderService (now safe after early initialization). This is acceptable, as the service is pure logic and tested.
-  - Counterfactuals fallbacks still call the service anyway, ignoring the flag’s intent but keeping logic centralized and consistent. This reduces rollback semantics but simplifies maintenance.
+- Current behavior:
+  - Phase2Manager now uses services directly without gating on `refactored_services_enabled`; the flag is effectively unused in the orchestrator.
+  - This simplifies flow and matches the plan’s final architecture. Consider removing the flag from `Phase2Settings` in a follow-up to avoid confusion.
 - Recommendation: Choose one of these options and apply consistently:
   1) Always use services (preferred; remove flag and legacy code paths progressively), or
   2) Honor the flag strictly by providing functioning legacy fallbacks until fully removed.
@@ -114,9 +97,9 @@ The following responsibilities remain in `core/phase2_manager.py` and should ult
 
 ## Risks and Recent Bug Root Cause
 
-- Bug: `AttributeError: 'NoneType' object has no attribute 'generate_speaking_order'` when generating speaking order in `_run_group_discussion`.
-- Cause: `speaking_order_service` initialization missing before use.
-- Fix: `self._initialize_services()` is now called at the start of `_run_group_discussion` so the service is always available; additional defensive calls were added elsewhere as well.
+- Bug previously observed: `AttributeError: 'NoneType' object has no attribute 'generate_speaking_order'` in `_run_group_discussion`.
+- Cause: Speaking order service was not initialized before use.
+- Fix: Services are initialized at the start of `_run_group_discussion` and at `run_phase2` entry; the manager consistently uses services.
 - Broader learning: When services are referenced in hot paths regardless of the feature flag, they must be initialized eagerly (constructor) or at the entry of the path.
 
 ---
@@ -124,39 +107,29 @@ The following responsibilities remain in `core/phase2_manager.py` and should ult
 ## Test Coverage Observations
 
 - Unit tests exist for services:
-  - `tests/unit/test_speaking_order_service.py` present.
-  - `tests/unit/test_counterfactuals_service.py` present.
+  - `tests/unit/test_speaking_order_service.py`, `tests/unit/test_counterfactuals_service.py` present.
+  - `tests/unit/test_discussion_service.py` now includes comprehensive tests for `get_participant_statement_with_retry` (timeouts, retries, validation, internal reasoning inclusion).
 - Gaps:
-  - No test found for DiscussionService retry path (not implemented yet).
-  - Integration path in Phase2Manager’s discussion loop still exercises legacy `_get_participant_statement`; needs tests once DiscussionService handles retrieval.
+  - Consider adding an integration test that runs a short Phase 2 flow to assert memory updates for vote initiation decisions now come via MemoryService (and no longer SimpleMemoryManager) in the orchestrator.
 
 ---
 
 ## Recommendations (Prioritized)
 
-1) Implement DiscussionService statement retrieval with retry/backoff
-- Add `get_participant_statement_with_retry(participant, context, discussion_state, agent_config, max_retries)`.
-- Replace Phase2Manager `_get_participant_statement` usage with the new service method behind a wrapper (similar to voting/memory/counterfactuals).
-- Add unit tests covering timeouts, retries, and minimal/invalid outputs.
+1) Unify discussion history limits
+- Use `Phase2Settings.public_history_max_length` in `DiscussionService.manage_discussion_history_length` instead of a hard-coded 100k to make behavior configurable and consistent with settings.
 
-2) Remove direct SimpleMemoryManager calls from Phase2Manager
-- Replace `SimpleMemoryManager.insert_vote_initiation_decision` in the loop with `MemoryService.update_voting_phase_memory` or `update_all_memories_for_voting_phase` via the existing wrapper.
-- Audit `utils/selective_memory_manager.py` for places delegating to `SimpleMemoryManager` for voting events; re-route those paths through MemoryService to centralize policy.
+2) Audit and reduce remaining SimpleMemoryManager usage
+- `utils/selective_memory_manager.py` still uses SimpleMemoryManager for some simple events (secret ballot choice, amount specification). Consider routing these through MemoryService to centralize truncation/guidance.
 
-3) Consolidate prompt building and validation fully in DiscussionService
-- Phase2Manager methods `_build_discussion_prompt` and `_build_internal_reasoning_prompt` should only delegate to the service; remove legacy branches.
-- Keep `_validate_statement` as a thin wrapper to the service (or remove it and call the service directly).
+3) Optional: Remove the feature flag from settings
+- Now that the orchestrator uses services unconditionally, removing `refactored_services_enabled` will avoid confusion and reduce config surface area.
 
-4) Normalize feature flag semantics
-- Decide whether to keep the flag. If keeping, make all wrappers respect it consistently and retain working legacy fallbacks temporarily.
-- Preferably, drop the flag and fully adopt services, removing duplicate logic and slimming the orchestrator.
+4) Consider further slimming the orchestrator
+- It is already much leaner; further extraction of small logging helpers is optional. The current size and responsibility split are acceptable.
 
-5) Reduce Phase2Manager size and responsibility
-- After 1–4, remove legacy methods and helpers now owned by services.
-- Target a ~200–300 LOC orchestrator that sequences services and manages cross-cutting concerns (locks, high-level logging, process_logger wiring).
-
-6) Expand tests where services newly assume ownership
-- Add unit tests for DiscussionService retries, MemoryService voting phase updates replacing SimpleMemoryManager, and end-to-end discussion+voting flow under both “consensus” and “no consensus” paths.
+5) Add a small integration test for end-of-round voting
+- Assert that vote initiation memory deltas come from MemoryService. This protects against accidental reintroduction of direct SimpleMemoryManager calls in the orchestrator.
 
 ---
 

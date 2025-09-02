@@ -188,11 +188,19 @@ class MemoryService:
         Returns:
             Updated memory string
         """
-        # Build memory content similar to Phase2Manager's round_content construction
-        round_content = f"Round {round_num}: Your statement: {statement}"
+        # Build memory content using localized format
+        round_content = self.language_manager.get(
+            "memory.round_statement_format",
+            round_num=round_num,
+            statement=statement
+        )
         
         if include_internal_reasoning and internal_reasoning:
-            round_content += f"\nInternal reasoning: {internal_reasoning}"
+            reasoning_text = self.language_manager.get(
+                "memory.internal_reasoning_format",
+                reasoning=internal_reasoning
+            )
+            round_content += f"\n{reasoning_text}"
         
         event_metadata = {
             'round_number': round_num,
@@ -316,7 +324,10 @@ class MemoryService:
         Returns:
             Updated memory string
         """
-        formatted_content = f"Final Phase 2 Results: {result_content}"
+        formatted_content = self.language_manager.get(
+            "memory.final_results_format",
+            result_content=result_content
+        )
         
         event_metadata = {
             'final_earnings': final_earnings,
@@ -357,18 +368,23 @@ class MemoryService:
             truncated_lines = []
             
             for line in lines:
-                if line.startswith('Round ') and 'statement:' in line:
+                # Handle localized round statement format
+                round_prefix = self.language_manager.get("memory.round_prefix", default="Round ")
+                statement_key = self.language_manager.get("memory.statement_key", default="statement:")
+                reasoning_prefix = self.language_manager.get("memory.reasoning_prefix", default="Internal reasoning:")
+                
+                if line.startswith(round_prefix) and statement_key in line:
                     # Extract statement part
-                    statement_part = line.split('statement:', 1)[1].strip() if 'statement:' in line else line
+                    statement_part = line.split(statement_key, 1)[1].strip() if statement_key in line else line
                     if len(statement_part) > self.statement_max_chars:
                         statement_part = statement_part[:self.statement_max_chars].rstrip() + '...'
-                    truncated_lines.append(line.split('statement:', 1)[0] + 'statement: ' + statement_part)
-                elif line.startswith('Internal reasoning:'):
+                    truncated_lines.append(line.split(statement_key, 1)[0] + statement_key + ' ' + statement_part)
+                elif line.startswith(reasoning_prefix):
                     # Extract reasoning part
                     reasoning_part = line.split(':', 1)[1].strip() if ':' in line else line
                     if len(reasoning_part) > self.reasoning_max_chars:
                         reasoning_part = reasoning_part[:self.reasoning_max_chars].rstrip() + '...'
-                    truncated_lines.append('Internal reasoning: ' + reasoning_part)
+                    truncated_lines.append(reasoning_prefix + ' ' + reasoning_part)
                 else:
                     # Keep other lines as-is (metadata, formatting)
                     truncated_lines.append(line)
@@ -462,6 +478,84 @@ class MemoryService:
             context=context,
             content=memory_content,
             event_type=MemoryEventType.VOTING_CONFIRMATION,
+            event_metadata=event_metadata,
+            **kwargs
+        )
+    
+    async def update_ballot_selection_memory(
+        self,
+        agent: "ParticipantAgent",
+        context: "ParticipantContext",
+        principle_name: str,
+        **kwargs
+    ) -> str:
+        """
+        Update memory with ballot selection choice.
+        
+        Args:
+            agent: The participant agent
+            context: Current participant context
+            principle_name: Name of the selected principle
+            **kwargs: Additional arguments
+            
+        Returns:
+            Updated memory string
+        """
+        # Build ballot selection content using language manager - matching SimpleMemoryManager format
+        memory_content = self.language_manager.get(
+            "prompts.memory_insertions.secret_ballot_choice",
+            principle_name=principle_name
+        )
+        
+        event_metadata = {
+            'principle_name': principle_name,
+            'participant_name': agent.name
+        }
+        
+        return await self.update_memory_selective(
+            agent=agent,
+            context=context,
+            content=memory_content,
+            event_type=MemoryEventType.BALLOT_SELECTION,
+            event_metadata=event_metadata,
+            **kwargs
+        )
+    
+    async def update_amount_specification_memory(
+        self,
+        agent: "ParticipantAgent",
+        context: "ParticipantContext",
+        amount: str,
+        **kwargs
+    ) -> str:
+        """
+        Update memory with constraint amount specification.
+        
+        Args:
+            agent: The participant agent
+            context: Current participant context
+            amount: Specified constraint amount (formatted string)
+            **kwargs: Additional arguments
+            
+        Returns:
+            Updated memory string
+        """
+        # Build amount specification content using language manager - matching SimpleMemoryManager format
+        memory_content = self.language_manager.get(
+            "prompts.memory_insertions.amount_specification",
+            amount=amount
+        )
+        
+        event_metadata = {
+            'amount': amount,
+            'participant_name': agent.name
+        }
+        
+        return await self.update_memory_selective(
+            agent=agent,
+            context=context,
+            content=memory_content,
+            event_type=MemoryEventType.AMOUNT_SPECIFICATION,
             event_metadata=event_metadata,
             **kwargs
         )

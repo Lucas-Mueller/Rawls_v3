@@ -271,10 +271,10 @@ class CounterfactualsService:
             
             # Format alternative earnings for each principle
             principle_names = {
-                'maximizing_floor': self.language_manager.get('principles.maximizing_floor'),
-                'maximizing_average': self.language_manager.get('principles.maximizing_average'), 
-                'maximizing_average_with_floor': self.language_manager.get('principles.maximizing_average_with_floor'),
-                'maximizing_average_with_range': self.language_manager.get('principles.maximizing_average_with_range')
+                'maximizing_floor': self.language_manager.get('common.principle_names.maximizing_floor'),
+                'maximizing_average': self.language_manager.get('common.principle_names.maximizing_average'), 
+                'maximizing_average_with_floor': self.language_manager.get('common.principle_names.maximizing_average_floor_constraint'),
+                'maximizing_average_with_range': self.language_manager.get('common.principle_names.maximizing_average_range_constraint')
             }
             
             for principle_key, earnings in alternative_earnings.items():

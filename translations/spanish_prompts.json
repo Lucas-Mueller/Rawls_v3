@@ -192,6 +192,12 @@
     "your_statement": "Su declaración:",
     "your_income_assignment": "Su asignación de clase de ingresos:",
     "your_earnings": "Sus ganancias:",
+    "chosen_principle": "Principio elegido:",
+    "constraint_amount": "Cantidad de restricción:",
+    "assigned_class": "Clase asignada:",
+    "earnings": "Ganancias:",
+    "original_values_situation": "Situación:",
+    "distribution_multiplier": "Multiplicador de distribución:",
     "outcome": "Resultado:"
   },
   "memory_outcomes": {
@@ -203,6 +209,14 @@
     "agreed_to_vote": "Acordó proceder con la votación",
     "declined_to_vote": "Rechazó votar"
   },
+  "memory": {
+    "round_statement_format": "Ronda {round_num}: Tu declaración: {statement}",
+    "internal_reasoning_format": "Razonamiento interno: {reasoning}",
+    "final_results_format": "Resultados Finales de la Fase 2: {result_content}",
+    "round_prefix": "Ronda ",
+    "statement_key": "declaración:",
+    "reasoning_prefix": "Razonamiento interno:"
+  },
   "voting_phases": {
     "initiation": "La votación ha sido iniciada por {initiator_name}. El proceso formal de votación está comenzando.",
     "confirmation": "Fase de confirmación: Se está pidiendo a los participantes que confirmen si están de acuerdo en proceder con la votación.",
@@ -212,6 +226,31 @@
   "voting_results": {
     "consensus_reached": "Consenso alcanzado: {principle_name}",
     "consensus_with_constraint": "Consenso alcanzado: {principle_name} (${constraint_amount:,})"
+  },
+  "voting": {
+    "timeout_fallback": "Se agotó el tiempo de respuesta. Por favor, inténtalo de nuevo.",
+    "fallback_principle_prompt": "Se ha iniciado una votación. ¿Por cuál de los cuatro principios quieres votar?\n\n1. Maximizar los Ingresos Mínimos\n2. Maximizar los Ingresos Promedio\n3. Maximizar el Promedio con Restricción Mínima\n4. Maximizar el Promedio con Restricción de Rango\n\nResponde SOLO con el número (1, 2, 3, o 4):",
+    "fallback_amount_prompt": "Elegiste {principle_name}. Por favor, indica la cantidad en dólares como un número entero positivo.\n\nResponde con la cantidad (ejemplos: 25000 o $25000):",
+    "error_messages": {
+      "respond_with_number_only": "Respuesta inválida (intento {attempt}/{max_retries}). Debes responder con exactamente un número: 1, 2, 3, o 4.",
+      "use_digits_not_words": "Respuesta inválida (intento {attempt}/{max_retries}). Por favor usa dígitos (1, 2, 3, o 4), no palabras.",
+      "number_out_of_range": "Respuesta inválida (intento {attempt}/{max_retries}). Debes responder con 1, 2, 3, o 4 solamente.",
+      "zero_not_valid": "Respuesta inválida (intento {attempt}/{max_retries}). Cero no es una opción de principio válida. Usa 1, 2, 3, o 4.",
+      "multiple_valid_numbers": "Múltiples números detectados (intento {attempt}/{max_retries}). Por favor responde con solo UN número: 1, 2, 3, o 4.",
+      "response_too_long": "Respuesta inválida (intento {attempt}/{max_retries}). Por favor responde solo con el número.",
+      "empty_response": "Respuesta vacía (intento {attempt}/{max_retries}). Por favor responde con 1, 2, 3, o 4.",
+      "no_letter_choices": "Respuesta inválida (intento {attempt}/{max_retries}). No uses letras (a, b, c, d). Usa números: 1, 2, 3, o 4.",
+      "principle_content_unclear": "Elección de principio poco clara (intento {attempt}/{max_retries}). Por favor responde con el número de tu principio preferido: 1, 2, 3, o 4.",
+      "invalid_format_general": "Respuesta inválida (intento {attempt}/{max_retries}). Debes responder con exactamente un número: 1, 2, 3, o 4.",
+      "amount_must_be_positive": "Cantidad inválida (intento {attempt}/{max_retries}). Debes responder con una cantidad entera positiva en dólares.",
+      "whole_numbers_only": "Formato de cantidad inválido (intento {attempt}/{max_retries}). Debes responder con una cantidad entera en dólares (sin decimales).",
+      "no_negative_amounts": "Cantidad inválida (intento {attempt}/{max_retries}). No se permiten cantidades negativas.",
+      "no_text_in_amount": "Formato de cantidad inválido (intento {attempt}/{max_retries}). Debes responder solo con un número.",
+      "empty_amount_response": "Respuesta vacía (intento {attempt}/{max_retries}). Por favor proporciona una cantidad en dólares.",
+      "invalid_amount_format": "Formato de cantidad inválido (intento {attempt}/{max_retries}). Debes responder con una cantidad entera positiva en dólares.",
+      "no_amount_found": "No se encontró cantidad monetaria (intento {attempt}/{max_retries}). Por favor indica claramente una cantidad en dólares (ej. $10,000 o 25000).",
+      "multiple_different_amounts_found": "Múltiples cantidades diferentes detectadas (intento {attempt}/{max_retries}). Por favor especifica exactamente una cantidad en dólares claramente."
+    }
   },
   "phase2_voting_no_consensus_principle_disagreement": "Sin consenso - los agentes votaron por diferentes principios de justicia - la discusión continúa",
   "phase2_voting_no_consensus_constraint_disagreement": "Sin consenso - los agentes estuvieron de acuerdo en {principle_name} pero discreparon en las cantidades de restricción - la discusión continúa",
@@ -230,7 +269,11 @@
       "confirmation_failed": "La confirmación falló - continuando con la discusión",
       "process_failed": "El proceso de votación en dos etapas falló",
       "result_summary": "Votación realizada - Consenso: {consensus}",
-      "agreed_principle": " (Acordado en: {principle})"
+      "agreed_principle": " (Acordado en: {principle})",
+      "all_confirmed": "Todos confirmaron",
+      "voting_declined": "Votación rechazada",
+      "consensus_tag": "[CONSENSO]",
+      "no_consensus_tag": "[SIN CONSENSO]"
     },
     "discussion": {
       "truncation_marker": "...discusión anterior truncada...",
@@ -248,6 +291,8 @@
     },
     "consensus_status": "Estado del Consenso:",
     "key_insights": "Conocimientos Clave:",
+    "assigned_income_class": "Clase de ingresos asignada:",
+    "counterfactuals_header": "Análisis contrafactual:",
     "income_classes": {
       "very_high": "MUY ALTO",
       "high": "ALTO", 

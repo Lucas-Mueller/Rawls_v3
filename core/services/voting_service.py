@@ -370,7 +370,7 @@ class VotingService:
             
             # Get localized principle name
             principle_key = vote_result.agreed_principle.principle.value
-            localized_principle_name = self.language_manager.get(f"principle_names.{principle_key}")
+            localized_principle_name = self.language_manager.get(f"common.principle_names.{principle_key}")
             
             # Add to public history using localized consensus message
             if vote_result.agreed_principle.constraint_amount:

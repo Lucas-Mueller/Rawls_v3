@@ -315,7 +315,10 @@ class TwoStageVotingManager:
                             timeout_msg = self.language_manager.get_two_stage_timeout_message()
                         except Exception as e:
                             logger.warning(f"Failed to get timeout message: {e}")
-                            timeout_msg = "Response timed out. Please try again."
+                            timeout_msg = self.language_manager.get(
+                                "voting.timeout_fallback",
+                                default="Response timed out. Please try again."
+                            )
                         current_prompt = f"{timeout_msg}\n\n{base_prompt}"
                     
                 except Exception as e:
@@ -436,7 +439,10 @@ class TwoStageVotingManager:
                             timeout_msg = self.language_manager.get_two_stage_timeout_message()
                         except Exception as e:
                             logger.warning(f"Failed to get timeout message: {e}")
-                            timeout_msg = "Response timed out. Please try again."
+                            timeout_msg = self.language_manager.get(
+                                "voting.timeout_fallback",
+                                default="Response timed out. Please try again."
+                            )
                         current_prompt = f"{timeout_msg}\n\n{base_prompt}"
                     
                 except Exception as e:
@@ -779,8 +785,21 @@ class TwoStageVotingManager:
 
     # Fallback methods for when language manager is not available
     def _get_fallback_principle_prompt(self) -> str:
-        """Fallback principle selection prompt in English."""
-        return """A vote has been initiated. Which of the four principles do you want to vote for?
+        """Fallback principle selection prompt using language manager."""
+        try:
+            return self.language_manager.get(
+                "voting.fallback_principle_prompt",
+                default="""A vote has been initiated. Which of the four principles do you want to vote for?
+
+1. Maximizing Floor Income
+2. Maximizing Average Income 
+3. Maximizing Average with Floor Constraint
+4. Maximizing Average with Range Constraint
+
+Respond with ONLY the number (1, 2, 3, or 4):"""
+            )
+        except Exception:
+            return """A vote has been initiated. Which of the four principles do you want to vote for?
 
 1. Maximizing Floor Income
 2. Maximizing Average Income 
@@ -790,8 +809,17 @@ class TwoStageVotingManager:
 Respond with ONLY the number (1, 2, 3, or 4):"""
 
     def _get_fallback_amount_prompt(self, principle_name: str) -> str:
-        """Fallback amount specification prompt in English."""
-        return f"""You chose {principle_name}. Please state the amount in dollars as a whole positive number.
+        """Fallback amount specification prompt using language manager."""
+        try:
+            return self.language_manager.get(
+                "voting.fallback_amount_prompt",
+                principle_name=principle_name,
+                default=f"""You chose {principle_name}. Please state the amount in dollars as a whole positive number.
+
+Respond with the amount (examples: 25000 or $25000):"""
+            )
+        except Exception:
+            return f"""You chose {principle_name}. Please state the amount in dollars as a whole positive number.
 
 Respond with the amount (examples: 25000 or $25000):"""
 
@@ -826,7 +854,16 @@ Respond with the amount (examples: 25000 or $25000):"""
             "no_amount_found": f"No monetary amount found (attempt {attempt}/{self.max_retries}). Please clearly state a dollar amount (e.g., $10,000 or 25000).",
             "multiple_different_amounts_found": f"Multiple different amounts detected (attempt {attempt}/{self.max_retries}). Please specify exactly one dollar amount clearly."
         }
-        return messages.get(error_type, f"Invalid response (attempt {attempt}/{self.max_retries}). Please try again.")
+        # Try to get localized error message first
+        try:
+            return self.language_manager.get(
+                f"voting.error_messages.{error_type}",
+                attempt=attempt,
+                max_retries=self.max_retries,
+                default=messages.get(error_type, f"Invalid response (attempt {attempt}/{self.max_retries}). Please try again.")
+            )
+        except Exception:
+            return messages.get(error_type, f"Invalid response (attempt {attempt}/{self.max_retries}). Please try again.")
 
     # Logging methods
     def _log_voting_success(self, participant_name: str, stage: str, response: str, value: int, attempt: int):

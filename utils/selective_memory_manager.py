@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Optional, Dict, Any
 from enum import Enum
 
 from utils.memory_manager import MemoryManager
-from utils.simple_memory_manager import SimpleMemoryManager
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -235,18 +234,16 @@ class SelectiveMemoryManager:
                 context.memory += content.strip()
             
             elif event_type == MemoryEventType.BALLOT_SELECTION:
-                # Extract principle choice
-                principle_name = SelectiveMemoryManager._extract_principle_choice(content, metadata)
-                SimpleMemoryManager.insert_secret_ballot_choice(
-                    context, principle_name, language_manager
-                )
+                # Content already formatted by MemoryService - just append to memory
+                if context.memory and not context.memory.endswith('\n'):
+                    context.memory += '\n'
+                context.memory += content.strip()
             
             elif event_type == MemoryEventType.AMOUNT_SPECIFICATION:
-                # Extract amount specification
-                amount = SelectiveMemoryManager._extract_amount_specification(content, metadata)
-                SimpleMemoryManager.insert_amount_specification(
-                    context, amount, language_manager
-                )
+                # Content already formatted by MemoryService - just append to memory
+                if context.memory and not context.memory.endswith('\n'):
+                    context.memory += '\n'
+                context.memory += content.strip()
             
             elif event_type == MemoryEventType.SIMPLE_STATUS_UPDATE:
                 # Simple status update - just append to memory
@@ -345,36 +342,3 @@ class SelectiveMemoryManager:
         # Default to agreed if unclear
         return True
     
-    @staticmethod
-    def _extract_principle_choice(content: str, metadata: Optional[Dict[str, Any]]) -> str:
-        """Extract principle choice from content or metadata."""
-        if metadata and 'principle_name' in metadata:
-            return metadata['principle_name']
-        
-        # Try to extract from content
-        content_lower = content.lower()
-        if 'maximizing floor' in content_lower:
-            return "Maximizing Floor Income"
-        if 'maximizing average' in content_lower and 'floor constraint' in content_lower:
-            return "Maximizing Average with Floor Constraint"
-        if 'maximizing average' in content_lower and 'range constraint' in content_lower:
-            return "Maximizing Average with Range Constraint"
-        if 'maximizing average' in content_lower:
-            return "Maximizing Average Income"
-        
-        # Default fallback
-        return "Unknown Principle"
-    
-    @staticmethod
-    def _extract_amount_specification(content: str, metadata: Optional[Dict[str, Any]]) -> str:
-        """Extract amount specification from content or metadata."""
-        if metadata and 'amount' in metadata:
-            return f"${metadata['amount']:,}"
-        
-        # Try to extract dollar amount from content
-        import re
-        amount_match = re.search(r'\$?([\d,]+)', content)
-        if amount_match:
-            return f"${amount_match.group(1)}"
-        
-        return "Amount not specified"

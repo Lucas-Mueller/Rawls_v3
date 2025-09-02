@@ -173,6 +173,14 @@
     "agreed_to_vote": "Agreed to proceed with voting",
     "declined_to_vote": "Declined to vote"
   },
+  "memory": {
+    "round_statement_format": "Round {round_num}: Your statement: {statement}",
+    "internal_reasoning_format": "Internal reasoning: {reasoning}",
+    "final_results_format": "Final Phase 2 Results: {result_content}",
+    "round_prefix": "Round ",
+    "statement_key": "statement:",
+    "reasoning_prefix": "Internal reasoning:"
+  },
   "voting_phases": {
     "initiation": "Voting has been initiated by {initiator_name}. Formal voting process is starting.",
     "confirmation": "Confirmation phase: Participants are being asked to confirm whether they agree to proceed with voting.",
@@ -182,6 +190,31 @@
   "voting_results": {
     "consensus_reached": "Consensus reached: {principle_name}",
     "consensus_with_constraint": "Consensus reached: {principle_name} (${constraint_amount:,})"
+  },
+  "voting": {
+    "timeout_fallback": "Response timed out. Please try again.",
+    "fallback_principle_prompt": "A vote has been initiated. Which of the four principles do you want to vote for?\n\n1. Maximizing Floor Income\n2. Maximizing Average Income \n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nRespond with ONLY the number (1, 2, 3, or 4):",
+    "fallback_amount_prompt": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):",
+    "error_messages": {
+      "respond_with_number_only": "Invalid response (attempt {attempt}/{max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
+      "use_digits_not_words": "Invalid response (attempt {attempt}/{max_retries}). Please use digits (1, 2, 3, or 4), not words.",
+      "number_out_of_range": "Invalid response (attempt {attempt}/{max_retries}). You must respond with 1, 2, 3, or 4 only.",
+      "zero_not_valid": "Invalid response (attempt {attempt}/{max_retries}). Zero is not a valid principle choice. Use 1, 2, 3, or 4.",
+      "multiple_valid_numbers": "Multiple numbers detected (attempt {attempt}/{max_retries}). Please respond with only ONE number: 1, 2, 3, or 4.",
+      "response_too_long": "Invalid response (attempt {attempt}/{max_retries}). Please respond with just the number.",
+      "empty_response": "Empty response (attempt {attempt}/{max_retries}). Please respond with 1, 2, 3, or 4.",
+      "no_letter_choices": "Invalid response (attempt {attempt}/{max_retries}). Don't use letters (a, b, c, d). Use numbers: 1, 2, 3, or 4.",
+      "principle_content_unclear": "Unclear principle choice (attempt {attempt}/{max_retries}). Please respond with the number of your preferred principle: 1, 2, 3, or 4.",
+      "invalid_format_general": "Invalid response (attempt {attempt}/{max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
+      "amount_must_be_positive": "Invalid amount (attempt {attempt}/{max_retries}). You must respond with a positive whole dollar amount.",
+      "whole_numbers_only": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a whole dollar amount (no decimals).",
+      "no_negative_amounts": "Invalid amount (attempt {attempt}/{max_retries}). Negative amounts are not allowed.",
+      "no_text_in_amount": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a number only.",
+      "empty_amount_response": "Empty response (attempt {attempt}/{max_retries}). Please provide a dollar amount.",
+      "invalid_amount_format": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a positive whole dollar amount.",
+      "no_amount_found": "No monetary amount found (attempt {attempt}/{max_retries}). Please clearly state a dollar amount (e.g., $10,000 or 25000).",
+      "multiple_different_amounts_found": "Multiple different amounts detected (attempt {attempt}/{max_retries}). Please specify exactly one dollar amount clearly."
+    }
   },
   "phase2_voting_no_consensus_principle_disagreement": "No consensus - agents voted for different justice principles - discussion continues",
   "phase2_voting_no_consensus_constraint_disagreement": "No consensus - agents agreed on {principle_name} but disagreed on constraint amounts - discussion continues",
@@ -205,7 +238,11 @@
       "confirmation_failed": "Confirmation failed - continuing discussion",
       "process_failed": "Two-stage voting process failed",
       "result_summary": "Vote conducted - Consensus: {consensus}",
-      "agreed_principle": " (Agreed on: {principle})"
+      "agreed_principle": " (Agreed on: {principle})",
+      "all_confirmed": "All confirmed",
+      "voting_declined": "Voting declined",
+      "consensus_tag": "[CONSENSUS]",
+      "no_consensus_tag": "[NO CONSENSUS]"
     },
     "discussion": {
       "truncation_marker": "...earlier discussion truncated...",
@@ -216,6 +253,8 @@
   "results": {
     "phase2_header": "PHASE 2 FINAL RESULTS",
     "counterfactual_header": "COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:",
+    "assigned_income_class": "Assigned income class: {class_name}",
+    "counterfactuals_header": "Counterfactual analysis",
     "table_headers": {
       "principle": "Justice Principle",
       "income": "Income", 
