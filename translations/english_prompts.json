@@ -186,6 +186,11 @@
   "phase2_voting_no_consensus_principle_disagreement": "No consensus - agents voted for different justice principles - discussion continues",
   "phase2_voting_no_consensus_constraint_disagreement": "No consensus - agents agreed on {principle_name} but disagreed on constraint amounts - discussion continues",
   "phase2_voting_no_consensus_mixed_disagreement": "No consensus - mixed disagreement on principles and constraints - discussion continues",
+  "phase2_no_consensus": "Group did not reach consensus. Earnings were randomly assigned",
+  "phase2_counterfactual_insights_best_more": "- Best alternative: Would have earned ${best_diff:.2f} more under {best_principle}",
+  "phase2_counterfactual_insights_best_same": "- Best alternative: Current earnings match the best possible outcome",
+  "phase2_counterfactual_insights_worst_more": "- Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle}",
+  "phase2_counterfactual_insights_worst_same": "- Worst alternative: Current earnings match the worst possible outcome",
   "error_messages": {
     "empty_response_retry": "IMPORTANT: Your previous response was empty or too short. Please provide a meaningful response."
   },

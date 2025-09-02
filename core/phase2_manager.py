@@ -97,7 +97,7 @@ class Phase2Manager:
     
     def _get_localized_income_class(self, income_class: str) -> str:
         """Get localized income class label."""
-        return self._get_localized_message(f"results.income_classes.{income_class}")
+        return self._get_localized_message(f"common.income_classes.{income_class}")
     
     
     def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
