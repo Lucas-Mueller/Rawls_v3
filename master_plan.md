@@ -102,7 +102,8 @@ This phase involves a group of multiple AI agents interacting to reach a consens
 - **Process:** The group discusses for a maximum number of rounds, as set in the configuration file.\
   **Round Process:**1. **Speaking Order:** The speaking order for agents is randomly generated. A restriction: if one round ends with Agent X, the next round cannot start with Agent X.
 
-2. **Agent Turn:** For each agent's turn:- The agent is told the current round number and the total number of rounds.
+2. **Agent Turn:** For each agent's turn:
+- The agent is told the current round number and the total number of rounds.
 
 - The agent is given the "public history" (the full transcript of all previous public conversations between agents).
 
