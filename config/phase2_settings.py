@@ -61,7 +61,7 @@ class Phase2Settings(BaseModel):
     
     # Memory settings
     memory_compression_threshold: float = Field(
-        default=0.8,
+        default=0.9,
         ge=0.5,
         le=0.95,
         description="Threshold for memory compression (percentage of limit)"
@@ -144,8 +144,8 @@ class Phase2Settings(BaseModel):
         description="Minimum reasonable constraint amount"
     )
     amount_max_reasonable: int = Field(
-        default=100000,
-        ge=1000,
+        default=10000000,
+        ge=100,
         description="Maximum reasonable constraint amount"
     )
     

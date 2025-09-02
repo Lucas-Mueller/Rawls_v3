@@ -82,7 +82,7 @@ class TwoStageVotingManager:
     - Stage 2: Amount specification for constraint principles (positive integers)
     """
     
-    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None):
+    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None):
         """
         Initialize the two-stage voting manager.
         
@@ -100,6 +100,8 @@ class TwoStageVotingManager:
         self.settings = settings
         self.error_handler = error_handler
         self.utility_agent = utility_agent
+        # Optional MemoryService for writing simple voting-related memory events
+        self.memory_service = memory_service
         
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
@@ -158,6 +160,19 @@ class TwoStageVotingManager:
                 return None  # Voting failed
             
             principle_num = principle_result.value
+
+            # Record ballot selection via MemoryService if available
+            try:
+                if self.memory_service is not None:
+                    display_name = self._get_principle_display_name(principle_num)
+                    # Persist the ballot choice using MemoryService (simple event path)
+                    await self.memory_service.update_ballot_selection_memory(
+                        agent=participant,
+                        context=context,
+                        principle_name=display_name
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to write ballot selection memory for {participant.name}: {e}")
             
             # Stage 2: Amount specification (if needed)
             amount_result = None
@@ -179,6 +194,18 @@ class TwoStageVotingManager:
                     return None  # Voting failed
                 
                 constraint_amount = amount_result.value
+
+                # Record amount specification via MemoryService if available
+                try:
+                    if self.memory_service is not None and constraint_amount is not None:
+                        formatted_amount = f"${constraint_amount:,}"
+                        await self.memory_service.update_amount_specification_memory(
+                            agent=participant,
+                            context=context,
+                            amount=formatted_amount
+                        )
+                except Exception as e:
+                    logger.warning(f"Failed to write amount specification memory for {participant.name}: {e}")
             
             # Create participant vote
             participant_vote = ParticipantVote(

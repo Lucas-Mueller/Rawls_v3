@@ -109,6 +109,12 @@
     "phase2_favored_principle_unspecified": "no especificado",
     "phase2_consensus_reached": "El grupo alcanzó consenso sobre {principle}",
     "phase2_no_consensus": "El grupo no alcanzó consenso. Las ganancias fueron asignadas aleatoriamente.",
+    "counterfactual_insights": {
+      "maximin_payoffs_best": "- Mejor resultado bajo maximizar mínimo: Habría ganado ${best_diff:.2f} más",
+      "maximin_payoffs_worst": "- Peor resultado bajo maximizar mínimo: Habría ganado ${worst_diff:.2f} menos",
+      "floor_constraint_payoffs_best": "- Mejor resultado bajo restricción de mínimo: Habría ganado ${best_diff:.2f} más",
+      "floor_constraint_payoffs_worst": "- Peor resultado bajo restricción de mínimo: Habría ganado ${worst_diff:.2f} menos"
+    },
     "utility_string_parser_agent_name": "Analizador de Respuestas",
     "utility_string_validator_agent_name": "Validador de Respuestas",
     "utility_constraint_re_prompt": "\n{participant_name}, usted eligió el principio \"{principle_name}\", pero no especificó la cantidad de restricción {constraint_type}.\n\nRecordatorio sobre el principio que eligió:\n- Restricción de ingreso mínimo: Maximiza el ingreso promedio solo después de garantizar que todos reciban al menos un ingreso mínimo especificado\n- Restricción de rango: Maximiza el ingreso promedio mientras asegura que la diferencia entre los más ricos y más pobres no exceda una cantidad especificada\n\nImportante: Por favor use la misma escala de ingresos que ha estado discutiendo ($12,000-$32,000) para especificar la cantidad de restricción.\n\nPor favor especifique la cantidad en dólares para su restricción {constraint_type}.\n\nPor ejemplo:\n- Restricción de ingreso mínimo: \"Elijo maximizar los ingresos promedio con restricción de ingreso mínimo con una restricción de ingreso mínimo de $15,000\"\n- Restricción de rango: \"Elijo maximizar los ingresos promedio con restricción de rango con una restricción de rango de $20,000\"\n",
@@ -204,6 +210,7 @@
     "completed_initial_ranking": "Clasificación inicial completada de los principios de justicia.",
     "learned_principle_applications": "Aprendió cómo cada principio de justicia se aplica a las distribuciones de ingresos a través de ejemplos.",
     "completed_post_explanation_ranking": "Clasificación completada después de aprender cómo los principios se aplican a las distribuciones.",
+    "applied_principle_round": "Aplicó el principio de justicia elegido en la ronda de demostración {round_number}.",
     "completed_final_ranking": "Clasificación final completada de los principios de justicia después de experimentar las cuatro rondas.",
     "made_discussion_statement": "Hizo declaración en la Ronda {round_number} de la discusión grupal.",
     "agreed_to_vote": "Acordó proceder con la votación",

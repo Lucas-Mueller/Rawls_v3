@@ -155,6 +155,37 @@ class MemoryService:
                 **kwargs
             )
             
+            # Post-append validation for simple events: if memory grew near limit, compress
+            try:
+                if event_type in getattr(SelectiveMemoryManager, 'SIMPLE_MEMORY_EVENTS', set()):
+                    # Determine character limit from context or agent config
+                    limit = getattr(context, 'memory_character_limit', None)
+                    if not limit and hasattr(agent, 'config'):
+                        limit = getattr(agent.config, 'memory_character_limit', None)
+                    
+                    if limit and isinstance(updated_memory, str):
+                        threshold = int(0.9 * int(limit))
+                        if len(updated_memory) > threshold:
+                            self.logger.debug(
+                                f"Memory near limit after simple update for {agent.name}: "
+                                f"{len(updated_memory)} > {threshold} (limit {limit}). Compressing..."
+                            )
+                            compressed = await MemoryManager._compress_memory_if_needed(
+                                agent=agent,
+                                current_memory=updated_memory,
+                                bank_balance=context.bank_balance,
+                                memory_limit=int(limit),
+                                language_manager=self.language_manager
+                            )
+                            # Persist compressed memory back to context and return it
+                            context.memory = compressed
+                            updated_memory = compressed
+            except Exception as compress_err:
+                # Non-fatal: log and proceed with uncompressed memory
+                self.logger.warning(
+                    f"Post-append compression skipped due to error for {agent.name}: {compress_err}"
+                )
+            
             self.logger.debug(f"Memory update successful for {agent.name}: {event_type}")
             return updated_memory
             

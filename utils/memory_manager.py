@@ -258,7 +258,7 @@ class MemoryManager:
         try:
             # Create compression prompt in the appropriate language using existing localized prompt
             compression_prompt = language_manager.get(
-                "memory_compression_prompt",
+                "prompts.memory_compression_prompt",
                 current_memory=memory_content,
                 memory_limit=target_length * 2,  # Set a reasonable "limit" for the prompt
                 target_length=target_length

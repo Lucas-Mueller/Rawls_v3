@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .actor { fill:#f2f2f2; stroke:#444; stroke-width:1.2; }
+      .phase { fill:#eef7ff; stroke:#72a7ff; stroke-width:1; }
+      .phase2 { fill:#fff4ec; stroke:#ffb27a; stroke-width:1; }
+      .phase3 { fill:#eefeef; stroke:#8ad48a; stroke-width:1; }
+      .text { font-family: Arial, sans-serif; font-size:12px; fill:#222; }
+      .title { font-size:14px; font-weight:bold; }
+      .arrow { stroke:#333; stroke-width:1.2; marker-end:url(#arrowhead); fill:none; }
+      .note { fill:#ffffcc; stroke:#e6e68a; }
+    ]]></style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Actors -->
+  <g>
+    <rect x="40" y="40" width="150" height="40" class="actor"/>
+    <text x="115" y="65" text-anchor="middle" class="text title">Phase1/2 Manager</text>
+
+    <rect x="220" y="40" width="140" height="40" class="actor"/>
+    <text x="290" y="65" text-anchor="middle" class="text title">LanguageManager</text>
+
+    <rect x="380" y="40" width="160" height="40" class="actor"/>
+    <text x="460" y="65" text-anchor="middle" class="text title">ParticipantAgent (LLM)</text>
+
+    <rect x="560" y="40" width="140" height="40" class="actor"/>
+    <text x="630" y="65" text-anchor="middle" class="text title">MemoryService</text>
+
+    <rect x="720" y="40" width="170" height="40" class="actor"/>
+    <text x="805" y="65" text-anchor="middle" class="text title">SelectiveMemoryManager</text>
+
+    <rect x="910" y="40" width="140" height="40" class="actor"/>
+    <text x="980" y="65" text-anchor="middle" class="text title">MemoryManager</text>
+
+    <rect x="1070" y="40" width="120" height="40" class="actor"/>
+    <text x="1130" y="65" text-anchor="middle" class="text title">UtilityAgent</text>
+
+    <rect x="1210" y="40" width="150" height="40" class="actor"/>
+    <text x="1285" y="65" text-anchor="middle" class="text title">DiscussionService</text>
+
+    <rect x="1380" y="40" width="150" height="40" class="actor"/>
+    <text x="1455" y="65" text-anchor="middle" class="text title">VotingService</text>
+  </g>
+
+  <!-- Phase headers -->
+  <rect x="30" y="110" width="1540" height="230" class="phase"/>
+  <text x="40" y="128" class="text title">Phase 1: Learning & Application</text>
+
+  <rect x="30" y="360" width="1540" height="310" class="phase2"/>
+  <text x="40" y="378" class="text title">Phase 2: Discussion, Voting, Results</text>
+
+  <rect x="30" y="690" width="1540" height="260" class="phase3"/>
+  <text x="40" y="708" class="text title">Finalization & Memory Preservation</text>
+
+  <!-- Phase 1 arrows -->
+  <path d="M115 160 C 300 160, 420 160, 460 160" class="arrow"/>
+  <text x="290" y="150" class="text">Runner.run(prompt, context with instructions)</text>
+
+  <path d="M115 200 C 300 200, 980 200, 980 200" class="arrow"/>
+  <text x="290" y="190" class="text">prompt_agent_for_memory_update(round_content, style)</text>
+
+  <path d="M980 215 C 880 215, 540 215, 540 215" class="arrow"/>
+  <text x="760" y="205" class="text">memory_update_prompt (localized)</text>
+
+  <path d="M540 230 C 560 230, 620 230, 740 230" class="arrow"/>
+  <text x="640" y="222" class="text">agent.update_memory(...)</text>
+
+  <path d="M980 250 C 1100 250, 1130 250, 1130 250" class="arrow"/>
+  <text x="1100" y="242" class="text">compress if >115%</text>
+
+  <!-- Phase 2 init note -->
+  <rect x="50" y="400" width="420" height="54" rx="6" class="note"/>
+  <text x="60" y="418" class="text">Carry Phase 1 memory → validate_and_sanitize_memory(final_memory_state)</text>
+  <text x="60" y="435" class="text">Set on ParticipantContext as initial Phase 2 memory</text>
+
+  <!-- Discussion round -->
+  <path d="M115 480 C 300 480, 1285 480, 1285 480" class="arrow"/>
+  <text x="430" y="470" class="text">build_discussion_prompt(history, names, round)</text>
+
+  <path d="M115 510 C 300 510, 460 510, 460 510" class="arrow"/>
+  <text x="290" y="502" class="text">Runner.run(discussion_prompt, context)</text>
+
+  <path d="M115 540 C 300 540, 630 540, 630 540" class="arrow"/>
+  <text x="290" y="532" class="text">update_discussion_memory(statement, reasoning)</text>
+
+  <path d="M630 555 C 760 555, 805 555, 805 555" class="arrow"/>
+  <text x="700" y="547" class="text">selective route</text>
+
+  <path d="M805 570 C 905 570, 980 570, 980 570" class="arrow"/>
+  <text x="890" y="562" class="text">complex → LLM update</text>
+
+  <!-- Voting path -->
+  <path d="M115 600 C 300 600, 1455 600, 1455 600" class="arrow"/>
+  <text x="430" y="592" class="text">prompt_for_vote_initiation(+recent statement)</text>
+
+  <path d="M115 630 C 300 630, 630 630, 630 630" class="arrow"/>
+  <text x="290" y="622" class="text">update_vote_initiation_decision_memory</text>
+
+  <!-- Finalization -->
+  <path d="M115 740 C 300 740, 630 740, 630 740" class="arrow"/>
+  <text x="290" y="732" class="text">update_final_results_memory(result_content, earnings)</text>
+
+  <rect x="50" y="770" width="520" height="70" rx="6" class="note"/>
+  <text x="60" y="790" class="text">Post-append guardrail: simple events that bloat memory</text>
+  <text x="60" y="808" class="text">→ compress if > 90% limit via MemoryManager</text>
+
+  <!-- Legend -->
+  <rect x="1200" y="760" width="360" height="160" rx="6" class="note"/>
+  <text x="1210" y="778" class="text title">Instruction payload (always present)</text>
+  <text x="1210" y="796" class="text">Name, Role Description, Bank Balance</text>
+  <text x="1210" y="812" class="text">Phase, Round, Memory (full display)</text>
+  <text x="1210" y="828" class="text">Personality, Phase Instructions</text>
+  <text x="1210" y="844" class="text">Language Instruction, (exp. explanation)</text>
+</svg>
+

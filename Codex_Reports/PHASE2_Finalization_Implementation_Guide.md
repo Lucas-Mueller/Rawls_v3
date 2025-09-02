@@ -4,15 +4,17 @@ Purpose: Convert the refactor into a clean, fully consolidated Phase 2 flow that
 
 ## TL;DR (Engineer Checklist)
 
-- Make discussion history limit configurable via `Phase2Settings.public_history_max_length` (not hard-coded).
-- Route remaining “simple” memory writes (ballot selection, amount specification) through `MemoryService` instead of `SimpleMemoryManager`.
-- Add a focused integration test that asserts vote-initiation decisions are written by `MemoryService`.
-- Retire the now-unused `refactored_services_enabled` flag from settings and any stale wrappers (if any remain elsewhere).
-- Update docs to reflect the services-only architecture and the configurable history limit.
+- [completed] Make discussion history limit configurable via `Phase2Settings.public_history_max_length` (not hard-coded).
+- [partial] Route remaining “simple” memory writes (ballot selection, amount specification) through `MemoryService` instead of `SimpleMemoryManager`.
+- [completed] Add a focused integration test that asserts vote-initiation decisions are written by `MemoryService`.
+- [completed] Retire the now-unused `refactored_services_enabled` flag from settings and any stale wrappers (if any remain elsewhere).
+- [partial] Update docs to reflect the services-only architecture and the configurable history limit.
 
 ---
 
 ## 1) Configurable Discussion History Limit
+
+Status: completed
 
 Goal: Use config to control how much public discussion history is kept before truncation.
 
@@ -20,9 +22,9 @@ Goal: Use config to control how much public discussion history is kept before tr
   - `core/services/discussion_service.py`
   - `config/phase2_settings.py`
 
-- Steps:
-  - In `DiscussionService.__init__`, set `self.max_history_length = self.settings.public_history_max_length` instead of a hard-coded constant.
-  - Ensure `manage_discussion_history_length()` uses `self.max_history_length` (it already does; just make it read from settings).
+- Steps implemented:
+  - `DiscussionService.manage_discussion_history_length()` now reads `self.settings.public_history_max_length` directly for both threshold and truncation size.
+  - The previous hard-coded `100000` constant was removed.
 
 - Example change (DiscussionService):
   - Before:
@@ -38,6 +40,8 @@ Goal: Use config to control how much public discussion history is kept before tr
 
 ## 2) Centralize “Simple” Memory Writes in MemoryService
 
+Status: partial
+
 Goal: Eliminate direct `SimpleMemoryManager` calls for ballot selection and amount specification; use `MemoryService` for consistent truncation and guidance styles.
 
 - Files:
@@ -45,16 +49,16 @@ Goal: Eliminate direct `SimpleMemoryManager` calls for ballot selection and amou
   - `core/services/voting_service.py` (or `core/two_stage_voting_manager.py`, depending on where events are finalized)
   - `utils/selective_memory_manager.py` (to remove residual `SimpleMemoryManager` calls for these events)
 
-- Steps:
-  1) Add dedicated MemoryService methods:
-     - `async def update_ballot_selection_memory(agent, context, principle_name: str, **kwargs) -> str`
-     - `async def update_amount_specification_memory(agent, context, amount: str|int, **kwargs) -> str`
-     - Internally call `update_memory_selective(...)` with appropriate `MemoryEventType` and metadata. Reuse localization keys used by SimpleMemoryManager today to preserve wording.
-  2) Invoke these methods from the voting flow:
-     - In `VotingService` (after ballot capture) and amount specification steps (if applicable), call the new MemoryService methods with explicit values rather than relying on SelectiveMemoryManager pattern matching.
-  3) Remove direct SimpleMemoryManager usage for these events:
-     - In `utils/selective_memory_manager.py::_simple_memory_update`, replace branches for `BALLOT_SELECTION` and `AMOUNT_SPECIFICATION` with simple appends of preformatted content (or, better, stop calling `_simple_memory_update` for these events by moving their writes to `VotingService`).
-     - If removal is staged, gate the legacy path behind an internal constant and set it to off by default.
+- Steps implemented:
+  - New methods exist in `MemoryService`:
+    - `update_ballot_selection_memory(...)` at core/services/memory_service.py:485
+    - `update_amount_specification_memory(...)` at core/services/memory_service.py:524
+  - `utils/selective_memory_manager.py` no longer imports or calls `SimpleMemoryManager`; simple events append preformatted content.
+
+- Remaining work:
+  - Call `MemoryService.update_ballot_selection_memory` and `update_amount_specification_memory` from the voting flow when those events occur:
+    - Preferred: `VotingService` or `TwoStageVotingManager` invokes these methods at the moment of ballot choice and amount specification.
+  - Confirm that preformatted content paths actually run (add or adjust unit tests around ballot/amount writes).
 
 - Acceptance criteria:
   - No direct `SimpleMemoryManager.insert_secret_ballot_choice` or `.insert_amount_specification` calls in the codebase (outside MemoryService internals, if any).
@@ -64,10 +68,12 @@ Goal: Eliminate direct `SimpleMemoryManager` calls for ballot selection and amou
 
 ## 3) Guardrail Integration Test (MemoryService Write Path)
 
+Status: completed
+
 Goal: Ensure vote-initiation decisions are written via `MemoryService`, guarding against regressions.
 
 - Files:
-  - `tests/integration/` (new test file, e.g., `test_phase2_memory_write_paths.py`)
+  - `tests/integration/test_phase2_memory_write_paths.py`
 
 - Steps:
   - Arrange: Create a minimal Phase 2 config with 2 participants, 1–2 rounds, and deterministic behavior (seeded).
@@ -82,15 +88,17 @@ Goal: Ensure vote-initiation decisions are written via `MemoryService`, guarding
 
 ## 4) Retire `refactored_services_enabled` Flag
 
+Status: completed
+
 Goal: Simplify configuration surface; services are now always used.
 
 - Files:
   - `config/phase2_settings.py`
   - Any stale wrappers or conditionals in code paths outside `Phase2Manager` (most were already removed).
 
-- Steps:
-  - Deprecate: Keep the field for one release cycle but note it is unused in docstrings and comments; or remove it entirely if downstream configs are under our control.
-  - Remove leftover wrapper methods or dead branches that read this flag.
+- Steps implemented:
+  - `refactored_services_enabled` has been removed from `Phase2Settings`.
+  - Orchestrator and services no longer gate behavior on this flag.
 
 - Acceptance criteria:
   - No behavior changes; fewer conditional branches; no references to the flag in orchestrator code.
@@ -99,15 +107,18 @@ Goal: Simplify configuration surface; services are now always used.
 
 ## 5) Documentation and Logging Consistency
 
+Status: partial
+
 Goal: Reflect the services-first architecture and keep logs consistent.
 
 - Files:
   - `README.md` or project docs location
   - `PHASE2_Refactor_Alignment_Assessment.md` (already updated; keep in sync)
 
-- Steps:
+- Suggested steps:
   - Document: Ownership boundaries (DiscussionService, VotingService, MemoryService, SpeakingOrderService, CounterfactualsService) and the configurable history limit.
   - Verify `process_logger` still receives round start/complete and voting results; leave breadcrumbs for debugging (info-level is fine).
+  - Update any public docs or CONTRIBUTING notes to reflect that services are always on and flag was removed.
 
 - Acceptance criteria:
   - Updated docs reflect where to add/modify behavior (by service), plus how to tune history truncation.
@@ -118,10 +129,10 @@ Goal: Reflect the services-first architecture and keep logs consistent.
 
 - Current state (verified):
   - Phase2Manager is ~534 LOC and orchestrates services; statement retrieval goes through `DiscussionService.get_participant_statement_with_retry`.
-  - `MemoryService.update_vote_initiation_decision_memory` is in use from the manager; no direct SimpleMemoryManager calls remain in the manager.
-  - `utils/selective_memory_manager.py` still contains direct calls to `SimpleMemoryManager` for ballot and amount — this is the main target for centralization.
+  - `MemoryService.update_vote_initiation_decision_memory` is in use from the manager; no direct `SimpleMemoryManager` calls remain in the manager.
+  - `utils/selective_memory_manager.py` no longer uses `SimpleMemoryManager`; it now appends preformatted content for simple events.
+  - Voting flow has not yet been wired to call `MemoryService.update_ballot_selection_memory` and `.update_amount_specification_memory` — recommended to add.
   - Speaking order uses `SpeakingOrderService` with early service initialization.
 
 - Optional future cleanups:
   - If desired, migrate all “simple event” formatting (including ballot/amount) into MemoryService and reduce SelectiveMemoryManager to a thin router only.
-
