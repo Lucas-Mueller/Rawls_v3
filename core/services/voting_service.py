@@ -363,7 +363,7 @@ class VotingService:
         # Store vote result in discussion state (maintains compatibility with existing code)
         discussion_state.last_vote_result = vote_result
         discussion_state.vote_history.append(vote_result)
-        
+
         # Log and update discussion history based on consensus result
         if vote_result.consensus_reached:
             self._log_info(f"Consensus reached via enhanced two-stage voting: {vote_result.agreed_principle.principle.value}")
@@ -387,6 +387,24 @@ class VotingService:
             
             discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.consensus_tag')} {consensus_msg}"
             
+            # Set Phase2Manager-compatible consensus fields for early exit
+            try:
+                from models import GroupDiscussionResult
+                # Mark consensus on the discussion state for Phase2Manager lock checks
+                setattr(discussion_state, '_consensus_reached', True)
+                # Build a GroupDiscussionResult to allow early return from discussion loop
+                consensus_result = GroupDiscussionResult(
+                    consensus_reached=True,
+                    agreed_principle=vote_result.agreed_principle,
+                    final_round=discussion_state.round_number,
+                    discussion_history=discussion_state.public_history,
+                    vote_history=discussion_state.vote_history
+                )
+                setattr(discussion_state, '_consensus_result', consensus_result)
+            except Exception as e:
+                # Do not fail voting flow due to logging/compat concerns
+                self._log_warning(f"Failed to set consensus result on discussion state: {e}")
+        
         else:
             self._log_info(f"No consensus reached - disagreement details: {vote_result.disagreement_summary}")
             

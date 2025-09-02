@@ -104,6 +104,14 @@ class TwoStageVotingManager:
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
         self.principle_name_manager = get_principle_name_manager()
+        # Wire the language manager so display name lookups work without warnings
+        try:
+            if self.principle_name_manager and language_manager is not None:
+                self.principle_name_manager.language_manager = language_manager
+                # Clear cache to avoid stale names if language changed
+                self.principle_name_manager.clear_cache()
+        except Exception as e:
+            logger.warning(f"Failed to attach language manager to PrincipleNameManager: {e}")
         
         # Store settings reference and set defaults
         self.settings = settings

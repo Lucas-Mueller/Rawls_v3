@@ -91,6 +91,10 @@ class Phase2Manager:
             def debug(self, message: str):
                 # Route debug to info-level channel on the manager
                 self.manager._log_info(message)
+
+            def error(self, message: str):
+                # Route errors to warning channel to ensure visibility
+                self.manager._log_warning(message)
         
         logger_adapter = LoggerAdapter(self)
         

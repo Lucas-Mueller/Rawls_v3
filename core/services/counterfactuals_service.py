@@ -387,7 +387,7 @@ class CounterfactualsService:
                     final_rankings[participant_name] = ranking_result
                 
                 # Log detailed participant info if logger provided
-                if logger:
+                if logger and hasattr(logger, 'log_participant_summary'):
                     logger.log_participant_summary(
                         participant_name=participant_name,
                         final_earnings=final_earnings,
