@@ -119,6 +119,12 @@ class Phase2Settings(BaseModel):
         default=True,
         description="Enable two-stage structured voting"
     )
+    
+    # Refactoring feature flag
+    refactored_services_enabled: bool = Field(
+        default=False,
+        description="Enable refactored services for Phase 2 (SpeakingOrderService, DiscussionService)"
+    )
     two_stage_max_retries: int = Field(
         default=3,
         ge=1,

@@ -3,30 +3,20 @@ Phase 2 manager for group discussion and consensus building.
 """
 import asyncio
 import random
-import re
 import time
 from typing import List, Dict, Optional
-from agents import Agent, Runner
-try:
-    from agents.items import ToolCallItem, ToolCallOutputItem
-    HAS_SDK_TYPES = True
-except ImportError:
-    HAS_SDK_TYPES = False
+from agents import Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
-    ExperimentPhase, VoteResult, PrincipleChoice, GroupStatementResponse,
-    VotingResponse, Phase1Results, PrincipleRanking, PrincipleRankingResponse,
-    JusticePrinciple, CertaintyLevel
+    ExperimentPhase, PrincipleChoice, Phase1Results, PrincipleRanking
 )
 from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
-from core.distribution_generator import DistributionGenerator
-from utils.memory_manager import MemoryManager
 from utils.simple_memory_manager import SimpleMemoryManager
 from utils.selective_memory_manager import SelectiveMemoryManager, MemoryEventType
-from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.agent_centric_logger import AgentCentricLogger
 from utils.error_handling import AgentCommunicationError, ErrorSeverity, ExperimentErrorHandler
 from core.two_stage_voting_manager import TwoStageVotingManager
 
@@ -47,6 +37,14 @@ class Phase2Manager:
         # Load Phase 2 settings
         self.settings = experiment_config.phase2_settings if experiment_config and experiment_config.phase2_settings else Phase2Settings.get_default()
         
+        # Initialize refactored services if enabled
+        self._services_initialized = False
+        self.speaking_order_service = None
+        self.discussion_service = None
+        self.voting_service = None
+        self.memory_service = None
+        self.counterfactuals_service = None
+        
         # Add consensus lock for thread safety
         self._consensus_lock = asyncio.Lock()
         self._voting_in_progress = False
@@ -59,6 +57,65 @@ class Phase2Manager:
             "fallback_statements": 0,
             "quarantined_responses": 0
         }
+    
+    def _initialize_services(self):
+        """Initialize refactored services if the feature flag is enabled."""
+        if not self.settings.refactored_services_enabled or self._services_initialized:
+            return
+        
+        # Import services only when needed to avoid circular imports
+        from core.services import SpeakingOrderService, DiscussionService, VotingService, MemoryService, CounterfactualsService
+        
+        # Create logger adapters for services
+        class LoggerAdapter:
+            def __init__(self, phase2_manager):
+                self.manager = phase2_manager
+            
+            def log_info(self, message: str):
+                self.manager._log_info(message)
+            
+            def log_warning(self, message: str):
+                self.manager._log_warning(message)
+        
+        logger_adapter = LoggerAdapter(self)
+        
+        # Initialize services
+        self.speaking_order_service = SpeakingOrderService(
+            seed_manager=self.seed_manager,
+            settings=self.settings,
+            logger=logger_adapter
+        )
+        
+        self.discussion_service = DiscussionService(
+            language_manager=self.language_manager,
+            settings=self.settings,
+            logger=logger_adapter
+        )
+        
+        self.voting_service = VotingService(
+            language_manager=self.language_manager,
+            utility_agent=self.utility_agent,
+            settings=self.settings,
+            logger=logger_adapter
+        )
+        
+        self.memory_service = MemoryService(
+            language_manager=self.language_manager,
+            utility_agent=self.utility_agent,
+            settings=self.settings,
+            logger=logger_adapter,
+            config=self.config
+        )
+        
+        self.counterfactuals_service = CounterfactualsService(
+            language_manager=self.language_manager,
+            settings=self.settings,
+            logger=logger_adapter,
+            seed_manager=self.seed_manager
+        )
+        
+        self._services_initialized = True
+        self._log_info("Refactored services initialized")
     
     def _log_info(self, message: str):
         """Safe logging helper."""
@@ -99,6 +156,228 @@ class Phase2Manager:
         """Get localized income class label."""
         return self._get_localized_message(f"common.income_classes.{income_class}")
     
+    # Voting service wrapper methods (with feature flag support)
+    async def _prompt_for_vote_initiation_with_service(
+        self,
+        participant: 'ParticipantAgent',
+        context: ParticipantContext,
+        agent_recent_statement: str = None,
+        max_retries: int = 3
+    ) -> bool:
+        """Wrapper for vote initiation that uses VotingService when enabled."""
+        if self.settings.refactored_services_enabled and self.voting_service:
+            return await self.voting_service.prompt_for_vote_initiation(
+                participant=participant,
+                context=context,
+                agent_recent_statement=agent_recent_statement,
+                max_retries=max_retries
+            )
+        else:
+            return await self._prompt_for_vote_initiation(
+                participant, context, agent_recent_statement, max_retries
+            )
+    
+    async def _conduct_voting_process_with_service(
+        self,
+        initiator: 'ParticipantAgent',
+        contexts: List[ParticipantContext],
+        discussion_state: GroupDiscussionState,
+        agent_recent_statement: str = None
+    ) -> bool:
+        """Wrapper for voting process that uses VotingService when enabled."""
+        if self.settings.refactored_services_enabled and self.voting_service:
+            return await self.voting_service.conduct_voting_process(
+                participants=self.participants,
+                initiating_participant=initiator,
+                contexts=contexts,
+                discussion_state=discussion_state,
+                agent_recent_statement=agent_recent_statement,
+                error_handler=self.error_handler,
+                utility_agent=self.utility_agent
+            )
+        else:
+            return await self._conduct_voting_process(
+                initiator, contexts, discussion_state
+            )
+    
+    # Memory service wrapper methods (with feature flag support)
+    async def _update_memory_selective_with_service(
+        self,
+        agent: 'ParticipantAgent',
+        context: ParticipantContext,
+        content: str,
+        event_type: Optional[MemoryEventType] = None,
+        event_metadata: Optional[Dict] = None,
+        **kwargs
+    ) -> str:
+        """Wrapper for selective memory updates that uses MemoryService when enabled."""
+        if self.settings.refactored_services_enabled and self.memory_service:
+            return await self.memory_service.update_memory_selective(
+                agent=agent,
+                context=context,
+                content=content,
+                event_type=event_type,
+                event_metadata=event_metadata,
+                config=self.config,
+                error_handler=self.error_handler,
+                **kwargs
+            )
+        else:
+            return await SelectiveMemoryManager.update_memory_selective(
+                agent=agent,
+                context=context,
+                content=content,
+                event_type=event_type,
+                event_metadata=event_metadata,
+                config=self.config,
+                language_manager=self.language_manager,
+                error_handler=self.error_handler,
+                utility_agent=self.utility_agent,
+                **kwargs
+            )
+    
+    async def _update_discussion_memory_with_service(
+        self,
+        agent: 'ParticipantAgent',
+        context: ParticipantContext,
+        statement: str,
+        internal_reasoning: str = "",
+        round_num: int = 1,
+        include_internal_reasoning: bool = True,
+        **kwargs
+    ) -> str:
+        """Wrapper for discussion memory updates that uses MemoryService when enabled."""
+        if self.settings.refactored_services_enabled and self.memory_service:
+            return await self.memory_service.update_discussion_memory(
+                agent=agent,
+                context=context,
+                statement=statement,
+                internal_reasoning=internal_reasoning,
+                round_num=round_num,
+                include_internal_reasoning=include_internal_reasoning,
+                **kwargs
+            )
+        else:
+            # Build round_content similar to original implementation
+            round_content = f"Round {round_num}: Your statement: {statement}"
+            if include_internal_reasoning and internal_reasoning:
+                round_content += f"\nInternal reasoning: {internal_reasoning}"
+            
+            return await SelectiveMemoryManager.update_memory_selective(
+                agent=agent,
+                context=context,
+                content=round_content,
+                event_type=MemoryEventType.DISCUSSION_STATEMENT,
+                event_metadata={'round_number': round_num, 'participant_name': agent.name},
+                config=self.config,
+                language_manager=self.language_manager,
+                error_handler=self.error_handler,
+                utility_agent=self.utility_agent,
+                **kwargs
+            )
+    
+    async def _update_voting_phase_memories_with_service(
+        self,
+        contexts: List[ParticipantContext],
+        phase_name: str,
+        additional_info: str = "",
+        initiator_name: Optional[str] = None,
+        **kwargs
+    ) -> None:
+        """Wrapper for voting phase memory updates that uses MemoryService when enabled."""
+        if self.settings.refactored_services_enabled and self.memory_service:
+            await self.memory_service.update_all_memories_for_voting_phase(
+                participants=self.participants,
+                contexts=contexts,
+                phase_name=phase_name,
+                additional_info=additional_info,
+                initiator_name=initiator_name,
+                **kwargs
+            )
+        else:
+            # Original implementation
+            await self._update_all_memories_for_voting_phase(
+                contexts, phase_name, additional_info, initiator_name, **kwargs
+            )
+    
+    async def _update_final_results_memory_with_service(
+        self,
+        agent: 'ParticipantAgent',
+        context: ParticipantContext,
+        result_content: str,
+        final_earnings: float,
+        consensus_reached: bool,
+        **kwargs
+    ) -> str:
+        """Wrapper for final results memory updates that uses MemoryService when enabled."""
+        if self.settings.refactored_services_enabled and self.memory_service:
+            return await self.memory_service.update_final_results_memory(
+                agent=agent,
+                context=context,
+                result_content=result_content,
+                final_earnings=final_earnings,
+                consensus_reached=consensus_reached,
+                **kwargs
+            )
+        else:
+            formatted_content = f"Final Phase 2 Results: {result_content}"
+            return await SelectiveMemoryManager.update_memory_selective(
+                agent=agent,
+                context=context,
+                content=formatted_content,
+                event_type=MemoryEventType.FINAL_RESULTS,
+                event_metadata={'final_earnings': final_earnings, 'consensus_reached': consensus_reached},
+                config=self.config,
+                language_manager=self.language_manager,
+                error_handler=self.error_handler,
+                utility_agent=self.utility_agent,
+                **kwargs
+            )
+    
+    # Counterfactuals service wrapper methods (with feature flag support)
+    async def _apply_group_principle_and_calculate_payoffs_with_service(
+        self,
+        discussion_result: GroupDiscussionResult,
+        config: ExperimentConfiguration
+    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]]]:
+        """Wrapper for payoff calculations that uses CounterfactualsService when enabled."""
+        if self.settings.refactored_services_enabled and self.counterfactuals_service:
+            return await self.counterfactuals_service.apply_group_principle_and_calculate_payoffs(
+                discussion_result=discussion_result,
+                config=config,
+                participants=self.participants
+            )
+        else:
+            return await self._apply_group_principle_and_calculate_payoffs(discussion_result, config)
+    
+    async def _collect_final_rankings_with_service(
+        self,
+        contexts: List[ParticipantContext],
+        discussion_result: GroupDiscussionResult,
+        payoff_results: Dict[str, float],
+        assigned_classes: Dict[str, str],
+        alternative_earnings_by_agent: Dict[str, Dict[str, float]],
+        config: ExperimentConfiguration,
+        logger: Optional[AgentCentricLogger] = None
+    ) -> Dict[str, PrincipleRanking]:
+        """Wrapper for final rankings collection that uses CounterfactualsService when enabled."""
+        if self.settings.refactored_services_enabled and self.counterfactuals_service:
+            return await self.counterfactuals_service.collect_final_rankings(
+                contexts=contexts,
+                discussion_result=discussion_result,
+                payoff_results=payoff_results,
+                assigned_classes=assigned_classes,
+                alternative_earnings_by_agent=alternative_earnings_by_agent,
+                config=config,
+                participants=self.participants,
+                utility_agent=self.utility_agent,
+                logger=logger
+            )
+        else:
+            return await self._collect_final_rankings(
+                contexts, discussion_result, payoff_results, assigned_classes, 
+                alternative_earnings_by_agent, config, logger
+            )
     
     def _validate_constraint_amount(self, constraint_amount: Optional[int], participant_name: str = None) -> bool:
         """
@@ -147,6 +426,13 @@ class Phase2Manager:
         Returns:
             True if statement is valid, False otherwise
         """
+        # Initialize services if needed
+        self._initialize_services()
+        
+        # Use refactored service if enabled
+        if self.settings.refactored_services_enabled and self.discussion_service:
+            language = self.config.language if self.config else "English"
+            return self.discussion_service.validate_statement(statement, participant_name, language)
         if not statement:
             self._log_warning(f"Empty statement received from {participant_name}")
             return False
@@ -360,12 +646,12 @@ Please ensure your response contains a clear statement about your position on th
         )
         
         # Apply chosen principle and calculate payoffs
-        payoff_results, assigned_classes, alternative_earnings_by_agent = await self._apply_group_principle_and_calculate_payoffs(
+        payoff_results, assigned_classes, alternative_earnings_by_agent = await self._apply_group_principle_and_calculate_payoffs_with_service(
             discussion_result, config
         )
         
         # Final individual rankings
-        final_rankings = await self._collect_final_rankings(
+        final_rankings = await self._collect_final_rankings_with_service(
             participant_contexts, discussion_result, payoff_results, assigned_classes, alternative_earnings_by_agent, config, logger
         )
         
@@ -506,7 +792,7 @@ Please ensure your response contains a clear statement about your position on th
                 self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
                 
                 start_time = time.time()
-                statement, internal_reasoning, tool_call_info = await self._get_participant_statement_enhanced(
+                statement, internal_reasoning, _ = await self._get_participant_statement_enhanced(
                     participant, context, discussion_state, agent_config
                 )
                 response_time = time.time() - start_time
@@ -568,35 +854,20 @@ Please ensure your response contains a clear statement about your position on th
                     # Track that this participant was logged for this round
                     round_participants_logged.add(participant.name)
                 
-                # Create delta-focused round content
-                from utils.memory_content import build_phase2_delta
-                from config import ExperimentConfiguration
                 
                 # Extract configuration for memory guidance
                 include_reasoning = self.config.phase2_include_internal_reasoning_in_memory if self.config else False
                 memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
                 
-                round_content = build_phase2_delta(
-                    round_number=round_num,
-                    participant_name=participant.name,
-                    statement=statement,
-                    speaking_order_position=speaking_order_position + 1,
-                    internal_reasoning=internal_reasoning,
-                    include_internal_reasoning=include_reasoning,
-                    favored_principle=favored_principle
-                )
                 
                 # Update participant memory using selective routing for optimization
-                context.memory = await SelectiveMemoryManager.update_memory_selective(
-                    agent=participant, 
-                    context=context, 
-                    content=round_content, 
-                    event_type=MemoryEventType.DISCUSSION_STATEMENT,
-                    event_metadata={'round_number': round_num, 'participant_name': participant.name},
-                    config=self.config,
-                    language_manager=self.language_manager, 
-                    error_handler=self.error_handler, 
-                    utility_agent=self.utility_agent,
+                context.memory = await self._update_discussion_memory_with_service(
+                    agent=participant,
+                    context=context,
+                    statement=statement,
+                    internal_reasoning=internal_reasoning,
+                    round_num=round_num,
+                    include_internal_reasoning=include_reasoning,
                     memory_guidance_style=memory_guidance_style
                 )
                 contexts[participant_idx] = update_participant_context(
@@ -654,7 +925,7 @@ Please ensure your response contains a clear statement about your position on th
                 try:
                     # Get agent's recent statement for consistency
                     recent_statement = participant_recent_statements.get(participant.name, "")
-                    wants_vote = await self._prompt_for_vote_initiation(participant, context, recent_statement)
+                    wants_vote = await self._prompt_for_vote_initiation_with_service(participant, context, recent_statement)
                     vote_responses[participant.name] = wants_vote
                     
                     # Add simple memory insertion for vote initiation decision
@@ -670,8 +941,8 @@ Please ensure your response contains a clear statement about your position on th
                             if process_logger:
                                 process_logger.phase2_voting_initiated(round_num)
                                 
-                            consensus_reached = await self._conduct_voting_process(
-                                participant, contexts, discussion_state
+                            consensus_reached = await self._conduct_voting_process_with_service(
+                                participant, contexts, discussion_state, recent_statement
                             )
                             
                             vote_initiation_successful = True
@@ -768,6 +1039,18 @@ Please ensure your response contains a clear statement about your position on th
         Implements restriction from master plan: if one round ends with Agent X, 
         the next round cannot start with Agent X.
         """
+        # Initialize services if needed
+        self._initialize_services()
+        
+        # Use refactored service if enabled
+        if self.settings.refactored_services_enabled and self.speaking_order_service:
+            return self.speaking_order_service.generate_speaking_order(
+                round_num=round_num,
+                num_participants=len(contexts),
+                randomize_speaking_order=config.randomize_speaking_order,
+                strategy=config.speaking_order_strategy,
+                last_round_finisher=last_round_finisher
+            )
         participant_indices = list(range(len(contexts)))
         num_participants = len(participant_indices)
         
@@ -1158,384 +1441,23 @@ Please ensure your response contains a clear statement about your position on th
     
     
     
-    async def _apply_group_principle_and_calculate_payoffs(
-        self,
-        discussion_result: GroupDiscussionResult,
-        config: ExperimentConfiguration
-    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]]]:
-        """Apply chosen principle or random assignment if no consensus.
-        
-        Returns:
-            tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict)
-        """
-        
-        # Generate new distribution set for Phase 2 payoffs
-        distribution_set = DistributionGenerator.generate_dynamic_distribution(
-            config.distribution_range_phase2
-        )
-        
-        payoffs = {}
-        assigned_classes = {}
-        consensus_principle = None
-        constraint_amount = None
-        
-        if discussion_result.consensus_reached and discussion_result.agreed_principle:
-            # Apply agreed principle
-            consensus_principle = discussion_result.agreed_principle
-            constraint_amount = consensus_principle.constraint_amount
-            
-            chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-                distribution_set.distributions, discussion_result.agreed_principle, config.income_class_probabilities
-            )
-            
-            # Assign each participant to income class and calculate payoff
-            for participant in self.participants:
-                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities)
-                payoffs[participant.name] = earnings
-                assigned_classes[participant.name] = str(assigned_class)
-        else:
-            # Random assignment - each participant gets random income class from random distribution
-            for participant in self.participants:
-                if self.seed_manager:
-                    random_distribution = self.seed_manager.random.choice(distribution_set.distributions)
-                else:
-                    random_distribution = random.choice(distribution_set.distributions)
-                assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities)
-                payoffs[participant.name] = earnings
-                assigned_classes[participant.name] = str(assigned_class)
-        
-        # Calculate counterfactual earnings for transparency
-        alternative_earnings_by_agent = await self._calculate_phase2_counterfactuals(
-            distribution_set, assigned_classes, consensus_principle, constraint_amount
-        )
-        
-        return payoffs, assigned_classes, alternative_earnings_by_agent
     
-    async def _calculate_phase2_counterfactuals(
-        self,
-        distribution_set,
-        assigned_classes: Dict[str, str],
-        consensus_principle: Optional[PrincipleChoice] = None,
-        constraint_amount: Optional[int] = None
-    ) -> Dict[str, Dict[str, float]]:
-        """
-        Calculate what each agent would earn under all four principles
-        using their assigned income class from Phase 2.
-        
-        Args:
-            distribution_set: The distribution set generated for Phase 2
-            assigned_classes: Dict mapping participant names to their assigned income classes
-            consensus_principle: The principle chosen by consensus (if any)
-            constraint_amount: The constraint amount used (if any)
-            
-        Returns:
-            Dict[agent_name, Dict[principle_key, earnings]]
-        """
-        from models import JusticePrinciple, PrincipleChoice, IncomeClass
-        
-        alternative_earnings_by_agent = {}
-        
-        for participant_name, class_str in assigned_classes.items():
-            # Convert string back to enum - handle different formats
-            if class_str.startswith('IncomeClass.'):
-                # Handle enum string representation like 'IncomeClass.high'
-                enum_value = class_str.split('.')[1].lower()
-            else:
-                # Handle direct value like 'high' or 'MEDIUM HIGH' 
-                enum_value = class_str.lower().replace(' ', '_')
-            
-            assigned_class = IncomeClass(enum_value)
-            
-            # Use the same method as Phase 1 for calculating counterfactuals
-            alternative_earnings = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
-                distribution_set.distributions,
-                assigned_class,
-                constraint_amount
-            )
-            
-            alternative_earnings_by_agent[participant_name] = alternative_earnings
-            
-        return alternative_earnings_by_agent
     
-    async def _build_phase2_detailed_results(
-        self,
-        participant_name: str,
-        final_earnings: float,
-        assigned_class: str,
-        alternative_earnings: Dict[str, float],
-        consensus_result: GroupDiscussionResult
-    ) -> str:
-        """
-        Build detailed Phase 2 results matching Phase 1 transparency level.
-        Includes class assignment and full counterfactual analysis.
-        """
-        language_manager = self.language_manager
-        
-        # Build consensus status message
-        if consensus_result.consensus_reached:
-            if consensus_result.agreed_principle.constraint_amount:
-                consensus_status = self._get_localized_message("voting_results.consensus_with_constraint", 
-                                                             principle_name=consensus_result.agreed_principle.principle.value,
-                                                             constraint_amount=consensus_result.agreed_principle.constraint_amount)
-            else:
-                consensus_status = self._get_localized_message("voting_results.consensus_reached", 
-                                                             principle_name=consensus_result.agreed_principle.principle.value)
-        else:
-            consensus_status = self._get_localized_message("phase2_no_consensus")
-        
-        # Format the class name for display using localization
-        formatted_class = self._get_localized_income_class(assigned_class.lower())
-        
-        # Build the header
-        language_manager = self.language_manager
-        result_content = f"""{self._get_localized_message('results.phase2_header')}
-
-{self._get_localized_message('results.consensus_status')} {consensus_status}
-{language_manager.get('memory_field_labels.your_income_assignment')} {formatted_class}
-{language_manager.get('memory_field_labels.your_earnings')} ${final_earnings:.2f}
-
-{self._get_localized_message('results.counterfactual_header')}"""
-        
-        # Get principle display names
-        principle_display_names = {
-            "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
-            "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
-            "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
-            "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
-        }
-        
-        # Add table header
-        principle_header = self._get_localized_message('results.table_headers.principle')
-        income_header = self._get_localized_message('results.table_headers.income')
-        earnings_header = self._get_localized_message('results.table_headers.earnings')
-        
-        result_content += f"""
-┌─────────────────────────────────────────┬──────────┬──────────┐
-│ {principle_header:<39} │ {income_header:>8} │ {earnings_header:>8} │
-├─────────────────────────────────────────┼──────────┼──────────┤"""
-        
-        # Add each principle's earnings
-        for principle_key, alt_earnings in alternative_earnings.items():
-            principle_name = principle_display_names.get(principle_key, principle_key)
-            # Calculate income from earnings (reverse the payoff calculation)
-            alt_income = int(alt_earnings * 10000)  # Convert earnings back to income
-            
-            result_content += f"\n│ {principle_name:<39} │ ${alt_income:,}".ljust(9) + f" │ ${alt_earnings:.2f}".ljust(8) + " │"
-        
-        # Close the table
-        result_content += "\n└─────────────────────────────────────────┴──────────┴──────────┘"
-        
-        # Add key insights
-        if alternative_earnings:
-            current_earnings = final_earnings
-            best_earnings = max(alternative_earnings.values())
-            worst_earnings = min(alternative_earnings.values())
-            
-            # Find which principles gave best/worst outcomes
-            best_principle = next(k for k, v in alternative_earnings.items() if v == best_earnings)
-            worst_principle = next(k for k, v in alternative_earnings.items() if v == worst_earnings)
-            
-            best_principle_name = principle_display_names.get(best_principle, best_principle)
-            worst_principle_name = principle_display_names.get(worst_principle, worst_principle)
-            
-            best_diff = best_earnings - current_earnings
-            worst_diff = current_earnings - worst_earnings
-            
-            result_content += f"\n\n{self._get_localized_message('results.key_insights')}"
-            
-            if best_diff > 0:
-                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_more', best_principle=best_principle_name, best_diff=best_diff)}"
-            elif best_diff == 0:
-                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_same')}"
-            else:
-                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_best_same')}"
-                
-            if worst_diff > 0:
-                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_worst_more', worst_principle=worst_principle_name, worst_diff=worst_diff)}"
-            elif worst_diff == 0:
-                result_content += f"\n{self._get_localized_message('phase2_counterfactual_insights_worst_same')}"
-        
-        return result_content
     
-    async def _collect_final_rankings(
-        self,
-        contexts: List[ParticipantContext],
-        discussion_result: GroupDiscussionResult,
-        payoff_results: Dict[str, float],
-        assigned_classes: Dict[str, str],
-        alternative_earnings_by_agent: Dict[str, Dict[str, float]],
-        config: ExperimentConfiguration,
-        logger: AgentCentricLogger = None
-    ) -> Dict[str, PrincipleRanking]:
-        """Collect final principle rankings from all participants."""
-        
-        final_ranking_tasks = []
-        
-        for i, participant in enumerate(self.participants):
-            context = contexts[i]
-            agent_config = config.agents[i]
-            
-            # Update context with final results using agent-managed memory - Enhanced transparency
-            final_earnings = payoff_results[participant.name]
-            assigned_class = assigned_classes[participant.name]
-            alternative_earnings = alternative_earnings_by_agent[participant.name]
-            
-            # Check transparency configuration
-            transparency_config = getattr(config, 'phase2_enhanced_transparency', None)
-            use_enhanced_transparency = (
-                transparency_config is None or  # Default to enhanced if not configured
-                (transparency_config and transparency_config.enabled)
-            )
-            
-            if use_enhanced_transparency:
-                # Build detailed results matching Phase 1 transparency level
-                result_content = await self._build_phase2_detailed_results(
-                    participant.name,
-                    final_earnings,
-                    assigned_class,
-                    alternative_earnings,
-                    discussion_result
-                )
-            else:
-                # Use basic results (original behavior)
-                result_content = f"{self._get_localized_message('results.phase2_header')}: Phase 2 earnings: ${final_earnings:.2f}. "
-                if discussion_result.consensus_reached:
-                    result_content += self._get_localized_message("voting_results.consensus_reached", principle_name=discussion_result.agreed_principle.principle.value) + "."
-                else:
-                    result_content += self._get_localized_message("phase2_no_consensus") + "."
-            
-            # Update memory with final results using selective routing
-            context.memory = await SelectiveMemoryManager.update_memory_selective(
-                agent=participant, 
-                context=context, 
-                content=f"Final Phase 2 Results: {result_content}",
-                event_type=MemoryEventType.FINAL_RESULTS,
-                event_metadata={'final_earnings': final_earnings, 'consensus_reached': discussion_result.consensus_reached},
-                config=self.config,
-                language_manager=self.language_manager, 
-                error_handler=self.error_handler, 
-                utility_agent=self.utility_agent
-            )
-            
-            updated_context = update_participant_context(
-                context, balance_change=final_earnings
-            )
-            
-            task = asyncio.create_task(
-                self._get_final_ranking(participant, updated_context, agent_config)
-            )
-            assigned_class = assigned_classes[participant.name]
-            final_ranking_tasks.append((task, participant.name, assigned_class, final_earnings, context.memory, updated_context.bank_balance))
-        
-        # Gather just the tasks for asyncio
-        tasks = [task_info[0] for task_info in final_ranking_tasks]
-        rankings = await asyncio.gather(*tasks)
-        
-        # Log post-discussion state with final rankings and return dictionary
-        final_rankings = {}
-        for i, ranking in enumerate(rankings):
-            task_info = final_ranking_tasks[i]
-            participant_name = task_info[1]
-            assigned_class = task_info[2]
-            final_earnings = task_info[3]
-            memory_state = task_info[4]
-            bank_balance = task_info[5]
-            
-            # Log post-discussion state with actual ranking
-            if logger:
-                # Extract individual vote information for this participant
-                final_vote, vote_timestamp = self._extract_participant_vote_info(
-                    participant_name, discussion_result, logger
-                )
-                
-                logger.log_post_discussion(
-                    participant_name,
-                    assigned_class,
-                    final_earnings,
-                    ranking,
-                    memory_state,
-                    bank_balance,
-                    final_vote=final_vote,
-                    vote_timestamp=vote_timestamp
-                )
-            
-            final_rankings[participant_name] = ranking
-        
-        return final_rankings
-    
-    def _extract_participant_vote_info(
-        self, 
-        participant_name: str, 
-        discussion_result: GroupDiscussionResult, 
-        logger: AgentCentricLogger
-    ) -> tuple[Optional[str], Optional[str]]:
-        """
-        Extract individual vote information for a specific participant.
-        
-        Args:
-            participant_name: Name of the participant to extract vote info for
-            discussion_result: The discussion result containing vote history
-            logger: The agent-centric logger containing voting history
-            
-        Returns:
-            Tuple of (final_vote, vote_timestamp) where both may be None if no vote found
-        """
-        # Try to extract from agent logger's voting history first (most reliable)
-        if (logger and 
-            hasattr(logger, 'voting_history') and 
-            logger.voting_history and
-            logger.voting_history.vote_rounds):
-            
-            # Get the most recent vote round
-            for vote_round in reversed(logger.voting_history.vote_rounds):
-                if vote_round.participant_votes:
-                    for vote_detail in vote_round.participant_votes:
-                        if vote_detail["participant_name"] == participant_name:
-                            assessed_choice = vote_detail["assessed_choice"]
-                            vote_timestamp = vote_detail.get("vote_timestamp")
-                            
-                            # Don't return parsing failures as valid votes
-                            if assessed_choice and assessed_choice != "PARSING_FAILED":
-                                return assessed_choice, vote_timestamp
-        
-        # Fallback: Try to extract from discussion result vote history (less reliable for individual votes)
-        if (discussion_result.vote_history and 
-            len(discussion_result.vote_history) > 0):
-            
-            last_vote = discussion_result.vote_history[-1]
-            if last_vote.votes:
-                # This is less reliable as it assumes vote order matches participant order
-                # But it's a fallback in case voting history isn't properly populated
-                for i, participant in enumerate(self.participants):
-                    if participant.name == participant_name and i < len(last_vote.votes):
-                        vote = last_vote.votes[i]
-                        if vote:
-                            timestamp = last_vote.timestamp.isoformat() if last_vote.timestamp else None
-                            return vote.principle.value, timestamp
-        
-        # No vote information found
-        return None, None
-    
-    async def _get_final_ranking(
-        self,
-        participant: ParticipantAgent,
-        context: ParticipantContext,
-        agent_config: AgentConfiguration
-    ) -> PrincipleRanking:
-        """Get participant's final principle ranking after Phase 2."""
-        
-        language_manager = self.language_manager
-        final_ranking_prompt = language_manager.get("prompts.phase2_final_ranking_prompt")
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        return await self.utility_agent.parse_principle_ranking_enhanced(text_response)
     
     def _build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int) -> str:
         """Build prompt for internal reasoning before public statement."""
+        # Initialize services if needed
+        self._initialize_services()
+        
+        # Use refactored service if enabled
+        if self.settings.refactored_services_enabled and self.discussion_service:
+            return self.discussion_service.build_internal_reasoning_prompt(
+                discussion_state=discussion_state,
+                round_num=round_num,
+                max_rounds=self.config.phase2_rounds
+            )
+        
         language_manager = self.language_manager
         
         return language_manager.get("prompts.phase2_internal_reasoning",
@@ -1545,10 +1467,23 @@ Please ensure your response contains a clear statement about your position on th
     
     def _build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, internal_reasoning: str = "") -> str:
         """Build prompt for group discussion round with formal voting support."""
+        # Initialize services if needed
+        self._initialize_services()
+        
+        # Use refactored service if enabled
+        if self.settings.refactored_services_enabled and self.discussion_service:
+            participant_names = [participant.name for participant in self.participants]
+            return self.discussion_service.build_discussion_prompt(
+                discussion_state=discussion_state,
+                round_num=round_num,
+                max_rounds=self.config.phase2_rounds,
+                participant_names=participant_names,
+                internal_reasoning=internal_reasoning
+            )
+        
         language_manager = self.language_manager
         
         # Generate dynamic participant information
-        num_participants = len(self.participants)
         participant_names = [participant.name for participant in self.participants]
         
         group_participants = self._format_group_composition(participant_names)
@@ -1983,30 +1918,30 @@ Please ensure your response contains a clear statement about your position on th
             initiator_name: Name of the participant who initiated voting (for initiation phase)
         """
         for i, context in enumerate(contexts):
-            # Get localized voting phase message
-            if phase_name == "initiation" and initiator_name:
-                memory_content = self.language_manager.get(
-                    f"voting_phases.{phase_name}", 
-                    initiator_name=initiator_name
-                )
-            else:
-                memory_content = self.language_manager.get(f"voting_phases.{phase_name}")
-            
-            # Add any additional information
-            if additional_info:
-                memory_content += f" {additional_info}"
-            
-            # Update participant memory using selective routing
-            context.memory = await SelectiveMemoryManager.update_memory_selective(
-                agent=self.participants[i], 
-                context=context, 
-                content=memory_content,
+            # Update participant memory using selective routing - use service wrapper for future MemoryService support
+            context.memory = await self._update_memory_selective_with_service(
+                agent=self.participants[i],
+                context=context,
+                content=self._build_voting_phase_memory_content(phase_name, additional_info, initiator_name),
                 event_type=MemoryEventType.PHASE_TRANSITION,
                 event_metadata={'phase_name': phase_name, 'initiator_name': initiator_name if 'initiator_name' in locals() else None},
-                config=self.config,
-                language_manager=self.language_manager,
-                error_handler=self.error_handler,
-                utility_agent=self.utility_agent,
                 memory_guidance_style=self.config.memory_guidance_style if self.config else "narrative"
             )
+    
+    def _build_voting_phase_memory_content(self, phase_name: str, additional_info: str = "", initiator_name: str = None) -> str:
+        """Build memory content for voting phase transitions."""
+        # Get localized voting phase message
+        if phase_name == "initiation" and initiator_name:
+            memory_content = self.language_manager.get(
+                f"voting_phases.{phase_name}", 
+                initiator_name=initiator_name
+            )
+        else:
+            memory_content = self.language_manager.get(f"voting_phases.{phase_name}")
+        
+        # Add any additional information
+        if additional_info:
+            memory_content += f" {additional_info}"
+        
+        return memory_content
     
