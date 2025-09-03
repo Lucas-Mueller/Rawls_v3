@@ -63,14 +63,13 @@ class MemoryService:
     """
     Unified memory management service for Phase2Manager.
     
-    Handles all memory updates with consistent guidance styles, content truncation,
-    and intelligent routing between simple direct insertion and complex LLM updates.
+    Handles all memory updates with consistent guidance styles and intelligent
+    routing between simple direct insertion and complex LLM updates.
     
     Key responsibilities:
-    - Discussion statement memory updates with truncation
+    - Discussion statement memory updates with full content preservation
     - Voting phase memory updates (initiation, confirmation, ballot)
     - Final results memory updates with counterfactual information
-    - Content truncation rules (statements ≤300 chars, reasoning ≤200 chars)
     - Consistent memory guidance style application
     - Event classification and routing optimization
     """
@@ -98,10 +97,6 @@ class MemoryService:
         self.settings = settings
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
-        
-        # Content truncation limits
-        self.statement_max_chars = 300
-        self.reasoning_max_chars = 200
         
         # Memory guidance style from config (falls back to 'narrative')
         self.memory_guidance_style = getattr(config, 'memory_guidance_style', 'narrative') if config else 'narrative'
@@ -376,53 +371,20 @@ class MemoryService:
     
     def apply_content_truncation(self, content: str, event_type: Optional[MemoryEventType] = None) -> str:
         """
-        Apply content truncation rules based on event type and content analysis.
+        Apply content processing based on event type.
         
-        Truncation policy:
-        - Statements: ≤300 characters (preserves meaning while preventing memory bloat)
-        - Internal reasoning: ≤200 characters (less critical for memory continuity)
-        - Other content: No truncation (full context preserved)
+        Content policy:
+        - Discussion content: Pass through unchanged to preserve complete reasoning
+        - Other content: Pass through unchanged (full context preserved)
         
         Args:
-            content: Original content to potentially truncate
-            event_type: Event type for context-aware truncation
+            content: Original content to process
+            event_type: Event type for context-aware processing
             
         Returns:
-            Truncated content if applicable, original content otherwise
+            Original content unchanged
         """
-        if not content:
-            return content
-        
-        # Extract statement and reasoning parts for discussion events
-        if event_type == MemoryEventType.DISCUSSION_STATEMENT:
-            lines = content.split('\n')
-            truncated_lines = []
-            
-            for line in lines:
-                # Handle localized round statement format
-                round_prefix = self.language_manager.get("memory.round_prefix", default="Round ")
-                statement_key = self.language_manager.get("memory.statement_key", default="statement:")
-                reasoning_prefix = self.language_manager.get("memory.reasoning_prefix", default="Internal reasoning:")
-                
-                if line.startswith(round_prefix) and statement_key in line:
-                    # Extract statement part
-                    statement_part = line.split(statement_key, 1)[1].strip() if statement_key in line else line
-                    if len(statement_part) > self.statement_max_chars:
-                        statement_part = statement_part[:self.statement_max_chars].rstrip() + '...'
-                    truncated_lines.append(line.split(statement_key, 1)[0] + statement_key + ' ' + statement_part)
-                elif line.startswith(reasoning_prefix):
-                    # Extract reasoning part
-                    reasoning_part = line.split(':', 1)[1].strip() if ':' in line else line
-                    if len(reasoning_part) > self.reasoning_max_chars:
-                        reasoning_part = reasoning_part[:self.reasoning_max_chars].rstrip() + '...'
-                    truncated_lines.append(reasoning_prefix + ' ' + reasoning_part)
-                else:
-                    # Keep other lines as-is (metadata, formatting)
-                    truncated_lines.append(line)
-            
-            return '\n'.join(truncated_lines)
-        
-        # For non-discussion events, return content as-is (no truncation needed)
+        # All content now passes through unchanged to preserve complete context
         return content
     
     async def update_vote_initiation_decision_memory(

@@ -91,68 +91,46 @@ class TestMemoryServiceFormatConsistency:
         """Golden test for English discussion memory formatting."""
         service = self.create_memory_service(self.english_language_manager)
         
-        # Test truncation behavior for long statements
+        # Test content preservation for long statements  
         long_statement = "I believe we should adopt the principle of maximizing floor income because it provides the greatest protection for the most vulnerable members of our society. This approach ensures that everyone has a basic standard of living that allows them to participate meaningfully in economic and social life."
+        content = f"Round 3: Your statement: {long_statement}\nInternal reasoning: This seems most equitable given our group composition."
         
-        truncated_result = service.apply_content_truncation(
-            f"Round 3: Your statement: {long_statement}\nInternal reasoning: This seems most equitable given our group composition.",
-            MemoryEventType.DISCUSSION_STATEMENT
-        )
+        result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
         
-        # Verify statement truncation
-        lines = truncated_result.split('\n')
-        statement_line = next(line for line in lines if 'Your statement:' in line)
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        # The statement is exactly 299 characters, so it should not be truncated
-        expected_statement = "I believe we should adopt the principle of maximizing floor income because it provides the greatest protection for the most vulnerable members of our society. This approach ensures that everyone has a basic standard of living that allows them to participate meaningfully in economic and social life."
-        
-        assert statement_part == expected_statement
-        assert len(statement_part) == 299  # Verify exact length
-        assert not statement_part.endswith('...')  # No truncation
-        assert "Internal reasoning: This seems most equitable given our group composition." in truncated_result
+        # Verify complete content preservation  
+        assert result == content  # Content should be unchanged
+        assert long_statement in result
+        assert "Internal reasoning: This seems most equitable given our group composition." in result
     
     def test_spanish_discussion_memory_format_golden(self):
         """Golden test for Spanish discussion memory formatting.""" 
         service = self.create_memory_service(self.spanish_language_manager)
         
-        # Test with Spanish content
+        # Test content preservation for Spanish content
         spanish_statement = "Creo que deberíamos adoptar el principio de maximizar los ingresos mínimos porque proporciona la mayor protección para los miembros más vulnerables de nuestra sociedad. Este enfoque asegura que todos tengan un nivel básico de vida que les permita participar significativamente en la vida económica y social."
+        content = f"Round 2: Your statement: {spanish_statement}\nInternal reasoning: Esto parece más equitativo."
         
-        truncated_result = service.apply_content_truncation(
-            f"Round 2: Your statement: {spanish_statement}\nInternal reasoning: Esto parece más equitativo.",
-            MemoryEventType.DISCUSSION_STATEMENT
-        )
+        result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
         
-        lines = truncated_result.split('\n')
-        statement_line = next(line for line in lines if 'Your statement:' in line)
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        # Spanish text should be truncated properly
-        assert len(statement_part) <= 303  # 300 + '...'
-        assert statement_part.endswith('...')
-        assert "Internal reasoning: Esto parece más equitativo." in truncated_result
+        # Verify complete content preservation
+        assert result == content  # Content should be unchanged
+        assert spanish_statement in result
+        assert "Internal reasoning: Esto parece más equitativo." in result
     
     def test_chinese_discussion_memory_format_golden(self):
         """Golden test for Chinese discussion memory formatting."""
         service = self.create_memory_service(self.chinese_language_manager)
         
-        # Test with Chinese content
+        # Test content preservation for Chinese content
         chinese_statement = "我认为我们应该采用最大化最低收入的原则，因为它为我们社会中最脆弱的成员提供了最大的保护。这种方法确保每个人都有基本的生活标准，使他们能够有意义地参与经济和社会生活。我相信这是最公正的选择，特别是考虑到我们群体的组成。"
+        content = f"Round 1: Your statement: {chinese_statement}\nInternal reasoning: 这似乎最公平。"
         
-        truncated_result = service.apply_content_truncation(
-            f"Round 1: Your statement: {chinese_statement}\nInternal reasoning: 这似乎最公平。",
-            MemoryEventType.DISCUSSION_STATEMENT
-        )
+        result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
         
-        lines = truncated_result.split('\n')
-        statement_line = next(line for line in lines if 'Your statement:' in line)
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        # Chinese text should be truncated properly
-        assert len(statement_part) <= 303  # 300 + '...'
-        assert statement_part.endswith('...')
-        assert "Internal reasoning: 这似乎最公平。" in truncated_result
+        # Verify complete content preservation
+        assert result == content  # Content should be unchanged
+        assert chinese_statement in result
+        assert "Internal reasoning: 这似乎最公平。" in result
     
     @pytest.mark.asyncio
     async def test_english_voting_phase_memory_format_golden(self):
@@ -257,55 +235,27 @@ class TestMemoryServiceFormatConsistency:
             assert metadata['final_earnings'] == 15500.0
             assert metadata['consensus_reached'] is True
     
-    def test_truncation_boundary_conditions_golden(self):
-        """Golden test for truncation boundary conditions."""
+    def test_content_preservation_all_lengths_golden(self):
+        """Golden test for content preservation across all lengths."""
         service = self.create_memory_service(self.english_language_manager)
         
-        # Test exact 300-character statement (should not be truncated)
-        exact_300_char_statement = "A" * 300
-        content_300 = f"Round 1: Your statement: {exact_300_char_statement}\nInternal reasoning: Short"
+        # Test various statement lengths - all should be preserved
+        for length in [50, 300, 301, 500, 1000]:
+            statement = "A" * length
+            content = f"Round 1: Your statement: {statement}\nInternal reasoning: Short"
+            
+            result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
+            assert result == content  # All content should be preserved unchanged
+            assert statement in result
         
-        result_300 = service.apply_content_truncation(content_300, MemoryEventType.DISCUSSION_STATEMENT)
-        statement_line = next(line for line in result_300.split('\n') if 'Your statement:' in line)
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        assert len(statement_part) == 300  # Exact match, no truncation
-        assert not statement_part.endswith('...')
-        
-        # Test 301-character statement (should be truncated)
-        over_300_char_statement = "A" * 301
-        content_301 = f"Round 1: Your statement: {over_300_char_statement}\nInternal reasoning: Short"
-        
-        result_301 = service.apply_content_truncation(content_301, MemoryEventType.DISCUSSION_STATEMENT)
-        statement_line = next(line for line in result_301.split('\n') if 'Your statement:' in line)
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        assert len(statement_part) == 303  # 300 + '...'
-        assert statement_part.endswith('...')
-        assert statement_part.startswith('A' * 297)  # First 297 chars + ...
-        
-        # Test exact 200-character reasoning (should not be truncated)  
-        exact_200_char_reasoning = "B" * 200
-        content_reasoning_200 = f"Round 1: Your statement: Short\nInternal reasoning: {exact_200_char_reasoning}"
-        
-        result_reasoning_200 = service.apply_content_truncation(content_reasoning_200, MemoryEventType.DISCUSSION_STATEMENT)
-        reasoning_line = next(line for line in result_reasoning_200.split('\n') if 'Internal reasoning:' in line)
-        reasoning_part = reasoning_line.split(':', 1)[1].strip()
-        
-        assert len(reasoning_part) == 200  # Exact match, no truncation
-        assert not reasoning_part.endswith('...')
-        
-        # Test 201-character reasoning (should be truncated)
-        over_200_char_reasoning = "B" * 201  
-        content_reasoning_201 = f"Round 1: Your statement: Short\nInternal reasoning: {over_200_char_reasoning}"
-        
-        result_reasoning_201 = service.apply_content_truncation(content_reasoning_201, MemoryEventType.DISCUSSION_STATEMENT)
-        reasoning_line = next(line for line in result_reasoning_201.split('\n') if 'Internal reasoning:' in line)
-        reasoning_part = reasoning_line.split(':', 1)[1].strip()
-        
-        assert len(reasoning_part) == 203  # 200 + '...'
-        assert reasoning_part.endswith('...')
-        assert reasoning_part.startswith('B' * 197)  # First 197 chars + ...
+        # Test various reasoning lengths - all should be preserved  
+        for length in [50, 200, 201, 300, 500]:
+            reasoning = "B" * length
+            content = f"Round 1: Your statement: Short\nInternal reasoning: {reasoning}"
+            
+            result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
+            assert result == content  # All content should be preserved unchanged
+            assert reasoning in result
     
     def test_memory_content_preservation_across_languages_golden(self):
         """Golden test for memory content preservation across different languages."""
@@ -323,15 +273,10 @@ class TestMemoryServiceFormatConsistency:
             content = f"Round 2: Your statement: {statement}\nInternal reasoning: {reasoning}"
             result = service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
             
-            # Verify structure is preserved
-            lines = result.split('\n')
-            assert len(lines) == 2
-            assert lines[0].startswith('Round 2: Your statement:')
-            assert lines[1].startswith('Internal reasoning:')
-            
-            # Verify content is preserved (no truncation for short content)
-            assert statement in lines[0]
-            assert reasoning in lines[1]
+            # Verify content is completely preserved
+            assert result == content
+            assert statement in result
+            assert reasoning in result
     
     def test_non_discussion_content_preservation_golden(self):
         """Golden test for non-discussion content preservation."""

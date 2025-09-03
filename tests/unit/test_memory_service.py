@@ -30,8 +30,6 @@ class TestMemoryServiceInitialization:
         assert service.language_manager == language_manager
         assert service.utility_agent == utility_agent
         assert service.settings == settings
-        assert service.statement_max_chars == 300
-        assert service.reasoning_max_chars == 200
         assert service.memory_guidance_style == 'narrative'  # Default
     
     def test_memory_service_init_with_custom_guidance_style(self):
@@ -69,35 +67,29 @@ class TestMemoryServiceTruncation:
         settings = Phase2Settings()
         return MemoryService(language_manager, utility_agent, settings)
     
-    def test_discussion_statement_truncation_long_statement(self, memory_service):
-        """Test truncation of long discussion statements."""
-        long_statement = "This is a very long statement that exceeds the 300 character limit. " * 10
+    def test_discussion_statement_no_truncation_long_statement(self, memory_service):
+        """Test that long discussion statements pass through unchanged."""
+        long_statement = "This is a very long statement that exceeds the former 300 character limit. " * 10
         content = f"Round 1: Your statement: {long_statement}\nInternal reasoning: Some reasoning"
         
-        truncated = memory_service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
+        result = memory_service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
         
-        # Extract statement part to verify truncation
-        statement_line = [line for line in truncated.split('\n') if 'Your statement:' in line][0]
-        statement_part = statement_line.split('statement:', 1)[1].strip()
-        
-        assert len(statement_part) <= 303  # 300 + '...'
-        assert statement_part.endswith('...')
-        assert 'Internal reasoning:' in truncated  # Reasoning line preserved
+        # Content should pass through unchanged
+        assert result == content
+        assert long_statement in result
+        assert 'Internal reasoning: Some reasoning' in result
     
-    def test_discussion_reasoning_truncation_long_reasoning(self, memory_service):
-        """Test truncation of long internal reasoning."""
+    def test_discussion_reasoning_no_truncation_long_reasoning(self, memory_service):
+        """Test that long internal reasoning passes through unchanged."""
         long_reasoning = "This is very detailed internal reasoning that goes on and on. " * 10
         content = f"Round 1: Your statement: Brief statement\nInternal reasoning: {long_reasoning}"
         
-        truncated = memory_service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
+        result = memory_service.apply_content_truncation(content, MemoryEventType.DISCUSSION_STATEMENT)
         
-        # Extract reasoning part to verify truncation
-        reasoning_line = [line for line in truncated.split('\n') if 'Internal reasoning:' in line][0]
-        reasoning_part = reasoning_line.split(':', 1)[1].strip()
-        
-        assert len(reasoning_part) <= 203  # 200 + '...'
-        assert reasoning_part.endswith('...')
-        assert 'Your statement: Brief statement' in truncated  # Statement preserved
+        # Content should pass through unchanged
+        assert result == content
+        assert long_reasoning in result
+        assert 'Your statement: Brief statement' in result
     
     def test_non_discussion_content_no_truncation(self, memory_service):
         """Test that non-discussion content is not truncated."""
@@ -113,8 +105,8 @@ class TestMemoryServiceTruncation:
         
         assert result == ""
     
-    def test_content_within_limits_no_truncation(self, memory_service):
-        """Test that content within limits is not truncated."""
+    def test_short_content_passes_through(self, memory_service):
+        """Test that short content passes through unchanged."""
         short_content = "Round 1: Your statement: Short statement\nInternal reasoning: Brief reasoning"
         
         result = memory_service.apply_content_truncation(short_content, MemoryEventType.DISCUSSION_STATEMENT)
@@ -180,8 +172,8 @@ class TestMemoryServiceSelectiveUpdate:
             assert call_args[1]['memory_guidance_style'] == 'narrative'
     
     @pytest.mark.asyncio
-    async def test_selective_update_applies_truncation(self, memory_service, mock_agent, mock_context):
-        """Test that selective update applies content truncation."""
+    async def test_selective_update_preserves_full_content(self, memory_service, mock_agent, mock_context):
+        """Test that selective update preserves full content without truncation."""
         long_content = "Round 1: Your statement: " + "Long statement " * 50 + "\nInternal reasoning: " + "Long reasoning " * 30
         
         with patch('core.services.memory_service.SelectiveMemoryManager.update_memory_selective', new_callable=AsyncMock) as mock_update:
@@ -194,19 +186,12 @@ class TestMemoryServiceSelectiveUpdate:
                 event_type=MemoryEventType.DISCUSSION_STATEMENT
             )
             
-            # Verify truncated content was passed
+            # Verify full content was passed unchanged
             call_args = mock_update.call_args
             passed_content = call_args[1]['content']
             
-            # Statement should be truncated
-            statement_line = [line for line in passed_content.split('\n') if 'Your statement:' in line][0]
-            statement_part = statement_line.split('statement:', 1)[1].strip()
-            assert len(statement_part) <= 303
-            
-            # Reasoning should be truncated
-            reasoning_line = [line for line in passed_content.split('\n') if 'Internal reasoning:' in line][0]
-            reasoning_part = reasoning_line.split(':', 1)[1].strip()
-            assert len(reasoning_part) <= 203
+            # Content should be identical to input
+            assert passed_content == long_content
     
     @pytest.mark.asyncio
     async def test_selective_update_error_handling(self, memory_service, mock_agent, mock_context):
