@@ -21,6 +21,7 @@ from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
 from core.distribution_generator import DistributionGenerator
 from utils.agent_centric_logger import AgentCentricLogger
+from agents import Runner
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -430,11 +431,13 @@ class CounterfactualsService:
             updated_memory = await participant.update_memory(result_content, context.bank_balance)
             context.memory = updated_memory
             
-            # Get final ranking
-            ranking_response = await participant.get_final_ranking(context, agent_config.temperature)
+            # Get final ranking using proven Phase 1 pattern
+            final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            text_response = result.final_output
             
             # Parse the ranking using utility agent
-            parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(ranking_response.content)
+            parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(text_response)
             
             return parsed_ranking
             
