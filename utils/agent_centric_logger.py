@@ -497,32 +497,13 @@ class AgentCentricLogger:
         
         self.voting_history.vote_confirmation_attempts.append(confirmation_attempt)
     
-    def collect_vote_initiation_from_rounds(self):
-        """
-        Auto-collect vote initiation data from existing agent round logs.
-        This method scans through all agent round logs and extracts initiate_vote responses.
-        """
-        if not self.voting_history:
-            self.initialize_voting_history()
-        
-        for agent_log in self.agent_logs.values():
-            for round_log in agent_log.phase_2.rounds:
-                round_num = round_log.number_discussion_round
-                
-                # Initialize round if not exists
-                if round_num not in self.voting_history.vote_initiation_requests:
-                    self.voting_history.vote_initiation_requests[round_num] = {}
-                
-                # Record this agent's vote initiation response
-                self.voting_history.vote_initiation_requests[round_num][agent_log.name] = round_log.initiate_vote
     
     def generate_target_state(self) -> TargetStateStructure:
         """Generate the complete target state structure."""
         if not self.general_info:
             raise ValueError("General experiment information not set")
         
-        # Auto-collect vote initiation data from agent round logs before generating target state
-        self.collect_vote_initiation_from_rounds()
+        # Vote initiation data is now logged directly via VotingService.log_round_vote_requests()
         
         agent_data = [
             agent_log.to_target_format() 

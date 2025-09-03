@@ -514,7 +514,10 @@ class Phase1Manager:
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
         language_manager = self.language_manager
-        return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
+        context_description = "This is your first time ranking these four principles of justice:"
+        return language_manager.get("unified_ranking_prompt_template",
+                                   context_description=context_description,
+                                   additional_instructions="")
     
     def _build_detailed_explanation_prompt(self, config: ExperimentConfiguration = None) -> str:
         """Build prompt for detailed explanation of principles."""
@@ -537,7 +540,10 @@ class Phase1Manager:
     def _build_post_explanation_ranking_prompt(self) -> str:
         """Build prompt for post-explanation ranking."""
         language_manager = self.language_manager
-        return language_manager.get("prompts.phase1_post_explanation_ranking_prompt")
+        context_description = "After learning how each justice principle is applied to income distributions, please rank the four principles again:"
+        return language_manager.get("unified_ranking_prompt_template",
+                                   context_description=context_description,
+                                   additional_instructions="")
     
     def _build_application_prompt(self, distribution_set, round_num: int) -> str:
         """Build prompt for principle application."""
@@ -553,4 +559,7 @@ class Phase1Manager:
     def _build_final_ranking_prompt(self) -> str:
         """Build prompt for final ranking after experience."""
         language_manager = self.language_manager
-        return language_manager.get("prompts.phase1_final_ranking_after_experience")
+        context_description = "After experiencing the four rounds of principle application, rank these principles again:"
+        return language_manager.get("unified_ranking_prompt_template",
+                                   context_description=context_description,
+                                   additional_instructions="")

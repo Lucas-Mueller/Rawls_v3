@@ -700,8 +700,11 @@ class CounterfactualsService:
             updated_memory = await participant.update_memory(result_content, context.bank_balance)
             context.memory = updated_memory
             
-            # Get final ranking using proven Phase 1 pattern
-            final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+            # Get final ranking using unified template
+            context_description = "After participating in the group discussion and experiencing the results, please rank these four principles:"
+            final_ranking_prompt = self.language_manager.get("unified_ranking_prompt_template",
+                                                           context_description=context_description,
+                                                           additional_instructions="")
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
             text_response = result.final_output
             
@@ -747,8 +750,11 @@ class CounterfactualsService:
         try:
             # No memory update needed - context is pre-updated from deliver_results_and_update_memory
             
-            # Get final ranking using proven Phase 1 pattern
-            final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+            # Get final ranking using unified template
+            context_description = "After participating in the group discussion and experiencing the results, please rank these four principles:"
+            final_ranking_prompt = self.language_manager.get("unified_ranking_prompt_template",
+                                                           context_description=context_description,
+                                                           additional_instructions="")
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
             text_response = result.final_output
             
