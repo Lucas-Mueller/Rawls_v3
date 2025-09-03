@@ -123,7 +123,7 @@ class FrohlichExperimentManager:
             
             # Initialize phase managers with experiment-scoped instances
             self.phase1_manager = Phase1Manager(self.participants, self.utility_agent, self.language_manager, self.error_handler, self.seed_manager)
-            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager, self.error_handler, self.seed_manager)
+            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager, self.error_handler, self.seed_manager, self.agent_logger)
             
             self._initialization_complete = True
             logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")

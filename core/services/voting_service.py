@@ -52,7 +52,7 @@ class VotingService:
     
     def __init__(self, language_manager: LanguageProvider, utility_agent: UtilityProvider, 
                  settings: Optional[Phase2Settings] = None, logger: Optional[Logger] = None,
-                 memory_service: Optional[object] = None):
+                 memory_service: Optional[object] = None, agent_logger: Optional[object] = None):
         """
         Initialize voting service.
         
@@ -61,6 +61,8 @@ class VotingService:
             utility_agent: For numerical agreement detection
             settings: Phase 2 settings for timeouts and validation (optional)
             logger: For logging info and warnings (optional)
+            memory_service: For recording simple voting events (optional)
+            agent_logger: For agent-centric logging (optional)
         """
         self.language_manager = language_manager
         self.utility_agent = utility_agent
@@ -68,6 +70,8 @@ class VotingService:
         self.logger = logger
         # Optional memory service for recording simple voting events
         self.memory_service = memory_service
+        # Optional agent-centric logger for detailed voting analytics
+        self.agent_logger = agent_logger
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger is available."""
@@ -164,6 +168,15 @@ class VotingService:
                     self._log_info(f"📊 Vote Analytics: {participant.name} chose to initiate voting (attempt {attempt + 1})")
                 else:
                     self._log_info(f"📊 Vote Analytics: {participant.name} chose to continue discussion (attempt {attempt + 1})")
+                
+                # Log vote initiation request if agent logger is available
+                if self.agent_logger and hasattr(context, 'current_round_number'):
+                    # Create a single-agent vote request dict
+                    vote_requests = {participant.name: "Yes" if wants_vote else "No"}
+                    self.agent_logger.log_round_vote_requests(
+                        round_number=context.current_round_number,
+                        vote_requests=vote_requests
+                    )
                     
                 return wants_vote
                 
@@ -310,6 +323,17 @@ class VotingService:
                 self._log_info(f"❌ Voting declined by: {', '.join(declined)} - returning to discussion")
                 discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.voting_declined', declined_participants=', '.join(declined))}"
             
+            # Log confirmation attempt if agent logger is available
+            if self.agent_logger:
+                confirmation_responses = {conf['participant']: "Yes" if conf['agrees'] else "No" 
+                                        for conf in confirmations}
+                self.agent_logger.log_vote_confirmation_attempt(
+                    round_number=discussion_state.round_number,
+                    initiator=initiator_name,
+                    confirmation_responses=confirmation_responses,
+                    confirmation_succeeded=all_agreed
+                )
+            
             return all_agreed
             
         finally:
@@ -367,6 +391,37 @@ class VotingService:
         # Store vote result in discussion state (maintains compatibility with existing code)
         discussion_state.last_vote_result = vote_result
         discussion_state.vote_history.append(vote_result)
+
+        # Log vote round details if agent logger is available
+        if self.agent_logger and vote_result:
+            # We need the initiator name from the calling context - for now use trigger_participant if available
+            trigger_participant = getattr(vote_result, 'trigger_participant', None)
+            
+            self.agent_logger.start_vote_round(
+                round_number=discussion_state.round_number,
+                vote_type="formal_vote",
+                trigger_participant=trigger_participant
+            )
+            
+            # Log individual votes if vote_result has participant details
+            if hasattr(vote_result, 'individual_votes'):
+                for vote_info in vote_result.individual_votes:
+                    if hasattr(self.agent_logger, 'log_participant_vote'):
+                        self.agent_logger.log_participant_vote(
+                            participant_name=vote_info.get('name', 'Unknown'),
+                            raw_response=vote_info.get('raw_response', ''),
+                            assessed_choice=vote_info.get('assessed_choice', ''),
+                            constraint_amount=vote_info.get('constraint_amount'),
+                            parsing_success=vote_info.get('parsing_success', False)
+                        )
+            
+            # Complete the vote round logging
+            if hasattr(self.agent_logger, 'complete_vote_round'):
+                self.agent_logger.complete_vote_round(
+                    consensus_reached=vote_result.consensus_reached,
+                    agreed_principle=vote_result.agreed_principle.principle.value if vote_result.agreed_principle else None,
+                    agreed_constraint=vote_result.agreed_principle.constraint_amount if vote_result.agreed_principle else None
+                )
 
         # Log and update discussion history based on consensus result
         if vote_result.consensus_reached:

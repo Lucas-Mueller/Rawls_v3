@@ -324,6 +324,26 @@ class AgentCentricLogger:
         
         self.current_vote_round.participant_votes.append(vote_detail)
     
+    def log_participant_vote(
+        self,
+        participant_name: str,
+        raw_response: str,
+        assessed_choice: str,
+        constraint_amount: Optional[float] = None,
+        parsing_success: bool = True
+    ):
+        """
+        Alias for log_vote_response() to maintain compatibility with VotingService.
+        Log individual participant vote details.
+        """
+        self.log_vote_response(
+            participant_name=participant_name,
+            raw_response=raw_response,
+            assessed_choice=assessed_choice,
+            constraint_amount=constraint_amount,
+            parsing_success=parsing_success
+        )
+    
     def log_confirmation_phase(
         self,
         confirmation_results: List[Dict[str, Any]]

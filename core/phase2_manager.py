@@ -19,12 +19,13 @@ from utils.error_handling import ExperimentErrorHandler
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None, error_handler=None, seed_manager=None):
+    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None, error_handler=None, seed_manager=None, agent_logger=None):
         self.participants = participants
         self.utility_agent = utility_agent
         self.config = experiment_config
         self.language_manager = language_manager
         self.seed_manager = seed_manager
+        self.agent_logger = agent_logger  # Store agent_logger for services
         self.logger = None  # Will be set in run_phase2
         # Use provided error handler or create a new one
         self.error_handler = error_handler if error_handler is not None else ExperimentErrorHandler()
@@ -73,7 +74,8 @@ class Phase2Manager:
             utility_agent=self.utility_agent,
             settings=self.settings,
             logger=logger,
-            memory_service=self.memory_service
+            memory_service=self.memory_service,
+            agent_logger=self.agent_logger
         )
         
         self.memory_service = MemoryService(
