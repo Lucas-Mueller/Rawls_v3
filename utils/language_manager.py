@@ -395,12 +395,25 @@ class LanguageManager:
         
         experiment_explanation = self.get_experiment_explanation() if include_explanation else ""
         language_instruction = self.get("prompts.language_instruction")
+
+        # Localize common phase names when possible (e.g., "Phase 1" → localized)
+        localized_phase = phase
+        try:
+            phase_map = {
+                "Phase 1": self.get("common.phase_names.phase1"),
+                "Phase 2": self.get("common.phase_names.phase2"),
+            }
+            if phase in phase_map:
+                localized_phase = phase_map[phase]
+        except Exception:
+            # If translation keys missing, keep original
+            localized_phase = phase
         
         return self.get("prompts.context_context_info_format",
                        name=name,
                        role_description=role_description, 
                        bank_balance=bank_balance,
-                       phase=phase,
+                       phase=localized_phase,
                        round_number=round_number,
                        formatted_memory=formatted_memory,
                        experiment_explanation=experiment_explanation,
@@ -486,18 +499,48 @@ class LanguageManager:
             Formatted list of justice principles
         """
         if list_type == "detailed":
-            # For detailed explanations in prompts
-            return f"""1. **{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income in society
-2. **{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
-3. **{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average income while ensuring everyone gets at least a specified minimum
-4. **{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average income while keeping the gap between richest and poorest within a specified limit"""
+            # For detailed explanations in prompts (use fully localized descriptions)
+            name_floor = self.get("common.principle_names.maximizing_floor")
+            name_avg = self.get("common.principle_names.maximizing_average")
+            name_floor_c = self.get("common.principle_names.maximizing_average_floor_constraint")
+            name_range_c = self.get("common.principle_names.maximizing_average_range_constraint")
+
+            desc_floor = self.get("common.principle_descriptions.maximizing_floor")
+            desc_avg = self.get("common.principle_descriptions.maximizing_average")
+            desc_floor_c = self.get("common.principle_descriptions.maximizing_average_floor_constraint")
+            desc_range_c = self.get("common.principle_descriptions.maximizing_average_range_constraint")
+
+            return f"""1. **{name_floor}**: {desc_floor}
+2. **{name_avg}**: {desc_avg}  
+3. **{name_floor_c}**: {desc_floor_c}
+4. **{name_range_c}**: {desc_range_c}"""
             
         elif list_type == "simple":
-            # For application choices - NO LETTERS
-            return f"""**{self.get("common.principle_names.maximizing_floor")}**: Choose the distribution that maximizes the lowest income
-**{self.get("common.principle_names.maximizing_average")}**: Choose the distribution that maximizes the average income  
-**{self.get("common.principle_names.maximizing_average_floor_constraint")}**: Maximize average while ensuring minimum income (specify amount)
-**{self.get("common.principle_names.maximizing_average_range_constraint")}**: Maximize average while limiting income gap (specify amount)"""
+            # For application choices - NO LETTERS (localized descriptions + localized notes for constrained)
+            name_floor = self.get("common.principle_names.maximizing_floor")
+            name_avg = self.get("common.principle_names.maximizing_average")
+            name_floor_c = self.get("common.principle_names.maximizing_average_floor_constraint")
+            name_range_c = self.get("common.principle_names.maximizing_average_range_constraint")
+
+            desc_floor = self.get("common.principle_descriptions.maximizing_floor")
+            desc_avg = self.get("common.principle_descriptions.maximizing_average")
+            desc_floor_c = self.get("common.principle_descriptions.maximizing_average_floor_constraint")
+            desc_range_c = self.get("common.principle_descriptions.maximizing_average_range_constraint")
+
+            # Localized notes for constrained principles (optional)
+            try:
+                note_floor_c = self.get("common.principle_notes.floor_constraint")
+            except Exception:
+                note_floor_c = ""
+            try:
+                note_range_c = self.get("common.principle_notes.range_constraint")
+            except Exception:
+                note_range_c = ""
+
+            return f"""**{name_floor}**: {desc_floor}
+**{name_avg}**: {desc_avg}  
+**{name_floor_c}**: {desc_floor_c}{note_floor_c}
+**{name_range_c}**: {desc_range_c}{note_range_c}"""
             
         elif list_type == "letters_only":
             # DEPRECATED - For backward compatibility only, use names_only instead
@@ -725,4 +768,3 @@ def validate_translation_files(translations_dir: str = "translations") -> bool:
     except Exception as e:
         logger.error(f"Translation validation failed: {e}")
         return False
-

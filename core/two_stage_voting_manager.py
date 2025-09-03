@@ -963,7 +963,8 @@ Respond with the amount (examples: 25000 or $25000):"""
                 consensus_reached=False,  # Not determined yet at this point
                 agreed_principle=None,    # Not determined yet at this point
                 total_stages=total_stages,
-                total_attempts=total_attempts
+                total_attempts=total_attempts,
+                language_manager=self.language_manager
             )
             
             # Update participant memory using the MemoryManager

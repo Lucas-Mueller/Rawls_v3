@@ -25,6 +25,20 @@
       "maximizing_average_floor_constraint": "在最低收入约束条件下最大化平均收入",
       "maximizing_average_range_constraint": "在范围约束条件下最大化平均收入"
     },
+    "principle_descriptions": {
+      "maximizing_floor": "选择使社会最低收入最大化的分配",
+      "maximizing_average": "选择使平均收入最大化的分配",
+      "maximizing_average_floor_constraint": "在确保每个人至少获得规定的最低收入的同时最大化平均收入",
+      "maximizing_average_range_constraint": "在将最富与最穷之间的差距保持在规定限度内的同时最大化平均收入"
+    },
+    "principle_notes": {
+      "floor_constraint": "（必须指定约束金额）",
+      "range_constraint": "（必须指定约束金额）"
+    },
+    "phase_names": {
+      "phase1": "第1阶段",
+      "phase2": "第2阶段"
+    },
     "income_classes": {
       "high": "高收入",
       "medium_high": "中高收入",
@@ -223,7 +237,41 @@
     "final_results_format": "第2阶段最终结果：{result_content}",
     "round_prefix": "第",
     "statement_key": "陈述：",
-    "reasoning_prefix": "内部推理："
+    "reasoning_prefix": "内部推理：",
+    "labels": {
+      "round_applied": "第{round_num}轮：应用了{principle}",
+      "class_earnings": "类别：{assigned_class}，收入：${earnings:.2f}",
+      "original_values": "（原始情境：{situation}）",
+      "multiplier": "（乘数：{multiplier:.2f}）",
+      "constraint": "约束：{constraint}",
+      "reasoning": "理由：{reasoning}",
+      "key_alternatives": "关键备选：{highlights}",
+      "speaking": "发言顺序第{position}位",
+      "statement": "陈述：{statement}",
+      "favored": "偏好：{principle}",
+      "vote_intention": "投票意向：{vote_status}",
+      "no_consensus_random": "未达成共识——随机分配",
+      "alternatives": "备选：{highlights}"
+    },
+    "two_stage": {
+      "stage1_header": "两阶段投票 - 第1步：原则选择",
+      "selected": "已选择：{principle_num}（{principle_display_name}）",
+      "attempts": "尝试次数：{attempts}",
+      "failed_select": "失败 - 无法选择原则",
+      "response_short": "回复：'{response}'",
+      "stage2_header": "两阶段投票 - 第2步：为{principle_display_name}指定金额",
+      "specified": "已指定：${constraint_amount:,}",
+      "failed_amount": "失败 - 无法指定约束金额",
+      "complete_header": "两阶段投票完成",
+      "vote_info": "你的投票：{principle_num}（{principle_display_name}）",
+      "vote_info_with_constraint": "你的投票：{principle_num}（{principle_display_name}），约束为${constraint_amount:,}",
+      "process_two_stage": "两阶段过程（原则 + 金额）",
+      "process_single_stage": "单阶段过程（仅原则）",
+      "total_attempts": "总尝试次数：{total_attempts}",
+      "consensus_yes": "小组共识：是",
+      "consensus_yes_with_agreed": "小组共识：是（达成：{agreed_principle}）",
+      "consensus_no": "小组共识：否"
+    }
   },
   "voting_phases": {
     "initiation": "投票已由{initiator_name}发起。正式投票程序开始。",

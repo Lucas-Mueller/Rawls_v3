@@ -25,6 +25,20 @@
       "maximizing_average_floor_constraint": "Maximizar los ingresos promedio con restricción de ingreso mínimo",
       "maximizing_average_range_constraint": "Maximizar los ingresos promedio con restricción de rango"
     },
+    "principle_descriptions": {
+      "maximizing_floor": "Elegir la distribución que maximiza el ingreso más bajo de la sociedad",
+      "maximizing_average": "Elegir la distribución que maximiza el ingreso promedio",
+      "maximizing_average_floor_constraint": "Maximizar el ingreso promedio garantizando que todos reciban al menos un mínimo especificado",
+      "maximizing_average_range_constraint": "Maximizar el ingreso promedio manteniendo la brecha entre el más rico y el más pobre dentro de un límite especificado"
+    },
+    "principle_notes": {
+      "floor_constraint": " (debe especificar la cantidad)",
+      "range_constraint": " (debe especificar la cantidad)"
+    },
+    "phase_names": {
+      "phase1": "Fase 1",
+      "phase2": "Fase 2"
+    },
     "income_classes": {
       "high": "Ingresos altos",
       "medium_high": "Ingresos medios altos",
@@ -157,9 +171,9 @@
     },
     "phase2_detailed_results_header": "RESULTADOS FINALES FASE 2\n\nEstado del Consenso: {consenso_status}\nAsignación de Clase de Ingresos: {assigned_class}\nSus Ganancias: ${earnings:.2f}",
     "phase2_counterfactual_table_header": "ANÁLISIS CONTRAFACTUAL - Lo que habría ganado bajo cada principio:\n┌─────────────────────────────────────────┬──────────┬──────────┐\n│ Principio de Justicia                   │ Ingresos │ Ganancias│\n├─────────────────────────────────────────┼──────────┼──────────┤",
-    "phase2_counterfactual_insights_best_more": "- Mejor alternativa: Habría ganado ${best_diff:.2f} más bajo {best_principio}",
+    "phase2_counterfactual_insights_best_more": "- Mejor alternativa: Habría ganado ${best_diff:.2f} más bajo {best_principle}",
     "phase2_counterfactual_insights_best_same": "- Mejor alternativa: Las ganancias actuales coinciden con el mejor resultado posible",
-    "phase2_counterfactual_insights_worst_more": "- Peor alternativa: Habría ganado ${worst_diff:.2f} menos bajo {worst_principio}",
+    "phase2_counterfactual_insights_worst_more": "- Peor alternativa: Habría ganado ${worst_diff:.2f} menos bajo {worst_principle}",
     "phase2_counterfactual_insights_worst_same": "- Peor alternativa: Las ganancias actuales coinciden con el peor resultado posible",
     "two_stage_principle_selection": "VOTO SECRETO - PASO 1 DE 2\n\nTodos los participantes acordaron votar. Tu voto es completamente privado - otros participantes no verán tu elección individual.\n\nSelecciona tu principio de justicia preferido por número:\n\n1. Maximizar Ingreso Mínimo\n2. Maximizar Ingreso Promedio\n3. Maximizar Promedio con Restricción Mínima\n4. Maximizar Promedio con Restricción de Rango\n\nImportante: Los principios 3 y 4 requieren cantidades de restricción en el siguiente paso.\n\nTu elección de voto privado (1, 2, 3, o 4):",
     "two_stage_amount_specification": "VOTO SECRETO - PASO 2 DE 2\n\nSeleccionaste {principle_name}.\n\nEste principio requiere que especifiques una cantidad de restricción en dólares. Esta cantidad se comparará con las cantidades de otros participantes para determinar si se alcanza el consenso.\n\nPara el consenso, todos los participantes deben elegir:\n- El mismo número de principio Y\n- La misma cantidad de restricción (si aplica)\n\nPor favor especifica tu cantidad de restricción como una cantidad entera en dólares:",
@@ -222,7 +236,41 @@
     "final_results_format": "Resultados Finales de la Fase 2: {result_content}",
     "round_prefix": "Ronda ",
     "statement_key": "declaración:",
-    "reasoning_prefix": "Razonamiento interno:"
+    "reasoning_prefix": "Razonamiento interno:",
+    "labels": {
+      "round_applied": "Ronda {round_num}: Aplicó {principle}",
+      "class_earnings": "Clase: {assigned_class}, Ganancias: ${earnings:.2f}",
+      "original_values": "(Valores originales: {situation})",
+      "multiplier": "(Multiplicador: {multiplier:.2f})",
+      "constraint": "Restricción: {constraint}",
+      "reasoning": "Razonamiento: {reasoning}",
+      "key_alternatives": "Alternativas clave: {highlights}",
+      "speaking": "Turno de palabra #{position}",
+      "statement": "Declaración: {statement}",
+      "favored": "Preferido: {principle}",
+      "vote_intention": "Intención de voto: {vote_status}",
+      "no_consensus_random": "Sin consenso - asignación aleatoria",
+      "alternatives": "Alternativas: {highlights}"
+    },
+    "two_stage": {
+      "stage1_header": "Votación en dos etapas - Paso 1: Selección del principio",
+      "selected": "Seleccionado: {principle_num} ({principle_display_name})",
+      "attempts": "Intentos: {attempts}",
+      "failed_select": "FALLÓ - No se pudo seleccionar el principio",
+      "response_short": "Respuesta: '{response}'",
+      "stage2_header": "Votación en dos etapas - Paso 2: Especificación del monto para {principle_display_name}",
+      "specified": "Especificado: ${constraint_amount:,}",
+      "failed_amount": "FALLÓ - No se pudo especificar el monto de restricción",
+      "complete_header": "Votación en dos etapas completada",
+      "vote_info": "Tu voto: {principle_num} ({principle_display_name})",
+      "vote_info_with_constraint": "Tu voto: {principle_num} ({principle_display_name}) con restricción de ${constraint_amount:,}",
+      "process_two_stage": "Proceso de dos etapas (principio + monto)",
+      "process_single_stage": "Proceso de una etapa (solo principio)",
+      "total_attempts": "Intentos totales: {total_attempts}",
+      "consensus_yes": "Consenso del grupo: SÍ",
+      "consensus_yes_with_agreed": "Consenso del grupo: SÍ (Acuerdo: {agreed_principle})",
+      "consensus_no": "Consenso del grupo: NO"
+    }
   },
   "voting_phases": {
     "initiation": "La votación ha sido iniciada por {initiator_name}. El proceso formal de votación está comenzando.",

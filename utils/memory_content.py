@@ -8,6 +8,7 @@ from models.experiment_types import (
     ApplicationResult, DiscussionStatement
 )
 from models.principle_types import PrincipleChoice
+from utils.language_manager import LanguageManager
 
 
 def build_phase1_delta(
@@ -19,7 +20,8 @@ def build_phase1_delta(
     rationale: Optional[str] = None,
     top_counterfactuals: Optional[List[str]] = None,
     original_values_mode: bool = False,
-    original_values_situation: Optional[str] = None
+    original_values_situation: Optional[str] = None,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build compact Phase 1 round delta content.
@@ -39,32 +41,63 @@ def build_phase1_delta(
         Compact round summary for memory
     """
     # Build base delta
-    delta_parts = [
-        f"Round {round_number}: Applied {principle_choice.principle.value}",
-        f"Class: {assigned_class.value}, Earnings: {earnings}"
-    ]
+    if language_manager:
+        # Localized principle display name
+        principle_key = principle_choice.principle.value
+        try:
+            principle_name = language_manager.get(f"common.principle_names.{principle_key}")
+        except Exception:
+            principle_name = principle_key
+        round_prefix = language_manager.get("memory.round_prefix") if hasattr(language_manager, 'get') else "Round "
+        delta_parts = [
+            language_manager.get("memory.labels.round_applied", round_num=round_number, principle=principle_name),
+            language_manager.get("memory.labels.class_earnings", assigned_class=assigned_class.value, earnings=earnings)
+        ]
+    else:
+        delta_parts = [
+            f"Round {round_number}: Applied {principle_choice.principle.value}",
+            f"Class: {assigned_class.value}, Earnings: {earnings}"
+        ]
     
     # Add distribution info (concise)
     if original_values_mode and original_values_situation:
-        delta_parts.append(f"(Original Values: {original_values_situation})")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.original_values", situation=original_values_situation))
+        else:
+            delta_parts.append(f"(Original Values: {original_values_situation})")
     else:
-        delta_parts.append(f"(Multiplier: {distribution_multiplier:.2f})")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.multiplier", multiplier=distribution_multiplier))
+        else:
+            delta_parts.append(f"(Multiplier: {distribution_multiplier:.2f})")
     
     # Add constraint info if relevant
     if principle_choice.constraint_amount is not None:
-        delta_parts.append(f"Constraint: {principle_choice.constraint_amount}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.constraint", constraint=principle_choice.constraint_amount))
+        else:
+            delta_parts.append(f"Constraint: {principle_choice.constraint_amount}")
     
     # Add brief rationale if provided and not too long
     if rationale and len(rationale) <= 200:
-        delta_parts.append(f"Reasoning: {rationale}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.reasoning", reasoning=rationale))
+        else:
+            delta_parts.append(f"Reasoning: {rationale}")
     elif rationale and len(rationale) > 200:
         # Truncate long rationale
-        delta_parts.append(f"Reasoning: {rationale[:200]}...")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.reasoning", reasoning=f"{rationale[:200]}..."))
+        else:
+            delta_parts.append(f"Reasoning: {rationale[:200]}...")
     
     # Add top counterfactual highlights (not full table)
     if top_counterfactuals:
         highlights = ", ".join(top_counterfactuals[:2])  # Max 2 highlights
-        delta_parts.append(f"Key alternatives: {highlights}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.key_alternatives", highlights=highlights))
+        else:
+            delta_parts.append(f"Key alternatives: {highlights}")
     
     return " | ".join(delta_parts)
 
@@ -80,7 +113,8 @@ def build_phase2_delta(
     agreed_principle: Optional[str] = None,
     is_vote_round: bool = False,
     internal_reasoning: Optional[str] = None,
-    include_internal_reasoning: bool = False
+    include_internal_reasoning: bool = False,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build compact Phase 2 round delta content.
@@ -101,28 +135,41 @@ def build_phase2_delta(
     Returns:
         Compact round summary for memory
     """
-    delta_parts = [f"Round {round_number}"]
+    if language_manager:
+        delta_parts = [f"{language_manager.get('memory.round_prefix')}{round_number}"]
+    else:
+        delta_parts = [f"Round {round_number}"]
     
     # Add speaking order info
     if speaking_order_position is not None:
-        delta_parts.append(f"Speaking #{speaking_order_position}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.speaking", position=speaking_order_position))
+        else:
+            delta_parts.append(f"Speaking #{speaking_order_position}")
     
     # Add brief statement (truncated if too long)
     if statement:
-        if len(statement) <= 150:
-            delta_parts.append(f"Statement: {statement}")
+        short = statement if len(statement) <= 150 else f"{statement[:150]}..."
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.statement", statement=short))
         else:
-            # Truncate long statements
-            delta_parts.append(f"Statement: {statement[:150]}...")
+            delta_parts.append(f"Statement: {short}")
     
     # Add stance information
     if favored_principle:
-        delta_parts.append(f"Favored: {favored_principle}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.favored", principle=favored_principle))
+        else:
+            delta_parts.append(f"Favored: {favored_principle}")
     
     # Add vote intention
     if vote_intention is not None:
-        vote_status = "Yes" if vote_intention else "No"
-        delta_parts.append(f"Vote intention: {vote_status}")
+        if language_manager:
+            vote_status = language_manager.get("common.yes_no.yes") if vote_intention else language_manager.get("common.yes_no.no")
+            delta_parts.append(language_manager.get("memory.labels.vote_intention", vote_status=vote_status))
+        else:
+            vote_status = "Yes" if vote_intention else "No"
+            delta_parts.append(f"Vote intention: {vote_status}")
     
     # Add vote results if this was a vote round
     if is_vote_round:
@@ -225,7 +272,8 @@ def build_phase2_detailed_delta(
     alternative_earnings: Dict[str, float],
     consensus_reached: bool,
     agreed_principle: Optional[str] = None,
-    constraint_amount: Optional[int] = None
+    constraint_amount: Optional[int] = None,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build detailed Phase 2 results delta for memory content.
@@ -247,15 +295,38 @@ def build_phase2_detailed_delta(
     
     # Base result
     if consensus_reached:
-        consensus_info = f"Group consensus: {agreed_principle}"
-        if constraint_amount:
-            consensus_info += f" (${constraint_amount:,})"
-        delta_parts.append(consensus_info)
+        if language_manager:
+            if constraint_amount:
+                delta_parts.append(language_manager.get(
+                    "voting_results.consensus_with_constraint",
+                    principle_name=agreed_principle,
+                    constraint_amount=constraint_amount
+                ))
+            else:
+                delta_parts.append(language_manager.get(
+                    "voting_results.consensus_reached",
+                    principle_name=agreed_principle
+                ))
+        else:
+            consensus_info = f"Group consensus: {agreed_principle}"
+            if constraint_amount:
+                consensus_info += f" (${constraint_amount:,})"
+            delta_parts.append(consensus_info)
     else:
-        delta_parts.append("No consensus - random assignment")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.labels.no_consensus_random"))
+        else:
+            delta_parts.append("No consensus - random assignment")
     
     # Personal outcome
-    delta_parts.append(f"Class: {assigned_class}, Earnings: ${final_earnings:.2f}")
+    if language_manager:
+        delta_parts.append(language_manager.get(
+            "memory.labels.class_earnings",
+            assigned_class=assigned_class,
+            earnings=final_earnings
+        ))
+    else:
+        delta_parts.append(f"Class: {assigned_class}, Earnings: ${final_earnings:.2f}")
     
     # Counterfactual highlights
     if alternative_earnings:
@@ -263,7 +334,13 @@ def build_phase2_detailed_delta(
             alternative_earnings, final_earnings, max_highlights=2
         )
         if highlights:
-            delta_parts.append(f"Alternatives: {', '.join(highlights)}")
+            if language_manager:
+                delta_parts.append(language_manager.get(
+                    "memory.labels.alternatives",
+                    highlights=", ".join(highlights)
+                ))
+            else:
+                delta_parts.append(f"Alternatives: {', '.join(highlights)}")
     
     return " | ".join(delta_parts)
 
@@ -271,7 +348,8 @@ def build_phase2_detailed_delta(
 def extract_phase2_counterfactual_insights(
     alternative_earnings: Dict[str, float],
     actual_earnings: float,
-    principle_display_names: Dict[str, str]
+    principle_display_names: Dict[str, str],
+    language_manager: Optional[LanguageManager] = None
 ) -> Dict[str, str]:
     """
     Extract detailed counterfactual insights for Phase 2 results.
@@ -303,18 +381,36 @@ def extract_phase2_counterfactual_insights(
     worst_diff = actual_earnings - worst_earnings
     
     # Best alternative insight
-    if best_diff > 0:
-        insights['best'] = f"Best alternative: Would have earned ${best_diff:.2f} more under {best_principle_name}"
-    elif best_diff == 0:
-        insights['best'] = "Best alternative: Current earnings match the best possible outcome"
+    if language_manager:
+        if best_diff > 0:
+            insights['best'] = language_manager.get(
+                'phase2_counterfactual_insights_best_more',
+                best_diff=best_diff, best_principle=best_principle_name
+            )
+        else:
+            insights['best'] = language_manager.get('phase2_counterfactual_insights_best_same')
     else:
-        insights['best'] = "Best alternative: All other principles would have yielded less"
+        if best_diff > 0:
+            insights['best'] = f"Best alternative: Would have earned ${best_diff:.2f} more under {best_principle_name}"
+        elif best_diff == 0:
+            insights['best'] = "Best alternative: Current earnings match the best possible outcome"
+        else:
+            insights['best'] = "Best alternative: All other principles would have yielded less"
     
     # Worst alternative insight
-    if worst_diff > 0:
-        insights['worst'] = f"Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle_name}"
-    elif worst_diff == 0:
-        insights['worst'] = "Worst alternative: Current earnings match the worst possible outcome"
+    if language_manager:
+        if worst_diff > 0:
+            insights['worst'] = language_manager.get(
+                'phase2_counterfactual_insights_worst_more',
+                worst_diff=worst_diff, worst_principle=worst_principle_name
+            )
+        else:
+            insights['worst'] = language_manager.get('phase2_counterfactual_insights_worst_same')
+    else:
+        if worst_diff > 0:
+            insights['worst'] = f"Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle_name}"
+        elif worst_diff == 0:
+            insights['worst'] = "Worst alternative: Current earnings match the worst possible outcome"
     
     return insights
 
@@ -325,7 +421,8 @@ def build_two_stage_voting_principle_selection_delta(
     principle_display_name: str,
     attempts_used: int,
     success: bool,
-    raw_response: Optional[str] = None
+    raw_response: Optional[str] = None,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build memory content for two-stage voting principle selection (Stage 1).
@@ -341,19 +438,39 @@ def build_two_stage_voting_principle_selection_delta(
     Returns:
         Compact memory delta for principle selection
     """
-    delta_parts = ["Two-Stage Voting - Stage 1: Principle Selection"]
+    # Header
+    if language_manager:
+        delta_parts = [language_manager.get("memory.two_stage.stage1_header")]
+    else:
+        delta_parts = ["Two-Stage Voting - Stage 1: Principle Selection"]
     
     if success:
-        delta_parts.append(f"Selected: {principle_num} ({principle_display_name})")
-        if attempts_used > 1:
-            delta_parts.append(f"Attempts: {attempts_used}")
+        if language_manager:
+            delta_parts.append(language_manager.get(
+                "memory.two_stage.selected",
+                principle_num=principle_num,
+                principle_display_name=principle_display_name
+            ))
+            if attempts_used > 1:
+                delta_parts.append(language_manager.get("memory.two_stage.attempts", attempts=attempts_used))
+        else:
+            delta_parts.append(f"Selected: {principle_num} ({principle_display_name})")
+            if attempts_used > 1:
+                delta_parts.append(f"Attempts: {attempts_used}")
     else:
-        delta_parts.append("FAILED - Unable to select principle")
-        delta_parts.append(f"Attempts: {attempts_used}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.failed_select"))
+            delta_parts.append(language_manager.get("memory.two_stage.attempts", attempts=attempts_used))
+        else:
+            delta_parts.append("FAILED - Unable to select principle")
+            delta_parts.append(f"Attempts: {attempts_used}")
     
     # Add raw response if it's short and meaningful
     if raw_response and len(raw_response.strip()) <= 50:
-        delta_parts.append(f"Response: '{raw_response.strip()}'")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.response_short", response=raw_response.strip()))
+        else:
+            delta_parts.append(f"Response: '{raw_response.strip()}'")
     elif raw_response and len(raw_response.strip()) > 50:
         delta_parts.append(f"Response: '{raw_response.strip()[:50]}...'")
     
@@ -366,7 +483,8 @@ def build_two_stage_voting_amount_specification_delta(
     constraint_amount: Optional[int],
     attempts_used: int,
     success: bool,
-    raw_response: Optional[str] = None
+    raw_response: Optional[str] = None,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build memory content for two-stage voting amount specification (Stage 2).
@@ -382,19 +500,40 @@ def build_two_stage_voting_amount_specification_delta(
     Returns:
         Compact memory delta for amount specification
     """
-    delta_parts = [f"Two-Stage Voting - Stage 2: Amount Specification for {principle_display_name}"]
+    if language_manager:
+        delta_parts = [language_manager.get(
+            "memory.two_stage.stage2_header",
+            principle_display_name=principle_display_name
+        )]
+    else:
+        delta_parts = [f"Two-Stage Voting - Stage 2: Amount Specification for {principle_display_name}"]
     
     if success and constraint_amount is not None:
-        delta_parts.append(f"Specified: ${constraint_amount:,}")
-        if attempts_used > 1:
-            delta_parts.append(f"Attempts: {attempts_used}")
+        if language_manager:
+            delta_parts.append(language_manager.get(
+                "memory.two_stage.specified",
+                constraint_amount=constraint_amount
+            ))
+            if attempts_used > 1:
+                delta_parts.append(language_manager.get("memory.two_stage.attempts", attempts=attempts_used))
+        else:
+            delta_parts.append(f"Specified: ${constraint_amount:,}")
+            if attempts_used > 1:
+                delta_parts.append(f"Attempts: {attempts_used}")
     else:
-        delta_parts.append("FAILED - Unable to specify constraint amount")
-        delta_parts.append(f"Attempts: {attempts_used}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.failed_amount"))
+            delta_parts.append(language_manager.get("memory.two_stage.attempts", attempts=attempts_used))
+        else:
+            delta_parts.append("FAILED - Unable to specify constraint amount")
+            delta_parts.append(f"Attempts: {attempts_used}")
     
     # Add raw response if it's short and meaningful
     if raw_response and len(raw_response.strip()) <= 50:
-        delta_parts.append(f"Response: '{raw_response.strip()}'")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.response_short", response=raw_response.strip()))
+        else:
+            delta_parts.append(f"Response: '{raw_response.strip()}'")
     elif raw_response and len(raw_response.strip()) > 50:
         delta_parts.append(f"Response: '{raw_response.strip()[:50]}...'")
     
@@ -409,7 +548,8 @@ def build_two_stage_voting_complete_delta(
     consensus_reached: bool = False,
     agreed_principle: Optional[str] = None,
     total_stages: int = 1,
-    total_attempts: int = 1
+    total_attempts: int = 1,
+    language_manager: Optional[LanguageManager] = None
 ) -> str:
     """
     Build memory content for complete two-stage voting process.
@@ -427,30 +567,66 @@ def build_two_stage_voting_complete_delta(
     Returns:
         Compact memory delta for complete voting process
     """
-    delta_parts = ["Two-Stage Voting Complete"]
+    if language_manager:
+        delta_parts = [language_manager.get("memory.two_stage.complete_header")]
+    else:
+        delta_parts = ["Two-Stage Voting Complete"]
     
     # Personal vote
-    vote_info = f"Your vote: {principle_num} ({principle_display_name})"
-    if constraint_amount is not None:
-        vote_info += f" with ${constraint_amount:,} constraint"
-    delta_parts.append(vote_info)
+    if language_manager:
+        if constraint_amount is not None:
+            delta_parts.append(language_manager.get(
+                "memory.two_stage.vote_info_with_constraint",
+                principle_num=principle_num,
+                principle_display_name=principle_display_name,
+                constraint_amount=constraint_amount
+            ))
+        else:
+            delta_parts.append(language_manager.get(
+                "memory.two_stage.vote_info",
+                principle_num=principle_num,
+                principle_display_name=principle_display_name
+            ))
+    else:
+        vote_info = f"Your vote: {principle_num} ({principle_display_name})"
+        if constraint_amount is not None:
+            vote_info += f" with ${constraint_amount:,} constraint"
+        delta_parts.append(vote_info)
     
     # Process efficiency
-    if total_stages == 2:
-        delta_parts.append("Two-stage process (principle + amount)")
+    if language_manager:
+        if total_stages == 2:
+            delta_parts.append(language_manager.get("memory.two_stage.process_two_stage"))
+        else:
+            delta_parts.append(language_manager.get("memory.two_stage.process_single_stage"))
     else:
-        delta_parts.append("Single-stage process (principle only)")
+        if total_stages == 2:
+            delta_parts.append("Two-stage process (principle + amount)")
+        else:
+            delta_parts.append("Single-stage process (principle only)")
     
     if total_attempts > total_stages:
-        delta_parts.append(f"Total attempts: {total_attempts}")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.total_attempts", total_attempts=total_attempts))
+        else:
+            delta_parts.append(f"Total attempts: {total_attempts}")
     
     # Group outcome
     if consensus_reached:
-        consensus_info = "Group consensus: YES"
-        if agreed_principle:
-            consensus_info += f" (Agreed: {agreed_principle})"
-        delta_parts.append(consensus_info)
+        if language_manager:
+            if agreed_principle:
+                delta_parts.append(language_manager.get("memory.two_stage.consensus_yes_with_agreed", agreed_principle=agreed_principle))
+            else:
+                delta_parts.append(language_manager.get("memory.two_stage.consensus_yes"))
+        else:
+            consensus_info = "Group consensus: YES"
+            if agreed_principle:
+                consensus_info += f" (Agreed: {agreed_principle})"
+            delta_parts.append(consensus_info)
     else:
-        delta_parts.append("Group consensus: NO")
+        if language_manager:
+            delta_parts.append(language_manager.get("memory.two_stage.consensus_no"))
+        else:
+            delta_parts.append("Group consensus: NO")
     
     return " | ".join(delta_parts)
