@@ -9,7 +9,8 @@ dynamic temperature parameter compatibility detection.
 import asyncio
 import logging
 from typing import Tuple, Optional, Union, List, Dict
-from agents.extensions.models.litellm_model import LitellmModel
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+from utils.openrouter_client import get_openrouter_client
 from agents.model_settings import ModelSettings
 import os
 
@@ -18,22 +19,22 @@ logger = logging.getLogger(__name__)
 
 def detect_model_provider(model_string: str) -> Tuple[str, bool]:
     """
-    Detect if model requires LiteLLM OpenRouter integration.
+    Detect if model requires OpenRouter integration.
     
     Args:
         model_string: Model identifier from configuration
         
     Returns:
-        Tuple of (processed_model_string, is_litellm_model)
+        Tuple of (model_string, is_openrouter_model)
         - For OpenAI models (no "/"): returns (original_string, False)
-        - For OpenRouter models (with "/"): returns ("openrouter/original_string", True)
+        - For OpenRouter models (with "/"): returns (original_string, True)
     """
     if "/" in model_string:
-        return f"openrouter/{model_string}", True
+        return model_string, True
     return model_string, False
 
 
-def create_model_config(model_string: str, temperature: float = 0.7) -> Union[str, LitellmModel]:
+def create_model_config(model_string: str, temperature: float = 0.7) -> Union[str, OpenAIChatCompletionsModel]:
     """
     Create appropriate model configuration based on provider.
     
@@ -42,15 +43,14 @@ def create_model_config(model_string: str, temperature: float = 0.7) -> Union[st
         temperature: Model temperature setting
         
     Returns:
-        Either string (for OpenAI models) or LitellmModel instance (for OpenRouter models)
+        Either string (for OpenAI models) or OpenAIChatCompletionsModel instance (for OpenRouter models)
     """
-    processed_model, is_litellm = detect_model_provider(model_string)
+    processed_model, is_openrouter = detect_model_provider(model_string)
     
-    if is_litellm:
-        # Use OpenRouter API key exactly like in Open_Router_Test.py
-        return LitellmModel(
+    if is_openrouter:
+        return OpenAIChatCompletionsModel(
             model=processed_model,
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_client=get_openrouter_client()
         )
     
     return model_string
@@ -85,14 +85,14 @@ def get_model_provider_info(model_string: str) -> dict:
     Returns:
         Dictionary with provider information
     """
-    processed_model, is_litellm = detect_model_provider(model_string)
+    processed_model, is_openrouter = detect_model_provider(model_string)
     
     return {
         "original_model": model_string,
         "processed_model": processed_model,
-        "is_litellm": is_litellm,
-        "provider": "OpenRouter" if is_litellm else "OpenAI",
-        "requires_env_var": "OPENROUTER_API_KEY" if is_litellm else "OPENAI_API_KEY"
+        "is_openrouter": is_openrouter,
+        "provider": "OpenRouter" if is_openrouter else "OpenAI",
+        "requires_env_var": "OPENROUTER_API_KEY" if is_openrouter else "OPENAI_API_KEY"
     }
 
 
@@ -101,7 +101,7 @@ async def create_model_config_with_temperature_detection(
     temperature: float = 0.7,
     skip_temperature_test: bool = False,
     temperature_cache=None
-) -> Tuple[Union[str, LitellmModel], dict]:
+) -> Tuple[Union[str, OpenAIChatCompletionsModel], dict]:
     """
     Create model configuration with dynamic temperature compatibility detection.
     
@@ -115,7 +115,7 @@ async def create_model_config_with_temperature_detection(
     """
     from utils.dynamic_model_capabilities import test_temperature_support, supports_temperature_cached
     
-    processed_model, is_litellm = detect_model_provider(model_string)
+    processed_model, is_openrouter = detect_model_provider(model_string)
     
     # Check if we already know about this model's temperature support
     cached_support = supports_temperature_cached(model_string, temperature_cache)
@@ -133,16 +133,16 @@ async def create_model_config_with_temperature_detection(
         detection_method = "dynamic_test"
     else:
         # Conservative fallback - assume temperature works for OpenAI models, not for others
-        supports_temp = not is_litellm  # OpenAI models generally support temperature
+        supports_temp = not is_openrouter  # OpenAI models generally support temperature
         detection_method = "conservative_fallback"
         test_reason = "Skipped dynamic testing, using conservative assumption"
         test_exception = None
     
     # Create model configuration
-    if is_litellm:
-        model_config = LitellmModel(
+    if is_openrouter:
+        model_config = OpenAIChatCompletionsModel(
             model=processed_model,
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_client=get_openrouter_client()
         )
     else:
         model_config = model_string
@@ -166,7 +166,7 @@ async def create_model_config_with_temperature_detection(
     return model_config, temperature_info
 
 
-def create_model_config_sync(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, LitellmModel], dict]:
+def create_model_config_sync(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, OpenAIChatCompletionsModel], dict]:
     """
     Synchronous wrapper for model config creation with conservative temperature detection.
     
@@ -195,7 +195,7 @@ def create_model_config_sync(model_string: str, temperature: float = 0.7, temper
         return _create_conservative_model_config(model_string, temperature, temperature_cache)
 
 
-def _create_conservative_model_config(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, LitellmModel], dict]:
+def _create_conservative_model_config(model_string: str, temperature: float = 0.7, temperature_cache=None) -> Tuple[Union[str, OpenAIChatCompletionsModel], dict]:
     """
     Create conservative model configuration without dynamic testing.
     
@@ -204,7 +204,7 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
     """
     from utils.dynamic_model_capabilities import supports_temperature_cached
     
-    processed_model, is_litellm = detect_model_provider(model_string)
+    processed_model, is_openrouter = detect_model_provider(model_string)
     
     # Check cache first
     cached_support = supports_temperature_cached(model_string, temperature_cache)
@@ -213,7 +213,7 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
         detection_method = "cached_result"
         test_reason = "Previous test result from cache"
     else:
-        if is_litellm:
+        if is_openrouter:
             # Conservative: assume OpenRouter models don't support temperature
             supports_temp = False
             detection_method = "conservative_openrouter"
@@ -225,10 +225,10 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
             test_reason = "OpenAI models generally support temperature"
     
     # Create model configuration
-    if is_litellm:
-        model_config = LitellmModel(
+    if is_openrouter:
+        model_config = OpenAIChatCompletionsModel(
             model=processed_model,
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_client=get_openrouter_client()
         )
     else:
         model_config = model_string

@@ -60,15 +60,15 @@ class TestMixedModelExperiment(unittest.TestCase):
         # Test each agent's model provider info
         alice_info = get_model_provider_info("gpt-4.1-mini")
         self.assertEqual(alice_info["provider"], "OpenAI")
-        self.assertFalse(alice_info["is_litellm"])
+        self.assertFalse(alice_info["is_openrouter"])
         
         bob_info = get_model_provider_info("google/gemini-2.5-flash")
         self.assertEqual(bob_info["provider"], "OpenRouter")
-        self.assertTrue(bob_info["is_litellm"])
+        self.assertTrue(bob_info["is_openrouter"])
         
         carol_info = get_model_provider_info("anthropic/claude-3-5-sonnet-20241022")
         self.assertEqual(carol_info["provider"], "OpenRouter")
-        self.assertTrue(carol_info["is_litellm"])
+        self.assertTrue(carol_info["is_openrouter"])
     
     @patch.dict("os.environ", {
         "OPENAI_API_KEY": "test-openai-key", 
@@ -76,13 +76,16 @@ class TestMixedModelExperiment(unittest.TestCase):
     })
     @patch('experiment_agents.participant_agent.create_participant_agents_with_dynamic_temperature')
     @patch('experiment_agents.utility_agent.UtilityAgent')
-    @patch('utils.model_provider.LitellmModel')
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
     @unittest.skip("Temporarily skipped due to complex mocking requirements")
-    def test_experiment_manager_initialization(self, mock_litellm, mock_utility_agent, mock_create_participants):
+    def test_experiment_manager_initialization(self, mock_get_client, mock_openai_model, mock_utility_agent, mock_create_participants):
         """Test that experiment manager initializes with mixed model providers."""
-        # Mock LiteLLM model instances
-        mock_litellm_instance = MagicMock()
-        mock_litellm.return_value = mock_litellm_instance
+        # Mock OpenAI model instances and client
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_openai_instance = MagicMock()
+        mock_openai_model.return_value = mock_openai_instance
         
         # Mock participant creation - return list of 3 mock participants
         mock_participants = [MagicMock() for _ in range(3)]
@@ -110,32 +113,32 @@ class TestMixedModelExperiment(unittest.TestCase):
         self.assertEqual(len(manager.participants), 3)
         self.assertIsNotNone(manager.utility_agent)
         
-        # Verify LiteLLM was called for OpenRouter models
+        # Verify OpenAIChatCompletionsModel was called for OpenRouter models
         expected_calls = [
             # Bob's model
             unittest.mock.call(
-                model="openrouter/google/gemini-2.5-flash",
-                api_key="test-openrouter-key"
+                model="google/gemini-2.5-flash",
+                openai_client=mock_client
             ),
             # Carol's model  
             unittest.mock.call(
-                model="openrouter/anthropic/claude-3-5-sonnet-20241022",
-                api_key="test-openrouter-key"
+                model="anthropic/claude-3-5-sonnet-20241022",
+                openai_client=mock_client
             ),
             # Utility agent model (called twice for parser and validator)
             unittest.mock.call(
-                model="openrouter/google/gemini-2.5-flash",
-                api_key="test-openrouter-key"
+                model="google/gemini-2.5-flash",
+                openai_client=mock_client
             ),
             unittest.mock.call(
-                model="openrouter/google/gemini-2.5-flash", 
-                api_key="test-openrouter-key"
+                model="google/gemini-2.5-flash", 
+                openai_client=mock_client
             )
         ]
         
-        # Check that LiteLLM was called the expected number of times
+        # Check that OpenAIChatCompletionsModel was called the expected number of times
         # (2 participant agents + 2 utility agents = 4 calls)
-        self.assertEqual(mock_litellm.call_count, 4)
+        self.assertEqual(mock_openai_model.call_count, 4)
     
     @patch.dict("os.environ", {})
     def test_no_environment_validation_required(self):
@@ -214,13 +217,16 @@ class TestMixedModelExperiment(unittest.TestCase):
     @patch('core.phase2_manager.Phase2Manager.run_phase2')
     @patch('experiment_agents.participant_agent.Agent')
     @patch('experiment_agents.utility_agent.Agent')
-    @patch('utils.model_provider.LitellmModel')
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
     @unittest.skip("Temporarily skipped due to complex mocking requirements")
-    def test_full_experiment_mock_run(self, mock_litellm, mock_utility_agent, 
+    def test_full_experiment_mock_run(self, mock_get_client, mock_openai_model, mock_utility_agent, 
                                       mock_participant_agent, mock_phase2, mock_phase1):
         """Test full experiment flow with mocked phases."""
-        # Mock LiteLLM and Agent instances
-        mock_litellm.return_value = MagicMock()
+        # Mock OpenAI model and client instances
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_openai_model.return_value = MagicMock()
         
         mock_participant_instance = MagicMock()
         mock_participant_instance.get_all_tools = AsyncMock()
@@ -269,7 +275,7 @@ class TestMixedModelExperiment(unittest.TestCase):
         self.assertEqual(alice_config.model, "gpt-4.1-mini")
         self.assertEqual(alice_config.temperature, 0.0)
         
-        # Test OpenRouter models (temperature ignored in LiteLLM)
+        # Test OpenRouter models (temperature handled via ModelSettings)
         bob_config = self.mixed_config.agents[1]  # OpenRouter model
         self.assertIn("/", bob_config.model)
         self.assertEqual(bob_config.temperature, 0.7)

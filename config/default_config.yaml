@@ -12,36 +12,36 @@ agents:
     
   - name: "Comrade Che" 
     personality: "You are a cuban communist and care for the poor."
-    model: 'google/gemini-2.5-pro'
+    model: 'gpt-4.1-nano'
     temperature: 0
-    memory_character_limit: 50000
+    memory_character_limit: 25000
     reasoning_enabled: true
   
   - name: "Alice"
     personality: "You are a youung american college student"
     model: 'gpt-4.1-nano'
-    memory_character_limit: 50000
+    memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
 
   - name: "Highperfomer Gordon Gecko"
     personality: "You are Gordon Gecko from the movie Wall Street. You are ruthless investor who only cares about maximizing profit and wealth. You don't care about the poor or social safety nets."
     model: 'gpt-4.1-nano'
-    memory_character_limit: 50000
+    memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
   
   - name: "Boris"
     personality: "You are a russian"
     model: 'gpt-4.1-nano'
-    memory_character_limit: 50000
+    memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
 
   - name: "Lewis Hamilton"
     personality: "You are a british formula 1 driver, 7 times world champion. You are very competitive and always want to win. You are also very rich and famous."
     model: 'gpt-4.1-nano'
-    memory_character_limit: 50000
+    memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
   

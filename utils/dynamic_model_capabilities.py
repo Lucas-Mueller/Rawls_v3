@@ -11,7 +11,8 @@ from typing import Dict, Optional, Tuple, List
 from agents import Agent, Runner, ModelSettings
 from agents.tracing.setup import get_trace_provider
 from utils.model_provider import detect_model_provider
-from agents.extensions.models.litellm_model import LitellmModel
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+from utils.openrouter_client import get_openrouter_client
 import os
 
 logger = logging.getLogger(__name__)
@@ -89,12 +90,12 @@ async def test_temperature_support(model_string: str, cache: Optional[Temperatur
     
     try:
         # Create model configuration
-        processed_model, is_litellm = detect_model_provider(model_string)
+        processed_model, is_openrouter = detect_model_provider(model_string)
         
-        if is_litellm:
-            model_config = LitellmModel(
+        if is_openrouter:
+            model_config = OpenAIChatCompletionsModel(
                 model=processed_model,
-                api_key=os.getenv("OPENROUTER_API_KEY"),
+                openai_client=get_openrouter_client()
             )
         else:
             model_config = model_string
@@ -263,7 +264,8 @@ async def create_agent_with_temperature_retry(
         Tuple of (agent, temperature_info_dict)
     """
     from utils.model_provider import detect_model_provider
-    from agents.extensions.models.litellm_model import LitellmModel
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    from utils.openrouter_client import get_openrouter_client
     from agents import ModelSettings
     
     # Use global cache if none provided
@@ -292,12 +294,12 @@ async def create_agent_with_temperature_retry(
         return agent, temp_info
     
     # Step 2: Create model config
-    processed_model, is_litellm = detect_model_provider(model_string)
+    processed_model, is_openrouter = detect_model_provider(model_string)
     
-    if is_litellm:
-        model_config = LitellmModel(
+    if is_openrouter:
+        model_config = OpenAIChatCompletionsModel(
             model=processed_model,
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_client=get_openrouter_client()
         )
     else:
         model_config = model_string
