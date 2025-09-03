@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1180" viewBox="0 0 1800 1180">
+  <defs>
+    <linearGradient id="lane-disc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="lane-mem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fefce8"/>
+      <stop offset="100%" stop-color="#fff9c2"/>
+    </linearGradient>
+    <linearGradient id="lane-vote" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef2ff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+    <linearGradient id="g-simple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e9f3ff"/>
+      <stop offset="100%" stop-color="#d7ebff"/>
+    </linearGradient>
+    <linearGradient id="g-complex" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3e8"/>
+      <stop offset="100%" stop-color="#ffe1c7"/>
+    </linearGradient>
+    <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#111827" flood-opacity="0.18"/>
+    </filter>
+    <marker id="arrow-main" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#1f2937" />
+    </marker>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#2563eb" />
+    </marker>
+    <marker id="arrow-orange" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#ea580c" />
+    </marker>
+    <style><![CDATA[
+      .h1 { font-family: Inter, Arial, sans-serif; font-size:28px; font-weight:800; fill:#0f172a; }
+      .h2 { font-family: Inter, Arial, sans-serif; font-size:14px; fill:#475569; }
+      .laneTitle { font-family: Inter, Arial, sans-serif; font-size:14px; font-weight:700; fill:#334155; letter-spacing: .06em; text-transform:uppercase; }
+      .panel { fill:#ffffff; stroke:#cbd5e1; stroke-width:1.1; rx:12; filter:url(#ds); }
+      .simple { fill:url(#g-simple); stroke:#60a5fa; stroke-width:1.2; rx:12; filter:url(#ds); }
+      .complex { fill:url(#g-complex); stroke:#fb923c; stroke-width:1.2; rx:12; filter:url(#ds); }
+      .badge { fill:#0f172a; rx:8; }
+      .badgeText { font-family: Inter, Arial, sans-serif; font-size:11px; fill:#ffffff; font-weight:800; }
+      .text { font-family: Inter, Arial, sans-serif; font-size:15px; fill:#0f172a; }
+      .small { font-family: Inter, Arial, sans-serif; font-size:12px; fill:#475569; }
+      .arrow { stroke:#1f2937; stroke-width:2; fill:none; marker-end:url(#arrow-main); }
+      .arrowBlue { stroke:#2563eb; stroke-width:2.4; fill:none; marker-end:url(#arrow-blue); }
+      .arrowOrange { stroke:#ea580c; stroke-width:2.4; fill:none; marker-end:url(#arrow-orange); }
+      .chip { fill:#111827; rx:14; }
+      .chipText { font-family: Inter, Arial, sans-serif; font-size:12px; fill:#ffffff; font-weight:700; }
+    ]]></style>
+  </defs>
+
+  <!-- Header -->
+  <text x="38" y="56" class="h1">Discussion Round — Visual Flow (Agent last)</text>
+  <text x="38" y="82" class="h2">Clear lanes for Discussion, Memory Updates, and Voting; memory timings highlighted</text>
+
+  <!-- Swimlanes -->
+  <g>
+    <rect x="20" y="110" width="560" height="1000" fill="url(#lane-disc)" stroke="#e2e8f0"/>
+    <text x="40" y="140" class="laneTitle">Discussion</text>
+
+    <rect x="600" y="110" width="600" height="1000" fill="url(#lane-mem)" stroke="#fde68a"/>
+    <text x="620" y="140" class="laneTitle">Memory Updates</text>
+
+    <rect x="1220" y="110" width="560" height="1000" fill="url(#lane-vote)" stroke="#c7d2fe"/>
+    <text x="1240" y="140" class="laneTitle">Voting</text>
+  </g>
+
+  <!-- Discussion lane panels -->
+  <g transform="translate(60,180)">
+    <rect width="460" height="110" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 1</text>
+    <text x="18" y="34" class="text">Start of Round</text>
+    <text x="18" y="60" class="small">Agent placed last in speaking order</text>
+  </g>
+
+  <path d="M520 230 C 590 230, 610 220, 650 220" class="arrow"/>
+
+  <g transform="translate(60,330)">
+    <rect width="460" height="150" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 2</text>
+    <text x="18" y="34" class="text">Discussion Prompt (with public history)</text>
+    <text x="18" y="60" class="small">• Group composition</text>
+    <text x="18" y="80" class="small">• Public discussion history (trimmed)</text>
+    <text x="18" y="100" class="small">• Standard instructions: Name, Role, Bank, Phase, Round, Memory, Personality</text>
+  </g>
+
+  <path d="M520 400 C 580 400, 600 400, 650 400" class="arrow"/>
+
+  <g transform="translate(60,520)">
+    <rect width="460" height="130" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 3</text>
+    <text x="18" y="34" class="text">Agent Generates Statement</text>
+    <text x="18" y="60" class="small">Runner.run(discussion_prompt, context)</text>
+    <text x="18" y="80" class="small">Optional internal reasoning captured separately</text>
+  </g>
+
+  <!-- Complex memory update box -->
+  <path d="M520 580 C 590 580, 610 590, 650 600" class="arrowOrange"/>
+  <g transform="translate(650,560)">
+    <rect width="520" height="150" class="complex"/>
+    <rect x="12" y="-18" width="210" height="26" class="badge"/>
+    <text x="22" y="1" class="badgeText">MEMORY UPDATE — COMPLEX</text>
+    <text x="20" y="38" class="text">Discussion Entry (LLM rewrite via MemoryManager)</text>
+    <text x="20" y="64" class="small">• “Your statement” ≤ 300 chars</text>
+    <text x="20" y="84" class="small">• “Internal reasoning” ≤ 200 chars (if present)</text>
+    <text x="20" y="104" class="small">• Outcome: made discussion statement</text>
+  </g>
+
+  <!-- Voting lane: initiation prompt + answer -->
+  <g transform="translate(1240,220)">
+    <rect width="500" height="120" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 4</text>
+    <text x="18" y="34" class="text">Vote Initiation Prompt</text>
+    <text x="18" y="60" class="small">Includes agent’s recent statement</text>
+  </g>
+
+  <g transform="translate(1240,370)">
+    <rect width="500" height="110" class="panel"/>
+    <text x="18" y="36" class="text">Agent: “Yes, initiate voting”</text>
+    <text x="18" y="62" class="small">Parsed by UtilityAgent → boolean</text>
+  </g>
+
+  <!-- Simple memory update: vote initiation -->
+  <path d="M1240 432 C 1180 455, 1120 480, 1030 520" class="arrowBlue"/>
+  <g transform="translate(650,740)">
+    <rect width="520" height="120" class="simple"/>
+    <rect x="12" y="-18" width="200" height="26" class="badge"/>
+    <text x="22" y="1" class="badgeText">MEMORY UPDATE — SIMPLE</text>
+    <text x="20" y="40" class="text">Vote Initiation</text>
+    <text x="20" y="66" class="small">Appends: “Round N: You chose to initiate voting.”</text>
+    <text x="20" y="86" class="small">If memory > ~90% of limit → compress</text>
+  </g>
+
+  <!-- Voting lane: confirmation -->
+  <g transform="translate(1240,520)">
+    <rect width="500" height="120" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 5</text>
+    <text x="18" y="36" class="text">Group Confirmation</text>
+    <text x="18" y="62" class="small">All participants agree to vote</text>
+  </g>
+
+  <!-- Simple memory update: confirmation -->
+  <path d="M1240 580 C 1160 640, 1100 700, 1030 790" class="arrowBlue"/>
+  <g transform="translate(650,890)">
+    <rect width="520" height="120" class="simple"/>
+    <rect x="12" y="-18" width="200" height="26" class="badge"/>
+    <text x="22" y="1" class="badgeText">MEMORY UPDATE — SIMPLE</text>
+    <text x="20" y="40" class="text">Confirmation</text>
+    <text x="20" y="66" class="small">Appends: “You agreed to participate in voting.”</text>
+    <text x="20" y="86" class="small">Compress if near limit</text>
+  </g>
+
+  <!-- Voting lane: two-stage ballot -->
+  <g transform="translate(1240,700)">
+    <rect width="500" height="120" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 6</text>
+    <text x="18" y="36" class="text">Secret Ballot — Principle Choice</text>
+    <text x="18" y="62" class="small">Agent selects Principle 3 (Average + Floor)</text>
+  </g>
+
+  <!-- Simple memory update: ballot choice -->
+  <path d="M1240 760 C 1160 780, 1080 820, 1030 880" class="arrowBlue"/>
+  <g transform="translate(650,1040)">
+    <rect width="520" height="120" class="simple"/>
+    <rect x="12" y="-18" width="200" height="26" class="badge"/>
+    <text x="22" y="1" class="badgeText">MEMORY UPDATE — SIMPLE</text>
+    <text x="20" y="40" class="text">Ballot Choice</text>
+    <text x="20" y="66" class="small">“Secret ballot: I voted for Principle 3.”</text>
+    <text x="20" y="86" class="small">Compress if near limit</text>
+  </g>
+
+  <g transform="translate(1240,860)">
+    <rect width="500" height="110" class="panel"/>
+    <text x="18" y="36" class="text">Secret Ballot — Amount</text>
+    <text x="18" y="62" class="small">Agent specifies floor = $18,000</text>
+  </g>
+
+  <!-- Simple memory update: amount -->
+  <path d="M1240 910 C 1160 930, 1080 970, 1020 1040" class="arrowBlue"/>
+  <g transform="translate(60,1040)" opacity="0.0"><rect width="1" height="1"/></g>
+  <g transform="translate(1180,1040)" opacity="0.0"><rect width="1" height="1"/></g>
+  <g transform="translate(650,1180)" opacity="0.0"><rect width="1" height="1"/></g>
+  <g transform="translate(1180,1040)">
+    <rect width="-1" height="-1" fill="none"/>
+  </g>
+  <g transform="translate(1180,1040)"/>
+  <g transform="translate(650,1160)"/>
+
+  <!-- Optional consensus → final results (complex) -->
+  <g transform="translate(1240,1000)">
+    <rect width="500" height="120" class="panel"/>
+    <rect x="-8" y="-26" width="72" height="26" class="chip"/>
+    <text x="0" y="-8" class="chipText">STEP 7</text>
+    <text x="18" y="36" class="text">Consensus & Final Results</text>
+    <text x="18" y="62" class="small">Group agrees: Principle 3 with $18,000</text>
+  </g>
+
+  <path d="M1240 1060 C 1100 1060, 980 1040, 920 960" class="arrowOrange"/>
+  <g transform="translate(650,900)">
+    <rect width="520" height="120" class="complex"/>
+    <rect x="12" y="-18" width="210" height="26" class="badge"/>
+    <text x="22" y="1" class="badgeText">MEMORY UPDATE — COMPLEX</text>
+    <text x="20" y="40" class="text">Final Phase 2 Results</text>
+    <text x="20" y="66" class="small">“Final Phase 2 Results: {agreed principle/amount, earnings}”</text>
+    <text x="20" y="86" class="small">LLM rewrite with compression safeguards</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(600,180)">
+    <rect width="560" height="120" class="panel"/>
+    <text x="20" y="36" class="text" style="font-weight:800;">Legend</text>
+    <rect x="20" y="50" width="18" height="12" class="complex"/>
+    <text x="46" y="60" class="small">Complex memory update (LLM rewrite)</text>
+    <rect x="300" y="50" width="18" height="12" class="simple"/>
+    <text x="326" y="60" class="small">Simple append (compress near limit)</text>
+  </g>
+
+</svg>
+

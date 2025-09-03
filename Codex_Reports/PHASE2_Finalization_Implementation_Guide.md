@@ -40,7 +40,7 @@ Goal: Use config to control how much public discussion history is kept before tr
 
 ## 2) Centralize “Simple” Memory Writes in MemoryService
 
-Status: partial
+Status: completed
 
 Goal: Eliminate direct `SimpleMemoryManager` calls for ballot selection and amount specification; use `MemoryService` for consistent truncation and guidance styles.
 
@@ -55,10 +55,16 @@ Goal: Eliminate direct `SimpleMemoryManager` calls for ballot selection and amou
     - `update_amount_specification_memory(...)` at core/services/memory_service.py:524
   - `utils/selective_memory_manager.py` no longer imports or calls `SimpleMemoryManager`; simple events append preformatted content.
 
-- Remaining work:
-  - Call `MemoryService.update_ballot_selection_memory` and `update_amount_specification_memory` from the voting flow when those events occur:
-    - Preferred: `VotingService` or `TwoStageVotingManager` invokes these methods at the moment of ballot choice and amount specification.
-  - Confirm that preformatted content paths actually run (add or adjust unit tests around ballot/amount writes).
+- Wiring implemented:
+  - `VotingService` now accepts an optional `memory_service` and passes it to `TwoStageVotingManager`.
+  - `TwoStageVotingManager` calls:
+    - `memory_service.update_ballot_selection_memory(...)` immediately after successful principle selection.
+    - `memory_service.update_amount_specification_memory(...)` immediately after successful amount specification (for principles 3/4).
+  - `SelectiveMemoryManager` no longer uses `SimpleMemoryManager` and appends preformatted simple-event content when used.
+
+- Code references:
+  - VotingService constructor: core/services/voting_service.py (memory_service param)
+  - TwoStageVotingManager init + calls: core/two_stage_voting_manager.py (ballot/amount memory updates)
 
 - Acceptance criteria:
   - No direct `SimpleMemoryManager.insert_secret_ballot_choice` or `.insert_amount_specification` calls in the codebase (outside MemoryService internals, if any).

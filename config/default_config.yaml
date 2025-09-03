@@ -12,24 +12,45 @@ agents:
     
   - name: "Comrade Che" 
     personality: "You are a cuban communist and care for the poor."
-    model: 'gpt-4.1-nano'
+    model: 'google/gemini-2.5-pro'
     temperature: 0
     memory_character_limit: 50000
     reasoning_enabled: true
   
-  - name: "Comrade Lenin"
-    personality: "You are a russian communist and care for the poor."
+  - name: "Alice"
+    personality: "You are a youung american college student"
     model: 'gpt-4.1-nano'
     memory_character_limit: 50000
     reasoning_enabled: true
     temperature: 0
 
+  - name: "Highperfomer Gordon Gecko"
+    personality: "You are Gordon Gecko from the movie Wall Street. You are ruthless investor who only cares about maximizing profit and wealth. You don't care about the poor or social safety nets."
+    model: 'gpt-4.1-nano'
+    memory_character_limit: 50000
+    reasoning_enabled: true
+    temperature: 0
+  
+  - name: "Boris"
+    personality: "You are a russian"
+    model: 'gpt-4.1-nano'
+    memory_character_limit: 50000
+    reasoning_enabled: true
+    temperature: 0
+
+  - name: "Lewis Hamilton"
+    personality: "You are a british formula 1 driver, 7 times world champion. You are very competitive and always want to win. You are also very rich and famous."
+    model: 'gpt-4.1-nano'
+    memory_character_limit: 50000
+    reasoning_enabled: true
+    temperature: 0
+  
     
 
 utility_agent_model: 'gpt-4.1-nano'
 utility_agent_temperature: 0.0
 
-phase2_rounds: 4
+phase2_rounds: 10
 distribution_range_phase2: [4, 8]
 
 # Voting detection mode: "simple" (current behavior) or "complex" (new two-phase voting)
