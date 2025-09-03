@@ -379,50 +379,16 @@ class MemoryService:
         Apply content truncation rules based on event type and content analysis.
         
         Truncation policy:
-        - Statements: ≤300 characters (preserves meaning while preventing memory bloat)
-        - Internal reasoning: ≤200 characters (less critical for memory continuity)
-        - Other content: No truncation (full context preserved)
+        - All content: No truncation (full context preserved)
         
         Args:
             content: Original content to potentially truncate
             event_type: Event type for context-aware truncation
             
         Returns:
-            Truncated content if applicable, original content otherwise
+            Original content without truncation
         """
-        if not content:
-            return content
-        
-        # Extract statement and reasoning parts for discussion events
-        if event_type == MemoryEventType.DISCUSSION_STATEMENT:
-            lines = content.split('\n')
-            truncated_lines = []
-            
-            for line in lines:
-                # Handle localized round statement format
-                round_prefix = self.language_manager.get("memory.round_prefix", default="Round ")
-                statement_key = self.language_manager.get("memory.statement_key", default="statement:")
-                reasoning_prefix = self.language_manager.get("memory.reasoning_prefix", default="Internal reasoning:")
-                
-                if line.startswith(round_prefix) and statement_key in line:
-                    # Extract statement part
-                    statement_part = line.split(statement_key, 1)[1].strip() if statement_key in line else line
-                    if len(statement_part) > self.statement_max_chars:
-                        statement_part = statement_part[:self.statement_max_chars].rstrip() + '...'
-                    truncated_lines.append(line.split(statement_key, 1)[0] + statement_key + ' ' + statement_part)
-                elif line.startswith(reasoning_prefix):
-                    # Extract reasoning part
-                    reasoning_part = line.split(':', 1)[1].strip() if ':' in line else line
-                    if len(reasoning_part) > self.reasoning_max_chars:
-                        reasoning_part = reasoning_part[:self.reasoning_max_chars].rstrip() + '...'
-                    truncated_lines.append(reasoning_prefix + ' ' + reasoning_part)
-                else:
-                    # Keep other lines as-is (metadata, formatting)
-                    truncated_lines.append(line)
-            
-            return '\n'.join(truncated_lines)
-        
-        # For non-discussion events, return content as-is (no truncation needed)
+        # Return content as-is without any truncation
         return content
     
     async def update_vote_initiation_decision_memory(

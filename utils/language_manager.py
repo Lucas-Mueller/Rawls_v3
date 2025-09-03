@@ -293,10 +293,7 @@ class LanguageManager:
             Translated instructions for the round
         """
         if round_number == 0:
-            # Generate randomized example for initial ranking
-            randomized_example = self._generate_randomized_example()
-            return self.get("prompts.phase1_round0_initial_ranking", 
-                          randomized_example=randomized_example)
+            return self.get("prompts.phase1_round0_initial_ranking")
         elif round_number == -1:
             return self.get("prompts.phase1_round_neg1_detailed_explanation")  
         elif 1 <= round_number <= 4:
