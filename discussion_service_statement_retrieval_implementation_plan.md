@@ -1,284 +1,160 @@
-# DiscussionService Statement Retrieval Implementation Plan
+# DiscussionService Statement Retrieval Implementation Plan - IMPLEMENTATION STATUS
 
-## Issue Summary
+## ✅ FULLY IMPLEMENTED - NO FURTHER ACTION REQUIRED
 
 The current Phase2Manager's `_get_participant_statement` method (lines ~939–1000) directly calls `Runner.run(...)` without retry/backoff functionality. According to the refactoring plan, this logic needs to be moved to DiscussionService with proper retry/backoff mechanisms to improve reliability and centralize discussion-related operations.
 
-## Root Cause Analysis
+**STATUS: This plan has been FULLY IMPLEMENTED as of the current codebase state.**
 
-### Current Implementation Problems
-1. **No Retry Logic**: Direct `Runner.run()` call fails permanently on transient errors (network issues, API rate limits, timeouts)
-2. **Scattered Responsibility**: Statement retrieval logic is in Phase2Manager instead of the specialized DiscussionService
-3. **Inconsistent Error Handling**: Unlike VotingService which has retry patterns, statement retrieval lacks resilience
-4. **No Backoff Strategy**: Immediate failures without exponential backoff for rate limiting scenarios
+## ✅ IMPLEMENTATION ASSESSMENT
 
-### Current Implementation Details
-Located in `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py` lines 939-960:
+### Original Problems (RESOLVED)
+1. **✅ Retry Logic**: Now implemented in `DiscussionService.get_participant_statement_with_retry()` with configurable retry attempts and exponential backoff
+2. **✅ Centralized Responsibility**: Statement retrieval logic moved to DiscussionService (`core/services/discussion_service.py`)
+3. **✅ Consistent Error Handling**: Implements same retry patterns as VotingService with proper timeout handling
+4. **✅ Backoff Strategy**: Exponential backoff with configurable factor implemented
+
+### Current Implementation Status
+The **original problematic code has been REPLACED**. Phase2Manager now delegates to DiscussionService:
 
 ```python
-async def _get_participant_statement(
-    self,
-    participant: ParticipantAgent,
-    context: ParticipantContext,
-    discussion_state: GroupDiscussionState,
-    agent_config: AgentConfiguration
-) -> tuple[str, str]:
-    """Get participant's statement for the current round."""
-    
-    discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
-    
-    # Always use text responses, no structured output needed for statements
-    result = await Runner.run(participant.agent, discussion_prompt, context=context)
-    statement = result.final_output
-    
-    # Create round content for memory
-    language_manager = self.language_manager
-    round_content = f"""{language_manager.get('memory_field_labels.prompt')} {discussion_prompt}
-{language_manager.get('memory_field_labels.your_statement')} {statement}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
-    
-    return statement, round_content
+# In Phase2Manager._process_participant_round() at line 286:
+statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_retry(
+    participant=participant,
+    context=context,
+    discussion_state=discussion_state,
+    agent_config=agent_config,
+    participant_names=participant_names,
+    max_rounds=self.settings.phase2_rounds
+)
 ```
 
-## Affected Components
+The **refactored services-first architecture is ACTIVE** - no feature flags or fallback logic remain.
 
-### Primary Components
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py`: Target for new method
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py`: Source of logic to be moved
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/config/phase2_settings.py`: Contains retry configuration
+## ✅ COMPONENT STATUS
 
-### Supporting Components
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/experiment_agents/participant_agent.py`: ParticipantAgent interface
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/models.py`: ParticipantContext and GroupDiscussionState models
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/config/__init__.py`: AgentConfiguration model
+### Primary Components (IMPLEMENTED)
+- **✅ `/core/services/discussion_service.py`**: Contains fully implemented `get_participant_statement_with_retry()` method with retry logic
+- **✅ `/core/phase2_manager.py`**: Successfully refactored to delegate to DiscussionService (line 286)
+- **✅ `/config/phase2_settings.py`**: Contains all required retry configuration settings
 
-### Reference Implementation
-- `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py`: Contains retry patterns (lines 90-184)
+### Supporting Components (VERIFIED)
+- **✅ Protocols**: All required protocols (`ParticipantAgent`, `ParticipantContext`, `AgentConfiguration`) defined in DiscussionService
+- **✅ Models**: `GroupDiscussionState` and other models properly imported and used
+- **✅ Agent Integration**: Works with existing participant agent infrastructure
 
-## Implementation Strategy
+### Implementation Quality
+- **✅ Retry Patterns**: Follows established patterns from VotingService
+- **✅ Error Handling**: Comprehensive timeout and exception handling
+- **✅ Logging**: Detailed logging for debugging and monitoring
+- **✅ Memory Management**: Proper memory content creation and history management
 
-### Phase 1: Add Required Imports and Protocols to DiscussionService
+## ✅ IMPLEMENTATION VERIFICATION
 
-1. **Add Required Imports**:
-   ```python
-   import asyncio
-   from typing import List, Optional, Protocol, Tuple
-   from agents import Runner
-   ```
+### ✅ Phase 1: Required Imports and Protocols (COMPLETED)
 
-2. **Add New Protocols**:
-   ```python
-   class ParticipantAgent(Protocol):
-       """Protocol for participant agents."""
-       agent: Any  # OpenAI Agent
-       name: str
-   
-   class ParticipantContext(Protocol):
-       """Protocol for participant context."""
-       round_number: int
-       interaction_type: str
-   
-   class AgentConfiguration(Protocol):
-       """Protocol for agent configuration."""
-       # Add required fields as needed
-   ```
+**All required imports are present** in `discussion_service.py` (lines 8-12):
+```python
+import asyncio
+from typing import List, Optional, Protocol, Tuple, Any
+from agents import Runner
+from config.phase2_settings import Phase2Settings
+from models import GroupDiscussionState
+```
 
-### Phase 2: Implement Core Method with Retry Logic
+**All protocols are properly defined** in `discussion_service.py` (lines 33-48):
+```python
+class ParticipantAgent(Protocol):
+    """Protocol for participant agents."""
+    agent: Any  # OpenAI Agent  
+    name: str
 
-1. **Add Method to DiscussionService**:
-   ```python
-   async def get_participant_statement_with_retry(
-       self,
-       participant: ParticipantAgent,
-       context: ParticipantContext,
-       discussion_state: GroupDiscussionState,
-       agent_config: AgentConfiguration,
-       max_retries: Optional[int] = None
-   ) -> Tuple[str, str]:
-       """
-       Get participant statement with retry/backoff functionality.
-       
-       Args:
-           participant: The participant agent to get statement from
-           context: The participant's context for the round
-           discussion_state: Current discussion state with history
-           agent_config: Agent configuration settings
-           max_retries: Optional override for max retry attempts
-           
-       Returns:
-           Tuple of (statement, round_content_for_memory)
-           
-       Raises:
-           Exception: If all retry attempts are exhausted
-       """
-   ```
+class ParticipantContext(Protocol):
+    """Protocol for participant context."""
+    round_number: int
+    interaction_type: Optional[str]
 
-2. **Implement Retry Logic Pattern** (based on VotingService pattern):
-   ```python
-   max_attempts = max_retries or self.settings.max_statement_retries
-   timeout_seconds = self.settings.statement_timeout_seconds
-   
-   for attempt in range(max_attempts):
-       try:
-           # Log retry attempts
-           if attempt > 0:
-               self._log_info(f"Statement retry {attempt + 1}/{max_attempts} for {participant.name}")
-               # Exponential backoff
-               backoff_time = self.settings.retry_backoff_factor ** (attempt - 1)
-               await asyncio.sleep(backoff_time)
-           
-           # Build discussion prompt
-           discussion_prompt = self.build_discussion_prompt(
-               discussion_state=discussion_state,
-               round_num=context.round_number,
-               max_rounds=self._get_max_rounds(),  # Need to add this method
-               participant_names=self._get_participant_names()  # Need to add this method
-           )
-           
-           # Set interaction type for statement retrieval
-           context.interaction_type = "statement"
-           
-           # Execute with timeout
-           result = await asyncio.wait_for(
-               Runner.run(participant.agent, discussion_prompt, context=context),
-               timeout=timeout_seconds
-           )
-           
-           statement = result.final_output
-           
-           # Validate statement
-           if not self.validate_statement(statement, participant.name, self._get_agent_language(agent_config)):
-               if attempt < max_attempts - 1:
-                   self._log_warning(f"Invalid statement from {participant.name}, retrying...")
-                   continue
-               else:
-                   raise ValueError(f"Invalid statement after {max_attempts} attempts")
-           
-           # Create memory content
-           round_content = self._create_statement_memory_content(
-               discussion_prompt, statement, context.round_number
-           )
-           
-           self._log_info(f"Successfully retrieved statement from {participant.name}")
-           return statement, round_content
-           
-       except asyncio.TimeoutError:
-           self._log_warning(f"Statement timeout for {participant.name} (attempt {attempt + 1})")
-           if attempt == max_attempts - 1:
-               raise
-               
-       except Exception as e:
-           self._log_warning(f"Statement error for {participant.name} (attempt {attempt + 1}): {str(e)}")
-           if attempt == max_attempts - 1:
-               raise
-   
-   # Should not reach here due to raise in final attempt
-   raise RuntimeError("Unexpected end of retry loop")
-   ```
+class AgentConfiguration(Protocol):
+    """Protocol for agent configuration."""
+    language: str
+```
 
-### Phase 3: Add Supporting Methods
+### ✅ Phase 2: Core Method with Retry Logic (COMPLETED)
 
-1. **Memory Content Creation**:
-   ```python
-   def _create_statement_memory_content(self, prompt: str, statement: str, round_number: int) -> str:
-       """Create formatted memory content for statement round."""
-       return f"""{self._get_localized_message('memory_field_labels.prompt')} {prompt}
-{self._get_localized_message('memory_field_labels.your_statement')} {statement}
-{self._get_localized_message('memory_field_labels.outcome')} {self._get_localized_message('memory_outcomes.made_discussion_statement', round_number=round_number)}"""
-   ```
+**The core method is fully implemented** in `discussion_service.py` (lines 242-329):
+```python
+async def get_participant_statement_with_retry(
+    self,
+    participant: ParticipantAgent,
+    context: ParticipantContext, 
+    discussion_state: GroupDiscussionState,
+    agent_config: AgentConfiguration,
+    participant_names: List[str],
+    max_rounds: int,
+    max_retries: Optional[int] = None
+) -> Tuple[str, str]:
+    """
+    Get participant statement with retry/backoff functionality.
+    
+    Returns:
+        Tuple of (statement, round_content_for_memory)
+        
+    Raises:
+        Exception: If all retry attempts are exhausted
+    """
+```
 
-2. **Helper Methods**:
-   ```python
-   def _get_max_rounds(self) -> int:
-       """Get maximum rounds from settings or default."""
-       # Implementation depends on how this is accessed
-       return getattr(self.settings, 'phase2_rounds', 10)  # Default fallback
-   
-   def _get_participant_names(self) -> List[str]:
-       """Get participant names - may need to be passed as parameter."""
-       # This might need to be a parameter to the main method
-       return []  # Placeholder
-   
-   def _get_agent_language(self, agent_config: AgentConfiguration) -> str:
-       """Extract language from agent configuration."""
-       return getattr(agent_config, 'language', 'english')  # Default fallback
-   ```
+**Retry logic is fully implemented** with:
+- ✅ Configurable retry attempts from Phase2Settings
+- ✅ Exponential backoff with configurable factor  
+- ✅ Timeout handling with asyncio.wait_for
+- ✅ Statement validation with retry on failure
+- ✅ Proper exception handling and logging
 
-### Phase 4: Update Phase2Manager Integration
+### ✅ Phase 3: Supporting Methods (COMPLETED)
 
-1. **Modify Phase2Manager Constructor** to ensure DiscussionService is initialized:
-   ```python
-   def _initialize_services(self):
-       """Initialize refactored services if enabled."""
-       if self.settings.refactored_services_enabled:
-           if not self.discussion_service:
-               self.discussion_service = DiscussionService(
-                   language_manager=self.language_manager,
-                   settings=self.settings,
-                   logger=self.logger
-               )
-   ```
+**All supporting methods are implemented**:
+- ✅ `_create_statement_memory_content()` (lines 232-236) 
+- ✅ `_get_agent_language()` (lines 238-240)
+- ✅ Localization support with `_get_localized_message()`
+- ✅ Language-aware validation with `validate_statement()`
 
-2. **Update `_get_participant_statement` Method** to delegate to DiscussionService:
-   ```python
-   async def _get_participant_statement(
-       self,
-       participant: ParticipantAgent,
-       context: ParticipantContext,
-       discussion_state: GroupDiscussionState,
-       agent_config: AgentConfiguration
-   ) -> tuple[str, str]:
-       """Get participant's statement for the current round."""
-       
-       # Initialize services if needed
-       self._initialize_services()
-       
-       # Use refactored service if enabled
-       if self.settings.refactored_services_enabled and self.discussion_service:
-           return await self.discussion_service.get_participant_statement_with_retry(
-               participant=participant,
-               context=context,
-               discussion_state=discussion_state,
-               agent_config=agent_config
-           )
-       
-       # Fallback to original implementation
-       discussion_prompt = self._build_discussion_prompt(discussion_state, context.round_number)
-       result = await Runner.run(participant.agent, discussion_prompt, context=context)
-       statement = result.final_output
-       
-       # Create round content for memory
-       language_manager = self.language_manager
-       round_content = f"""{language_manager.get('memory_field_labels.prompt')} {discussion_prompt}
-{language_manager.get('memory_field_labels.your_statement')} {statement}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.made_discussion_statement', round_number=context.round_number)}"""
-       
-       return statement, round_content
-   ```
+### ✅ Phase 4: Phase2Manager Integration (COMPLETED)
 
-## Technical Considerations
+**Phase2Manager fully integrates with DiscussionService**:
+- ✅ DiscussionService initialized in constructor (line 65)
+- ✅ Direct delegation to service method (line 286) 
+- ✅ No fallback logic - services-only architecture active
+- ✅ Original `_get_participant_statement` method removed
+## ✅ TESTING STATUS
 
-### Configuration Integration
-- **Retry Settings**: Use existing `Phase2Settings` configuration:
-  - `max_statement_retries` (default: 3)
-  - `retry_backoff_factor` (default: 1.5)
-  - `statement_timeout_seconds` (default: 180)
+**Comprehensive test coverage implemented** in `/tests/unit/test_discussion_service.py`:
+- ✅ Success on first attempt (`test_get_participant_statement_with_retry_success_first_attempt`) 
+- ✅ Success after retries (`test_get_participant_statement_with_retry_success_after_retries`)
+- ✅ All attempts fail validation (`test_get_participant_statement_with_retry_all_attempts_fail_validation`)
+- ✅ Timeout exception handling (`test_get_participant_statement_with_retry_timeout_exception`)
+- ✅ All attempts fail with exceptions (`test_get_participant_statement_with_retry_all_attempts_fail_exception`)
+- ✅ Custom max_retries parameter (`test_get_participant_statement_with_retry_custom_max_retries`)
+- ✅ Internal reasoning integration (`test_get_participant_statement_with_retry_internal_reasoning_included`)
+- ✅ Empty statement handling (`test_get_participant_statement_with_retry_empty_statement_handling`)
 
-### Error Handling Strategy
-- **Timeout Errors**: Retry with backoff
-- **Validation Errors**: Retry with different prompt if possible
-- **Network/API Errors**: Retry with exponential backoff
-- **Final Failure**: Propagate exception to Phase2Manager for handling
+## ✅ CONFIGURATION STATUS
 
-### Memory Management
-- **Context Preservation**: Maintain interaction_type for proper agent behavior
-- **Memory Content**: Use existing localized message patterns
-- **Logging**: Follow established patterns from VotingService
+**All configuration requirements met** in `Phase2Settings`:
+- ✅ `max_statement_retries` (default: 3, configurable 1-10)
+- ✅ `retry_backoff_factor` (default: 1.5, configurable 1.0-3.0) 
+- ✅ `statement_timeout_seconds` (default: 300, configurable 10-300)
+- ✅ Language-specific validation settings (CJK vs Latin)
+- ✅ Memory management settings (compression thresholds)
 
-### Backward Compatibility
-- **Conditional Activation**: Only use new service when `refactored_services_enabled` is true
-- **Fallback Implementation**: Keep original code as fallback
-- **Gradual Migration**: Allow testing without breaking existing functionality
+## ✅ ARCHITECTURE STATUS
+
+**Services-first architecture fully operational**:
+- ✅ No feature flags - direct service integration
+- ✅ No fallback code - clean implementation  
+- ✅ Consistent error handling across all services
+- ✅ Unified logging and monitoring patterns
+- ✅ Protocol-based dependency injection for testing
 
 ## Testing Strategy
 
