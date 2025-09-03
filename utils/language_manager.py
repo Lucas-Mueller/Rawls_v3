@@ -151,6 +151,18 @@ class LanguageManager:
                 # DEPRECATED - principle_list_letters template is deprecated, use names_only
                 if "{principle_list_letters}" in current:
                     format_kwargs["principle_list_letters"] = self.get_principle_list_formatted("names_only")
+                # Handle master principle descriptions template (uses master descriptions from translations)
+                if "{master_principle_descriptions}" in current:
+                    format_kwargs["master_principle_descriptions"] = self._get_master_principle_descriptions()
+                # Handle individual principle name templates for detailed explanations
+                if "{principle_name_floor}" in current:
+                    format_kwargs["principle_name_floor"] = self.get("common.principle_names.maximizing_floor")
+                if "{principle_name_average}" in current:
+                    format_kwargs["principle_name_average"] = self.get("common.principle_names.maximizing_average")
+                if "{principle_name_floor_constraint}" in current:
+                    format_kwargs["principle_name_floor_constraint"] = self.get("common.principle_names.maximizing_average_floor_constraint")
+                if "{principle_name_range_constraint}" in current:
+                    format_kwargs["principle_name_range_constraint"] = self.get("common.principle_names.maximizing_average_range_constraint")
             
             # Format template if kwargs provided or if templates were substituted
             if format_kwargs:
@@ -242,6 +254,33 @@ class LanguageManager:
             example_lines.append(f"{i}. {principle}")
         
         return "\n".join(example_lines)
+    
+    def _get_master_principle_descriptions(self) -> str:
+        """
+        Get formatted master principle descriptions from translation file.
+        Uses the master_principle_descriptions section for detailed explanations.
+        
+        Returns:
+            Formatted list of master principle descriptions
+        """
+        try:
+            # Get the master descriptions from the translation file
+            floor_desc = self.get("master_principle_descriptions.maximizing_floor")
+            avg_desc = self.get("master_principle_descriptions.maximizing_average")
+            floor_c_desc = self.get("master_principle_descriptions.maximizing_average_floor_constraint")
+            range_c_desc = self.get("master_principle_descriptions.maximizing_average_range_constraint")
+            
+            return f"""1. {floor_desc}
+
+2. {avg_desc}
+
+3. {floor_c_desc}
+
+4. {range_c_desc}"""
+            
+        except KeyError:
+            # Fallback to principle_list_detailed if master descriptions not available
+            return self.get_principle_list_formatted("detailed")
     
     def get_phase1_instructions(self, round_number: int) -> str:
         """

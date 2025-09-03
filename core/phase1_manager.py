@@ -514,7 +514,7 @@ class Phase1Manager:
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""
         language_manager = self.language_manager
-        return language_manager.get("prompts.phase1_initial_ranking_prompt_template")
+        return language_manager.get("prompts.phase1_initial_ranking_prompt")
     
     def _build_detailed_explanation_prompt(self, config: ExperimentConfiguration = None) -> str:
         """Build prompt for detailed explanation of principles."""
@@ -553,4 +553,4 @@ class Phase1Manager:
     def _build_final_ranking_prompt(self) -> str:
         """Build prompt for final ranking after experience."""
         language_manager = self.language_manager
-        return language_manager.get("prompts.phase1_final_ranking_after_experience")
+        return language_manager.get("prompts.phase1_final_ranking_prompt")
