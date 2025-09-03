@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Optional, Tuple, List
 from agents import Agent, Runner, ModelSettings
 from agents.tracing.setup import get_trace_provider
-from utils.model_provider import detect_model_provider
+from utils.model_provider import detect_model_provider, _append_nitro_suffix
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 from utils.openrouter_client import get_openrouter_client
 import os
@@ -94,7 +94,7 @@ async def test_temperature_support(model_string: str, cache: Optional[Temperatur
         
         if is_openrouter:
             model_config = OpenAIChatCompletionsModel(
-                model=processed_model,
+                model=_append_nitro_suffix(processed_model, is_openrouter),
                 openai_client=get_openrouter_client()
             )
         else:
@@ -298,7 +298,7 @@ async def create_agent_with_temperature_retry(
     
     if is_openrouter:
         model_config = OpenAIChatCompletionsModel(
-            model=processed_model,
+            model=_append_nitro_suffix(processed_model, is_openrouter),
             openai_client=get_openrouter_client()
         )
     else:

@@ -182,18 +182,38 @@ class Phase2Manager:
             participants=self.participants
         )
         
-        # Final individual rankings
-        final_rankings = await self.counterfactuals_service.collect_final_rankings(
-            contexts=participant_contexts,
-            discussion_result=discussion_result,
-            payoff_results=payoff_results,
-            assigned_classes=assigned_classes,
-            alternative_earnings_by_agent=alternative_earnings_by_agent,
-            config=config,
-            participants=self.participants,
-            utility_agent=self.utility_agent,
-            logger=logger
-        )
+        # PHASE 1: Deliver results and update participant memory
+        self._log_info("Phase 3: Delivering results and updating participant memory")
+        try:
+            updated_contexts = await self.counterfactuals_service.deliver_results_and_update_memory(
+                participants=self.participants,
+                contexts=participant_contexts,
+                discussion_result=discussion_result,
+                payoff_results=payoff_results,
+                assigned_classes=assigned_classes,
+                alternative_earnings_by_agent=alternative_earnings_by_agent,
+                config=config
+            )
+            self._log_info(f"Successfully updated memory for {len(updated_contexts)} participants")
+        except Exception as e:
+            self._log_warning(f"Error during result delivery and memory update: {str(e)}")
+            raise
+        
+        # PHASE 2: Collect final rankings using updated contexts
+        self._log_info("Phase 3: Collecting final rankings from participants with updated memory")
+        try:
+            final_rankings = await self.counterfactuals_service.collect_final_rankings_streamlined(
+                contexts=updated_contexts,  # Use updated contexts from first call
+                participants=self.participants,
+                utility_agent=self.utility_agent,
+                payoff_results=payoff_results,  # Optional for logging compatibility
+                assigned_classes=assigned_classes,  # Use as-is, already in correct format
+                logger=logger
+            )
+            self._log_info(f"Successfully collected final rankings from {len(final_rankings)} participants")
+        except Exception as e:
+            self._log_warning(f"Error during final ranking collection: {str(e)}")
+            raise
         
         return Phase2Results(
             discussion_result=discussion_result,

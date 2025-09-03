@@ -17,6 +17,22 @@ import os
 logger = logging.getLogger(__name__)
 
 
+def _append_nitro_suffix(model_string: str, is_openrouter: bool) -> str:
+    """
+    Append :nitro suffix to OpenRouter models if not already present.
+    
+    Args:
+        model_string: The model identifier
+        is_openrouter: Whether this is an OpenRouter model
+        
+    Returns:
+        Model string with :nitro suffix if OpenRouter, unchanged otherwise
+    """
+    if is_openrouter and not model_string.endswith(":nitro"):
+        return f"{model_string}:nitro"
+    return model_string
+
+
 def detect_model_provider(model_string: str) -> Tuple[str, bool]:
     """
     Detect if model requires OpenRouter integration.
@@ -49,7 +65,7 @@ def create_model_config(model_string: str, temperature: float = 0.7) -> Union[st
     
     if is_openrouter:
         return OpenAIChatCompletionsModel(
-            model=processed_model,
+            model=_append_nitro_suffix(processed_model, is_openrouter),
             openai_client=get_openrouter_client()
         )
     
@@ -141,7 +157,7 @@ async def create_model_config_with_temperature_detection(
     # Create model configuration
     if is_openrouter:
         model_config = OpenAIChatCompletionsModel(
-            model=processed_model,
+            model=_append_nitro_suffix(processed_model, is_openrouter),
             openai_client=get_openrouter_client()
         )
     else:
@@ -227,7 +243,7 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
     # Create model configuration
     if is_openrouter:
         model_config = OpenAIChatCompletionsModel(
-            model=processed_model,
+            model=_append_nitro_suffix(processed_model, is_openrouter),
             openai_client=get_openrouter_client()
         )
     else:

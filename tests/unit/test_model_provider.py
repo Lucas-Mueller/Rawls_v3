@@ -49,7 +49,7 @@ class TestModelProvider(unittest.TestCase):
         
         mock_get_client.assert_called_once()
         mock_openai_model.assert_called_once_with(
-            model="google/gemini-2.5-flash",
+            model="google/gemini-2.5-flash:nitro",
             openai_client=mock_client
         )
         self.assertEqual(model_config, mock_instance)
@@ -74,7 +74,7 @@ class TestModelProvider(unittest.TestCase):
             # Should still create model using get_openrouter_client()
             mock_get_client.assert_called_once()
             mock_openai_model.assert_called_once_with(
-                model="google/gemini-2.5-flash",
+                model="google/gemini-2.5-flash:nitro",
                 openai_client=mock_client
             )
             self.assertEqual(model_config, mock_instance)
@@ -162,7 +162,7 @@ class TestModelProvider(unittest.TestCase):
         # OpenAIChatCompletionsModel should be called without temperature (temperature goes to ModelSettings)
         mock_get_client.assert_called_once()
         mock_openai_model.assert_called_once_with(
-            model="google/gemini-2.5-flash",
+            model="google/gemini-2.5-flash:nitro",
             openai_client=mock_client
         )
     
@@ -177,6 +177,61 @@ class TestModelProvider(unittest.TestCase):
         model, is_openrouter = detect_model_provider("/")
         self.assertEqual(model, "/")
         self.assertTrue(is_openrouter)
+    
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_nitro_suffix_addition(self, mock_get_client, mock_openai_model):
+        """Test that :nitro suffix is added to OpenRouter models."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
+        
+        model_config = create_model_config("qwen/qwen-2.5-72b-instruct")
+        
+        mock_openai_model.assert_called_once_with(
+            model="qwen/qwen-2.5-72b-instruct:nitro",
+            openai_client=mock_client
+        )
+    
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_nitro_suffix_not_duplicated(self, mock_get_client, mock_openai_model):
+        """Test that :nitro suffix is not added if already present."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
+        
+        model_config = create_model_config("qwen/qwen-2.5-72b-instruct:nitro")
+        
+        # Should not double the suffix
+        mock_openai_model.assert_called_once_with(
+            model="qwen/qwen-2.5-72b-instruct:nitro",
+            openai_client=mock_client
+        )
+    
+    def test_nitro_suffix_utility_function(self):
+        """Test the _append_nitro_suffix utility function directly."""
+        from utils.model_provider import _append_nitro_suffix
+        
+        # OpenRouter models should get :nitro suffix
+        self.assertEqual(
+            _append_nitro_suffix("qwen/qwen-2.5-72b-instruct", True),
+            "qwen/qwen-2.5-72b-instruct:nitro"
+        )
+        
+        # Already has :nitro suffix - should not duplicate
+        self.assertEqual(
+            _append_nitro_suffix("qwen/qwen-2.5-72b-instruct:nitro", True),
+            "qwen/qwen-2.5-72b-instruct:nitro"
+        )
+        
+        # OpenAI models should remain unchanged
+        self.assertEqual(
+            _append_nitro_suffix("gpt-4", False),
+            "gpt-4"
+        )
 
 
 if __name__ == '__main__':

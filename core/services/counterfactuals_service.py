@@ -21,6 +21,7 @@ from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
 from core.distribution_generator import DistributionGenerator
 from utils.agent_centric_logger import AgentCentricLogger
+from utils.selective_memory_manager import MemoryEventType
 from agents import Runner
 
 if TYPE_CHECKING:
@@ -61,6 +62,21 @@ class Logger(Protocol):
         ...
 
 
+class MemoryServiceProvider(Protocol):
+    """Protocol for memory service dependency."""
+    async def update_final_results_memory(
+        self,
+        agent: "ParticipantAgent",
+        context: ParticipantContext,
+        result_content: str,
+        final_earnings: float,
+        consensus_reached: bool,
+        **kwargs
+    ) -> str:
+        """Update memory with final Phase 2 results."""
+        ...
+
+
 class CounterfactualsService:
     """
     Unified counterfactuals and payoff calculation service for Phase2Manager.
@@ -82,7 +98,8 @@ class CounterfactualsService:
         language_manager: LanguageProvider,
         settings: Phase2Settings,
         logger: Optional[Logger] = None,
-        seed_manager: Optional[SeedManager] = None
+        seed_manager: Optional[SeedManager] = None,
+        memory_service: Optional[MemoryServiceProvider] = None
     ):
         """
         Initialize CounterfactualsService with dependencies.
@@ -92,11 +109,13 @@ class CounterfactualsService:
             settings: Phase 2 configuration settings
             logger: Optional logger for service operations
             seed_manager: Optional seed manager for reproducible randomness
+            memory_service: Optional memory service for updating participant memory
         """
         self.language_manager = language_manager
         self.settings = settings
         self.logger = logger or logging.getLogger(__name__)
         self.seed_manager = seed_manager
+        self.memory_service = memory_service
     
     async def apply_group_principle_and_calculate_payoffs(
         self,
@@ -289,6 +308,216 @@ class CounterfactualsService:
             # Fallback to basic format
             return f"Phase 2 results: ${final_earnings:.2f}. Income class: {assigned_class}."
     
+    def _get_participant_language_manager(self, participant: "ParticipantAgent"):
+        """
+        Get language-specific manager for a participant based on their language preference.
+        
+        Args:
+            participant: The participant agent with language configuration
+            
+        Returns:
+            Language manager with participant's language set, or current language manager as fallback
+        """
+        try:
+            # Check if participant has language configuration
+            if hasattr(participant, 'config') and hasattr(participant.config, 'language'):
+                participant_language = participant.config.language.lower()
+                
+                # Map language strings to supported languages 
+                language_mapping = {
+                    'english': 'English',
+                    'spanish': 'Spanish',
+                    'mandarin': 'Mandarin',
+                    'chinese': 'Mandarin'  # alias
+                }
+                
+                target_language = language_mapping.get(participant_language)
+                if target_language:
+                    # Create a temporary language manager copy for this participant's language
+                    from utils.language_manager import SupportedLanguage, create_language_manager
+                    
+                    language_enum_mapping = {
+                        'English': SupportedLanguage.ENGLISH,
+                        'Spanish': SupportedLanguage.SPANISH,
+                        'Mandarin': SupportedLanguage.MANDARIN
+                    }
+                    
+                    language_enum = language_enum_mapping.get(target_language)
+                    if language_enum:
+                        # Create participant-specific language manager
+                        return create_language_manager(language_enum)
+                    
+            # Fallback to current language manager
+            return self.language_manager
+            
+        except Exception as e:
+            self.logger.debug(f"Failed to get participant language manager for {participant.name}: {e}")
+            # Fallback to current language manager
+            return self.language_manager
+    
+    def _build_consensus_info(self, discussion_result: GroupDiscussionResult, lang_manager) -> str:
+        """
+        Build consensus information text based on discussion result.
+        
+        Args:
+            discussion_result: Result of group discussion
+            lang_manager: Language manager for localization
+            
+        Returns:
+            Formatted consensus information string
+        """
+        try:
+            if discussion_result.consensus_reached and discussion_result.agreed_principle:
+                # Get localized principle name
+                principle_key = discussion_result.agreed_principle.principle.value
+                principle_name = lang_manager.get(f"common.principle_names.{principle_key}")
+                
+                # Check if there's a constraint amount
+                if discussion_result.agreed_principle.constraint_amount is not None:
+                    constraint_amount = discussion_result.agreed_principle.constraint_amount
+                    consensus_msg = lang_manager.get(
+                        "voting_results.consensus_with_constraint", 
+                        principle_name=principle_name,
+                        constraint_amount=constraint_amount
+                    )
+                else:
+                    consensus_msg = lang_manager.get(
+                        "voting_results.consensus_reached", 
+                        principle_name=principle_name
+                    )
+                return consensus_msg
+            else:
+                # No consensus reached
+                return lang_manager.get("phase2_no_consensus")
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to build consensus info: {e}")
+            # Fallback message
+            if discussion_result.consensus_reached:
+                return "Consensus was reached on a justice principle."
+            else:
+                return "No consensus was reached. Earnings were randomly assigned."
+    
+    async def deliver_results_and_update_memory(
+        self,
+        participants: List["ParticipantAgent"],
+        contexts: List[ParticipantContext],
+        discussion_result: GroupDiscussionResult,
+        payoff_results: Dict[str, float],
+        assigned_classes: Dict[str, IncomeClass], 
+        alternative_earnings_by_agent: Dict[str, Dict[str, float]],
+        config: ExperimentConfiguration
+    ) -> List[ParticipantContext]:
+        """
+        Deliver Phase 2 results using the new phase2_results_delivery_prompt and update participant memory.
+        
+        This method uses the new phase2_results_delivery_prompt template with proper consensus
+        information and updates all participant memory in preparation for ranking collection.
+        
+        Args:
+            participants: List of participant agents
+            contexts: List of participant contexts
+            discussion_result: Result of group discussion with consensus info
+            payoff_results: Final payoff amounts for each participant  
+            assigned_classes: Income class assignments (IncomeClass enum values)
+            alternative_earnings_by_agent: Counterfactual earnings by participant
+            config: Experiment configuration
+            
+        Returns:
+            List of updated contexts for use in ranking collection
+        """
+        try:
+            self.logger.info(f"Delivering Phase 2 results using new prompt template for {len(participants)} participants")
+            
+            updated_contexts = []
+            
+            for i, participant in enumerate(participants):
+                context = contexts[i]
+                
+                # Get participant's results
+                final_earnings = payoff_results[participant.name]
+                assigned_class_enum = assigned_classes[participant.name]
+                alternative_earnings = alternative_earnings_by_agent[participant.name]
+                
+                # Get participant-specific language manager
+                participant_lang_manager = self._get_participant_language_manager(participant)
+                
+                try:
+                    # Get the new results delivery prompt template
+                    prompt_template = participant_lang_manager.get("phase2_results_delivery_prompt")
+                    
+                    # Get localized income class name
+                    income_class_key = assigned_class_enum.value  # e.g., 'high', 'medium_low'
+                    income_class_display = participant_lang_manager.get(f"common.income_classes.{income_class_key}")
+                    
+                    # Build consensus information
+                    consensus_info = self._build_consensus_info(discussion_result, participant_lang_manager)
+                    
+                    # Format the prompt with all required parameters
+                    result_content = prompt_template.format(
+                        income_class=income_class_display,
+                        earnings=final_earnings,
+                        alt_floor=alternative_earnings.get('maximizing_floor', 0.0),
+                        alt_average=alternative_earnings.get('maximizing_average', 0.0),
+                        alt_floor_constraint=alternative_earnings.get('maximizing_average_with_floor', 0.0),
+                        alt_range_constraint=alternative_earnings.get('maximizing_average_with_range', 0.0)
+                    )
+                    
+                    # Replace the consensus placeholder with actual consensus information
+                    result_content = result_content.replace(
+                        "[Consensus/No consensus information will be dynamically inserted]",
+                        consensus_info
+                    )
+                    
+                except Exception as prompt_error:
+                    self.logger.warning(f"Failed to format new prompt template for {participant.name}: {prompt_error}")
+                    # Fallback to the old build_detailed_results method
+                    assigned_class_str = assigned_class_enum.value
+                    result_content = await self.build_detailed_results(
+                        participant.name,
+                        final_earnings,
+                        assigned_class_str,
+                        alternative_earnings,
+                        discussion_result
+                    )
+                
+                # Update participant memory with results
+                if self.memory_service:
+                    try:
+                        updated_memory = await self.memory_service.update_final_results_memory(
+                            agent=participant,
+                            context=context,
+                            result_content=result_content,
+                            final_earnings=final_earnings,
+                            consensus_reached=discussion_result.consensus_reached,
+                            config=config
+                        )
+                        context.memory = updated_memory
+                        
+                        self.logger.debug(f"Memory updated for {participant.name} with Phase 2 results")
+                    
+                    except Exception as memory_error:
+                        self.logger.warning(f"Failed to update memory for {participant.name}: {memory_error}")
+                        # Continue without memory update - don't block the process
+                else:
+                    # Fallback: update memory directly via participant agent
+                    try:
+                        updated_memory = await participant.update_memory(result_content, context.bank_balance)
+                        context.memory = updated_memory
+                        self.logger.debug(f"Memory updated directly for {participant.name}")
+                    except Exception as fallback_error:
+                        self.logger.warning(f"Fallback memory update failed for {participant.name}: {fallback_error}")
+                
+                updated_contexts.append(context)
+            
+            self.logger.info("Phase 2 results delivery and memory update completed successfully")
+            return updated_contexts
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to deliver results and update memory: {e}")
+            # Return original contexts to avoid breaking the flow
+            return contexts
+    
     async def collect_final_rankings(
         self,
         contexts: List[ParticipantContext],
@@ -302,66 +531,102 @@ class CounterfactualsService:
         logger: Optional[AgentCentricLogger] = None
     ) -> Dict[str, PrincipleRanking]:
         """
-        Collect final rankings with enhanced transparency handling.
+        DEPRECATED: Collect final rankings with result delivery logic (Phase 1 compatibility).
         
-        Collect final principle rankings from all participants after providing
-        them with comprehensive results including counterfactual analysis.
+        This method maintains backward compatibility during the transition to the two-call process.
+        New callers should use the streamlined collect_final_rankings_streamlined() method instead.
         
         Args:
-            contexts: List of participant contexts
+            contexts: List of participant contexts  
             discussion_result: Result of group discussion
             payoff_results: Final payoff amounts for each participant
             assigned_classes: Income class assignments
             alternative_earnings_by_agent: Counterfactual earnings by participant
             config: Experiment configuration
-            participants: List of participant agents  
+            participants: List of participant agents
             utility_agent: Utility agent for parsing responses
             logger: Optional logger for detailed logging
             
         Returns:
             Dict mapping participant names to their final principle rankings
         """
+        # For backward compatibility, delegate to the two-call process
         try:
+            # First, convert assigned_classes to IncomeClass enums for deliver_results_and_update_memory
+            assigned_classes_enum = {}
+            for participant_name, class_str in assigned_classes.items():
+                if class_str.startswith('IncomeClass.'):
+                    # Handle enum string representation like 'IncomeClass.high'
+                    enum_value = class_str.split('.')[1].lower()
+                else:
+                    # Handle direct value like 'high' or 'MEDIUM HIGH' 
+                    enum_value = class_str.lower().replace(' ', '_')
+                assigned_classes_enum[participant_name] = IncomeClass(enum_value)
+            
+            # Deliver results and update memory first
+            updated_contexts = await self.deliver_results_and_update_memory(
+                participants=participants,
+                contexts=contexts,
+                discussion_result=discussion_result,
+                payoff_results=payoff_results,
+                assigned_classes=assigned_classes_enum,
+                alternative_earnings_by_agent=alternative_earnings_by_agent,
+                config=config
+            )
+            
+            # Then collect rankings using the streamlined method
+            return await self.collect_final_rankings_streamlined(
+                contexts=updated_contexts,
+                participants=participants,
+                utility_agent=utility_agent,
+                payoff_results=payoff_results,
+                assigned_classes=assigned_classes,
+                logger=logger
+            )
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to collect final rankings via compatibility method: {e}")
+            raise
+
+    async def collect_final_rankings_streamlined(
+        self,
+        contexts: List[ParticipantContext],
+        participants: List["ParticipantAgent"],
+        utility_agent,
+        payoff_results: Optional[Dict[str, float]] = None,
+        assigned_classes: Optional[Dict[str, str]] = None,
+        logger: Optional[AgentCentricLogger] = None
+    ) -> Dict[str, PrincipleRanking]:
+        """
+        Collect final principle rankings from participants with pre-updated contexts.
+        
+        This method focuses solely on ranking collection, assuming that participant
+        contexts have already been updated with Phase 2 results via deliver_results_and_update_memory().
+        
+        Args:
+            contexts: List of pre-updated participant contexts from deliver_results_and_update_memory
+            participants: List of participant agents
+            utility_agent: Utility agent for parsing responses
+            payoff_results: Optional payoff results for logging (from Phase 1 compatibility)
+            assigned_classes: Optional class assignments for logging (from Phase 1 compatibility) 
+            logger: Optional logger for detailed logging
+            
+        Returns:
+            Dict mapping participant names to their final principle rankings
+        """
+        try:
+            self.logger.info(f"Collecting final rankings from {len(participants)} participants")
+            
             final_ranking_tasks = []
             
             for i, participant in enumerate(participants):
                 context = contexts[i]
-                agent_config = config.agents[i]
                 
-                # Get participant's results
-                final_earnings = payoff_results[participant.name]
-                assigned_class = assigned_classes[participant.name]
-                alternative_earnings = alternative_earnings_by_agent[participant.name]
-                
-                # Check transparency configuration
-                transparency_config = getattr(config, 'phase2_enhanced_transparency', None)
-                use_enhanced_transparency = (
-                    transparency_config is None or  # Default to enhanced if not configured
-                    (transparency_config and transparency_config.enabled)
-                )
-                
-                if use_enhanced_transparency:
-                    # Build detailed results matching Phase 1 transparency level
-                    result_content = await self.build_detailed_results(
-                        participant.name,
-                        final_earnings,
-                        assigned_class,
-                        alternative_earnings,
-                        discussion_result
-                    )
-                else:
-                    # Use basic results (original behavior)
-                    result_content = f"{self.language_manager.get('results.phase2_header')}: Phase 2 earnings: ${final_earnings:.2f}. "
-                    if discussion_result.consensus_reached:
-                        result_content += self.language_manager.get("voting_results.consensus_reached", principle_name=discussion_result.agreed_principle.principle.value) + "."
-                    else:
-                        result_content += self.language_manager.get("phase2_no_consensus") + "."
-                
-                # Create async task for getting final ranking
+                # Create async task for getting final ranking - no result delivery needed
                 task = asyncio.create_task(
-                    self._get_final_ranking_task(participant, context, agent_config, result_content, utility_agent)
+                    self._get_final_ranking_task_streamlined(participant, context, utility_agent)
                 )
-                final_ranking_tasks.append((task, participant.name, assigned_class, final_earnings, context.memory, context.bank_balance))
+                final_ranking_tasks.append((task, participant.name))
             
             # Gather just the tasks for asyncio
             tasks = [task_info[0] for task_info in final_ranking_tasks]
@@ -370,7 +635,7 @@ class CounterfactualsService:
             # Process results and build final rankings dictionary
             final_rankings = {}
             
-            for i, (ranking_result, (_, participant_name, assigned_class, final_earnings, memory, bank_balance)) in enumerate(zip(rankings_results, final_ranking_tasks)):
+            for i, (ranking_result, (_, participant_name)) in enumerate(zip(rankings_results, final_ranking_tasks)):
                 if isinstance(ranking_result, Exception):
                     self.logger.warning(f"Failed to get final ranking from {participant_name}: {ranking_result}")
                     # Create default ranking
@@ -387,18 +652,22 @@ class CounterfactualsService:
                 else:
                     final_rankings[participant_name] = ranking_result
                 
-                # Log detailed participant info if logger provided
+                # Log detailed participant info if logger provided and we have the data
                 if logger and hasattr(logger, 'log_participant_summary'):
+                    context = contexts[i]
+                    final_earnings = payoff_results.get(participant_name) if payoff_results else 0.0
+                    assigned_class = assigned_classes.get(participant_name, "unknown") if assigned_classes else "unknown"
+                    
                     logger.log_participant_summary(
                         participant_name=participant_name,
                         final_earnings=final_earnings,
                         assigned_class=assigned_class,
-                        final_memory_length=len(memory) if memory else 0,
-                        final_bank_balance=bank_balance,
+                        final_memory_length=len(context.memory) if context.memory else 0,
+                        final_bank_balance=context.bank_balance,
                         ranking=final_rankings[participant_name]
                     )
             
-            self.logger.debug(f"Final rankings collected from {len(final_rankings)} participants")
+            self.logger.info(f"Final rankings collected successfully from {len(final_rankings)} participants")
             return final_rankings
             
         except Exception as e:
@@ -430,6 +699,53 @@ class CounterfactualsService:
             # Update participant memory with results
             updated_memory = await participant.update_memory(result_content, context.bank_balance)
             context.memory = updated_memory
+            
+            # Get final ranking using proven Phase 1 pattern
+            final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            text_response = result.final_output
+            
+            # Parse the ranking using utility agent
+            parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(text_response)
+            
+            return parsed_ranking
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to get final ranking from {participant.name}: {e}")
+            # Return default ranking
+            default_rankings = [
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ]
+            return PrincipleRanking(
+                rankings=default_rankings,
+                certainty=CertaintyLevel.NO_OPINION
+            )
+    
+    async def _get_final_ranking_task_streamlined(
+        self,
+        participant: "ParticipantAgent",
+        context: ParticipantContext,
+        utility_agent
+    ) -> PrincipleRanking:
+        """
+        Get final ranking from a single participant with pre-updated context.
+        
+        This method assumes the participant's context memory has already been updated
+        with Phase 2 results, so it focuses solely on ranking collection.
+        
+        Args:
+            participant: The participant agent
+            context: Pre-updated participant context with results in memory
+            utility_agent: Utility agent for parsing
+            
+        Returns:
+            PrincipleRanking from the participant
+        """
+        try:
+            # No memory update needed - context is pre-updated from deliver_results_and_update_memory
             
             # Get final ranking using proven Phase 1 pattern
             final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")

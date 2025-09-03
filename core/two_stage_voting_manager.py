@@ -218,11 +218,6 @@ class TwoStageVotingManager:
             
             participant_votes.append(participant_vote)
             logger.info(f"Completed two-stage voting for {participant.name}: principle {principle_num}, amount {constraint_amount}")
-            
-            # Update participant memory with their two-stage voting experience
-            await self._update_participant_memory_for_voting(
-                participant, context, participant_vote, discussion_state
-            )
         
         # Convert to principle choices for consensus checking
         try:
@@ -237,6 +232,20 @@ class TwoStageVotingManager:
             logger.info("Two-stage voting completed successfully for all participants")
             vote_result = self._create_vote_result(participant_votes, principle_choices)
             logger.debug(f"Created vote result - consensus: {vote_result.consensus_reached}")
+            
+            # Now update participant memories with CORRECT consensus information
+            for i, participant_vote in enumerate(participant_votes):
+                participant = self.participants[i]
+                context = contexts[i]
+                
+                try:
+                    await self._update_participant_memory_for_voting_with_consensus(
+                        participant, context, participant_vote, discussion_state, vote_result
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to update memory with consensus info for {participant.name}: {e}")
+                    # Continue processing other participants even if one fails
+            
             return vote_result
             
         except Exception as e:
@@ -933,6 +942,77 @@ Respond with the amount (examples: 25000 or $25000):"""
         else:
             logger.error(f"Two-stage voting failure - {participant_name} {stage}: all {max_attempts} attempts exhausted")
     
+    async def _update_participant_memory_for_voting_with_consensus(
+        self, 
+        participant: Any, 
+        context: Any, 
+        participant_vote: ParticipantVote,
+        discussion_state: Any,
+        vote_result: Any
+    ):
+        """
+        Update participant memory with their two-stage voting experience including correct consensus information.
+        
+        Args:
+            participant: ParticipantAgent object
+            context: ParticipantContext object
+            participant_vote: ParticipantVote with individual voting results
+            discussion_state: GroupDiscussionState object
+            vote_result: VoteResult with consensus information
+        """
+        try:
+            # Build complete voting memory content
+            principle_display_name = self._get_principle_display_name(participant_vote.principle_num)
+            
+            # Calculate total stages and attempts
+            total_stages = 1 if participant_vote.constraint_amount is None else 2
+            total_attempts = (
+                (participant_vote.principle_selection_result.attempts_used if participant_vote.principle_selection_result else 1) +
+                (participant_vote.amount_specification_result.attempts_used if participant_vote.amount_specification_result else 0)
+            )
+            
+            # Extract consensus information from vote_result
+            consensus_reached = vote_result.consensus_reached if vote_result else False
+            agreed_principle = None
+            if consensus_reached and vote_result.agreed_principle:
+                # Get the display name for the agreed principle
+                agreed_principle_num = None
+                # Map JusticePrinciple enum back to number for display name lookup
+                principle_map = {
+                    'MAXIMIZING_FLOOR': 1,
+                    'MAXIMIZING_AVERAGE': 2, 
+                    'MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT': 3,
+                    'MAXIMIZING_AVERAGE_RANGE_CONSTRAINT': 4
+                }
+                agreed_principle_num = principle_map.get(vote_result.agreed_principle.principle.value)
+                if agreed_principle_num:
+                    agreed_principle = self._get_principle_display_name(agreed_principle_num)
+            
+            # Build memory content using our memory content builders with CORRECT consensus info
+            memory_content = build_two_stage_voting_complete_delta(
+                participant_name=participant_vote.participant_name,
+                principle_num=participant_vote.principle_num,
+                principle_display_name=principle_display_name,
+                constraint_amount=participant_vote.constraint_amount,
+                consensus_reached=consensus_reached,  # ✅ Actual consensus status
+                agreed_principle=agreed_principle,    # ✅ Actual agreed principle
+                total_stages=total_stages,
+                total_attempts=total_attempts,
+                language_manager=self.language_manager
+            )
+            
+            # Update participant memory using the MemoryManager
+            memory_guidance_style = getattr(self.settings, 'memory_guidance_style', 'narrative') if self.settings else 'narrative'
+            context.memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, memory_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            )
+            
+            logger.info(f"Updated memory for {participant.name} with CORRECT consensus info: {consensus_reached}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to update memory for {participant.name} after voting: {e}")
+            # Don't fail the entire voting process due to memory update issues
+
     async def _update_participant_memory_for_voting(
         self, 
         participant: Any, 
@@ -942,6 +1022,9 @@ Respond with the amount (examples: 25000 or $25000):"""
     ):
         """
         Update participant memory with their two-stage voting experience.
+        
+        DEPRECATED: This method always passes consensus_reached=False.
+        Use _update_participant_memory_for_voting_with_consensus() instead for correct consensus info.
         """
         try:
             # Build complete voting memory content
