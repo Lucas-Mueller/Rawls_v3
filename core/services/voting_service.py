@@ -52,7 +52,7 @@ class VotingService:
     
     def __init__(self, language_manager: LanguageProvider, utility_agent: UtilityProvider, 
                  settings: Optional[Phase2Settings] = None, logger: Optional[Logger] = None,
-                 memory_service: Optional[object] = None):
+                 memory_service: Optional[object] = None, config: Optional[object] = None):
         """
         Initialize voting service.
         
@@ -61,6 +61,8 @@ class VotingService:
             utility_agent: For numerical agreement detection
             settings: Phase 2 settings for timeouts and validation (optional)
             logger: For logging info and warnings (optional)
+            memory_service: Optional memory service for recording simple voting events
+            config: Optional experiment configuration for counterfactual calculations
         """
         self.language_manager = language_manager
         self.utility_agent = utility_agent
@@ -68,6 +70,8 @@ class VotingService:
         self.logger = logger
         # Optional memory service for recording simple voting events
         self.memory_service = memory_service
+        # Optional experiment configuration for counterfactual calculations
+        self.config = config
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger is available."""
@@ -351,7 +355,8 @@ class VotingService:
             settings=self.settings,
             error_handler=error_handler,
             utility_agent=utility_agent,
-            memory_service=self.memory_service
+            memory_service=self.memory_service,
+            config=self.config
         )
         
         # Conduct structured two-stage voting process

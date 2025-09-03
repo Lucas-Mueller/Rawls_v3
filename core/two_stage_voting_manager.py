@@ -18,11 +18,13 @@ from datetime import datetime
 
 # Import model classes for proper integration
 from models.principle_types import VoteResult, PrincipleChoice, JusticePrinciple, CertaintyLevel
+from models import IncomeClass
 from agents import Runner
 
 # Import multilingual support components  
 from utils.cultural_adaptation import get_amount_formatter, SupportedLanguage as CulturalLanguage
 from core.principle_name_manager import get_principle_name_manager
+from core.distribution_generator import DistributionGenerator
 
 # Import keyword matching system for fallback validation
 from core.principle_keywords import (
@@ -82,7 +84,7 @@ class TwoStageVotingManager:
     - Stage 2: Amount specification for constraint principles (positive integers)
     """
     
-    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None):
+    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None, config: Any = None):
         """
         Initialize the two-stage voting manager.
         
@@ -93,6 +95,8 @@ class TwoStageVotingManager:
             settings: Phase2Settings instance with voting configuration
             error_handler: ExperimentErrorHandler instance for error handling
             utility_agent: UtilityAgent instance for memory compression
+            memory_service: MemoryService instance for writing voting-related memory events
+            config: ExperimentConfiguration instance for counterfactual calculations
         """
         self.participants = participants
         self.language_manager = language_manager
@@ -102,6 +106,8 @@ class TwoStageVotingManager:
         self.utility_agent = utility_agent
         # Optional MemoryService for writing simple voting-related memory events
         self.memory_service = memory_service
+        # Optional ExperimentConfiguration for counterfactual calculations
+        self.config = config
         
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
@@ -233,19 +239,40 @@ class TwoStageVotingManager:
             vote_result = self._create_vote_result(participant_votes, principle_choices)
             logger.debug(f"Created vote result - consensus: {vote_result.consensus_reached}")
             
-            # Now update participant memories with CORRECT consensus information
-            for i, participant_vote in enumerate(participant_votes):
-                participant = self.participants[i]
-                context = contexts[i]
-                
+            # INTEGRATION: Calculate counterfactuals and update voting memory with them
+            if self.config is not None:
                 try:
-                    await self._update_participant_memory_for_voting_with_consensus(
-                        participant, context, participant_vote, discussion_state, vote_result
+                    await self._calculate_and_update_counterfactuals(
+                        participant_votes, contexts, discussion_state, vote_result
                     )
-                except Exception as e:
-                    logger.warning(f"Failed to update memory with consensus info for {participant.name}: {e}")
-                    # Continue processing other participants even if one fails
-            
+                except Exception as counterfactual_error:
+                    logger.warning(f"Failed to calculate counterfactuals for voting memory: {counterfactual_error}")
+                    # Fallback: update participant memories with basic consensus information
+                    for i, participant_vote in enumerate(participant_votes):
+                        participant = self.participants[i]
+                        context = contexts[i]
+                        
+                        try:
+                            await self._update_participant_memory_for_voting_with_consensus(
+                                participant, context, participant_vote, discussion_state, vote_result
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to update memory with consensus info for {participant.name}: {e}")
+                            # Continue processing other participants even if one fails
+            else:
+                # No config available - use basic memory update without counterfactuals
+                for i, participant_vote in enumerate(participant_votes):
+                    participant = self.participants[i]
+                    context = contexts[i]
+                    
+                    try:
+                        await self._update_participant_memory_for_voting_with_consensus(
+                            participant, context, participant_vote, discussion_state, vote_result
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to update memory with consensus info for {participant.name}: {e}")
+                        # Continue processing other participants even if one fails
+
             return vote_result
             
         except Exception as e:
@@ -941,6 +968,100 @@ Respond with the amount (examples: 25000 or $25000):"""
                 logger.warning(f"Failed to log voting failure: {e}")
         else:
             logger.error(f"Two-stage voting failure - {participant_name} {stage}: all {max_attempts} attempts exhausted")
+
+    async def _calculate_and_update_counterfactuals(
+        self,
+        participant_votes: List[ParticipantVote],
+        contexts: List[Any],
+        discussion_state: Any,
+        vote_result: Any
+    ):
+        """
+        Calculate Phase 2 counterfactuals and update participant memories with counterfactual earnings.
+        
+        This method calculates what each participant would earn under all 4 principles
+        based on assigned income classes, then updates voting memories with this information.
+        
+        Args:
+            participant_votes: List of participant votes from voting process
+            contexts: List of participant contexts
+            discussion_state: Group discussion state
+            vote_result: VoteResult with consensus information
+        """
+        try:
+            logger.info("Calculating counterfactuals for voting memory updates")
+            
+            # Step 1: Generate distribution set for Phase 2 counterfactuals
+            distribution_set = DistributionGenerator.generate_dynamic_distribution(
+                self.config.distribution_range_phase2
+            )
+            
+            # Step 2: Assign income classes to participants (same logic as CounterfactualsService)
+            assigned_classes = {}
+            consensus_principle = None
+            constraint_amount = None
+            
+            if vote_result.consensus_reached and vote_result.agreed_principle:
+                # Apply agreed principle for class assignments
+                consensus_principle = vote_result.agreed_principle
+                constraint_amount = consensus_principle.constraint_amount
+                
+                chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
+                    distribution_set.distributions, vote_result.agreed_principle, self.config.income_class_probabilities
+                )
+                
+                # Assign each participant to income class
+                for participant in self.participants:
+                    assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, self.config.income_class_probabilities)
+                    assigned_classes[participant.name] = assigned_class.value
+            else:
+                # Random assignment for non-consensus scenarios
+                for participant in self.participants:
+                    random_distribution = random.choice(distribution_set.distributions)
+                    assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, self.config.income_class_probabilities)
+                    assigned_classes[participant.name] = assigned_class.value
+            
+            # Step 3: Calculate counterfactuals for each participant
+            alternative_earnings_by_agent = {}
+            
+            for participant_name, class_str in assigned_classes.items():
+                # Convert string to IncomeClass enum
+                if class_str.startswith('IncomeClass.'):
+                    enum_value = class_str.split('.')[1].lower()
+                else:
+                    enum_value = class_str.lower().replace(' ', '_')
+                
+                assigned_class = IncomeClass(enum_value)
+                
+                # Calculate alternative earnings using same method as CounterfactualsService
+                alternative_earnings = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+                    distribution_set.distributions,
+                    assigned_class,
+                    constraint_amount
+                )
+                
+                alternative_earnings_by_agent[participant_name] = alternative_earnings
+            
+            # Step 4: Update participant memories with counterfactuals
+            logger.info(f"Updating voting memories with counterfactuals for {len(participant_votes)} participants")
+            
+            await self.update_participant_memory_with_counterfactuals(
+                participants=self.participants,
+                contexts=contexts,
+                participant_votes=participant_votes,
+                vote_result=vote_result,
+                discussion_state=discussion_state,
+                assigned_classes=assigned_classes,
+                alternative_earnings_by_agent=alternative_earnings_by_agent
+            )
+            
+            logger.info("Successfully calculated counterfactuals and updated voting memories")
+            
+        except Exception as e:
+            logger.warning(f"Failed to calculate counterfactuals for voting memory: {e}")
+            import traceback
+            logger.warning(f"Counterfactual calculation traceback: {traceback.format_exc()}")
+            raise
     
     async def _update_participant_memory_for_voting_with_consensus(
         self, 
@@ -948,7 +1069,9 @@ Respond with the amount (examples: 25000 or $25000):"""
         context: Any, 
         participant_vote: ParticipantVote,
         discussion_state: Any,
-        vote_result: Any
+        vote_result: Any,
+        assigned_class: Optional[str] = None,
+        alternative_earnings: Optional[Dict[str, float]] = None
     ):
         """
         Update participant memory with their two-stage voting experience including correct consensus information.
@@ -959,6 +1082,8 @@ Respond with the amount (examples: 25000 or $25000):"""
             participant_vote: ParticipantVote with individual voting results
             discussion_state: GroupDiscussionState object
             vote_result: VoteResult with consensus information
+            assigned_class: Optional assigned income class for counterfactual display
+            alternative_earnings: Optional dict of alternative earnings under each principle
         """
         try:
             # Build complete voting memory content
@@ -998,7 +1123,9 @@ Respond with the amount (examples: 25000 or $25000):"""
                 agreed_principle=agreed_principle,    # ✅ Actual agreed principle
                 total_stages=total_stages,
                 total_attempts=total_attempts,
-                language_manager=self.language_manager
+                language_manager=self.language_manager,
+                assigned_class=assigned_class,
+                alternative_earnings=alternative_earnings
             )
             
             # Update participant memory using the MemoryManager
@@ -1012,6 +1139,48 @@ Respond with the amount (examples: 25000 or $25000):"""
         except Exception as e:
             logger.warning(f"Failed to update memory for {participant.name} after voting: {e}")
             # Don't fail the entire voting process due to memory update issues
+
+    async def update_participant_memory_with_counterfactuals(
+        self,
+        participants: List[Any],
+        contexts: List[Any], 
+        participant_votes: List[ParticipantVote],
+        vote_result: Any,
+        discussion_state: Any,
+        assigned_classes: Dict[str, str],
+        alternative_earnings_by_agent: Dict[str, Dict[str, float]]
+    ):
+        """
+        Update participant memories with counterfactual earnings information.
+        
+        This method should be called after payoffs and counterfactuals are calculated
+        to provide agents with complete transparency about alternative outcomes.
+        
+        Args:
+            participants: List of participant agents
+            contexts: List of participant contexts
+            participant_votes: List of participant votes from voting process
+            vote_result: VoteResult with consensus information
+            discussion_state: GroupDiscussionState object
+            assigned_classes: Dict mapping participant names to assigned income classes
+            alternative_earnings_by_agent: Dict mapping participant names to alternative earnings
+        """
+        for i, participant in enumerate(participants):
+            participant_vote = participant_votes[i]
+            context = contexts[i]
+            
+            # Get counterfactual data for this participant
+            assigned_class = assigned_classes.get(participant.name)
+            alternative_earnings = alternative_earnings_by_agent.get(participant.name)
+            
+            try:
+                await self._update_participant_memory_for_voting_with_consensus(
+                    participant, context, participant_vote, discussion_state, vote_result,
+                    assigned_class=assigned_class,
+                    alternative_earnings=alternative_earnings
+                )
+            except Exception as e:
+                logger.warning(f"Failed to update memory with counterfactuals for {participant.name}: {e}")
 
     async def _update_participant_memory_for_voting(
         self, 

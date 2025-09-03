@@ -73,7 +73,8 @@ class Phase2Manager:
             utility_agent=self.utility_agent,
             settings=self.settings,
             logger=logger,
-            memory_service=self.memory_service
+            memory_service=self.memory_service,
+            config=self.config
         )
         
         self.memory_service = MemoryService(

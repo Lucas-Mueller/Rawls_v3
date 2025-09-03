@@ -549,7 +549,9 @@ def build_two_stage_voting_complete_delta(
     agreed_principle: Optional[str] = None,
     total_stages: int = 1,
     total_attempts: int = 1,
-    language_manager: Optional[LanguageManager] = None
+    language_manager: Optional[LanguageManager] = None,
+    assigned_class: Optional[str] = None,
+    alternative_earnings: Optional[Dict[str, float]] = None
 ) -> str:
     """
     Build memory content for complete two-stage voting process.
@@ -563,6 +565,9 @@ def build_two_stage_voting_complete_delta(
         agreed_principle: Group's agreed principle if consensus reached
         total_stages: Total number of voting stages completed (1 or 2)
         total_attempts: Total attempts across all stages
+        language_manager: Optional language manager for localization
+        assigned_class: Optional assigned income class for counterfactual display
+        alternative_earnings: Optional dict of alternative earnings under each principle
         
     Returns:
         Compact memory delta for complete voting process
@@ -629,4 +634,94 @@ def build_two_stage_voting_complete_delta(
         else:
             delta_parts.append("Group consensus: NO")
     
-    return " | ".join(delta_parts)
+    # Add counterfactual information if provided
+    counterfactual_table = ""
+    if assigned_class is not None and alternative_earnings is not None and language_manager is not None:
+        try:
+            # Build counterfactual table using the same approach as Phase 1
+            counterfactual_table = _build_counterfactual_table(
+                assigned_class, alternative_earnings, language_manager
+            )
+        except Exception as e:
+            # If counterfactual table fails, continue without it (backward compatibility)
+            pass
+    
+    if counterfactual_table:
+        # Return base delta with counterfactual table appended
+        base_delta = " | ".join(delta_parts)
+        return f"{base_delta}\n{counterfactual_table}"
+    else:
+        return " | ".join(delta_parts)
+
+
+def _build_counterfactual_table(
+    assigned_class: str, 
+    alternative_earnings: Dict[str, float], 
+    language_manager: LanguageManager
+) -> str:
+    """
+    Build counterfactual earnings table for voting memory updates.
+    
+    Reuses Phase 1 translation keys for consistency across languages.
+    
+    Args:
+        assigned_class: The assigned income class (e.g., "high", "medium", "low")
+        alternative_earnings: Dict mapping principle keys to earnings
+        language_manager: Language manager for localization
+        
+    Returns:
+        Formatted counterfactual table string
+    """
+    try:
+        # Map class values to translation-friendly format
+        class_mapping = {
+            'high': language_manager.get('common.income_classes.high', default='HIGH'),
+            'medium_high': language_manager.get('common.income_classes.medium_high', default='MEDIUM HIGH'),
+            'medium': language_manager.get('common.income_classes.medium', default='MEDIUM'),
+            'medium_low': language_manager.get('common.income_classes.medium_low', default='MEDIUM LOW'),
+            'low': language_manager.get('common.income_classes.low', default='LOW')
+        }
+        
+        # Clean up assigned class value for lookup
+        assigned_class_clean = assigned_class.lower().replace(' ', '_')
+        assigned_class_display = class_mapping.get(assigned_class_clean, assigned_class.upper())
+        
+        # Use Phase 1 counterfactual table header for consistency
+        table_header = language_manager.get(
+            "prompts.phase1_counterfactual_table_header",
+            assigned_class=assigned_class_display
+        )
+        
+        # Build table rows for each principle
+        table_rows = []
+        principle_names = {
+            'maximizing_floor': language_manager.get('common.principle_names.maximizing_floor'),
+            'maximizing_average': language_manager.get('common.principle_names.maximizing_average'),
+            'maximizing_average_floor_constraint': language_manager.get('common.principle_names.maximizing_average_floor_constraint'),
+            'maximizing_average_range_constraint': language_manager.get('common.principle_names.maximizing_average_range_constraint')
+        }
+        
+        # Order principles consistently: 1, 2, 3, 4
+        principle_order = [
+            'maximizing_floor',
+            'maximizing_average', 
+            'maximizing_average_floor_constraint',
+            'maximizing_average_range_constraint'
+        ]
+        
+        for principle_key in principle_order:
+            earnings = alternative_earnings.get(principle_key, 0.0)
+            principle_name = principle_names.get(principle_key, principle_key)
+            
+            # Calculate income from earnings (reverse the payoff calculation)
+            income = int(earnings * 10000)
+            
+            # Format table row with proper spacing (matching Phase 1 format)
+            table_rows.append(f"{principle_name:<40}  ${income:,}    ${earnings:.2f}")
+        
+        # Combine header and rows
+        return f"{table_header}\n" + "\n".join(table_rows)
+        
+    except Exception as e:
+        # Return fallback counterfactual info if table building fails
+        return f"Alternative earnings calculated for income class: {assigned_class}"
