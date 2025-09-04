@@ -141,8 +141,8 @@ class VotingService:
             # No additional context - use basic prompt
             vote_prompt = language_manager.get("prompts.vote_initiation_prompt")
         
-        # Enhanced timeout specifically for vote prompts (shorter than statement timeout)
-        vote_prompt_timeout = min(self.settings.statement_timeout_seconds, 60)  # Cap at 60 seconds
+        # Enhanced timeout specifically for vote prompts (use full statement timeout for long-response LLMs)
+        vote_prompt_timeout = self.settings.statement_timeout_seconds
         
         for attempt in range(max_retries):
             try:

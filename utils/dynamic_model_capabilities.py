@@ -114,7 +114,7 @@ async def test_temperature_support(model_string: str, cache: Optional[Temperatur
             logger.debug(f"Running test inference with temperature for {model_string}")
             simple_response = await asyncio.wait_for(
                 _run_without_tracing(test_agent_with_temp, "Say 'test' and nothing else."),
-                timeout=30  # 30 second timeout for testing
+                timeout=600  # 10 minute timeout for testing slow LLMs
             )
             
             # If we get here, temperature is supported
@@ -139,7 +139,7 @@ async def test_temperature_support(model_string: str, cache: Optional[Temperatur
                 logger.debug(f"Running test inference without temperature for {model_string}")
                 simple_response = await asyncio.wait_for(
                     _run_without_tracing(test_agent_no_temp, "Say 'test' and nothing else."),
-                    timeout=30
+                    timeout=600
                 )
                 
                 # Model works without temperature but failed with temperature

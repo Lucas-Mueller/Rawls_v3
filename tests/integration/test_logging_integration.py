@@ -144,7 +144,7 @@ class TestLoggingIntegration:
         
         with patch.object(phase2_manager, '_run_group_discussion') as mock_discussion, \
              patch.object(phase2_manager, '_apply_group_principle_and_calculate_payoffs') as mock_payoffs, \
-             patch.object(phase2_manager, '_collect_final_rankings') as mock_rankings:
+             patch.object(phase2_manager.counterfactuals_service, 'collect_final_rankings_streamlined') as mock_rankings:
             
             # Setup mocks
             from models import GroupDiscussionResult, PrincipleChoice

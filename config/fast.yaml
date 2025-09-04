@@ -1,7 +1,7 @@
 language: "English" 
 
 agents:
-  - name: "Boris"
+  - name: "Alice"
     personality: "You are an american college student."
     model: 'google/gemini-2.0-flash-lite-001'
     memory_character_limit: 25000

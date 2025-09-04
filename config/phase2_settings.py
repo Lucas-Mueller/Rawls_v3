@@ -41,21 +41,21 @@ class Phase2Settings(BaseModel):
     
     # Timeout settings
     statement_timeout_seconds: int = Field(
-        default=300,
+        default=600,
         ge=10,
-        le=300,
+        le=600,
         description="Timeout for agent statement responses"
     )
     confirmation_timeout_seconds: int = Field(
-        default=300,
+        default=600,
         ge=10,
-        le=300,
+        le=600,
         description="Timeout for voting confirmation responses"
     )
     ballot_timeout_seconds: int = Field(
-        default=300,
+        default=600,
         ge=10,
-        le=300,
+        le=600,
         description="Timeout for secret ballot responses"
     )
     
@@ -65,9 +65,9 @@ class Phase2Settings(BaseModel):
         description="Enable two-step reasoning (internal reasoning + public statement)"
     )
     reasoning_timeout_seconds: int = Field(
-        default=180,
+        default=600,
         ge=10,
-        le=300,
+        le=600,
         description="Timeout for internal reasoning calls"
     )
     reasoning_max_retries: int = Field(
@@ -120,9 +120,9 @@ class Phase2Settings(BaseModel):
         description="Enable constraint correction for principles C and D"
     )
     constraint_correction_timeout_seconds: int = Field(
-        default=300,
+        default=600,
         ge=10,
-        le=300,
+        le=600,
         description="Timeout for constraint correction attempts"
     )
     max_constraint_correction_attempts: int = Field(
@@ -145,9 +145,9 @@ class Phase2Settings(BaseModel):
         description="Maximum retry attempts per voting stage"
     )
     two_stage_timeout_seconds: float = Field(
-        default=300.0,
+        default=600.0,
         ge=10.0,
-        le=300.0,
+        le=600.0,
         description="Timeout for each voting stage"
     )
     
