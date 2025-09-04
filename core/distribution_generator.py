@@ -232,7 +232,7 @@ class DistributionGenerator:
         
         # Get income and calculate payoff
         income = distribution.get_income_by_class(assigned_class)
-        payoff = income / 10000.0
+        payoff = round(income / 10000.0, 2)
         
         return assigned_class, payoff
     
@@ -357,7 +357,7 @@ class DistributionGenerator:
                 income = chosen_distribution.get_income_by_class(assigned_class)
                 
                 # Calculate payoff: $1 for every $10,000 of income
-                earnings = income / 10000.0
+                earnings = round(income / 10000.0, 2)
                 
                 alternative_earnings[principle.value] = earnings
                 
@@ -453,7 +453,7 @@ class DistributionGenerator:
             'distribution_index': distributions.index(best_floor_dist),
             'distribution': best_floor_dist,
             'agent_income': agent_income,
-            'agent_earnings': agent_income / 10000.0,
+            'agent_earnings': round(agent_income / 10000.0, 2),
             'explanation': explanation,
             'constraint_amount': None
         })
@@ -469,7 +469,7 @@ class DistributionGenerator:
             'distribution_index': distributions.index(best_avg_dist),
             'distribution': best_avg_dist,
             'agent_income': agent_income,
-            'agent_earnings': agent_income / 10000.0,
+            'agent_earnings': round(agent_income / 10000.0, 2),
             'explanation': explanation,
             'constraint_amount': None
         })
@@ -504,7 +504,7 @@ class DistributionGenerator:
                     'distribution_index': distributions.index(best_dist),
                     'distribution': best_dist,
                     'agent_income': agent_income,
-                    'agent_earnings': agent_income / 10000.0,
+                    'agent_earnings': round(agent_income / 10000.0, 2),
                     'explanation': explanation,
                     'constraint_amount': floor_value
                 })
@@ -539,7 +539,7 @@ class DistributionGenerator:
                     'distribution_index': distributions.index(best_dist),
                     'distribution': best_dist,
                     'agent_income': agent_income,
-                    'agent_earnings': agent_income / 10000.0,
+                    'agent_earnings': round(agent_income / 10000.0, 2),
                     'explanation': explanation,
                     'constraint_amount': range_value
                 })

@@ -3,14 +3,14 @@ language: "English"
 agents:
   - name: "Boris"
     personality: "You are an american college student."
-    model: 'gpt-4.1-nano'
+    model: "gpt-4.1-nano-2025-04-14"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
     personality: "You are an american college student."
-    model: 'gpt-4.1-nano'
+    model: "gpt-4.1-nano-2025-04-14"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true

@@ -24,3 +24,20 @@ Then create a report detailing the current implementation.
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 
 Save this report as a .md file int he root directory.
+
+
+
+Hey Claude, please review the current implementation of  the discussion history across phase 2. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step. 
+Then create a report as a .md file detailing the current implementation.
+
+Please check whether its correct or not.
+
+Hey Codex, can you please thoroughly review the calls following the end of the phase 2 discussion? 
+I see in an external monitoring tool 3 distinct calls are made to the agents:
+1. Memory Update Call incl. Results from Group Discussion (old short) format 
+2. Memory Update Call incl. Results from Group Discussion new long format with counterfacutals. 
+3. Call for ranking the principles
+
+I cannot identify Call 1 in the code! Please find it for me 
+
+Be thorugh and think!
