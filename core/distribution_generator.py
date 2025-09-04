@@ -256,9 +256,16 @@ class DistributionGenerator:
     @staticmethod
     def calculate_alternative_earnings_by_principle(
         distributions: List[IncomeDistribution], 
-        constraint_amount: Optional[int] = None
+        constraint_amount: Optional[int] = None,
+        random_gen: random.Random = None
     ) -> dict:
-        """Calculate what participant would have earned under each principle choice."""
+        """Calculate what participant would have earned under each principle choice.
+        
+        Args:
+            distributions: List of distributions to apply principles to
+            constraint_amount: Optional constraint amount for constrained principles
+            random_gen: Random generator to use (defaults to global random)
+        """
         from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
         
         alternative_earnings = {}
@@ -295,7 +302,7 @@ class DistributionGenerator:
                 )
                 
                 # Calculate what they would have earned with this principle
-                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution)
+                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities=None, random_gen=random_gen)
                 alternative_earnings[principle.value] = earnings
                 
             except Exception as e:

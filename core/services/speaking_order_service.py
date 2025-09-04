@@ -141,11 +141,22 @@ class SpeakingOrderService:
             try:
                 import numpy as np
                 probabilities = np.array(weights) / sum(weights)
-                first_speaker = np.random.choice(participant_indices, p=probabilities)
+                # Use seed manager's random for reproducible selection
+                if self.seed_manager:
+                    first_speaker = self.seed_manager.random.choices(participant_indices, weights=probabilities, k=1)[0]
+                else:
+                    first_speaker = np.random.choice(participant_indices, p=probabilities)
             except ImportError:
                 # Fallback if numpy not available - manual weighted selection
                 available_indices = [i for i in participant_indices if i != last_round_finisher]
-                first_speaker = random.choice(available_indices) if available_indices else participant_indices[0]
+                if available_indices:
+                    # Use seed manager's random for reproducible selection
+                    if self.seed_manager:
+                        first_speaker = self.seed_manager.random.choice(available_indices)
+                    else:
+                        first_speaker = random.choice(available_indices)
+                else:
+                    first_speaker = participant_indices[0]
             
             # Remove first speaker and shuffle rest
             remaining = [i for i in participant_indices if i != first_speaker]

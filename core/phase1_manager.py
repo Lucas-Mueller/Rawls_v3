@@ -360,12 +360,13 @@ class Phase1Manager:
         )
         
         # Calculate payoff and income class assignment
-        assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities)
+        assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities, random_gen=self.seed_manager.random)
         
         # Calculate alternative earnings by principle (not just distribution)
         alternative_earnings_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
             distribution_set.distributions, 
-            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
+            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None,
+            random_gen=self.seed_manager.random
         )
         
         # CRITICAL: Calculate what participant would have earned under each principle with SAME class assignment
@@ -454,6 +455,8 @@ class Phase1Manager:
         if parsed_choice.constraint_amount is not None:
             round_content += f"\n{language_manager.get('memory_field_labels.constraint_amount')} {parsed_choice.constraint_amount}"
         
+        # Add assigned class info
+        round_content += f"\n{language_manager.get('memory_field_labels.assigned_class')} {language_manager.get(f'common.income_classes.{assigned_class.value}')}"
         
         # Add distribution context
         if is_original_values and original_situation:

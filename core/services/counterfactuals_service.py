@@ -159,7 +159,7 @@ class CounterfactualsService:
                 
                 # Assign each participant to income class and calculate payoff
                 for participant in participants:
-                    assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities)
+                    assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities, random_gen=self.seed_manager.random if self.seed_manager else None)
                     payoffs[participant.name] = earnings
                     assigned_classes[participant.name] = assigned_class.value
             else:
@@ -169,7 +169,7 @@ class CounterfactualsService:
                         random_distribution = self.seed_manager.random.choice(distribution_set.distributions)
                     else:
                         random_distribution = random.choice(distribution_set.distributions)
-                    assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities)
+                    assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities, random_gen=self.seed_manager.random if self.seed_manager else None)
                     payoffs[participant.name] = earnings
                     assigned_classes[participant.name] = assigned_class.value
             
@@ -390,9 +390,9 @@ class CounterfactualsService:
             display_parts.append(comprehensive_data['distributions_table'])
             display_parts.append("")  # Empty line
             
-            # Add principle outcomes header (already localized)
+            # Add principle outcomes header - use Phase 2-specific template
             outcomes_header = lang_manager.get(
-                'comprehensive_earnings.principle_outcomes_header',
+                'comprehensive_earnings.phase2_outcomes_header',
                 class_name=comprehensive_data['class_display_name']
             )
             display_parts.append(outcomes_header)
