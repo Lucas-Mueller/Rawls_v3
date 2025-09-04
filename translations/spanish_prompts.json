@@ -89,7 +89,7 @@
     "distribution_distributions_table_header": "Distribuciones de ingresos:\n\n",
     "distribution_distributions_table_column_header": "| Clase de Ingresos | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n",
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
-    "context_memory_section_format": "=== SU MEMORIA ===\n{memory}\n====================",
+    "context_memory_section_format": "**=== SU MEMORIA ===**\n{memory}\n====================",
     "context_memory_summary_format": "=== ASPECTOS CLAVE ===\n{memory_summary}\n=======================",
     "context_memory_empty_placeholder": "(Vacío)",
     "context_memory_summary_empty_placeholder": "Aún no hay conocimientos clave.",

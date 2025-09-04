@@ -103,8 +103,8 @@ class MemoryService:
         self.statement_max_chars = 300
         self.reasoning_max_chars = 200
         
-        # Memory guidance style from config (falls back to 'narrative')
-        self.memory_guidance_style = getattr(config, 'memory_guidance_style', 'narrative') if config else 'narrative'
+        # Memory guidance style from config (falls back to 'structured')
+        self.memory_guidance_style = getattr(config, 'memory_guidance_style', 'structured') if config else 'structured'
     
     async def update_memory_selective(
         self,

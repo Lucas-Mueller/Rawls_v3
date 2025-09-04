@@ -120,7 +120,7 @@
     "format_class_assignment_format": "这将把您分配到以下收入类别：{assigned_class}",
     "format_floor_constraint_example": "下限限制：\"我选择平均值最大化，下限为 15 000 美元\"",
     "format_range_constraint_example": "范围限制：\"我选择平均值最大化，范围限制为 20 000 美元\"",
-    "context_memory_section_format": "===你的记忆===\n{memory}\n====================",
+    "context_memory_section_format": "**===你的记忆===**\n{memory}\n====================",
     "context_memory_summary_format": "===关键要点===\n{memory_summary}\n==================",
     "context_memory_empty_placeholder": "（空）",
     "context_memory_summary_empty_placeholder": "尚无关键见解。",

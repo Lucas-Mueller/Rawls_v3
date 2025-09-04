@@ -767,6 +767,11 @@ class CounterfactualsService:
             
             # Get final ranking using proven Phase 1 pattern
             final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+            
+            # Clear stale context values to prevent discussion-mode formatting in final ranking prompts
+            context.interaction_type = None
+            context.round_number = 0
+            
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
             text_response = result.final_output
             
