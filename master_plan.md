@@ -45,21 +45,29 @@ In this phase, each AI agent independently familiarizes itself with a set of jus
 | Medium high      | $27,000     | $22,000     | $24,000     | $20,000     |
 | Medium           | $24,000     | $20,000     | $21,000     | $19,000     |
 | Medium low       | $13,000     | $17,000     | $16,000     | $16,000     |
-| Low              | $12,000     | $13,000     | $14,000     | $15,000     |- **Distributions Chosen by Each Principle (Examples):**- **Maximizing the floor:** Distribution 4
+| Low              | $12,000     | $13,000     | $14,000     | $15,000     |-
+ **Distributions Chosen by Each Principle (Examples):
+ - **Maximizing the floor:** Distribution 4
 
 - **Maximizing average:** Distribution 1
 
-- **Maximizing average with a floor constraint of…:**- le $12,000: Distribution 1
+- **Maximizing average with a floor constraint of…:**- 
+  le $12,000: Distribution 1
 
 - le $13,000: Distribution 2
 
 - le $14,000: Distribution 3
 
-- le $15,000: Distribution 4- **Maximizing average with a range constraint of…:*** ge $20,000: Distribution 1
+- le $15,000: Distribution 4- 
+
+**Maximizing average with a range constraint of…:**
+* ge $20,000: Distribution 1
 
 * ge $17,000: Distribution 3
 
-* ge $15,000: Distribution 2**1.3. Repeated Application of Principles (4 Rounds)**This step is repeated four times for each agent.* **Action:** In each round, a new set of income distributions is presented to the agent.
+* ge $15,000: Distribution 2
+
+**1.3. Repeated Application of Principles (4 Rounds)**This step is repeated four times for each agent.* **Action:** In each round, a new set of income distributions is presented to the agent.
 
 * **Agent Task:** The agent must choose one of the four justice principles. If principle (c) or (d) is chosen, the agent _must_ specify the floor or range constraint value in dollar terms.
 

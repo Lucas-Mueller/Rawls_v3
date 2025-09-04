@@ -412,18 +412,28 @@ class TestVotingService:
     @pytest.mark.asyncio
     async def test_conduct_voting_process_full_success(self):
         """Test full voting process with consensus reached."""
-        participants = [Mock(name="Alice"), Mock(name="Bob")]
+        # Set up participants with proper name attributes
+        alice_participant = Mock()
+        alice_participant.name = "Alice"  
+        bob_participant = Mock()
+        bob_participant.name = "Bob"
+        participants = [alice_participant, bob_participant]
         initiating_participant = participants[0]
-        contexts = [Mock(name="Alice"), Mock(name="Bob")]
+        
+        # Set up contexts with proper name attributes
+        alice_context = Mock()
+        alice_context.name = "Alice"
+        bob_context = Mock()
+        bob_context.name = "Bob" 
+        contexts = [alice_context, bob_context]
         error_handler = Mock()
         utility_agent = Mock()
         
-        # Mock all phases succeeding
+        # Mock all phases succeeding (removed prompt_for_vote_initiation since it's no longer called)
         mock_vote_result = Mock()
         mock_vote_result.consensus_reached = True
         
-        with patch.object(self.voting_service, 'prompt_for_vote_initiation', return_value=True), \
-             patch.object(self.voting_service, 'conduct_confirmation_phase', return_value=True), \
+        with patch.object(self.voting_service, 'conduct_confirmation_phase', return_value=True), \
              patch.object(self.voting_service, 'conduct_secret_ballot', return_value=mock_vote_result):
             
             result = await self.voting_service.conduct_voting_process(
@@ -437,29 +447,6 @@ class TestVotingService:
             )
             
             assert result is True
-    
-    @pytest.mark.asyncio
-    async def test_conduct_voting_process_no_initiation(self):
-        """Test voting process when participant doesn't want to vote."""
-        participants = [Mock(name="Alice"), Mock(name="Bob")]
-        initiating_participant = participants[0]
-        contexts = [Mock(name="Alice"), Mock(name="Bob")]
-        error_handler = Mock()
-        utility_agent = Mock()
-        
-        with patch.object(self.voting_service, 'prompt_for_vote_initiation', return_value=False):
-            
-            result = await self.voting_service.conduct_voting_process(
-                participants=participants,
-                initiating_participant=initiating_participant,
-                contexts=contexts,
-                discussion_state=self.discussion_state,
-                agent_recent_statement="Maybe we should continue",
-                error_handler=error_handler,
-                utility_agent=utility_agent
-            )
-            
-            assert result is False
     
     @pytest.mark.asyncio
     async def test_conduct_voting_process_confirmation_fails(self):

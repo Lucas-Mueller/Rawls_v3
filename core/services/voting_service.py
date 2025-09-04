@@ -531,18 +531,7 @@ class VotingService:
             self._log_warning(f"Could not find context for initiating participant: {initiating_participant.name}")
             return False
         
-        # Step 1: Prompt for vote initiation
-        wants_to_vote = await self.prompt_for_vote_initiation(
-            participant=initiating_participant,
-            context=initiating_context,
-            agent_recent_statement=agent_recent_statement,
-            internal_reasoning=internal_reasoning
-        )
-        
-        if not wants_to_vote:
-            return False
-        
-        # Step 2: Conduct confirmation phase
+        # Step 1: Conduct confirmation phase
         all_confirmed = await self.conduct_confirmation_phase(
             participants=participants,
             initiator_name=initiating_participant.name,
@@ -554,7 +543,7 @@ class VotingService:
         if not all_confirmed:
             return False
         
-        # Step 3: Conduct secret ballot
+        # Step 2: Conduct secret ballot
         vote_result = await self.conduct_secret_ballot(
             participants=participants,
             contexts=contexts,
