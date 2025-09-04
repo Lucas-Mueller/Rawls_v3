@@ -122,11 +122,11 @@ class CounterfactualsService:
         discussion_result: GroupDiscussionResult,
         config: ExperimentConfiguration,
         participants: List["ParticipantAgent"]
-    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]]]:
+    ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]], Any]:
         """
         Apply chosen principle or random assignment if no consensus.
         
-        Exact contract match: returns (payoffs, assigned_classes, alternative_earnings_by_agent)
+        Updated contract: returns (payoffs, assigned_classes, alternative_earnings_by_agent, distribution_set)
         Handles consensus vs random assignment logic.
         
         Args:
@@ -135,7 +135,7 @@ class CounterfactualsService:
             participants: List of participant agents
             
         Returns:
-            tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict)
+            tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict, distribution_set)
         """
         try:
             # Generate new distribution set for Phase 2 payoffs
@@ -179,7 +179,7 @@ class CounterfactualsService:
             )
             
             self.logger.debug(f"Payoffs calculated for {len(participants)} participants")
-            return payoffs, assigned_classes, alternative_earnings_by_agent
+            return payoffs, assigned_classes, alternative_earnings_by_agent, distribution_set
             
         except Exception as e:
             self.logger.warning(f"Failed to calculate payoffs: {e}")
@@ -243,13 +243,14 @@ class CounterfactualsService:
         final_earnings: float,
         assigned_class: str,
         alternative_earnings: Dict[str, float],
-        consensus_result: GroupDiscussionResult
+        consensus_result: GroupDiscussionResult,
+        distribution_set
     ) -> str:
         """
-        Build Phase 2 results with counterfactual table (matching Phase 1 transparency).
+        Build Phase 2 results with comprehensive earnings display.
         
-        Build detailed Phase 2 results matching Phase 1 transparency level.
-        Includes class assignment and full counterfactual analysis.
+        Build detailed Phase 2 results with comprehensive earnings display
+        that includes distributions table and principle outcomes.
         
         Args:
             participant_name: Name of the participant
@@ -257,9 +258,10 @@ class CounterfactualsService:
             assigned_class: Income class assigned to participant
             alternative_earnings: Alternative earnings under each principle
             consensus_result: Result of group discussion
+            distribution_set: The distribution set used for Phase 2
             
         Returns:
-            Formatted results string with counterfactual analysis
+            Formatted results string with comprehensive earnings display
         """
         try:
             # Build header and assignment info
@@ -285,21 +287,21 @@ class CounterfactualsService:
                 no_consensus_msg = self.language_manager.get("phase2_no_consensus")
                 result_parts.append(no_consensus_msg + ".")
             
-            # Add counterfactual analysis table
-            counterfactuals_header = self.language_manager.get('results.counterfactuals_header')
-            result_parts.append(f"\n{counterfactuals_header}:")
+            # Add comprehensive earnings display
+            # Convert string assigned_class to IncomeClass enum
+            if assigned_class.startswith('IncomeClass.'):
+                # Handle enum string representation like 'IncomeClass.high'
+                enum_value = assigned_class.split('.')[1].lower()
+            else:
+                # Handle direct value like 'high' or 'MEDIUM HIGH' 
+                enum_value = assigned_class.lower().replace(' ', '_')
             
-            # Format alternative earnings for each principle
-            principle_names = {
-                'maximizing_floor': self.language_manager.get('common.principle_names.maximizing_floor'),
-                'maximizing_average': self.language_manager.get('common.principle_names.maximizing_average'), 
-                'maximizing_average_with_floor': self.language_manager.get('common.principle_names.maximizing_average_floor_constraint'),
-                'maximizing_average_with_range': self.language_manager.get('common.principle_names.maximizing_average_range_constraint')
-            }
+            assigned_class_enum = IncomeClass(enum_value)
             
-            for principle_key, earnings in alternative_earnings.items():
-                principle_name = principle_names.get(principle_key, principle_key)
-                result_parts.append(f"- {principle_name}: ${earnings:.2f}")
+            comprehensive_display = self._build_comprehensive_earnings_display(
+                participant_name, assigned_class_enum, distribution_set, consensus_result, self.language_manager
+            )
+            result_parts.append(f"\n{comprehensive_display}")
             
             return "\n".join(result_parts)
             
@@ -355,6 +357,79 @@ class CounterfactualsService:
             # Fallback to current language manager
             return self.language_manager
     
+    def _build_comprehensive_earnings_display(self, participant_name: str, assigned_class_enum: IncomeClass, distribution_set, consensus_result: GroupDiscussionResult, lang_manager) -> str:
+        """
+        Build comprehensive earnings display for Phase 2 results using LanguageManager.
+        
+        Uses DistributionGenerator.calculate_comprehensive_constraint_outcomes() to build
+        complete display structure with distributions table and principle outcomes.
+        Marks group's consensus choice with localized marker.
+        
+        Args:
+            participant_name: Name of the participant
+            assigned_class_enum: Participant's assigned income class (IncomeClass enum)
+            distribution_set: The distribution set used for Phase 2
+            consensus_result: Result of group discussion with consensus info
+            lang_manager: Language manager for localization
+            
+        Returns:
+            Formatted comprehensive earnings display string
+        """
+        try:
+            # Get comprehensive outcomes using LanguageManager
+            comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
+                distribution_set.distributions,
+                assigned_class_enum,
+                lang_manager  # Pass LanguageManager for localization
+            )
+            
+            # Build display parts
+            display_parts = []
+            
+            # Add distributions table (already localized)
+            display_parts.append(comprehensive_data['distributions_table'])
+            display_parts.append("")  # Empty line
+            
+            # Add principle outcomes header (already localized)
+            outcomes_header = lang_manager.get(
+                'comprehensive_earnings.principle_outcomes_header',
+                class_name=comprehensive_data['class_display_name']
+            )
+            display_parts.append(outcomes_header)
+            
+            # Determine group choice for marking
+            group_choice_principle = None
+            group_choice_constraint = None
+            
+            if consensus_result.consensus_reached and consensus_result.agreed_principle:
+                group_choice_principle = consensus_result.agreed_principle.principle.value
+                group_choice_constraint = consensus_result.agreed_principle.constraint_amount
+            
+            # Add all outcomes with proper group choice marking
+            for outcome in comprehensive_data['outcomes']:
+                # Determine if this outcome matches the group choice
+                choice_marker = ""
+                if group_choice_principle == outcome['principle_key']:
+                    if outcome['constraint_amount'] is None or outcome['constraint_amount'] == group_choice_constraint:
+                        choice_marker = lang_manager.get('comprehensive_earnings.markers.group_choice')
+                
+                # Format outcome line using LanguageManager
+                outcome_line = lang_manager.get(
+                    'comprehensive_earnings.outcome_line',
+                    principle_name=outcome['principle_name'],
+                    distribution=lang_manager.get('distributions.distribution_label', number=outcome['distribution_index'] + 1),
+                    income=lang_manager.get('constraint_formatting.currency_format', amount=outcome['agent_income']),
+                    earnings=lang_manager.get('constraint_formatting.currency_format', amount=outcome['agent_earnings']),
+                    marker=choice_marker
+                )
+                display_parts.append(outcome_line)
+            
+            return "\n".join(display_parts)
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to build comprehensive earnings display for {participant_name}: {e}")
+            return f"Earnings display unavailable due to error: {str(e)}"
+    
     def _build_consensus_info(self, discussion_result: GroupDiscussionResult, lang_manager) -> str:
         """
         Build consensus information text based on discussion result.
@@ -406,7 +481,8 @@ class CounterfactualsService:
         payoff_results: Dict[str, float],
         assigned_classes: Dict[str, IncomeClass], 
         alternative_earnings_by_agent: Dict[str, Dict[str, float]],
-        config: ExperimentConfiguration
+        config: ExperimentConfiguration,
+        distribution_set
     ) -> List[ParticipantContext]:
         """
         Deliver Phase 2 results using the new phase2_results_delivery_prompt and update participant memory.
@@ -422,6 +498,7 @@ class CounterfactualsService:
             assigned_classes: Income class assignments (IncomeClass enum values)
             alternative_earnings_by_agent: Counterfactual earnings by participant
             config: Experiment configuration
+            distribution_set: The distribution set used for Phase 2
             
         Returns:
             List of updated contexts for use in ranking collection
@@ -478,7 +555,8 @@ class CounterfactualsService:
                         final_earnings,
                         assigned_class_str,
                         alternative_earnings,
-                        discussion_result
+                        discussion_result,
+                        distribution_set
                     )
                 
                 # Update participant memory with results
@@ -528,7 +606,8 @@ class CounterfactualsService:
         config: ExperimentConfiguration,
         participants: List["ParticipantAgent"],
         utility_agent,
-        logger: Optional[AgentCentricLogger] = None
+        logger: Optional[AgentCentricLogger] = None,
+        distribution_set = None
     ) -> Dict[str, PrincipleRanking]:
         """
         DEPRECATED: Collect final rankings with result delivery logic (Phase 1 compatibility).
@@ -546,6 +625,7 @@ class CounterfactualsService:
             participants: List of participant agents
             utility_agent: Utility agent for parsing responses
             logger: Optional logger for detailed logging
+            distribution_set: Optional distribution set for comprehensive earnings display
             
         Returns:
             Dict mapping participant names to their final principle rankings
@@ -571,7 +651,8 @@ class CounterfactualsService:
                 payoff_results=payoff_results,
                 assigned_classes=assigned_classes_enum,
                 alternative_earnings_by_agent=alternative_earnings_by_agent,
-                config=config
+                config=config,
+                distribution_set=distribution_set
             )
             
             # Then collect rankings using the streamlined method

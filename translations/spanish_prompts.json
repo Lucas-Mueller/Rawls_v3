@@ -352,6 +352,39 @@
       "very_low": "MUY BAJO"
     }
   },
+  "comprehensive_earnings": {
+    "distributions_table_header": "DISTRIBUCIONES DE EXPERIMENTO Y MAPEO DE SELECCIÓN",
+    "principle_outcomes_header": "RESULTADOS DE PRINCIPIOS PARA LA CLASE {class_name}:",
+    "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
+    "markers": {
+      "assigned_principle": " ← SU PRINCIPIO ASIGNADO",
+      "group_choice": " ← LA ELECCIÓN DE SU GRUPO"
+    },
+    "constraint_analysis_header": "Resultados del Análisis de Restricción:",
+    "outcome_summary": "Resumen de resultados bajo diferentes restricciones:",
+    "selected_distribution": "Distribución Seleccionada:",
+    "constraint_value": "Valor de Restricción: ${amount:,}",
+    "no_constraint": "Sin restricción",
+    "floor_constraint_label": "Restricción mínima de ${amount:,}",
+    "range_constraint_label": "Restricción de rango de ${amount:,}",
+    "table_columns": {
+      "constraint": "Restricción",
+      "selected_dist": "Dist. Selec.",
+      "your_class": "Su Clase",
+      "your_income": "Sus Ingresos",
+      "your_earnings": "Sus Ganancias"
+    }
+  },
+  "constraint_formatting": {
+    "floor_constraint": "Restricción mínima ≤ {amount}",
+    "range_constraint": "Restricción de rango ≤ {amount}",
+    "currency_format": "${amount:,}"
+  },
+  "distributions": {
+    "income_class_header": "Clase de Ingresos",
+    "column_header": "Dist. {number}",
+    "distribution_label": "Distribución {number}"
+  },
   "voting_prompts": {
     "retry_instruction": "⚠️ Por favor responda exactamente con 1 (para votar ahora) o 0 (para continuar la discusión)",
     "internal_reasoning_section": "=== SU RAZONAMIENTO INTERNO ===",

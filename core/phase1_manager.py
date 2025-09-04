@@ -390,40 +390,49 @@ class Phase1Manager:
             alternative_earnings_same_class=alternative_earnings_same_class
         )
         
-        # Format counterfactual analysis matching chit_example.png specification
-        class_name_mapping = {
-            "high": "HIGH",
-            "medium_high": "MEDIUM HIGH", 
-            "medium": "MEDIUM",
-            "medium_low": "MEDIUM LOW",
-            "low": "LOW"
-        }
-        
-        # Get the income for the assigned class in the chosen distribution
-        assigned_income = chosen_distribution.get_income_by_class(assigned_class)
-        
-        # Build the counterfactual table using language manager
-        language_manager = self.language_manager
-        
-        counterfactual_table = language_manager.get(
-            "prompts.phase1_counterfactual_table_header",
-            assigned_class=class_name_mapping[assigned_class.value]
+        # Build comprehensive earnings display using LanguageManager
+        comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
+            distribution_set.distributions,
+            assigned_class,
+            self.language_manager,  # Pass LanguageManager to method
+            probabilities
         )
-        
-        # Get principle display names dictionary directly
-        translations = language_manager.get_current_translations()
-        principle_display_names = {
-            "maximizing_floor": language_manager.get("common.principle_names.maximizing_floor"),
-            "maximizing_average": language_manager.get("common.principle_names.maximizing_average"),
-            "maximizing_average_floor_constraint": language_manager.get("common.principle_names.maximizing_average_floor_constraint"),
-            "maximizing_average_range_constraint": language_manager.get("common.principle_names.maximizing_average_range_constraint")
-        }
-        
-        for principle_key, alt_earnings in alternative_earnings_same_class.items():
-            principle_label = principle_display_names.get(principle_key, principle_key)
-            # Calculate income from earnings (reverse the payoff calculation)
-            alt_income = int(alt_earnings * 10000)
-            counterfactual_table += f"\n{principle_label:<40}  ${alt_income:,}    ${alt_earnings:.2f}"
+
+        # Build complete earnings display using LanguageManager
+        earnings_display_parts = []
+
+        # Add distributions table (already formatted with LanguageManager)
+        earnings_display_parts.append(comprehensive_data['distributions_table'])
+        earnings_display_parts.append("")  # Empty line
+
+        # Add principle outcomes header with localized class name
+        principle_outcomes_header = self.language_manager.get(
+            'comprehensive_earnings.principle_outcomes_header',
+            class_name=comprehensive_data['class_display_name']
+        )
+        earnings_display_parts.append(principle_outcomes_header)
+
+        # Add all outcomes with proper choice marking
+        for outcome in comprehensive_data['outcomes']:
+            # Determine if this outcome matches the agent's choice
+            choice_marker = ""
+            if outcome['principle_key'] == parsed_choice.principle.value:
+                if parsed_choice.constraint_amount is None or outcome['constraint_amount'] == parsed_choice.constraint_amount:
+                    choice_marker = self.language_manager.get('comprehensive_earnings.markers.assigned_principle')
+            
+            # Format outcome line using LanguageManager
+            outcome_line = self.language_manager.get(
+                'comprehensive_earnings.outcome_line',
+                principle_name=outcome['principle_name'],
+                distribution=self.language_manager.get('distributions.distribution_label', number=outcome['distribution_index'] + 1),
+                income=self.language_manager.get('constraint_formatting.currency_format', amount=outcome['agent_income']),
+                earnings=self.language_manager.get('constraint_formatting.currency_format', amount=outcome['agent_earnings']),
+                marker=choice_marker
+            )
+            earnings_display_parts.append(outcome_line)
+
+        # Join all parts
+        earnings_display = "\n".join(earnings_display_parts)
         
         # Check if original values mode was used
         original_values_mode = getattr(config, 'original_values_mode', None)
@@ -444,9 +453,6 @@ class Phase1Manager:
         if parsed_choice.constraint_amount is not None:
             round_content += f"\n{language_manager.get('memory_field_labels.constraint_amount')} {parsed_choice.constraint_amount}"
         
-        # Add class and earnings info
-        round_content += f"\n{language_manager.get('memory_field_labels.assigned_class')} {assigned_class.value}"
-        round_content += f"\n{language_manager.get('memory_field_labels.earnings')} ${earnings:.2f}"
         
         # Add distribution context
         if is_original_values and original_situation:
@@ -454,8 +460,8 @@ class Phase1Manager:
         else:
             round_content += f"\n{language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
         
-        # Add complete counterfactual table
-        round_content += f"\n\n{counterfactual_table}"
+        # Add comprehensive earnings display
+        round_content += f"\n\n{earnings_display}"
         
         round_content += f"\n{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"
         

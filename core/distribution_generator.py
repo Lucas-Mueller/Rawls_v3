@@ -2,7 +2,7 @@
 Distribution generation system for the Frohlich Experiment.
 """
 import random
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 from models import (
     IncomeDistribution, DistributionSet, PrincipleChoice, JusticePrinciple, IncomeClass
 )
@@ -406,3 +406,182 @@ class DistributionGenerator:
             base_name += f" of ${principle_choice.constraint_amount:,}"
         
         return base_name
+    
+    @staticmethod
+    def calculate_comprehensive_constraint_outcomes(
+        distributions: List[IncomeDistribution],
+        assigned_class: IncomeClass,
+        language_manager,
+        probabilities: Optional[IncomeClassProbabilities] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate comprehensive principle outcomes testing all constraint values.
+        Uses LanguageManager for all text formatting and localization.
+        
+        Args:
+            distributions: List of available distributions
+            assigned_class: Agent's assigned income class
+            language_manager: LanguageManager instance for localization
+            probabilities: Income class probabilities for weighted average calculation
+            
+        Returns:
+            {
+                'outcomes': List of outcome dictionaries with localized text,
+                'distributions_table': Formatted table string using LanguageManager,
+                'class_display_name': Localized class name
+            }
+        """
+        from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+        
+        outcomes = []
+        
+        # 1. Maximizing Floor - get localized name from language manager
+        principle_name = language_manager.get('common.principle_names.maximizing_floor')
+        best_floor_dist, explanation = DistributionGenerator._apply_maximizing_floor(distributions)
+        agent_income = best_floor_dist.get_income_by_class(assigned_class)
+        
+        outcomes.append({
+            'principle_key': 'maximizing_floor',
+            'principle_name': principle_name,
+            'distribution_index': distributions.index(best_floor_dist),
+            'distribution': best_floor_dist,
+            'agent_income': agent_income,
+            'agent_earnings': agent_income / 10000.0,
+            'explanation': explanation,
+            'constraint_amount': None
+        })
+        
+        # 2. Maximizing Average - get localized name
+        principle_name = language_manager.get('common.principle_names.maximizing_average')
+        best_avg_dist, explanation = DistributionGenerator._apply_maximizing_average(distributions, probabilities)
+        agent_income = best_avg_dist.get_income_by_class(assigned_class)
+        
+        outcomes.append({
+            'principle_key': 'maximizing_average',
+            'principle_name': principle_name,
+            'distribution_index': distributions.index(best_avg_dist),
+            'distribution': best_avg_dist,
+            'agent_income': agent_income,
+            'agent_earnings': agent_income / 10000.0,
+            'explanation': explanation,
+            'constraint_amount': None
+        })
+        
+        # 3. Floor Constraints - test all distribution low income values
+        tested_floors = set()
+        for dist in distributions:
+            floor_value = dist.low
+            if floor_value not in tested_floors:
+                tested_floors.add(floor_value)
+                
+                choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                    constraint_amount=floor_value,
+                    certainty=CertaintyLevel.SURE
+                )
+                
+                best_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice, probabilities
+                )
+                agent_income = best_dist.get_income_by_class(assigned_class)
+                
+                # Use LanguageManager for constraint formatting
+                principle_name = language_manager.get(
+                    'constraint_formatting.floor_constraint',
+                    amount=language_manager.get('constraint_formatting.currency_format', amount=floor_value)
+                )
+                
+                outcomes.append({
+                    'principle_key': 'maximizing_average_floor_constraint', 
+                    'principle_name': principle_name,
+                    'distribution_index': distributions.index(best_dist),
+                    'distribution': best_dist,
+                    'agent_income': agent_income,
+                    'agent_earnings': agent_income / 10000.0,
+                    'explanation': explanation,
+                    'constraint_amount': floor_value
+                })
+        
+        # 4. Range Constraints - test all distribution ranges
+        tested_ranges = set()
+        for dist in distributions:
+            range_value = dist.get_range()
+            if range_value not in tested_ranges:
+                tested_ranges.add(range_value)
+                
+                choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+                    constraint_amount=range_value,
+                    certainty=CertaintyLevel.SURE
+                )
+                
+                best_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
+                    distributions, choice, probabilities
+                )
+                agent_income = best_dist.get_income_by_class(assigned_class)
+                
+                # Use LanguageManager for constraint formatting
+                principle_name = language_manager.get(
+                    'constraint_formatting.range_constraint',
+                    amount=language_manager.get('constraint_formatting.currency_format', amount=range_value)
+                )
+                
+                outcomes.append({
+                    'principle_key': 'maximizing_average_range_constraint',
+                    'principle_name': principle_name, 
+                    'distribution_index': distributions.index(best_dist),
+                    'distribution': best_dist,
+                    'agent_income': agent_income,
+                    'agent_earnings': agent_income / 10000.0,
+                    'explanation': explanation,
+                    'constraint_amount': range_value
+                })
+        
+        # Generate distributions table using LanguageManager
+        distributions_table = DistributionGenerator._format_distributions_table_comprehensive(
+            distributions, language_manager
+        )
+        
+        # Get localized class display name
+        class_display_name = language_manager.get(f'common.income_classes.{assigned_class.value}')
+        
+        return {
+            'outcomes': outcomes,
+            'distributions_table': distributions_table,
+            'class_display_name': class_display_name
+        }
+    
+    @staticmethod 
+    def _format_distributions_table_comprehensive(distributions: List[IncomeDistribution], language_manager) -> str:
+        """Format distributions table using LanguageManager for all text."""
+        
+        lines = []
+        
+        # Header
+        lines.append(language_manager.get('comprehensive_earnings.distributions_table_header'))
+        lines.append("")  # Empty line
+        
+        # Table header with localized income class names
+        header_row = f"| {language_manager.get('distributions.income_class_header')} |"
+        for i in range(len(distributions)):
+            column_header = language_manager.get('distributions.column_header', number=i+1)
+            header_row += f" {column_header} |"
+        lines.append(header_row)
+        
+        # Separator
+        separator = "|" + "--" * (len(distributions) + 1) + "|"
+        lines.append(separator)
+        
+        # Income class rows using LanguageManager
+        income_class_keys = ['high', 'medium_high', 'medium', 'medium_low', 'low']
+        for class_key in income_class_keys:
+            class_name = language_manager.get(f'common.income_classes.{class_key}')
+            row = f"| {class_name} |"
+            
+            for dist in distributions:
+                income = getattr(dist, class_key)
+                formatted_income = language_manager.get('constraint_formatting.currency_format', amount=income)
+                row += f" {formatted_income} |"
+            lines.append(row)
+        
+        return "\n".join(lines)

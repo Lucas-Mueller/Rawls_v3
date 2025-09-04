@@ -353,6 +353,39 @@
       "very_low": "非常低"
     }
   },
+  "comprehensive_earnings": {
+    "distributions_table_header": "实验分配和选择映射",
+    "principle_outcomes_header": "{class_name}类别的原则结果：",
+    "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
+    "markers": {
+      "assigned_principle": " ← 您的指定原则",
+      "group_choice": " ← 您组的选择"
+    },
+    "constraint_analysis_header": "约束分析结果：",
+    "outcome_summary": "不同约束下的结果总结：",
+    "selected_distribution": "选择的分配：",
+    "constraint_value": "约束值：${amount:,}",
+    "no_constraint": "无约束",
+    "floor_constraint_label": "最低约束 ${amount:,}",
+    "range_constraint_label": "范围约束 ${amount:,}",
+    "table_columns": {
+      "constraint": "约束",
+      "selected_dist": "选择分配",
+      "your_class": "您的阶层",
+      "your_income": "您的收入",
+      "your_earnings": "您的收益"
+    }
+  },
+  "constraint_formatting": {
+    "floor_constraint": "最低收入约束 ≤ {amount}",
+    "range_constraint": "范围约束 ≤ {amount}",
+    "currency_format": "${amount:,}"
+  },
+  "distributions": {
+    "income_class_header": "收入阶层",
+    "column_header": "分配 {number}",
+    "distribution_label": "分配 {number}"
+  },
   "voting_prompts": {
     "retry_instruction": "⚠️ 请准确回答1（现在投票）或0（继续讨论）",
     "internal_reasoning_section": "=== 您的内部推理 ===",

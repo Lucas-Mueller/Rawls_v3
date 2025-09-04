@@ -314,6 +314,39 @@
       "very_low": "VERY LOW"
     }
   },
+  "comprehensive_earnings": {
+    "distributions_table_header": "EXPERIMENT DISTRIBUTIONS AND SELECTION MAPPING",
+    "principle_outcomes_header": "PRINCIPLE OUTCOMES FOR {class_name} CLASS:",
+    "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
+    "markers": {
+      "assigned_principle": " ← YOUR ASSIGNED PRINCIPLE",
+      "group_choice": " ← YOUR GROUP'S CHOICE"
+    },
+    "constraint_analysis_header": "Constraint Analysis Results:",
+    "outcome_summary": "Summary of outcomes under different constraints:",
+    "selected_distribution": "Selected Distribution:",
+    "constraint_value": "Constraint Value: ${amount:,}",
+    "no_constraint": "No constraint",
+    "floor_constraint_label": "Floor constraint of ${amount:,}",
+    "range_constraint_label": "Range constraint of ${amount:,}",
+    "table_columns": {
+      "constraint": "Constraint",
+      "selected_dist": "Selected Dist.",
+      "your_class": "Your Class",
+      "your_income": "Your Income",
+      "your_earnings": "Your Earnings"
+    }
+  },
+  "constraint_formatting": {
+    "floor_constraint": "Floor constraint ≤ {amount}",
+    "range_constraint": "Range constraint ≤ {amount}",
+    "currency_format": "${amount:,}"
+  },
+  "distributions": {
+    "income_class_header": "Income Class",
+    "column_header": "Dist. {number}",
+    "distribution_label": "Distribution {number}"
+  },
   "voting_prompts": {
     "retry_instruction": "⚠️ Please respond with exactly 1 (to vote now) or 0 (to continue discussion)",
     "internal_reasoning_section": "=== YOUR INTERNAL REASONING ===",

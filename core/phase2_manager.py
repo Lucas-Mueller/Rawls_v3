@@ -178,7 +178,7 @@ class Phase2Manager:
         )
         
         # Apply chosen principle and calculate payoffs
-        payoff_results, assigned_classes, alternative_earnings_by_agent = await self.counterfactuals_service.apply_group_principle_and_calculate_payoffs(
+        payoff_results, assigned_classes, alternative_earnings_by_agent, distribution_set = await self.counterfactuals_service.apply_group_principle_and_calculate_payoffs(
             discussion_result=discussion_result,
             config=config,
             participants=self.participants
@@ -194,7 +194,8 @@ class Phase2Manager:
                 payoff_results=payoff_results,
                 assigned_classes=assigned_classes,
                 alternative_earnings_by_agent=alternative_earnings_by_agent,
-                config=config
+                config=config,
+                distribution_set=distribution_set
             )
             self._log_info(f"Successfully updated memory for {len(updated_contexts)} participants")
         except Exception as e:
