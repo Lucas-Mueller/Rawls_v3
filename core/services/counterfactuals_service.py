@@ -519,45 +519,16 @@ class CounterfactualsService:
                 # Get participant-specific language manager
                 participant_lang_manager = self._get_participant_language_manager(participant)
                 
-                try:
-                    # Get the new results delivery prompt template
-                    prompt_template = participant_lang_manager.get("phase2_results_delivery_prompt")
-                    
-                    # Get localized income class name
-                    income_class_key = assigned_class_enum.value  # e.g., 'high', 'medium_low'
-                    income_class_display = participant_lang_manager.get(f"common.income_classes.{income_class_key}")
-                    
-                    # Build consensus information
-                    consensus_info = self._build_consensus_info(discussion_result, participant_lang_manager)
-                    
-                    # Format the prompt with all required parameters
-                    result_content = prompt_template.format(
-                        income_class=income_class_display,
-                        earnings=final_earnings,
-                        alt_floor=alternative_earnings.get('maximizing_floor', 0.0),
-                        alt_average=alternative_earnings.get('maximizing_average', 0.0),
-                        alt_floor_constraint=alternative_earnings.get('maximizing_average_with_floor', 0.0),
-                        alt_range_constraint=alternative_earnings.get('maximizing_average_with_range', 0.0)
-                    )
-                    
-                    # Replace the consensus placeholder with actual consensus information
-                    result_content = result_content.replace(
-                        "[Consensus/No consensus information will be dynamically inserted]",
-                        consensus_info
-                    )
-                    
-                except Exception as prompt_error:
-                    self.logger.warning(f"Failed to format new prompt template for {participant.name}: {prompt_error}")
-                    # Fallback to the old build_detailed_results method
-                    assigned_class_str = assigned_class_enum.value
-                    result_content = await self.build_detailed_results(
-                        participant.name,
-                        final_earnings,
-                        assigned_class_str,
-                        alternative_earnings,
-                        discussion_result,
-                        distribution_set
-                    )
+                # Use working build_detailed_results method for comprehensive results display
+                assigned_class_str = assigned_class_enum.value
+                result_content = await self.build_detailed_results(
+                    participant.name,
+                    final_earnings,
+                    assigned_class_str,
+                    alternative_earnings,
+                    discussion_result,
+                    distribution_set
+                )
                 
                 # Update participant memory with results
                 if self.memory_service:
