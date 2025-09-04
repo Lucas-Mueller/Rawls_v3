@@ -355,6 +355,16 @@ class MemoryService:
         Returns:
             Updated memory string
         """
+        # Guardrails: quick sanity check to catch accidental Phase 1 content
+        try:
+            if result_content and "CURRENT TASK: Principle Application" in result_content:
+                self.logger.warning(f"update_final_results_memory received Phase 1 application content for {agent.name}; this should not happen")
+                # Log preview to help debug
+                preview = result_content[:200].replace('\n', ' ')
+                self.logger.warning(f"Problematic content preview: {preview}")
+        except Exception:
+            pass
+
         formatted_content = self.language_manager.get(
             "memory.final_results_format",
             result_content=result_content

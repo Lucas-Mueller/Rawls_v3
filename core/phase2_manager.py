@@ -56,7 +56,15 @@ class Phase2Manager:
         # Simple logger that delegates to our logging methods
         logger = self
         
-        # Initialize services
+        # Initialize services - memory_service first since others depend on it
+        self.memory_service = MemoryService(
+            language_manager=self.language_manager,
+            utility_agent=self.utility_agent,
+            settings=self.settings,
+            logger=logger,
+            config=self.config
+        )
+        
         self.speaking_order_service = SpeakingOrderService(
             seed_manager=self.seed_manager,
             settings=self.settings,
@@ -78,19 +86,12 @@ class Phase2Manager:
             agent_logger=self.agent_logger
         )
         
-        self.memory_service = MemoryService(
-            language_manager=self.language_manager,
-            utility_agent=self.utility_agent,
-            settings=self.settings,
-            logger=logger,
-            config=self.config
-        )
-        
         self.counterfactuals_service = CounterfactualsService(
             language_manager=self.language_manager,
             settings=self.settings,
             logger=logger,
-            seed_manager=self.seed_manager
+            seed_manager=self.seed_manager,
+            memory_service=self.memory_service
         )
         
         self._services_initialized = True

@@ -22,7 +22,7 @@ utility_agent_temperature: 0.0
 
 LOG_LEVEL: DEBUG 
 
-phase2_rounds: 7
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)

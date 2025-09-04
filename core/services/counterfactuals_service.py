@@ -244,7 +244,8 @@ class CounterfactualsService:
         assigned_class: str,
         alternative_earnings: Dict[str, float],
         consensus_result: GroupDiscussionResult,
-        distribution_set
+        distribution_set,
+        lang_manager: LanguageProvider
     ) -> str:
         """
         Build Phase 2 results with comprehensive earnings display.
@@ -259,6 +260,7 @@ class CounterfactualsService:
             alternative_earnings: Alternative earnings under each principle
             consensus_result: Result of group discussion
             distribution_set: The distribution set used for Phase 2
+            lang_manager: Language manager for participant-specific localization
             
         Returns:
             Formatted results string with comprehensive earnings display
@@ -268,23 +270,26 @@ class CounterfactualsService:
             result_parts = []
             
             # Phase 2 header
-            phase2_header = self.language_manager.get('results.phase2_header')
+            phase2_header = lang_manager.get('results.phase2_header')
             result_parts.append(f"{phase2_header}: ${final_earnings:.2f}")
             
             # Income class assignment
-            assigned_class_label = self.language_manager.get(f"common.income_classes.{assigned_class}")
-            class_assignment = self.language_manager.get('results.assigned_income_class', class_name=assigned_class_label)
+            assigned_class_label = lang_manager.get(f"common.income_classes.{assigned_class}")
+            class_assignment = lang_manager.get('results.assigned_income_class', class_name=assigned_class_label)
             result_parts.append(class_assignment)
             
             # Consensus information
             if consensus_result.consensus_reached and consensus_result.agreed_principle:
-                consensus_msg = self.language_manager.get(
+                # Get localized principle name using slug-based approach
+                principle_slug = consensus_result.agreed_principle.principle.value
+                principle_name = lang_manager.get(f"common.principle_names.{principle_slug}")
+                consensus_msg = lang_manager.get(
                     "voting_results.consensus_reached", 
-                    principle_name=consensus_result.agreed_principle.principle.value
+                    principle_name=principle_name
                 )
                 result_parts.append(consensus_msg + ".")
             else:
-                no_consensus_msg = self.language_manager.get("phase2_no_consensus")
+                no_consensus_msg = lang_manager.get("phase2_no_consensus")
                 result_parts.append(no_consensus_msg + ".")
             
             # Add comprehensive earnings display
@@ -299,7 +304,7 @@ class CounterfactualsService:
             assigned_class_enum = IncomeClass(enum_value)
             
             comprehensive_display = self._build_comprehensive_earnings_display(
-                participant_name, assigned_class_enum, distribution_set, consensus_result, self.language_manager
+                participant_name, assigned_class_enum, distribution_set, consensus_result, lang_manager
             )
             result_parts.append(f"\n{comprehensive_display}")
             
@@ -479,7 +484,7 @@ class CounterfactualsService:
         contexts: List[ParticipantContext],
         discussion_result: GroupDiscussionResult,
         payoff_results: Dict[str, float],
-        assigned_classes: Dict[str, IncomeClass], 
+        assigned_classes: Dict[str, str], 
         alternative_earnings_by_agent: Dict[str, Dict[str, float]],
         config: ExperimentConfiguration,
         distribution_set
@@ -495,7 +500,7 @@ class CounterfactualsService:
             contexts: List of participant contexts
             discussion_result: Result of group discussion with consensus info
             payoff_results: Final payoff amounts for each participant  
-            assigned_classes: Income class assignments (IncomeClass enum values)
+            assigned_classes: Income class assignments (string values)
             alternative_earnings_by_agent: Counterfactual earnings by participant
             config: Experiment configuration
             distribution_set: The distribution set used for Phase 2
@@ -506,6 +511,17 @@ class CounterfactualsService:
         try:
             self.logger.info(f"Delivering Phase 2 results using new prompt template for {len(participants)} participants")
             
+            # Convert string assigned_classes to IncomeClass enums using the same logic as collect_final_rankings
+            assigned_classes_enum = {}
+            for participant_name, class_str in assigned_classes.items():
+                if class_str.startswith('IncomeClass.'):
+                    # Handle enum string representation like 'IncomeClass.high'
+                    enum_value = class_str.split('.')[1].lower()
+                else:
+                    # Handle direct value like 'high' or 'MEDIUM HIGH' 
+                    enum_value = class_str.lower().replace(' ', '_')
+                assigned_classes_enum[participant_name] = IncomeClass(enum_value)
+            
             updated_contexts = []
             
             for i, participant in enumerate(participants):
@@ -513,7 +529,7 @@ class CounterfactualsService:
                 
                 # Get participant's results
                 final_earnings = payoff_results[participant.name]
-                assigned_class_enum = assigned_classes[participant.name]
+                assigned_class_enum = assigned_classes_enum[participant.name]
                 alternative_earnings = alternative_earnings_by_agent[participant.name]
                 
                 # Get participant-specific language manager
@@ -527,12 +543,20 @@ class CounterfactualsService:
                     assigned_class_str,
                     alternative_earnings,
                     discussion_result,
-                    distribution_set
+                    distribution_set,
+                    participant_lang_manager
                 )
+                # Debug trace: ensure Phase 2 content goes into memory update
+                try:
+                    preview = (result_content or "")[:120].replace("\n", " ")
+                    self.logger.debug(f"Phase 2 results preview for {participant.name}: {preview}")
+                except Exception:
+                    pass
                 
                 # Update participant memory with results
                 if self.memory_service:
                     try:
+                        self.logger.debug(f"Using MemoryService path for {participant.name}")
                         updated_memory = await self.memory_service.update_final_results_memory(
                             agent=participant,
                             context=context,
@@ -543,17 +567,31 @@ class CounterfactualsService:
                         )
                         context.memory = updated_memory
                         
-                        self.logger.debug(f"Memory updated for {participant.name} with Phase 2 results")
+                        self.logger.debug(f"Memory updated for {participant.name} with Phase 2 results via MemoryService")
                     
                     except Exception as memory_error:
-                        self.logger.warning(f"Failed to update memory for {participant.name}: {memory_error}")
+                        self.logger.warning(f"Failed to update memory for {participant.name} via MemoryService: {memory_error}")
                         # Continue without memory update - don't block the process
                 else:
-                    # Fallback: update memory directly via participant agent
+                    # Fallback: append results directly to memory without using complex memory update
                     try:
-                        updated_memory = await participant.update_memory(result_content, context.bank_balance)
-                        context.memory = updated_memory
-                        self.logger.debug(f"Memory updated directly for {participant.name}")
+                        self.logger.debug(f"Using fallback path for {participant.name} (no MemoryService available)")
+                        # Ensure fallback also uses the final-results wrapper
+                        wrapped_content = participant_lang_manager.get(
+                            "memory.final_results_format",
+                            result_content=result_content
+                        )
+                        
+                        # Debug: log what we're appending
+                        preview = wrapped_content[:150].replace('\n', ' ')
+                        self.logger.debug(f"Fallback appending to memory for {participant.name}: {preview}")
+                        
+                        # Simple memory append - avoid calling participant.update_memory() which uses "Recent Activity" template
+                        if context.memory and not context.memory.endswith('\n'):
+                            context.memory += '\n'
+                        context.memory += wrapped_content
+                        
+                        self.logger.debug(f"Memory updated directly for {participant.name} using simple append")
                     except Exception as fallback_error:
                         self.logger.warning(f"Fallback memory update failed for {participant.name}: {fallback_error}")
                 
