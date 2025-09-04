@@ -1,5 +1,20 @@
 """
-Memory management utilities for agent-managed memory system.
+Memory management utilities for agent-managed memory system with context-aware template selection.
+
+This module provides sophisticated memory update capabilities that prevent activity duplication
+by intelligently selecting prompt templates based on interaction types. The system includes:
+
+- Context-aware template selection to prevent redundant "Recent Activity" sections
+- Automatic memory compression when approaching character limits
+- Fallback mechanisms for backward compatibility with existing translation files
+- Support for both narrative and structured memory guidance styles
+- Robust error handling and retry logic for memory updates
+
+Key Features:
+- Discussion interaction types (internal_reasoning, statement) use specialized "_no_recent_activity" templates
+- Graceful degradation when specialized templates are missing
+- Memory compression with configurable tolerance buffers
+- Multi-language support through language_manager integration
 """
 import logging
 from typing import TYPE_CHECKING
@@ -34,23 +49,42 @@ class MemoryManager:
         memory_guidance_style: str = "narrative",
         language_manager=None,
         error_handler=None,
-        utility_agent=None
+        utility_agent=None,
+        interaction_type: str = None
     ) -> str:
         """
-        Prompt agent to update their memory based on round content.
+        Prompt agent to update their memory based on round content with context-aware template selection.
+        
+        This method implements a sophisticated memory update system that prevents activity duplication
+        by selecting appropriate prompt templates based on the interaction type. For discussion-related
+        interactions (internal_reasoning, statement), it uses specialized "_no_recent_activity" templates
+        that avoid redundant "Recent Activity" sections when the content already contains the activity.
         
         Args:
-            agent: The participant agent to prompt
-            context: Current participant context
+            agent: The participant agent to prompt for memory update
+            context: Current participant context containing existing memory and limits
             round_content: Content from the current round (prompt + response + outcome)
-            max_retries: Maximum number of retry attempts
-            memory_guidance_style: Style of memory guidance ("narrative" or "structured")
+            max_retries: Maximum number of retry attempts for memory update (default: 5)
+            memory_guidance_style: Style of memory guidance ("narrative" for story-like updates, 
+                                 "structured" for organized format)
+            language_manager: Language manager for localized prompts and template selection
+            error_handler: Error handler for exception management (defaults to global handler)
+            utility_agent: Utility agent for memory compression when size limits are exceeded
+            interaction_type: Type of interaction for context-aware template selection. Discussion 
+                            types ("internal_reasoning", "statement") trigger specialized templates 
+                            to prevent activity duplication. None uses standard templates.
             
         Returns:
-            Updated memory string
+            Updated memory string that incorporates new content while respecting character limits
             
         Raises:
-            MemoryError: If agent fails to create valid memory after max_retries
+            MemoryError: If agent fails to create valid memory after max_retries attempts
+            
+        Note:
+            The method includes automatic memory compression when approaching limits (80% of max),
+            tolerance handling (15% over limit allowed), and fallback compression strategies.
+            Template selection prevents duplication when round_content already contains the activity
+            being described.
         """
         # Use provided error handler or fall back to global one
         if error_handler is None:
@@ -68,7 +102,7 @@ class MemoryManager:
                 
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
-                    memory_to_use, round_content, memory_guidance_style, language_manager
+                    memory_to_use, round_content, memory_guidance_style, language_manager, interaction_type
                 )
                 
                 # Get updated memory from agent
@@ -162,25 +196,75 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None) -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None) -> str:
         """
-        Create prompt for memory update based on guidance style.
+        Create context-aware memory update prompt that prevents activity duplication.
+        
+        This method implements intelligent template selection to prevent redundant "Recent Activity"
+        sections in memory updates. When the interaction_type indicates a discussion-related event
+        (internal_reasoning, statement), it attempts to use specialized "_no_recent_activity" templates
+        that focus on incorporating insights rather than repeating activity descriptions.
+        
+        Template Selection Logic:
+        1. For discussion interactions (internal_reasoning, statement):
+           - Attempts to use "{base_template}_no_recent_activity" variant
+           - Falls back to standard template if specialized version doesn't exist
+        2. For other interactions (voting, results, etc.):
+           - Uses standard templates with "Recent Activity" sections
         
         Args:
-            current_memory: Agent's current memory
-            round_content: Content from the current round
-            guidance_style: Style of guidance ("narrative" or "structured")
-            language_manager: Language manager instance
+            current_memory: Agent's current memory content to be updated
+            round_content: Content from the current round (prompt + response + outcome)
+            guidance_style: Style of memory guidance ("narrative" for story-like format, 
+                          "structured" for organized bullet points)
+            language_manager: Language manager instance for localized template retrieval
+            interaction_type: Type of interaction for template selection. Discussion types
+                            ("internal_reasoning", "statement") trigger specialized templates.
+                            None or other types use standard templates.
             
         Returns:
-            Formatted prompt for memory update
+            Formatted prompt string ready for agent processing
+            
+        Note:
+            The fallback mechanism ensures backward compatibility - if specialized templates
+            are missing, the method gracefully degrades to standard templates without errors.
         """
         
-        # Choose prompt based on guidance style
+        # Discussion interaction types that should avoid "Recent Activity" duplication
+        # These types contain the activity description within round_content, making
+        # additional "Recent Activity" sections redundant and potentially confusing
+        discussion_interaction_types = {"internal_reasoning", "statement"}
+        
+        # Choose base prompt template based on memory guidance style preference
         if guidance_style == "narrative":
-            prompt_key = "prompts.memory_narrative_update_prompt"
+            # Narrative style produces story-like, flowing memory updates
+            base_prompt_key = "prompts.memory_narrative_update_prompt"
         else:  # structured
-            prompt_key = "prompts.memory_memory_update_prompt"  # Keep old structured style as fallback
+            # Structured style produces organized, bullet-point memory updates
+            base_prompt_key = "prompts.memory_memory_update_prompt"  # Keep old structured style as fallback
+        
+        # Apply context-aware template selection for discussion interactions
+        # This prevents activity duplication by using specialized templates
+        if interaction_type in discussion_interaction_types:
+            # Attempt to use specialized "_no_recent_activity" template variant
+            # These templates focus on insight incorporation rather than activity repetition
+            no_recent_activity_key = base_prompt_key + "_no_recent_activity"
+            
+            # Check if the specialized template exists via test formatting
+            # This graceful detection prevents hard errors when templates are missing
+            try:
+                # Test template existence by attempting minimal formatting
+                test_prompt = language_manager.get(no_recent_activity_key, current_memory="test", round_content="test")
+                # If successful, use the specialized no recent activity template
+                prompt_key = no_recent_activity_key
+            except (KeyError, AttributeError):
+                # Graceful fallback to standard template if specialized version doesn't exist
+                # Ensures backward compatibility with existing translation files
+                prompt_key = base_prompt_key
+        else:
+            # Use standard template for non-discussion interactions (voting, results, etc.)
+            # These interactions benefit from explicit "Recent Activity" sections
+            prompt_key = base_prompt_key
         
         return language_manager.get(
             prompt_key,

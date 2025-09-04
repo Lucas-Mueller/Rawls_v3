@@ -1,4 +1,4 @@
-Hey Codex I recently made some signficicant changes to the system, this made some parts of the looging system unfunctional. 
+Hey Claude I recently made some signficicant changes to the system, this made some parts of the looging system unfunctional. 
 
 These things are currently showing up as empty even though they are not. 
 
@@ -17,8 +17,7 @@ Two categories need to be removed
 "vote_rounds"
 "vote_initiation_requests"
 
-NEXT
-Please review the current implementation of  the discussion history. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step.
+Please review the current implementation of  the logging system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step.
 
 Then create a report as md. file detailing the current implementation.
 

@@ -1,5 +1,21 @@
 """
 Selective memory management system for optimizing LLM calls through intelligent event classification.
+
+This module provides intelligent routing between simple memory insertions and complex LLM-based
+memory updates. It integrates with the enhanced MemoryManager to support context-aware template
+selection for preventing activity duplication in discussion-related interactions.
+
+Key Components:
+- Event classification system to route simple vs. complex memory updates
+- Integration with MemoryManager's context-aware template selection
+- Backward compatibility for interaction_type extraction from participant contexts
+- Automatic fallback to full LLM updates when simple updates fail
+
+The system optimizes memory update performance by:
+- Using direct insertion for simple events (voting responses, confirmations)
+- Leveraging full LLM processing for complex events (discussions, results)
+- Enabling context-aware template selection to prevent activity duplication
+- Maintaining compatibility with both new and legacy participant contexts
 """
 import logging
 from typing import TYPE_CHECKING, Optional, Dict, Any
@@ -274,20 +290,31 @@ class SelectiveMemoryManager:
         **kwargs
     ) -> str:
         """
-        Handle complex memory updates using full LLM processing.
+        Handle complex memory updates using full LLM processing with context-aware template selection.
+        
+        This method serves as the bridge between SelectiveMemoryManager and the enhanced MemoryManager
+        for complex events that require full agent-based memory updates. It extracts interaction_type 
+        information from the participant context and passes it to MemoryManager for intelligent template 
+        selection that prevents activity duplication in discussion-related interactions.
         
         Args:
-            agent: The participant agent
-            context: Current participant context
-            content: Content for memory update
-            config: Experiment configuration
-            language_manager: Language manager instance
-            error_handler: Error handler instance
-            utility_agent: Utility agent for complex operations
-            **kwargs: Additional arguments
+            agent: The participant agent to perform memory update
+            context: Current participant context (includes interaction_type for template selection)
+            content: Content for memory update (round prompt + response + outcome)
+            config: Experiment configuration containing memory_guidance_style and other settings
+            language_manager: Language manager instance for localized prompts
+            error_handler: Error handler instance for exception management
+            utility_agent: Utility agent for complex operations like memory compression
+            **kwargs: Additional arguments passed to MemoryManager (cleaned to avoid conflicts)
             
         Returns:
-            Updated memory string
+            Updated memory string incorporating new content with appropriate template selection
+            
+        Note:
+            This method implements backward compatibility by gracefully extracting interaction_type
+            from context when available, while falling back to None for older contexts. The extracted
+            interaction_type enables context-aware template selection to prevent activity duplication
+            in discussion-related memory updates.
         """
         # Clean kwargs to avoid parameter conflicts
         kwargs_clean = kwargs.copy()
@@ -298,12 +325,18 @@ class SelectiveMemoryManager:
         if config and hasattr(config, 'memory_guidance_style'):
             memory_guidance_style = config.memory_guidance_style
         
+        # Extract interaction_type from context for template selection (with backward compatibility)
+        # This enables context-aware memory prompts that prevent activity duplication
+        # Falls back to None for older contexts without interaction_type attribute
+        interaction_type = getattr(context, 'interaction_type', None)
+        
         # Use existing MemoryManager for full LLM updates
         return await MemoryManager.prompt_agent_for_memory_update(
             agent=agent,
             context=context,
             round_content=content,
             memory_guidance_style=memory_guidance_style,
+            interaction_type=interaction_type,
             language_manager=language_manager,
             error_handler=error_handler,
             utility_agent=utility_agent,
