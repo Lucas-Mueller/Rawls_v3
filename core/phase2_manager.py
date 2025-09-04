@@ -358,7 +358,7 @@ class Phase2Manager:
     
     async def _attempt_end_of_round_voting(
         self, round_num, contexts, participant_recent_statements, 
-        discussion_state, process_logger
+        participant_recent_reasoning, discussion_state, process_logger
     ):
         """Attempt to initiate voting at the end of a round."""
         self._log_info(f"Starting end-of-round vote prompting for round {round_num}")
@@ -369,10 +369,12 @@ class Phase2Manager:
             
             try:
                 recent_statement = participant_recent_statements.get(participant.name, "")
+                recent_reasoning = participant_recent_reasoning.get(participant.name, "")
                 wants_vote = await self.voting_service.prompt_for_vote_initiation(
                     participant=participant,
                     context=context,
-                    agent_recent_statement=recent_statement
+                    agent_recent_statement=recent_statement,
+                    internal_reasoning=recent_reasoning
                 )
                 vote_responses[participant.name] = wants_vote
                 
@@ -398,7 +400,8 @@ class Phase2Manager:
                             discussion_state=discussion_state,
                             agent_recent_statement=recent_statement,
                             error_handler=self.error_handler,
-                            utility_agent=self.utility_agent
+                            utility_agent=self.utility_agent,
+                            internal_reasoning=recent_reasoning
                         )
                         
                         if consensus_reached:
@@ -473,8 +476,9 @@ class Phase2Manager:
             # Track participants who spoke in this round for logging consistency validation
             round_participants_logged = set()
             
-            # Track recent statements for vote consistency
+            # Track recent statements and reasoning for vote consistency
             participant_recent_statements = {}
+            participant_recent_reasoning = {}
             
             # Process each participant's statement in speaking order
             for speaking_order_position, participant_idx in enumerate(speaking_order):
@@ -490,6 +494,7 @@ class Phase2Manager:
                 
                 # Store for vote consistency and track logging
                 participant_recent_statements[participant.name] = statement
+                participant_recent_reasoning[participant.name] = internal_reasoning
                 if not is_fallback:
                     round_participants_logged.add(participant.name)
                 
@@ -535,7 +540,7 @@ class Phase2Manager:
             # Try to initiate voting at end of round
             consensus_result = await self._attempt_end_of_round_voting(
                 round_num, contexts, participant_recent_statements, 
-                discussion_state, process_logger
+                participant_recent_reasoning, discussion_state, process_logger
             )
             if consensus_result:
                 return consensus_result

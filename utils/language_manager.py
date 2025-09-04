@@ -409,7 +409,8 @@ class LanguageManager:
     
     def format_context_info(self, name: str, role_description: str, bank_balance: float,
                            phase: str, round_number: int, formatted_memory: str,
-                           personality: str, phase_instructions: str, experiment_config=None) -> str:
+                           personality: str, phase_instructions: str, experiment_config=None, 
+                           internal_reasoning: str = "") -> str:
         """Format the main context information display."""
         
         # Track first turn per phase for experiment explanation gating
@@ -445,6 +446,12 @@ class LanguageManager:
             # If translation keys missing, keep original
             localized_phase = phase
         
+        # Format internal reasoning section if available
+        internal_reasoning_section = ""
+        if internal_reasoning and internal_reasoning.strip():
+            internal_reasoning_section = self.get("prompts.internal_reasoning_context_format", 
+                                                 internal_reasoning=internal_reasoning)
+        
         return self.get("prompts.context_context_info_format",
                        name=name,
                        role_description=role_description, 
@@ -452,6 +459,7 @@ class LanguageManager:
                        phase=localized_phase,
                        round_number=round_number,
                        formatted_memory=formatted_memory,
+                       internal_reasoning_section=internal_reasoning_section,
                        experiment_explanation=experiment_explanation,
                        personality=personality,
                        phase_instructions=phase_instructions,

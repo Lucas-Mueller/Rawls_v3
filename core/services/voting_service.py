@@ -96,6 +96,7 @@ class VotingService:
         participant: ParticipantAgent,
         context: ParticipantContext,
         agent_recent_statement: Optional[str] = None,
+        internal_reasoning: Optional[str] = None,
         max_retries: int = 3
     ) -> bool:
         """
@@ -105,6 +106,7 @@ class VotingService:
             participant: The participant agent to prompt
             context: The participant's context
             agent_recent_statement: Agent's recent statement for consistency (optional)
+            internal_reasoning: Agent's internal reasoning to include in prompt (optional)
             max_retries: Maximum number of retry attempts for invalid responses
             
         Returns:
@@ -112,13 +114,31 @@ class VotingService:
         """
         language_manager = self.language_manager
         
-        # Use enhanced prompt with statement context if available
-        if agent_recent_statement and agent_recent_statement.strip():
+        # Select appropriate prompt based on available context
+        has_statement = agent_recent_statement and agent_recent_statement.strip()
+        has_reasoning = internal_reasoning and internal_reasoning.strip()
+        
+        if has_statement and has_reasoning:
+            # Both statement and reasoning available - use combined prompt
+            vote_prompt = language_manager.get(
+                "prompts.vote_initiation_with_statement_and_reasoning_prompt",
+                agent_recent_statement=agent_recent_statement,
+                internal_reasoning=internal_reasoning
+            )
+        elif has_reasoning:
+            # Only reasoning available - use reasoning-only prompt
+            vote_prompt = language_manager.get(
+                "prompts.vote_initiation_with_reasoning_prompt",
+                internal_reasoning=internal_reasoning
+            )
+        elif has_statement:
+            # Only statement available - use existing statement prompt
             vote_prompt = language_manager.get(
                 "prompts.vote_initiation_with_statement_prompt",
                 agent_recent_statement=agent_recent_statement
             )
         else:
+            # No additional context - use basic prompt
             vote_prompt = language_manager.get("prompts.vote_initiation_prompt")
         
         # Enhanced timeout specifically for vote prompts (shorter than statement timeout)
@@ -481,7 +501,8 @@ class VotingService:
         discussion_state: GroupDiscussionState,
         agent_recent_statement: Optional[str],
         error_handler,
-        utility_agent
+        utility_agent,
+        internal_reasoning: Optional[str] = None
     ) -> bool:
         """
         Conduct full voting process: initiation -> confirmation -> ballot.
@@ -494,6 +515,7 @@ class VotingService:
             agent_recent_statement: Recent statement from initiating participant
             error_handler: Error handler for voting process
             utility_agent: Utility agent for voting process
+            internal_reasoning: Internal reasoning from initiating participant (optional)
             
         Returns:
             True if consensus is reached, False otherwise
@@ -513,7 +535,8 @@ class VotingService:
         wants_to_vote = await self.prompt_for_vote_initiation(
             participant=initiating_participant,
             context=initiating_context,
-            agent_recent_statement=agent_recent_statement
+            agent_recent_statement=agent_recent_statement,
+            internal_reasoning=internal_reasoning
         )
         
         if not wants_to_vote:

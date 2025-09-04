@@ -102,10 +102,10 @@ class DiscussionService:
             round_num: Current round number (1-based)
             max_rounds: Maximum number of rounds
             participant_names: List of participant names for group composition
-            internal_reasoning: Optional internal reasoning to include
+            internal_reasoning: Optional internal reasoning (not used in input prompt to avoid duplication)
             
         Returns:
-            Formatted discussion prompt with group composition and reasoning
+            Formatted discussion prompt with group composition (reasoning handled by system context)
         """
         language_manager = self.language_manager
         
@@ -113,17 +113,14 @@ class DiscussionService:
         group_participants = self.format_group_composition(participant_names)
         
         # Always use complex mode prompts (formal voting system)
+        # Internal reasoning is handled by the system context to avoid duplication
         base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
                                           round_number=round_num,
                                           max_rounds=max_rounds,
                                           discussion_history=discussion_state.public_history or "No previous discussion.",
                                           group_participants=group_participants)
         
-        # If internal reasoning is provided, include it in the prompt
-        if internal_reasoning and internal_reasoning.strip():
-            return f"{base_prompt}\n\n{self._get_localized_message('voting_prompts.internal_reasoning_section')}\n{internal_reasoning}\n================================\n\n{self._get_localized_message('voting_prompts.reasoning_prompt')}"
-        else:
-            return base_prompt
+        return base_prompt
     
     def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 
                                       max_rounds: int) -> str:
@@ -300,6 +297,10 @@ class DiscussionService:
                         internal_reasoning = reasoning_result.final_output or ""
                     except Exception:
                         internal_reasoning = ""  # Simple fallback as planned
+                
+                # Store reasoning in context for subsequent interactions
+                if hasattr(context, 'internal_reasoning'):
+                    context.internal_reasoning = internal_reasoning
                 
                 # Step 2: Build discussion prompt with reasoning
                 discussion_prompt = self.build_discussion_prompt(

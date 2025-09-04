@@ -256,7 +256,8 @@ def _generate_dynamic_instructions(
         formatted_memory=formatted_memory,
         personality=config.personality,
         phase_instructions=phase_instructions,
-        experiment_config=experiment_config
+        experiment_config=experiment_config,
+        internal_reasoning=getattr(context, 'internal_reasoning', '')
     )
 
 
