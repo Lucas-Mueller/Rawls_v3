@@ -377,6 +377,14 @@
       "your_earnings": "您的收益"
     }
   },
+  "constraint_explanations": {
+    "floor_constraint_fallback": "没有分配方案满足底线约束 ${constraint_amount:,}。已选择底线最高的分配方案：${actual_floor:,}",
+    "range_constraint_fallback": "没有分配方案满足范围约束 ${constraint_amount:,}。已选择范围最小的分配方案：${actual_range:,}",
+    "floor_constraint_success": "已选择满足底线约束 ${constraint_amount:,} 的{weighted}平均收入最高的分配方案（${avg_income:,.0f}）",
+    "range_constraint_success": "已选择满足范围约束 ${constraint_amount:,} 的{weighted}平均收入最高的分配方案（${avg_income:,.0f}）",
+    "maximizing_floor_explanation": "已选择底线收入最高的分配方案：${floor_amount:,}",
+    "maximizing_average_explanation": "已选择{weighted}平均收入最高的分配方案：${avg_income:,.0f}"
+  },
   "constraint_formatting": {
     "floor_constraint": "最低收入约束 ≤ {amount}",
     "range_constraint": "范围约束 ≤ {amount}",

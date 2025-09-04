@@ -113,52 +113,63 @@ class DistributionGenerator:
     def apply_principle_to_distributions(
         distributions: List[IncomeDistribution],
         principle: PrincipleChoice,
-        probabilities: Optional[IncomeClassProbabilities] = None
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        language_manager = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply justice principle logic and return chosen distribution + explanation."""
         
         if principle.principle == JusticePrinciple.MAXIMIZING_FLOOR:
-            return DistributionGenerator._apply_maximizing_floor(distributions)
+            return DistributionGenerator._apply_maximizing_floor(distributions, language_manager)
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE:
-            return DistributionGenerator._apply_maximizing_average(distributions, probabilities)
+            return DistributionGenerator._apply_maximizing_average(distributions, probabilities, language_manager)
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
             return DistributionGenerator._apply_maximizing_average_floor_constraint(
-                distributions, principle.constraint_amount, probabilities
+                distributions, principle.constraint_amount, probabilities, language_manager
             )
         
         elif principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT:
             return DistributionGenerator._apply_maximizing_average_range_constraint(
-                distributions, principle.constraint_amount, probabilities
+                distributions, principle.constraint_amount, probabilities, language_manager
             )
         
         else:
             raise ValueError(f"Unknown principle: {principle.principle}")
     
     @staticmethod
-    def _apply_maximizing_floor(distributions: List[IncomeDistribution]) -> Tuple[IncomeDistribution, str]:
+    def _apply_maximizing_floor(distributions: List[IncomeDistribution], language_manager) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing floor principle - choose distribution with highest low income."""
         best_dist = max(distributions, key=lambda d: d.low)
-        explanation = f"Chose distribution with highest floor income: ${best_dist.low}"
+        if language_manager:
+            explanation = language_manager.get("constraint_explanations.maximizing_floor_explanation", floor_amount=best_dist.low)
+        else:
+            explanation = f"Chose distribution with highest floor income: ${best_dist.low}"
         return best_dist, explanation
     
     @staticmethod
     def _apply_maximizing_average(
         distributions: List[IncomeDistribution], 
-        probabilities: Optional[IncomeClassProbabilities] = None
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        language_manager = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing average principle with weighted calculation."""
         best_dist = max(distributions, key=lambda d: d.get_average_income(probabilities))
         avg_income = best_dist.get_average_income(probabilities)
-        explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average income: ${avg_income:.0f}"
+        if language_manager:
+            explanation = language_manager.get("constraint_explanations.maximizing_average_explanation", 
+                                             weighted="weighted " if probabilities else "", 
+                                             avg_income=avg_income)
+        else:
+            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average income: ${avg_income:.0f}"
         return best_dist, explanation
     
     @staticmethod
     def _apply_maximizing_average_floor_constraint(
         distributions: List[IncomeDistribution], 
         floor_constraint: int,
-        probabilities: Optional[IncomeClassProbabilities] = None
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        language_manager = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing average with floor constraint."""
         # Filter distributions that meet floor constraint
@@ -167,12 +178,23 @@ class DistributionGenerator:
         if not valid_distributions:
             # No distribution meets constraint, choose one with highest floor
             best_dist = max(distributions, key=lambda d: d.low)
-            explanation = f"No distribution met floor constraint of ${floor_constraint}. Chose distribution with highest floor: ${best_dist.low}"
+            if language_manager:
+                explanation = language_manager.get("constraint_explanations.floor_constraint_fallback", 
+                                                 constraint_amount=floor_constraint, 
+                                                 actual_floor=best_dist.low)
+            else:
+                explanation = f"No distribution met floor constraint of ${floor_constraint}. Chose distribution with highest floor: ${best_dist.low}"
         else:
             # Among valid distributions, choose one with highest average
             best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
             avg_income = best_dist.get_average_income(probabilities)
-            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting floor constraint of ${floor_constraint}"
+            if language_manager:
+                explanation = language_manager.get("constraint_explanations.floor_constraint_success", 
+                                                 weighted="weighted " if probabilities else "", 
+                                                 avg_income=avg_income, 
+                                                 constraint_amount=floor_constraint)
+            else:
+                explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting floor constraint of ${floor_constraint}"
         
         return best_dist, explanation
     
@@ -180,7 +202,8 @@ class DistributionGenerator:
     def _apply_maximizing_average_range_constraint(
         distributions: List[IncomeDistribution],
         range_constraint: int,
-        probabilities: Optional[IncomeClassProbabilities] = None
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        language_manager = None
     ) -> Tuple[IncomeDistribution, str]:
         """Apply maximizing average with range constraint."""
         # Filter distributions that meet range constraint
@@ -189,12 +212,23 @@ class DistributionGenerator:
         if not valid_distributions:
             # No distribution meets constraint, choose one with smallest range
             best_dist = min(distributions, key=lambda d: d.get_range())
-            explanation = f"No distribution met range constraint of ${range_constraint}. Chose distribution with smallest range: ${best_dist.get_range()}"
+            if language_manager:
+                explanation = language_manager.get("constraint_explanations.range_constraint_fallback", 
+                                                 constraint_amount=range_constraint, 
+                                                 actual_range=best_dist.get_range())
+            else:
+                explanation = f"No distribution met range constraint of ${range_constraint}. Chose distribution with smallest range: ${best_dist.get_range()}"
         else:
             # Among valid distributions, choose one with highest average
             best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
             avg_income = best_dist.get_average_income(probabilities)
-            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting range constraint of ${range_constraint}"
+            if language_manager:
+                explanation = language_manager.get("constraint_explanations.range_constraint_success", 
+                                                 weighted="weighted " if probabilities else "", 
+                                                 avg_income=avg_income, 
+                                                 constraint_amount=range_constraint)
+            else:
+                explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting range constraint of ${range_constraint}"
         
         return best_dist, explanation
     
@@ -298,7 +332,7 @@ class DistributionGenerator:
                 
                 # Apply this principle to the distributions
                 chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice
+                    distributions, choice, language_manager=None
                 )
                 
                 # Calculate what they would have earned with this principle
@@ -350,7 +384,7 @@ class DistributionGenerator:
                 
                 # Apply this principle to the distributions
                 chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice
+                    distributions, choice, language_manager=None
                 )
                 
                 # Get income for the FIXED assigned class (not random)
@@ -444,7 +478,7 @@ class DistributionGenerator:
         
         # 1. Maximizing Floor - get localized name from language manager
         principle_name = language_manager.get('common.principle_names.maximizing_floor')
-        best_floor_dist, explanation = DistributionGenerator._apply_maximizing_floor(distributions)
+        best_floor_dist, explanation = DistributionGenerator._apply_maximizing_floor(distributions, language_manager)
         agent_income = best_floor_dist.get_income_by_class(assigned_class)
         
         outcomes.append({
@@ -460,7 +494,7 @@ class DistributionGenerator:
         
         # 2. Maximizing Average - get localized name
         principle_name = language_manager.get('common.principle_names.maximizing_average')
-        best_avg_dist, explanation = DistributionGenerator._apply_maximizing_average(distributions, probabilities)
+        best_avg_dist, explanation = DistributionGenerator._apply_maximizing_average(distributions, probabilities, language_manager)
         agent_income = best_avg_dist.get_income_by_class(assigned_class)
         
         outcomes.append({
@@ -488,7 +522,7 @@ class DistributionGenerator:
                 )
                 
                 best_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice, probabilities
+                    distributions, choice, probabilities, language_manager
                 )
                 agent_income = best_dist.get_income_by_class(assigned_class)
                 
@@ -523,7 +557,7 @@ class DistributionGenerator:
                 )
                 
                 best_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice, probabilities
+                    distributions, choice, probabilities, language_manager
                 )
                 agent_income = best_dist.get_income_by_class(assigned_class)
                 

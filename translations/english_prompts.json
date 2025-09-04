@@ -338,6 +338,14 @@
       "your_earnings": "Your Earnings"
     }
   },
+  "constraint_explanations": {
+    "floor_constraint_fallback": "No distribution met floor constraint of ${constraint_amount:,}. Chose distribution with highest floor: ${actual_floor:,}",
+    "range_constraint_fallback": "No distribution met range constraint of ${constraint_amount:,}. Chose distribution with smallest range: ${actual_range:,}",
+    "floor_constraint_success": "Chose distribution with highest {weighted}average (${avg_income:,.0f}) meeting floor constraint of ${constraint_amount:,}",
+    "range_constraint_success": "Chose distribution with highest {weighted}average (${avg_income:,.0f}) meeting range constraint of ${constraint_amount:,}",
+    "maximizing_floor_explanation": "Chose distribution with highest floor income: ${floor_amount:,}",
+    "maximizing_average_explanation": "Chose distribution with highest {weighted}average income: ${avg_income:,.0f}"
+  },
   "constraint_formatting": {
     "floor_constraint": "Floor constraint ≤ {amount}",
     "range_constraint": "Range constraint ≤ {amount}",

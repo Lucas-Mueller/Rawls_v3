@@ -195,20 +195,20 @@ class Phase1Manager:
                     balance_before + result.earnings
                 )
             
-            # Update memory with agent using new guidance style
+            # Update context with earnings FIRST so bank balance is correct during memory update
+            context = update_participant_context(
+                context,
+                balance_change=result.earnings,
+                new_round=round_num
+            )
+            
+            # Update memory with agent using new guidance style (now with correct bank balance)
             from config import ExperimentConfiguration
             config_obj: ExperimentConfiguration = config
             memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
                 participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
-            )
-            
-            # Update context with earnings
-            context = update_participant_context(
-                context,
-                balance_change=result.earnings,
-                new_round=round_num
             )
         
         # 1.4 Final Ranking
@@ -356,7 +356,10 @@ class Phase1Manager:
         
         # Apply principle to distributions
         chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distribution_set.distributions, parsed_choice, probabilities
+            distribution_set.distributions, 
+            parsed_choice, 
+            probabilities,
+            language_manager=self.language_manager
         )
         
         # Calculate payoff and income class assignment

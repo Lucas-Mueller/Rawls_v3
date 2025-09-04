@@ -17,20 +17,27 @@ Two categories need to be removed
 "vote_rounds"
 "vote_initiation_requests"
 
+NEXT
+Please review the current implementation of  the discussion history. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step.
 
-Please review the current implementation of  the logging system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step.
+Then create a report as md. file detailing the current implementation.
 
-Then create a report detailing the current implementation.
+
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 
 Save this report as a .md file int he root directory.
+
+Please review the current implementation of the bank account, Ihave a hunch that its amonut sometimes lacks one round behind... Please review the current implementation of  the bank account system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go  through it step by step.
+
+Then create a report as md. file detailing the current implementation.
+
 
 
 Hey Codex, please create a plan to remove Call 1. Deliver this plan as a .md file with the prefix codex. Pleae consider all the systems affected by this removal. 
 Create a detailed plan that is focused on the deletion of this call. 
 
 Hey Claude, please review the current implementation of  the discussion history across phase 2. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step. 
-Then create a report as a .md file detailing the current implementation.
+Then create a report as a .md file with the prefix codex detailing the current implementation.
 
 Please check whether its correct or not.
 

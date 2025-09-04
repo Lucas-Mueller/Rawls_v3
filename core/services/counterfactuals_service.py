@@ -154,7 +154,10 @@ class CounterfactualsService:
                 constraint_amount = consensus_principle.constraint_amount
                 
                 chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-                    distribution_set.distributions, discussion_result.agreed_principle, config.income_class_probabilities
+                    distribution_set.distributions, 
+                    discussion_result.agreed_principle, 
+                    config.income_class_probabilities,
+                    language_manager=self.language_manager
                 )
                 
                 # Assign each participant to income class and calculate payoff
@@ -553,7 +556,10 @@ class CounterfactualsService:
                 except Exception:
                     pass
                 
-                # Update participant memory with results
+                # Update context bank balance with Phase 2 earnings FIRST
+                context.bank_balance += final_earnings
+                
+                # Update participant memory with results (now with correct bank balance)
                 if self.memory_service:
                     try:
                         self.logger.debug(f"Using MemoryService path for {participant.name}")

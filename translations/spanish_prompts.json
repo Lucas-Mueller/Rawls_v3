@@ -376,6 +376,14 @@
       "your_earnings": "Sus Ganancias"
     }
   },
+  "constraint_explanations": {
+    "floor_constraint_fallback": "Ninguna distribución cumplió la restricción de piso de ${constraint_amount:,}. Se eligió la distribución con el piso más alto: ${actual_floor:,}",
+    "range_constraint_fallback": "Ninguna distribución cumplió la restricción de rango de ${constraint_amount:,}. Se eligió la distribución con el rango más pequeño: ${actual_range:,}",
+    "floor_constraint_success": "Se eligió la distribución con el promedio {weighted}más alto (${avg_income:,.0f}) que cumple la restricción de piso de ${constraint_amount:,}",
+    "range_constraint_success": "Se eligió la distribución con el promedio {weighted}más alto (${avg_income:,.0f}) que cumple la restricción de rango de ${constraint_amount:,}",
+    "maximizing_floor_explanation": "Se eligió la distribución con el ingreso de piso más alto: ${floor_amount:,}",
+    "maximizing_average_explanation": "Se eligió la distribución con el ingreso promedio {weighted}más alto: ${avg_income:,.0f}"
+  },
   "constraint_formatting": {
     "floor_constraint": "Restricción mínima ≤ {amount}",
     "range_constraint": "Restricción de rango ≤ {amount}",

@@ -4,6 +4,7 @@ Unit tests for distribution generation system.
 import unittest
 from core.distribution_generator import DistributionGenerator
 from models import IncomeDistribution, JusticePrinciple, PrincipleChoice, CertaintyLevel
+from utils.language_manager import LanguageManager
 
 
 class TestDistributionGenerator(unittest.TestCase):
@@ -44,7 +45,7 @@ class TestDistributionGenerator(unittest.TestCase):
         )
         
         chosen_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distributions, principle
+            distributions, principle, language_manager=None
         )
         
         # Should choose distribution with highest floor (15000)
@@ -64,7 +65,7 @@ class TestDistributionGenerator(unittest.TestCase):
         )
         
         chosen_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distributions, principle
+            distributions, principle, language_manager=None
         )
         
         # Should choose distribution with higher average
@@ -85,7 +86,7 @@ class TestDistributionGenerator(unittest.TestCase):
         )
         
         chosen_dist, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distributions, principle
+            distributions, principle, language_manager=None
         )
         
         # Should choose distribution that meets floor constraint
@@ -116,7 +117,8 @@ class TestDistributionGenerator(unittest.TestCase):
             IncomeDistribution(high=28000, medium_high=22000, medium=20000, medium_low=17000, low=13000)
         ]
         
-        table = DistributionGenerator.format_distributions_table(distributions)
+        language_manager = LanguageManager()
+        table = DistributionGenerator.format_distributions_table(distributions, language_manager=language_manager)
         
         # Should contain table headers
         self.assertIn("Income Class", table)
