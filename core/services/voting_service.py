@@ -447,26 +447,8 @@ class VotingService:
         if vote_result.consensus_reached:
             self._log_info(f"Consensus reached via enhanced two-stage voting: {vote_result.agreed_principle.principle.value}")
             
-            # Get localized principle name
-            principle_key = vote_result.agreed_principle.principle.value
-            localized_principle_name = self.language_manager.get(f"common.principle_names.{principle_key}")
-            
-            # Add to public history using localized consensus message
-            if vote_result.agreed_principle.constraint_amount:
-                consensus_msg = self.language_manager.get(
-                    "voting_results.consensus_with_constraint",
-                    principle_name=localized_principle_name,
-                    constraint_amount=vote_result.agreed_principle.constraint_amount
-                )
-            else:
-                consensus_msg = self.language_manager.get(
-                    "voting_results.consensus_reached",
-                    principle_name=localized_principle_name
-                )
-            
-            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.consensus_tag')} {consensus_msg}"
-            
-            # Set Phase2Manager-compatible consensus fields for early exit
+            # CRITICAL FIX: Set consensus flags IMMEDIATELY after consensus detection
+            # This ensures consensus is recorded even if translation operations fail
             try:
                 from models import GroupDiscussionResult
                 # Mark consensus on the discussion state for Phase2Manager lock checks
@@ -480,16 +462,66 @@ class VotingService:
                     vote_history=discussion_state.vote_history
                 )
                 setattr(discussion_state, '_consensus_result', consensus_result)
+                self._log_info("Consensus flags set successfully before translation operations")
             except Exception as e:
                 # Do not fail voting flow due to logging/compat concerns
                 self._log_warning(f"Failed to set consensus result on discussion state: {e}")
+            
+            # Safe translation operations with fallback handling
+            try:
+                # Get localized principle name
+                principle_key = vote_result.agreed_principle.principle.value
+                localized_principle_name = self.language_manager.get(f"common.principle_names.{principle_key}")
+            except Exception as e:
+                self._log_warning(f"Failed to get localized principle name: {e}")
+                localized_principle_name = vote_result.agreed_principle.principle.value  # Fallback to English
+            
+            # Add to public history using localized consensus message
+            try:
+                if vote_result.agreed_principle.constraint_amount:
+                    consensus_msg = self.language_manager.get(
+                        "voting_results.consensus_with_constraint",
+                        principle_name=localized_principle_name,
+                        constraint_amount=vote_result.agreed_principle.constraint_amount
+                    )
+                else:
+                    consensus_msg = self.language_manager.get(
+                        "voting_results.consensus_reached",
+                        principle_name=localized_principle_name
+                    )
+            except Exception as e:
+                self._log_warning(f"Failed to get localized consensus message: {e}")
+                # Fallback to English messages
+                if vote_result.agreed_principle.constraint_amount:
+                    consensus_msg = f"Consensus reached on {localized_principle_name} with constraint amount {vote_result.agreed_principle.constraint_amount}"
+                else:
+                    consensus_msg = f"Consensus reached on {localized_principle_name}"
+            
+            try:
+                consensus_tag = self._get_localized_message('system_messages.voting.consensus_tag')
+            except Exception as e:
+                self._log_warning(f"Failed to get localized consensus tag: {e}")
+                consensus_tag = "[CONSENSUS]"  # Fallback English tag
+            
+            discussion_state.public_history += f"\n{consensus_tag} {consensus_msg}"
         
         else:
             self._log_info(f"No consensus reached - disagreement details: {vote_result.disagreement_summary}")
             
-            # Add no consensus message to public history
-            no_consensus_msg = self.language_manager.get("voting_results.no_consensus")
-            discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.no_consensus_tag')} {no_consensus_msg}"
+            # Add no consensus message to public history with safe translation handling
+            try:
+                no_consensus_msg = self.language_manager.get("voting_results.no_consensus")
+            except Exception as e:
+                self._log_warning(f"Failed to get localized no consensus message: {e}")
+                no_consensus_msg = "No consensus reached"  # Fallback English message
+            
+            try:
+                no_consensus_tag = self._get_localized_message('system_messages.voting.no_consensus_tag')
+            except Exception as e:
+                self._log_warning(f"Failed to get localized no consensus tag: {e}")
+                no_consensus_tag = "[NO CONSENSUS]"  # Fallback English tag
+            
+            discussion_state.public_history += f"\n{no_consensus_tag} {no_consensus_msg}"
         
         return vote_result
     

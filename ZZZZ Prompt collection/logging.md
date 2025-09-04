@@ -1,4 +1,4 @@
-Hey Claude I recently made some signficicant changes to the system, this made some parts of the looging system unfunctional. 
+Hey Codex I recently made some signficicant changes to the system, this made some parts of the looging system unfunctional. 
 
 These things are currently showing up as empty even though they are not. 
 

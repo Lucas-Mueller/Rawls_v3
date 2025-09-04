@@ -408,11 +408,42 @@ class Phase2Manager:
                         
                         if consensus_reached:
                             self._log_info(f"Consensus reached through {participant.name}'s voting")
+                            
+                            # DEFENSIVE CONSENSUS HANDLING: Handle both normal and fallback cases
                             if process_logger:
-                                agreed_principle = discussion_state._consensus_result.agreed_principle.principle.value if discussion_state._consensus_result.agreed_principle else None
-                                constraint_amount = discussion_state._consensus_result.agreed_principle.constraint_amount if discussion_state._consensus_result.agreed_principle else None
+                                # Use defensive access to consensus result
+                                try:
+                                    agreed_principle = discussion_state._consensus_result.agreed_principle.principle.value if discussion_state._consensus_result.agreed_principle else None
+                                    constraint_amount = discussion_state._consensus_result.agreed_principle.constraint_amount if discussion_state._consensus_result.agreed_principle else None
+                                except AttributeError:
+                                    # Fallback to last vote result if consensus_result is missing
+                                    self._log_warning("Missing _consensus_result, using last_vote_result as fallback")
+                                    if hasattr(discussion_state, 'last_vote_result') and discussion_state.last_vote_result:
+                                        agreed_principle = discussion_state.last_vote_result.agreed_principle.principle.value if discussion_state.last_vote_result.agreed_principle else None
+                                        constraint_amount = discussion_state.last_vote_result.agreed_principle.constraint_amount if discussion_state.last_vote_result.agreed_principle else None
+                                    else:
+                                        agreed_principle = None
+                                        constraint_amount = None
                                 process_logger.phase2_voting_result(True, agreed_principle, constraint_amount, round_num)
-                            return discussion_state._consensus_result
+                            
+                            # Defensive consensus result return
+                            if hasattr(discussion_state, '_consensus_result') and discussion_state._consensus_result:
+                                return discussion_state._consensus_result
+                            elif hasattr(discussion_state, 'last_vote_result') and discussion_state.last_vote_result and discussion_state.last_vote_result.consensus_reached:
+                                # Create fallback consensus result
+                                from models import GroupDiscussionResult
+                                self._log_info("🛡️ Creating fallback consensus result from last_vote_result")
+                                fallback_result = GroupDiscussionResult(
+                                    consensus_reached=True,
+                                    agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                                    final_round=round_num,
+                                    discussion_history=discussion_state.public_history,
+                                    vote_history=discussion_state.vote_history
+                                )
+                                return fallback_result
+                            else:
+                                self._log_warning("⚠️ Consensus detected but no valid result available for return")
+                                return None
                         else:
                             self._log_info(f"No consensus reached through {participant.name}'s voting")
                             if process_logger:
@@ -435,6 +466,33 @@ class Phase2Manager:
                 for name, resp in vote_responses.items()
             }
             self.logger.log_round_vote_requests(round_num, clean_responses)
+        
+        # DEFENSIVE FINAL CHECK: Even if no explicit vote attempts, check if consensus exists
+        if (hasattr(discussion_state, 'last_vote_result') and 
+            discussion_state.last_vote_result and 
+            discussion_state.last_vote_result.consensus_reached and 
+            not hasattr(discussion_state, '_consensus_result')):
+            
+            self._log_info("🛡️ DEFENSIVE: Found unreported consensus in last_vote_result")
+            from models import GroupDiscussionResult
+            defensive_result = GroupDiscussionResult(
+                consensus_reached=True,
+                agreed_principle=discussion_state.last_vote_result.agreed_principle,
+                final_round=round_num,
+                discussion_history=discussion_state.public_history,
+                vote_history=discussion_state.vote_history
+            )
+            
+            if process_logger:
+                try:
+                    agreed_principle = discussion_state.last_vote_result.agreed_principle.principle.value if discussion_state.last_vote_result.agreed_principle else None
+                    constraint_amount = discussion_state.last_vote_result.agreed_principle.constraint_amount if discussion_state.last_vote_result.agreed_principle else None
+                    process_logger.phase2_voting_result(True, agreed_principle, constraint_amount, round_num)
+                    self._log_info("🛡️ DEFENSIVE: Reported consensus to process_logger")
+                except Exception as e:
+                    self._log_warning(f"Failed to report defensive consensus to process_logger: {e}")
+            
+            return defensive_result
         
         return None  # No consensus reached
     
