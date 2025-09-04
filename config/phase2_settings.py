@@ -59,6 +59,24 @@ class Phase2Settings(BaseModel):
         description="Timeout for secret ballot responses"
     )
     
+    # Reasoning system settings
+    reasoning_enabled: bool = Field(
+        default=True,
+        description="Enable two-step reasoning (internal reasoning + public statement)"
+    )
+    reasoning_timeout_seconds: int = Field(
+        default=180,
+        ge=10,
+        le=300,
+        description="Timeout for internal reasoning calls"
+    )
+    reasoning_max_retries: int = Field(
+        default=2,
+        ge=1,
+        le=5,
+        description="Maximum retry attempts for reasoning calls"
+    )
+    
     # Memory settings
     memory_compression_threshold: float = Field(
         default=0.9,

@@ -239,6 +239,11 @@ class DiscussionService:
         """Extract language from agent configuration."""
         return getattr(agent_config, 'language', 'english')  # Default fallback
     
+    def should_use_reasoning(self) -> bool:
+        """Check if reasoning is enabled based on Phase2Settings."""
+        return self.settings.reasoning_enabled
+    
+    
     async def get_participant_statement_with_retry(
         self,
         participant: ParticipantAgent,
@@ -250,7 +255,7 @@ class DiscussionService:
         max_retries: Optional[int] = None
     ) -> Tuple[str, str]:
         """
-        Get participant statement with retry/backoff functionality.
+        Get participant statement with retry/backoff functionality and two-step reasoning.
         
         Args:
             participant: The participant agent to get statement from
@@ -262,7 +267,7 @@ class DiscussionService:
             max_retries: Optional override for max retry attempts
             
         Returns:
-            Tuple of (statement, round_content_for_memory)
+            Tuple of (statement, internal_reasoning)
             
         Raises:
             Exception: If all retry attempts are exhausted
@@ -279,18 +284,36 @@ class DiscussionService:
                     backoff_time = self.settings.retry_backoff_factor ** (attempt - 1)
                     await asyncio.sleep(backoff_time)
                 
-                # Build discussion prompt
+                # Step 1: Get internal reasoning if enabled - SIMPLIFIED
+                internal_reasoning = ""
+                if self.should_use_reasoning():
+                    try:
+                        reasoning_prompt = self.build_internal_reasoning_prompt(
+                            discussion_state, context.round_number, max_rounds
+                        )
+                        context.interaction_type = "internal_reasoning"  # Fix type
+                        
+                        reasoning_result = await asyncio.wait_for(
+                            Runner.run(participant.agent, reasoning_prompt, context=context),
+                            timeout=self.settings.reasoning_timeout_seconds
+                        )
+                        internal_reasoning = reasoning_result.final_output or ""
+                    except Exception:
+                        internal_reasoning = ""  # Simple fallback as planned
+                
+                # Step 2: Build discussion prompt with reasoning
                 discussion_prompt = self.build_discussion_prompt(
                     discussion_state=discussion_state,
                     round_num=context.round_number,
                     max_rounds=max_rounds,
-                    participant_names=participant_names
+                    participant_names=participant_names,
+                    internal_reasoning=internal_reasoning
                 )
                 
                 # Set interaction type for statement retrieval
                 context.interaction_type = "statement"
                 
-                # Execute with timeout
+                # Step 3: Execute with timeout to get public statement
                 result = await asyncio.wait_for(
                     Runner.run(participant.agent, discussion_prompt, context=context),
                     timeout=timeout_seconds
@@ -307,13 +330,8 @@ class DiscussionService:
                     else:
                         raise ValueError(f"Invalid statement after {max_attempts} attempts")
                 
-                # Create memory content
-                round_content = self._create_statement_memory_content(
-                    discussion_prompt, statement, context.round_number
-                )
-                
                 self._log_info(f"Successfully retrieved statement from {participant.name}")
-                return statement, round_content
+                return statement, internal_reasoning
                 
             except asyncio.TimeoutError:
                 self._log_warning(f"Statement timeout for {participant.name} (attempt {attempt + 1})")
