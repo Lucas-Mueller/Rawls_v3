@@ -26,6 +26,8 @@ Do not code anything yet.
 Save this report as a .md file int he root directory.
 
 
+Hey Codex, please create a plan to remove Call 1. Deliver this plan as a .md file with the prefix codex. Pleae consider all the systems affected by this removal. 
+Create a detailed plan that is focused on the deletion of this call. 
 
 Hey Claude, please review the current implementation of  the discussion history across phase 2. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step. 
 Then create a report as a .md file detailing the current implementation.
