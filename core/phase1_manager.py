@@ -405,9 +405,10 @@ class Phase1Manager:
         earnings_display_parts.append(comprehensive_data['distributions_table'])
         earnings_display_parts.append("")  # Empty line
 
-        # Add principle outcomes header with localized class name
+        # Add principle outcomes header with localized class name and round number
         principle_outcomes_header = self.language_manager.get(
             'comprehensive_earnings.principle_outcomes_header',
+            round_number=round_num,
             class_name=comprehensive_data['class_display_name']
         )
         earnings_display_parts.append(principle_outcomes_header)

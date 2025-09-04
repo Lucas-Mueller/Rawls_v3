@@ -354,7 +354,7 @@
   },
   "comprehensive_earnings": {
     "distributions_table_header": "DISTRIBUCIONES DE EXPERIMENTO Y MAPEO DE SELECCIÓN",
-    "principle_outcomes_header": "RESULTADOS DE PRINCIPIOS PARA LA CLASE {class_name}:",
+    "principle_outcomes_header": "RESULTADOS DE ELECCIÓN RONDA {round_number} - RESULTADOS DE PRINCIPIOS PARA LA CLASE {class_name}:",
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {
       "assigned_principle": " ← SU PRINCIPIO ASIGNADO",
