@@ -55,6 +55,53 @@ Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
 Assigned income class: Low
 Consensus reached: Maximizing Average with Floor Constraint.
 
+
+Now I see that the demonstration examples in round 1 are not following this logic and are therefore not correct this how they currently look like for english 
+
+"Here is how each justice principle would be applied to example income distributions:
+
+Example Distributions:
+Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
+High	$32,000	$28,000	$31,000	$21,000
+Medium high	$27,000	$22,000	$24,000	$20,000
+Medium	$24,000	$20,000	$21,000	$19,000
+Medium low	$13,000	$17,000	$16,000	$16,000
+Low	$12,000	$13,000	$14,000	$15,000
+How each principle would choose:
+
+Maximizing Floor Income: Would choose Distribution 4 (highest low income: $15,000)
+Maximizing Average Income: Would choose Distribution 1 (highest average: $21,600)
+Maximizing Average with Floor Constraint ≤ $13,000: Would choose Distribution 1
+Maximizing Average with Floor Constraint ≤ $14,000: Would choose Distribution 3
+Maximizing Average with Range Constraint ≥ $20,000: Would choose Distribution 1
+Maximizing Average with Range Constraint ≥ $15,000: Would choose Distribution 2"
+" 
+
+Instead they should be like this ""Here is how each justice principle would be applied to example income distributions:
+
+Example Distributions:
+Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
+High	$32,000	$28,000	$31,000	$21,000
+Medium high	$27,000	$22,000	$24,000	$20,000
+Medium	$24,000	$20,000	$21,000	$19,000
+Medium low	$13,000	$17,000	$16,000	$16,000
+Low	$12,000	$13,000	$14,000	$15,000
+
+The probababilites for each class are as follows
+High: 5%
+Medium high: 10%
+Medium: 50%
+Medium low: 25% 
+Low: 10% 
+
+How each principle would choose:
+
+[Mapping of principles to outcomes using the correctly calculated averages]
+"
+Please update this logic for all application rounds in phase 1 
+
+
+
 EXPERIMENT DISTRIBUTIONS AND SELECTION MAPPING
 
 | Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |
@@ -84,3 +131,9 @@ The group selected  Maximizing Average with Floor Constraint of 13,000
 In this case that would have resulted in Dist .1 since this has the higest average income and meets the floor constraint. 
 
 Please investigate what went wrong here and write a comprehenisve report as a .md file with the prefix codex detailing the current implementation and whats need to be done to fix it. Think!
+
+
+Your Previous Memory:
+
+Recent Activity:
+

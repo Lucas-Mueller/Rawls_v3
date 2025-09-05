@@ -116,6 +116,8 @@ class CounterfactualsService:
         self.logger = logger or logging.getLogger(__name__)
         self.seed_manager = seed_manager
         self.memory_service = memory_service
+        # Cache Phase 2 probabilities for consistent displays
+        self._phase2_probabilities = None
     
     async def apply_group_principle_and_calculate_payoffs(
         self,
@@ -138,6 +140,8 @@ class CounterfactualsService:
             tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict, distribution_set)
         """
         try:
+            # Store probabilities for use in comprehensive display
+            self._phase2_probabilities = getattr(config, 'income_class_probabilities', None)
             # Generate new distribution set for Phase 2 payoffs
             distribution_set = DistributionGenerator.generate_dynamic_distribution(
                 config.distribution_range_phase2
@@ -397,7 +401,8 @@ class CounterfactualsService:
             comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
                 distribution_set.distributions,
                 assigned_class_enum,
-                lang_manager  # Pass LanguageManager for localization
+                lang_manager,
+                self._phase2_probabilities
             )
             
             # Build display parts
