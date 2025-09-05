@@ -105,6 +105,14 @@ class MemoryService:
         
         # Memory guidance style from config (falls back to 'structured')
         self.memory_guidance_style = getattr(config, 'memory_guidance_style', 'structured') if config else 'structured'
+
+    def _get_localized_message(self, key: str, **kwargs) -> str:
+        """Safely get localized text, falling back to a visible placeholder on error."""
+        try:
+            return self.language_manager.get(key, **kwargs)
+        except Exception as e:
+            self.logger.warning(f"Missing or invalid translation key: {key} ({e})")
+            return f"[MISSING: {key}]"
     
     async def update_memory_selective(
         self,
@@ -219,16 +227,16 @@ class MemoryService:
         Returns:
             Updated memory string
         """
-        # Build memory content using localized format
-        round_content = self.language_manager.get(
-            "memory.round_statement_format",
+        # Build memory content using localized format (correct keys)
+        round_content = self._get_localized_message(
+            "round_statement_format",
             round_num=round_num,
             statement=statement
         )
         
         if include_internal_reasoning and internal_reasoning:
-            reasoning_text = self.language_manager.get(
-                "memory.internal_reasoning_format",
+            reasoning_text = self._get_localized_message(
+                "internal_reasoning_format",
                 reasoning=internal_reasoning
             )
             round_content += f"\n{reasoning_text}"
@@ -272,13 +280,14 @@ class MemoryService:
             Updated memory string
         """
         # Build memory content using localized messages
-        if initiator_name:
-            memory_content = self.language_manager.get(
-                f"voting_phases.{phase_name}_with_initiator", 
+        # Note: translations do not define *_with_initiator variants.
+        if initiator_name and phase_name == "initiation":
+            memory_content = self._get_localized_message(
+                "voting_phases.initiation",
                 initiator_name=initiator_name
             )
         else:
-            memory_content = self.language_manager.get(f"voting_phases.{phase_name}")
+            memory_content = self._get_localized_message(f"voting_phases.{phase_name}")
         
         # Add additional information if provided
         if additional_info:
