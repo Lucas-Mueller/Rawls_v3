@@ -749,7 +749,13 @@ class CounterfactualsService:
         """
         try:
             # Update participant memory with results
-            updated_memory = await participant.update_memory(result_content, context.bank_balance)
+            updated_memory = await participant.update_memory(
+                result_content, 
+                context.bank_balance,
+                phase=context.phase,
+                round_number=context.round_number,
+                role_description=context.role_description
+            )
             context.memory = updated_memory
             
             # Get final ranking using proven Phase 1 pattern

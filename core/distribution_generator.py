@@ -430,13 +430,11 @@ class DistributionGenerator:
                 table += f" ${income:,} |".rjust(9)
             table += "\n"
         
-        # Add separator and averages row
+        # Add averages row as part of the same Markdown table
         try:
             avg_label = language_manager.get("distributions.average_row_label")
         except Exception:
             avg_label = "Average"
-        table += "\n"
-        table += "-" * 44 + "\n"
         table += f"| {avg_label:<12} |"
         for dist in distributions:
             avg = dist.get_average_income(probabilities)

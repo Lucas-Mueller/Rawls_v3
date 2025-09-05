@@ -98,7 +98,7 @@ class Phase2Settings(BaseModel):
     
     # Public history settings
     public_history_max_length: int = Field(
-        default=100000,
+        default=50000,
         ge=10000,
         description="Maximum length of public history before compression"
     )

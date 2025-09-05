@@ -140,7 +140,7 @@
     "internal_reasoning_context_format": "=== 您的内部推理 ===\n{internal_reasoning}\n================================",
     "language_instruction": "请只用中文回答。",
     "context_context_info_format": "\n姓名：{name}\n角色描述：{role_description}\n银行余额： ${bank_balance:.2f}\n当前阶段：{phase}\n回合数：{round_number}\n\n{formatted_memory}\n\n{internal_reasoning_section}\n\n{experiment_explanation}\n\n{phase_instructions}\n\n{language_instruction}\n",
-    "context_memory_update_format": "\n姓名：{name}\n银行余额：${bank_balance:.2f}\n\n你正在更新你的记忆。\n",
+    "context_memory_update_format": "\n姓名：{name}\n角色描述：{role_description}\n银行余额：${bank_balance:.2f}\n当前阶段：{phase}\n回合数：{round_number}\n\n你正在更新你的记忆。\n",
     "utility_string_parser_agent_name": "响应解析器",
     "utility_string_validator_agent_name": "响应验证器",
     "utility_string_validation_error_incomplete_ranking": "排名不完整 - 原则缺失或排名无效",

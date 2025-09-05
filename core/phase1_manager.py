@@ -335,7 +335,13 @@ class Phase1Manager:
             # Update memory with constraint re-prompt experience
             try:
                 retry_memory_content = f"Constraint re-prompt: {retry_prompt}\nMy response: {retry_text}"
-                updated_memory = await participant.update_memory(retry_memory_content, context.bank_balance)
+                updated_memory = await participant.update_memory(
+                    retry_memory_content, 
+                    context.bank_balance,
+                    phase=context.phase,
+                    round_number=context.round_number,
+                    role_description=context.role_description
+                )
                 context.memory = updated_memory
                 self._log_info(f"Updated {participant.name} memory after constraint retry {retry_count + 1}")
             except Exception as e:
@@ -653,16 +659,23 @@ class Phase1Manager:
         language_manager = self.language_manager
         return language_manager.get("prompts.phase1_post_explanation_ranking_prompt")
     
-    def _build_application_prompt(self, distribution_set, round_num: int) -> str:
-        """Build prompt for principle application."""
+    def _build_application_prompt(self, distribution_set, round_num: int, config: ExperimentConfiguration) -> str:
+        """Build prompt for principle application with averages row (weighted if available)."""
         language_manager = self.language_manager
+        # Determine probabilities for this round for average calculation row
+        if config.original_values_mode and config.original_values_mode.enabled:
+            probs = DistributionGenerator.get_original_values_probabilities(round_num)
+        else:
+            probs = config.income_class_probabilities
         distributions_table = DistributionGenerator.format_distributions_table(
-            distribution_set.distributions, self.language_manager
+            distribution_set.distributions, self.language_manager, probs
         )
         
-        return language_manager.get("prompts.phase1_application_round",
-                                   round_number=round_num,
-                                   distributions_table=distributions_table)
+        return language_manager.get(
+            "prompts.phase1_application_round",
+            round_number=round_num,
+            distributions_table=distributions_table
+        )
     
     def _build_final_ranking_prompt(self) -> str:
         """Build prompt for final ranking after experience."""

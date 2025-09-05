@@ -1,5 +1,7 @@
 language: "English" 
 
+seed: 42
+
 agents:
   - name: "Boris"
     personality: "You are an american college student."
@@ -9,6 +11,13 @@ agents:
     temperature: 0
     
   - name: "James" 
+    personality: "You are an american college student."
+    model: "gpt-4.1-nano-2025-04-14"
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: true
+
+  - name: "Alice" 
     personality: "You are an american college student."
     model: "gpt-4.1-nano-2025-04-14"
     temperature: 0
@@ -24,11 +33,11 @@ distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
 income_class_probabilities:
-  high: 0.00          # 5%
-  medium_high: 0.0   # 10%
-  medium: 0.0        # 50%
-  medium_low: 0.0    # 25%
-  low: 1.0           # 10%
+  high: 0.05          # 5%
+  medium_high: 0.10   # 10%
+  medium: 0.50        # 50%
+  medium_low: 0.25    # 25%
+  low: 0.1           # 10%
 
 # Original Values Mode Configuration
 original_values_mode:

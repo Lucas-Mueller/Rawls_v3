@@ -465,11 +465,21 @@ class LanguageManager:
                        phase_instructions=phase_instructions,
                        language_instruction=language_instruction)
     
-    def format_memory_context(self, name: str, bank_balance: float, personality: str) -> str:
+    def format_memory_context(self, name: str, bank_balance: float, personality: str,
+                             role_description: str = None, phase=None, round_number: int = 0) -> str:
         """Format minimal context for memory updates only."""
+        # Convert phase enum to string if needed
+        phase_str = phase.value if hasattr(phase, 'value') else str(phase) if phase else "Phase 1"
+        
+        # Use provided role_description or fall back to personality
+        actual_role = role_description if role_description is not None else personality
+        
         return self.get("prompts.context_memory_update_format",
                        name=name,
+                       role_description=actual_role,
                        bank_balance=bank_balance,
+                       phase=phase_str,
+                       round_number=round_number,
                        personality=personality)
     
     def format_memory_section(self, memory: str, display_mode: str = "full", context_type: str = "general") -> str:

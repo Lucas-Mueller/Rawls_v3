@@ -185,8 +185,12 @@ Then think how we can implement this in a straightforward way which is not overe
 PLease consider all three languages Mandarin, Spanish and English.
 
 
-
-
+Hey Claude please put this right below the Round information for all Phase 2 instruct prompts during the discussion: 
+"
 Each round of Phase 2 follows this flow: 
 1.	Discussion  2. Voting 
 Voting is unanimous: All Participants must agree on the same principle, if the principle specifies a constraint, the value must also be the same for all participants. 
+"
+Consider Spanish and Mandarin as well, translate the text correspondingly. 
+Follow a structured and systematic approach. Create a todo list. 
+Dont overengineer things. Keep things simple while also effective. 
