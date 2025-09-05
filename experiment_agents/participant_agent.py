@@ -216,6 +216,10 @@ def _generate_dynamic_instructions(
 ) -> str:
     """Generate context-aware instructions including memory, bank balance, etc."""
     
+    # Guard against missing context during model capability probes
+    if ctx is None or getattr(ctx, 'context', None) is None:
+        return "You are a participant agent in the Frohlich Experiment. Respond concisely."
+    
     context = ctx.context
     
     # Check if this is a memory update context and use minimal formatting
@@ -242,9 +246,25 @@ def _generate_dynamic_instructions(
     )
     
     # Get phase-specific instructions using language manager
-    phase_instructions = _get_phase_specific_instructions_translated(
-        context.phase, context.round_number, language_manager, experiment_config
-    )
+    if context.phase == ExperimentPhase.PHASE_2:
+        # Build Phase 2 instruction block with discussion transcript
+        max_rounds = experiment_config.phase2_rounds if experiment_config else 5
+        participant_names = []
+        try:
+            if experiment_config and getattr(experiment_config, 'agents', None):
+                participant_names = [getattr(a, 'name', '') for a in experiment_config.agents if getattr(a, 'name', '')]
+        except Exception:
+            participant_names = []
+        phase_instructions = language_manager.format_phase2_discussion_instructions(
+            round_number=context.round_number,
+            max_rounds=max_rounds,
+            participant_names=participant_names,
+            discussion_history=getattr(context, 'discussion_history', '') or ''
+        )
+    else:
+        phase_instructions = _get_phase_specific_instructions_translated(
+            context.phase, context.round_number, language_manager, experiment_config
+        )
     
     # Format everything using language manager with config-aware explanation inclusion
     return language_manager.format_context_info(
@@ -295,7 +315,9 @@ def update_participant_context(
         round_number=new_round if new_round is not None else context.round_number,
         phase=new_phase if new_phase is not None else context.phase,
         memory_character_limit=context.memory_character_limit,
-        interaction_type=context.interaction_type  # Preserve interaction_type for tool availability
+        interaction_type=context.interaction_type,  # Preserve interaction_type for tool availability
+        internal_reasoning=context.internal_reasoning,
+        discussion_history=getattr(context, 'discussion_history', '')
     )
     
     return updated_context

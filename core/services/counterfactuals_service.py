@@ -286,10 +286,19 @@ class CounterfactualsService:
                 # Get localized principle name using slug-based approach
                 principle_slug = consensus_result.agreed_principle.principle.value
                 principle_name = lang_manager.get(f"common.principle_names.{principle_slug}")
-                consensus_msg = lang_manager.get(
-                    "voting_results.consensus_reached", 
-                    principle_name=principle_name
-                )
+                
+                # Use constraint template if constraint amount exists
+                if consensus_result.agreed_principle.constraint_amount is not None:
+                    consensus_msg = lang_manager.get(
+                        "voting_results.consensus_with_constraint", 
+                        principle_name=principle_name,
+                        constraint_amount=consensus_result.agreed_principle.constraint_amount
+                    )
+                else:
+                    consensus_msg = lang_manager.get(
+                        "voting_results.consensus_reached", 
+                        principle_name=principle_name
+                    )
                 result_parts.append(consensus_msg + ".")
             else:
                 no_consensus_msg = lang_manager.get("phase2_no_consensus")

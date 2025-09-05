@@ -325,6 +325,8 @@ class Phase2Manager:
         # Get participant statement
         start_time = time.time()
         participant_names = [p.name for p in self.participants]
+        # Ensure instruction prompt includes up-to-date discussion transcript
+        context.discussion_history = discussion_state.public_history
         statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_retry(
             participant=participant,
             context=context,
@@ -393,8 +395,10 @@ class Phase2Manager:
             round_num=round_num,
             include_internal_reasoning=include_reasoning
         )
-        
-        return update_participant_context(context, new_round=round_num)
+        # Preserve discussion history in updated context
+        updated_ctx = update_participant_context(context, new_round=round_num)
+        updated_ctx.discussion_history = context.discussion_history
+        return updated_ctx
     
     async def _attempt_end_of_round_voting(
         self, round_num, contexts, participant_recent_statements, 
@@ -410,6 +414,8 @@ class Phase2Manager:
             try:
                 recent_statement = participant_recent_statements.get(participant.name, "")
                 recent_reasoning = participant_recent_reasoning.get(participant.name, "")
+                # Ensure instruction prompt includes up-to-date discussion transcript for vote prompting
+                context.discussion_history = discussion_state.public_history
                 wants_vote = await self.voting_service.prompt_for_vote_initiation(
                     participant=participant,
                     context=context,
@@ -432,6 +438,8 @@ class Phase2Manager:
                         self._log_warning(f"Error logging vote initiation for {participant.name}: {str(e)}")
                 
                 # Update memory with vote decision
+                # Keep instruction transcript current before memory update and any subsequent prompts
+                contexts[participant_idx].discussion_history = discussion_state.public_history
                 contexts[participant_idx].memory = await self.memory_service.update_vote_initiation_decision_memory(
                     agent=participant,
                     context=contexts[participant_idx],

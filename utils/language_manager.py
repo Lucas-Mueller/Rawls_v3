@@ -531,6 +531,47 @@ class LanguageManager:
             # Full display mode
             return self.get("prompts.context_memory_section_format", 
                            memory=memory)
+
+    def format_phase2_discussion_instructions(
+        self,
+        round_number: int,
+        max_rounds: int,
+        participant_names: Optional[List[str]],
+        discussion_history: str,
+    ) -> str:
+        """Format the Phase 2 instruction block including group composition and transcript.
+
+        The actual discussion transcript should be presented in the instruction layer, not
+        the input prompt. This method composes a localized header, optional group composition,
+        and a transcript section.
+        """
+        # Compose group composition string if names are available
+        group_text = ""
+        if participant_names:
+            if len(participant_names) == 1:
+                participants = participant_names[0]
+            else:
+                participants = ", ".join(participant_names[:-1]) + f" and {participant_names[-1]}"
+            group_text = self.get(
+                "context_group_composition_format",
+                participants=participants
+            )
+        # Header
+        header = self.get(
+            "context_phase2_discussion_header",
+            round_number=round_number,
+            max_rounds=max_rounds
+        )
+        # Transcript section
+        transcript = discussion_history if (discussion_history and discussion_history.strip()) else self.get("no_previous_discussion_placeholder")
+        history_section = self.get(
+            "context_discussion_history_section_format",
+            discussion_history=transcript
+        )
+        # Compose final block
+        if group_text:
+            return f"{group_text}\n\n{header}\n\n{history_section}"
+        return f"{header}\n\n{history_section}"
     
     def get_principle_list_formatted(self, list_type: str = "detailed") -> str:
         """

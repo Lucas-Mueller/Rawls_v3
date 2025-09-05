@@ -1,25 +1,4 @@
-Hey Claude I recently made some signficicant changes to the system, this made some parts of the looging system unfunctional. 
-
-These things are currently showing up as empty even though they are not. 
-
--initate vote
--class put in 
-- post_group_discussion": {
-          "class_put_in": "",
-          "payoff_received": 0.0,
-          "final_ranking": {
-            "rankings": [],
-            "certainty": ""
-          },
--     "vote_statistics": {}  
-
-Two categories need to be removed 
-"vote_rounds"
-"vote_initiation_requests"
-
-Please review the current implementation of  the logging system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step.
-
-Then create a report as md. file detailing the current implementation.
+an
 
 
 The changes needed to be made in irder to fulfill my request. 
@@ -49,3 +28,59 @@ I see in an external monitoring tool 3 distinct calls are made to the agents:
 I cannot identify Call 1 in the code! Please find it for me 
 
 Be thorugh and think!
+
+hat round to be there as well so that it says e.g. 
+"Chosen Principle: maximizing_average
+Assigned Class: Medium high
+Situation: A
+Your Payoff (already in your bank account): 2.90"
+
+Please update the prompts, for all languages accordingly. Be laser focused in your implementaion. Create a todo list, employ a systematic approach
+
+It currently is e.g. 
+Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
+Assigned income class: Low
+Consensus reached: Maximizing Average with Floor Constraint. 
+
+It should be e.g.
+Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
+Assigned income class: Low
+Consensus reached: Maximizing Average with Floor Constraint of 13,000$
+
+Please fic for all languagse use a systematic approach, keep changes minimal
+
+"
+Recent Activity:
+Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
+Assigned income class: Low
+Consensus reached: Maximizing Average with Floor Constraint.
+
+EXPERIMENT DISTRIBUTIONS AND SELECTION MAPPING
+
+| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |
+|----------|
+| High | $220,293 | $192,756 | $213,409 | $144,567 |
+| Medium high | $185,872 | $151,451 | $165,220 | $137,683 |
+| Medium | $165,220 | $137,683 | $144,567 | $130,799 |
+| Medium low | $89,494 | $117,030 | $110,146 | $110,146 |
+| Low | $82,610 | $89,494 | $96,378 | $103,262 |
+
+FINAL PHASE 2 RESULTS - PRINCIPLE OUTCOMES FOR Low CLASS:
+
+Maximizing Floor Income → Distribution 4 → $103,262 → $10.33
+Maximizing Average Income → Distribution 1 → $82,610 → $8.26
+Floor constraint ≤ $82,610 → Distribution 1 → $82,610 → $8.26
+Floor constraint ≤ $89,494 → Distribution 3 → $96,378 → $9.64
+Floor constraint ≤ $96,378 → Distribution 3 → $96,378 → $9.64
+Floor constraint ≤ $103,262 → Distribution 4 → $103,262 → $10.33
+Range constraint ≤ $137,683 → Distribution 1 → $82,610 → $8.26
+Range constraint ≤ $103,262 → Distribution 2 → $89,494 → $8.95
+Range constraint ≤ $117,031 → Distribution 3 → $96,378 → $9.64
+Range constraint ≤ $41,305 → Distribution 4 → $103,262 → $10.33
+RETURN: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')
+
+" The bottom part is correct, but the distribution assignment is wrong
+The group selected  Maximizing Average with Floor Constraint of 13,000
+In this case that would have resulted in Dist .1 since this has the higest average income and meets the floor constraint. 
+
+Please investigate what went wrong here and write a comprehenisve report as a .md file with the prefix codex detailing the current implementation and whats need to be done to fix it. Think!

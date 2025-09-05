@@ -230,14 +230,14 @@ class MemoryService:
         """
         # Build memory content using localized format (correct keys)
         round_content = self._get_localized_message(
-            "round_statement_format",
+            "memory.round_statement_format",
             round_num=round_num,
             statement=statement
         )
         
         if include_internal_reasoning and internal_reasoning:
             reasoning_text = self._get_localized_message(
-                "internal_reasoning_format",
+                "memory.internal_reasoning_format",
                 reasoning=internal_reasoning
             )
             round_content += f"\n{reasoning_text}"

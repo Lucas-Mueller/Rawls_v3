@@ -95,7 +95,7 @@ class DiscussionService:
                                max_rounds: int, participant_names: List[str],
                                internal_reasoning: str = "") -> str:
         """
-        Build localized discussion prompt with history and group composition.
+        Build localized discussion prompt without embedding transcript (history is in instructions).
         
         Args:
             discussion_state: Current discussion state with history
@@ -109,18 +109,12 @@ class DiscussionService:
         """
         language_manager = self.language_manager
         
-        # Generate group composition
-        group_participants = self.format_group_composition(participant_names)
-        
-        # Always use complex mode prompts (formal voting system)
-        # Internal reasoning is handled by the system context to avoid duplication
-        base_prompt = language_manager.get("prompts.phase2_discussion_prompt",
-                                          round_number=round_num,
-                                          max_rounds=max_rounds,
-                                          discussion_history=discussion_state.public_history or "No previous discussion.",
-                                          group_participants=group_participants)
-        
-        return base_prompt
+        # Use short, task-focused prompt. Discussion transcript is provided via instructions.
+        return language_manager.get(
+            "prompts.phase2_discussion_short_prompt",
+            round_number=round_num,
+            max_rounds=max_rounds
+        )
     
     def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 
                                       max_rounds: int) -> str:
@@ -137,10 +131,11 @@ class DiscussionService:
         """
         language_manager = self.language_manager
         
-        return language_manager.get("prompts.phase2_internal_reasoning",
-                                   round_number=round_num,
-                                   max_rounds=max_rounds,
-                                   discussion_history=discussion_state.public_history or "No previous discussion.")
+        return language_manager.get(
+            "prompts.phase2_internal_reasoning_short",
+            round_number=round_num,
+            max_rounds=max_rounds
+        )
     
     def format_group_composition(self, participant_names: List[str]) -> str:
         """

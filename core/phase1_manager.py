@@ -467,6 +467,9 @@ class Phase1Manager:
         else:
             round_content += f"\n{language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
         
+        # Add explicit payoff line
+        round_content += f"\n{language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}"
+        
         # Add comprehensive earnings display
         round_content += f"\n\n{earnings_display}"
         
