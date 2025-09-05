@@ -154,9 +154,9 @@ class CounterfactualsService:
                 constraint_amount = consensus_principle.constraint_amount
                 
                 chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-                    distribution_set.distributions,
-                    discussion_result.agreed_principle,
-                    None,  # enforce unweighted selection per spec
+                    distribution_set.distributions, 
+                    discussion_result.agreed_principle, 
+                    config.income_class_probabilities,
                     language_manager=self.language_manager
                 )
                 
