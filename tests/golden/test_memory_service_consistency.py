@@ -409,7 +409,7 @@ class TestMemoryServiceContractConsistency:
         assert call_kwargs['event_metadata'] == {'test': 'metadata'}
         assert call_kwargs['language_manager'] == self.language_manager
         assert call_kwargs['utility_agent'] == self.utility_agent
-        assert call_kwargs['memory_guidance_style'] == 'narrative'
+        assert call_kwargs['memory_guidance_style'] == 'structured'
         assert call_kwargs['custom_kwarg'] == 'custom_value'
     
     @patch('core.services.memory_service.SelectiveMemoryManager.update_memory_selective')

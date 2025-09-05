@@ -2,7 +2,7 @@ language: "English" ## Alternatives: Mandarin, Spanish
 seed: 42
 
 selective_memory_updates: false           # Forces legacy verbose system
-memory_guidance_style: "structured"       # Use structured memory prompts
+memory_guidance_style: "structured"       # Default memory prompts style
 phase2_include_internal_reasoning_in_memory: true
 include_experiment_explanation_each_turn: true
 memory_update_threshold: "comprehensive"

@@ -32,7 +32,7 @@ class TestMemoryServiceInitialization:
         assert service.settings == settings
         assert service.statement_max_chars == 300
         assert service.reasoning_max_chars == 200
-        assert service.memory_guidance_style == 'narrative'  # Default
+        assert service.memory_guidance_style == 'structured'  # Default
     
     def test_memory_service_init_with_custom_guidance_style(self):
         """Test MemoryService uses custom memory guidance style from config."""
@@ -177,7 +177,7 @@ class TestMemoryServiceSelectiveUpdate:
             assert call_args[1]['event_type'] == MemoryEventType.DISCUSSION_STATEMENT
             assert call_args[1]['language_manager'] == memory_service.language_manager
             assert call_args[1]['utility_agent'] == memory_service.utility_agent
-            assert call_args[1]['memory_guidance_style'] == 'narrative'
+            assert call_args[1]['memory_guidance_style'] == 'structured'
     
     @pytest.mark.asyncio
     async def test_selective_update_applies_truncation(self, memory_service, mock_agent, mock_context):
@@ -830,7 +830,7 @@ class TestMemoryServiceConfigFallback:
         config = service._create_config_fallback()
         
         # The fallback uses settings, not the original config
-        assert config.memory_guidance_style == 'narrative'  # Default from settings
+        assert config.memory_guidance_style == 'structured'  # Default from settings
         assert config.selective_memory_updates is True      # Default
     
     def test_create_config_fallback_with_defaults(self):
@@ -842,7 +842,7 @@ class TestMemoryServiceConfigFallback:
         service = MemoryService(language_manager, utility_agent, settings)
         config = service._create_config_fallback()
         
-        assert config.memory_guidance_style == 'narrative'  # Default
+        assert config.memory_guidance_style == 'structured'  # Default
         assert config.selective_memory_updates is True      # Default
 
 

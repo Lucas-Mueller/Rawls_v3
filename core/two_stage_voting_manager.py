@@ -1122,7 +1122,8 @@ Respond with the amount (examples: 25000 or $25000):"""
             )
             
             # Update participant memory using the MemoryManager
-            memory_guidance_style = getattr(self.settings, 'memory_guidance_style', 'narrative') if self.settings else 'narrative'
+            # Use MemoryService/ExperimentConfiguration as the single source of truth for memory mode
+            memory_guidance_style = getattr(self.memory_service, 'memory_guidance_style', 'narrative') if hasattr(self, 'memory_service') and self.memory_service else 'narrative'
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
                 participant, context, memory_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
             )

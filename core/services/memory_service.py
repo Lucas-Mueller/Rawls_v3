@@ -103,7 +103,8 @@ class MemoryService:
         self.statement_max_chars = 300
         self.reasoning_max_chars = 200
         
-        # Memory guidance style from config (falls back to 'structured')
+        # Memory guidance style from config (single source of truth → ExperimentConfiguration)
+        # Default to 'structured' when no config is provided
         self.memory_guidance_style = getattr(config, 'memory_guidance_style', 'structured') if config else 'structured'
 
     def _get_localized_message(self, key: str, **kwargs) -> str:
@@ -621,7 +622,7 @@ class MemoryService:
         """
         class ConfigFallback:
             def __init__(self, settings: Phase2Settings):
-                self.memory_guidance_style = getattr(settings, 'memory_guidance_style', 'narrative')
+                self.memory_guidance_style = getattr(settings, 'memory_guidance_style', 'structured')
                 self.selective_memory_updates = getattr(settings, 'selective_memory_updates', True)
         
         return ConfigFallback(self.settings)
