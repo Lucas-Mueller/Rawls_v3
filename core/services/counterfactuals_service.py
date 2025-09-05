@@ -408,6 +408,20 @@ class CounterfactualsService:
             # Build display parts
             display_parts = []
             
+            # Add probabilities block (localized) if available
+            try:
+                if self._phase2_probabilities is not None:
+                    prob_header = lang_manager.get('results.class_probabilities_header')
+                    display_parts.append(prob_header)
+                    class_keys = ['high', 'medium_high', 'medium', 'medium_low', 'low']
+                    for key in class_keys:
+                        cls_name = lang_manager.get(f'common.income_classes.{key}')
+                        p = getattr(self._phase2_probabilities, key)
+                        display_parts.append(f"- {cls_name}: {p*100:.0f}%")
+                    display_parts.append("")
+            except Exception:
+                pass
+
             # Add distributions table (already localized)
             display_parts.append(comprehensive_data['distributions_table'])
             display_parts.append("")  # Empty line

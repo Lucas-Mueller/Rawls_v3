@@ -180,6 +180,17 @@
     
     "phase1_distributions_intro": "Aquí tienes algunos ejemplos de distribuciones para ayudarte a entender:"
   },
+  "results": {
+    "phase2_header": "RESULTADOS FINALES DE LA FASE 2",
+    "assigned_income_class": "Clase de ingresos asignada: {class_name}",
+    "class_probabilities_header": "Probabilidades por clase de ingresos:",
+    "counterfactuals_header": "Análisis contrafáctico",
+    "table_headers": {
+      "principle": "Principio de justicia",
+      "income": "Ingreso",
+      "earnings": "Ganancias"
+    }
+  },
   "errors": {
     "two_stage_respond_with_number_only": "Respuesta inválida (intento {attempt}/{max_attempts}). Debes responder con exactamente un número: 1, 2, 3, o 4.",
     "two_stage_use_digits_not_words": "Respuesta inválida (intento {attempt}/{max_attempts}). Por favor usa dígitos (1, 2, 3, o 4), no palabras.",

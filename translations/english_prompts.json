@@ -307,6 +307,7 @@
     "phase2_header": "PHASE 2 FINAL RESULTS",
     "counterfactual_header": "COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:",
     "assigned_income_class": "Assigned income class: {class_name}",
+    "class_probabilities_header": "Income class probabilities:",
     "counterfactuals_header": "Counterfactual analysis",
     "table_headers": {
       "principle": "Justice Principle",

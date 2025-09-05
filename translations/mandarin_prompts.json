@@ -181,6 +181,17 @@
     
     "phase1_distributions_intro": "以下是一些示例分配，帮助您理解："
   },
+  "results": {
+    "phase2_header": "第二阶段最终结果",
+    "assigned_income_class": "分配的收入等级：{class_name}",
+    "class_probabilities_header": "各收入类别的概率：",
+    "counterfactuals_header": "反事实分析",
+    "table_headers": {
+      "principle": "正义原则",
+      "income": "收入",
+      "earnings": "收益"
+    }
+  },
   "errors": {
     "two_stage_respond_with_number_only": "无效回答（尝试{attempt}/{max_attempts}）。你必须只回答一个数字：1、2、3或4。",
     "two_stage_use_digits_not_words": "无效回答（尝试{attempt}/{max_attempts}）。请使用数字（1、2、3或4），不要使用文字。",

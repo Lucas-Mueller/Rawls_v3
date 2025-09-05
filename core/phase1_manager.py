@@ -8,7 +8,7 @@ from agents import Agent, Runner
 from models import (
     ParticipantContext, Phase1Results, ApplicationResult, ExperimentPhase,
     PrincipleRanking, PrincipleRankingResponse, PrincipleChoiceResponse,
-    IncomeClass
+    IncomeClass, JusticePrinciple, PrincipleChoice, CertaintyLevel
 )
 from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
@@ -543,7 +543,105 @@ class Phase1Manager:
                 sample_distribution_set.distributions, self.language_manager
             )
             
-            # Build explanation with Sample distributions
+            # Build dynamic, weighted example mapping for English using config probabilities
+            # Fallback to original static explanation for non-English to avoid i18n drift
+            language = getattr(config, 'language', 'English').lower()
+            if language == 'english':
+                try:
+                    probs = getattr(config, 'income_class_probabilities', None)
+                    dists = sample_distribution_set.distributions
+
+                    # Principle display names
+                    name_floor = language_manager.get('common.principle_names.maximizing_floor')
+                    name_avg = language_manager.get('common.principle_names.maximizing_average')
+                    name_floor_c = language_manager.get('common.principle_names.maximizing_average_floor_constraint')
+                    name_range_c = language_manager.get('common.principle_names.maximizing_average_range_constraint')
+
+                    # Helper to choose distribution index (1-based)
+                    def choose(principle: JusticePrinciple, constraint: int | None = None) -> tuple[int, int, float]:
+                        pc = PrincipleChoice(principle=principle, constraint_amount=constraint, certainty=CertaintyLevel.SURE)
+                        best, _ = DistributionGenerator.apply_principle_to_distributions(dists, pc, probs, language_manager=None)
+                        idx = dists.index(best) + 1
+                        return idx, best.low, best.get_average_income(probs)
+
+                    # Compute choices
+                    idx_floor, floor_low, _ = choose(JusticePrinciple.MAXIMIZING_FLOOR)
+                    idx_avg, _, avg_val = choose(JusticePrinciple.MAXIMIZING_AVERAGE)
+                    idx_fc_13k, _, avg_fc_13k = choose(JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 13000)
+                    idx_fc_14k, _, avg_fc_14k = choose(JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 14000)
+                    # Use typical illustrative range constraints based on sample ranges
+                    idx_rc_20k, _, avg_rc_20k = choose(JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, 20000)
+                    idx_rc_15k, _, avg_rc_15k = choose(JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, 15000)
+
+                    # Format probabilities block (localized)
+                    if probs:
+                        high_n = language_manager.get('common.income_classes.high')
+                        mh_n = language_manager.get('common.income_classes.medium_high')
+                        m_n = language_manager.get('common.income_classes.medium')
+                        ml_n = language_manager.get('common.income_classes.medium_low')
+                        low_n = language_manager.get('common.income_classes.low')
+                        if language == 'english':
+                            prob_header = "The probabilities for each class are as follows"
+                        elif language == 'spanish':
+                            prob_header = "Las probabilidades para cada clase son las siguientes"
+                        else:
+                            prob_header = "各收入类别的概率如下"
+                        prob_lines = [
+                            prob_header,
+                            f"{high_n}: {probs.high*100:.0f}%",
+                            f"{mh_n}: {probs.medium_high*100:.0f}%",
+                            f"{m_n}: {probs.medium*100:.0f}%",
+                            f"{ml_n}: {probs.medium_low*100:.0f}%",
+                            f"{low_n}: {probs.low*100:.0f}%",
+                            ""
+                        ]
+                    else:
+                        prob_lines = []
+
+                    # Build mapping lines (use localized distribution label)
+                    def dist_label(i: int) -> str:
+                        return language_manager.get('distributions.distribution_label', number=i)
+
+                    if language == 'english':
+                        mapping_lines = [
+                            "How each principle would choose:",
+                            f"- **{name_floor}**: Would choose {dist_label(idx_floor)} (highest low income)",
+                            f"- **{name_avg}**: Would choose {dist_label(idx_avg)} (highest weighted average)",
+                            f"- **{name_floor_c} ≤ $13,000**: Would choose {dist_label(idx_fc_13k)} (highest weighted average among eligible)",
+                            f"- **{name_floor_c} ≤ $14,000**: Would choose {dist_label(idx_fc_14k)} (highest weighted average among eligible)",
+                            f"- **{name_range_c} ≤ $20,000**: Would choose {dist_label(idx_rc_20k)} (highest weighted average among eligible)",
+                            f"- **{name_range_c} ≤ $15,000**: Would choose {dist_label(idx_rc_15k)} (highest weighted average among eligible)"
+                        ]
+                        header = "Here is how each justice principle would be applied to example income distributions:"
+                    elif language == 'spanish':
+                        mapping_lines = [
+                            "Cómo elegiría cada principio:",
+                            f"- **{name_floor}**: Elegiría {dist_label(idx_floor)} (ingreso bajo más alto)",
+                            f"- **{name_avg}**: Elegiría {dist_label(idx_avg)} (promedio ponderado más alto)",
+                            f"- **{name_floor_c} ≤ $13,000**: Elegiría {dist_label(idx_fc_13k)} (promedio ponderado más alto entre las elegibles)",
+                            f"- **{name_floor_c} ≤ $14,000**: Elegiría {dist_label(idx_fc_14k)} (promedio ponderado más alto entre las elegibles)",
+                            f"- **{name_range_c} ≤ $20,000**: Elegiría {dist_label(idx_rc_20k)} (promedio ponderado más alto entre las elegibles)",
+                            f"- **{name_range_c} ≤ $15,000**: Elegiría {dist_label(idx_rc_15k)} (promedio ponderado más alto entre las elegibles)"
+                        ]
+                        header = "Así es como se aplicaría cada principio de justicia a distribuciones de ingresos de ejemplo:"
+                    else:
+                        mapping_lines = [
+                            "每个原则如何选择：",
+                            f"- **{name_floor}**：将选择{dist_label(idx_floor)}（最高低收入）",
+                            f"- **{name_avg}**：将选择{dist_label(idx_avg)}（最高加权平均值）",
+                            f"- **{name_floor_c} ≤ $13,000**：将选择{dist_label(idx_fc_13k)}（在符合条件的分配中加权平均值最高）",
+                            f"- **{name_floor_c} ≤ $14,000**：将选择{dist_label(idx_fc_14k)}（在符合条件的分配中加权平均值最高）",
+                            f"- **{name_range_c} ≤ $20,000**：将选择{dist_label(idx_rc_20k)}（在符合条件的分配中加权平均值最高）",
+                            f"- **{name_range_c} ≤ $15,000**：将选择{dist_label(idx_rc_15k)}（在符合条件的分配中加权平均值最高)"
+                        ]
+                        header = "以下是每个公正原则如何应用于收入分配的例子："
+                    body = "\n".join([header, "", distributions_table, "", *prob_lines, *mapping_lines])
+                    return body
+                except Exception:
+                    # Fallback to original static explanation on any error
+                    pass
+
+            # Build explanation with static template (non-English or fallback)
             base_explanation = language_manager.get("prompts.phase1_detailed_principles_explanation")
             intro_text = language_manager.get("prompts.phase1_distributions_intro")
             return f"{base_explanation}\n\n{intro_text}\n\n{distributions_table}"

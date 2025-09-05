@@ -137,3 +137,23 @@ Your Previous Memory:
 
 Recent Activity:
 
+Pleaes put right after the following text in phase 2 first reasoning call (only first reasonin call):
+"
+The experiment has two main phases:
+
+PHASE 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.
+
+PHASE 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings.
+
+Throughout the experiment, engage thoughtfully with the principles and other participants."
+
+This text 
+
+"
+
+You are now in Phase 2 of the experiment:
+In this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. We have constructed a large set of payoff distribution schedules. Each schedule specifies five payoff amounts. The distributions need not resemble the distributions in Part I. THE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART.
+ Your choice of principle will be used to pick out those distribution schedules which conform to your principle. 
+Each of you will then be randomly assigned an income from that distribution. That is your payoff for Phase 2."
+
+Insert it also for Spanish (trasnlated) and Mandarin (translated)
