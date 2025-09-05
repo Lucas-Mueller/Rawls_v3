@@ -305,7 +305,7 @@ class Phase1Manager:
     ) -> tuple[ApplicationResult, str]:
         """Step 1.3: Single round of principle application."""
         
-        application_prompt = self._build_application_prompt(distribution_set, round_num)
+        application_prompt = self._build_application_prompt(distribution_set, round_num, config)
         
         # Always use text responses, parse with enhanced utility agent
         result = await Runner.run(participant.agent, application_prompt, context=context)

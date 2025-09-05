@@ -50,7 +50,9 @@ class MemoryManager:
         language_manager=None,
         error_handler=None,
         utility_agent=None,
-        interaction_type: str = None
+        interaction_type: str = None,
+        round_number: int = None,
+        phase: str = None
     ) -> str:
         """
         Prompt agent to update their memory based on round content with context-aware template selection.
@@ -102,7 +104,7 @@ class MemoryManager:
                 
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
-                    memory_to_use, round_content, memory_guidance_style, language_manager, interaction_type
+                    memory_to_use, round_content, memory_guidance_style, language_manager, interaction_type, round_number, phase
                 )
                 
                 # Get updated memory from agent
@@ -196,7 +198,7 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None) -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None, round_number: int = None, phase: str = None) -> str:
         """
         Create context-aware memory update prompt that prevents activity duplication.
         
@@ -205,11 +207,16 @@ class MemoryManager:
         (internal_reasoning, statement), it attempts to use specialized "_no_recent_activity" templates
         that focus on incorporating insights rather than repeating activity descriptions.
         
+        Additionally, for the first round of Phase 2, it uses specialized templates that include
+        the extended Phase 2 explanation about higher stakes and payoff structure.
+        
         Template Selection Logic:
-        1. For discussion interactions (internal_reasoning, statement):
+        1. For first round of Phase 2:
+           - Uses "_first_round" template variants with extended Phase 2 explanation
+        2. For discussion interactions (internal_reasoning, statement):
            - Attempts to use "{base_template}_no_recent_activity" variant
            - Falls back to standard template if specialized version doesn't exist
-        2. For other interactions (voting, results, etc.):
+        3. For other interactions (voting, results, etc.):
            - Uses standard templates with "Recent Activity" sections
         
         Args:
@@ -221,6 +228,8 @@ class MemoryManager:
             interaction_type: Type of interaction for template selection. Discussion types
                             ("internal_reasoning", "statement") trigger specialized templates.
                             None or other types use standard templates.
+            round_number: Current round number (1-based), used to detect first round
+            phase: Current phase ("phase1", "phase2"), used with round_number for template selection
             
         Returns:
             Formatted prompt string ready for agent processing
@@ -235,13 +244,22 @@ class MemoryManager:
         # additional "Recent Activity" sections redundant and potentially confusing
         discussion_interaction_types = {"internal_reasoning", "statement"}
         
-        # Choose base prompt template based on memory guidance style preference
-        if guidance_style == "narrative":
-            # Narrative style produces story-like, flowing memory updates
-            base_prompt_key = "prompts.memory_narrative_update_prompt"
-        else:  # structured
-            # Structured style produces organized, bullet-point memory updates
-            base_prompt_key = "prompts.memory_memory_update_prompt"  # Keep old structured style as fallback
+        # Check if this is the first round of Phase 2 and use specialized templates
+        is_first_round_phase2 = (round_number == 1 and phase == "phase_2")
+        
+        # Choose base prompt template based on memory guidance style preference and round conditions
+        if is_first_round_phase2:
+            # First round of Phase 2 uses templates with extended Phase 2 explanation
+            if guidance_style == "narrative":
+                base_prompt_key = "prompts.memory_narrative_update_prompt_first_round"
+            else:  # structured
+                base_prompt_key = "prompts.memory_memory_update_prompt_first_round"
+        else:
+            # Regular templates for all other cases
+            if guidance_style == "narrative":
+                base_prompt_key = "prompts.memory_narrative_update_prompt"
+            else:  # structured
+                base_prompt_key = "prompts.memory_memory_update_prompt"
         
         # Apply context-aware template selection for discussion interactions
         # This prevents activity duplication by using specialized templates

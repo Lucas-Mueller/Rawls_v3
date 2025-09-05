@@ -402,8 +402,10 @@ class DistributionGenerator:
         return alternative_earnings
     
     @staticmethod
-    def format_distributions_table(distributions: List[IncomeDistribution], language_manager) -> str:
-        """Format distributions as a table for display to participants."""
+    def format_distributions_table(distributions: List[IncomeDistribution], language_manager, probabilities: Optional[IncomeClassProbabilities] = None) -> str:
+        """Format distributions as a table for display to participants, with an averages row.
+        If probabilities are provided, averages are weighted; otherwise unweighted.
+        """
         
         # Get localized table components
         table = language_manager.get("prompts.distribution_distributions_table_header")
@@ -427,6 +429,24 @@ class DistributionGenerator:
                 income = getattr(dist, attr)
                 table += f" ${income:,} |".rjust(9)
             table += "\n"
+        
+        # Add separator and averages row
+        try:
+            avg_label = language_manager.get("distributions.average_row_label")
+        except Exception:
+            avg_label = "Average"
+        table += "\n"
+        table += "-" * 44 + "\n"
+        table += f"| {avg_label:<12} |"
+        for dist in distributions:
+            avg = dist.get_average_income(probabilities)
+            # Use language manager currency format if available
+            try:
+                avg_str = language_manager.get('constraint_formatting.currency_format', amount=int(round(avg)))
+            except Exception:
+                avg_str = f"${int(round(avg)):,}"
+            table += f" {avg_str} |"
+        table += "\n"
         
         return table
     

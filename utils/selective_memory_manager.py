@@ -330,6 +330,10 @@ class SelectiveMemoryManager:
         # Falls back to None for older contexts without interaction_type attribute
         interaction_type = getattr(context, 'interaction_type', None)
         
+        # Extract round and phase information for first-round template selection
+        round_number = getattr(context, 'round_number', None)
+        phase = getattr(context, 'phase', None) or "phase_2"  # Default to phase_2 if not specified
+        
         # Use existing MemoryManager for full LLM updates
         return await MemoryManager.prompt_agent_for_memory_update(
             agent=agent,
@@ -337,6 +341,8 @@ class SelectiveMemoryManager:
             round_content=content,
             memory_guidance_style=memory_guidance_style,
             interaction_type=interaction_type,
+            round_number=round_number,
+            phase=phase,
             language_manager=language_manager,
             error_handler=error_handler,
             utility_agent=utility_agent,

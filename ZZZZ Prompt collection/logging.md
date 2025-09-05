@@ -157,3 +157,36 @@ In this part of the experiment you, as a group, are to choose one principle for 
 Each of you will then be randomly assigned an income from that distribution. That is your payoff for Phase 2."
 
 Insert it also for Spanish (trasnlated) and Mandarin (translated)
+
+Can you please add a line below all tables during phase 1 with the average income for each distribution. 
+
+Following this format
+
+Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
+High	$32,000	$28,000	$31,000	$21,000
+Medium high	$27,000	$22,000	$24,000	$20,000
+Medium	$24,000	$20,000	$21,000	$19,000
+Medium low	$13,000	$17,000	$16,000	$16,000
+Low	$12,000	$13,000	$14,000	$15,000
+
+--------------------------------------------
+Average | Average Dist.1 | Average Dist.2 | Average Dist.3 | Average Dist.4 
+
+Hey claude in phase 2 the instruct prompt is missing crucial information during the reasoning and memory update call this is how the first part of the instruct prompt should look like
+
+Name: (set in config) --> works 
+Role Description: (set in config) --> missed during reasoning & memory update call
+Bank Balance: (current bank balance) --> works
+Current Phase: Phase 2 --> missed during reasoning & memory update call 
+Round: 1 --> missed during reasoning please implement and change Round: 1 out of (set in config)
+
+PLeae first analyze the current implementation systematically. Create a todo list. 
+Then think how we can implement this in a straightforward way which is not overengineered. 
+PLease consider all three languages Mandarin, Spanish and English.
+
+
+
+
+Each round of Phase 2 follows this flow: 
+1.	Discussion  2. Voting 
+Voting is unanimous: All Participants must agree on the same principle, if the principle specifies a constraint, the value must also be the same for all participants. 
