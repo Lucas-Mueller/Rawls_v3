@@ -60,6 +60,34 @@ What Looks Correct (and should not be changed)
   - Correctly enumerates outcomes for floor constraints equal to each distribution’s floor, and range constraints equal to each distribution’s range.
   - These lines match the provided numbers and are internally consistent.
 
+Addendum: Deeper Diagnosis and Confirmed Root Cause
+
+- Where the final outcome is calculated
+  - Selection and payoff are determined in `core/services/counterfactuals_service.py::apply_group_principle_and_calculate_payoffs()`.
+    - It calls `DistributionGenerator.apply_principle_to_distributions(distribution_set.distributions, discussion_result.agreed_principle, config.income_class_probabilities, language_manager=self.language_manager)`.
+    - Note the third argument: `config.income_class_probabilities`. This makes selection use weighted averages when the principle involves averages (as intended by design).
+  - The comprehensive outcomes shown in Phase 2 are built in `_build_comprehensive_earnings_display()` by calling `DistributionGenerator.calculate_comprehensive_constraint_outcomes(distribution_set.distributions, assigned_class_enum, lang_manager)` — without probabilities. That means unweighted averages in the display.
+
+- Why Distribution 4 was chosen in your run
+  - In `experiment_results_20250905_032008.json`, top-level `general_information.income_class_probabilities` are:
+    `{ high: 0.0, medium_high: 0.0, medium: 0.0, medium_low: 0.0, low: 1.0 }`.
+  - With these probabilities, maximizing (weighted) average depends only on the low income. Among your distributions, Dist 4 has the highest low ($103,262), so both “Maximizing Average” and “Maximizing Average with Floor Constraint” (when the floor is non-binding) select Dist 4.
+  - The comprehensive outcomes section, however, computed using unweighted averages, still shows Dist 1 as the “maximizing average” choice — hence the discrepancy.
+
+- Consensus amount display
+  - The short consensus message you saw lacked the amount. The voting service includes the amount when available, but the high-level summary you quoted likely came from a path (general information block) that does not record the amount. This did not affect selection; it’s a messaging consistency issue.
+
+- Updated Fix Plan (precise)
+  1) Consistency: Use the same weighting in display as in selection for Phase 2.
+     - Pass `config.income_class_probabilities` into `calculate_comprehensive_constraint_outcomes()` when called from `_build_comprehensive_earnings_display()`.
+     - Ensure explanation strings include the “weighted” qualifier (LanguageManager already supports it).
+  2) Diagnostics: Before computing payoffs, log the per-distribution weighted averages, floors, and the valid set after applying the constraint, then the selected index.
+  3) Defense-in-depth: If a constrained principle arrives without `constraint_amount`, log and fall back to unconstrained maximizing average (not maximizing floor). This prevents silent semantic drift if any upstream parsing fails.
+  4) Settings: Expose and raise the maximum amount for constraints in Phase 2 (≥ 150,000) to reflect scaled distributions (multipliers 4–8), preventing valid amounts from being rejected.
+  5) Display clarity: Add an explicit line for the actual group constraint in the comprehensive outcomes (if it’s not already one of the distributions’ floor values), and mark it as the group choice.
+  6) Tests: Add unit tests showing Dist 1 vs. Dist 4 selection under default vs. `low=1.0` probabilities, and an integration test asserting Phase 2 selection matches expectations under given probabilities.
+
+
 Targeted Fix Plan
 1) Add explicit selection diagnostics before payoff is computed.
    - In CounterfactualsService.apply_group_principle_and_calculate_payoffs(), log:
@@ -123,4 +151,3 @@ Appendix: Key Code References
 
 Notes
 - The correctness of the comprehensive outcomes section in your transcript strongly suggests the pure selection logic in DistributionGenerator is fine. The failure likely occurs in how the agreed principle (and/or its amount) flows into the payoff selection. The proposed diagnostics and guards aim to catch exactly that.
-

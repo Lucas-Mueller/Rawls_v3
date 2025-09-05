@@ -211,6 +211,7 @@ class MemoryService:
         internal_reasoning: str = "",
         round_num: int = 1,
         include_internal_reasoning: bool = True,
+        discussion_history: str = "",
         **kwargs
     ) -> str:
         """
@@ -223,24 +224,38 @@ class MemoryService:
             internal_reasoning: Internal reasoning (if available)
             round_num: Current round number
             include_internal_reasoning: Whether to include reasoning in memory
+            discussion_history: Current discussion history to include in memory
             **kwargs: Additional arguments
             
         Returns:
             Updated memory string
         """
-        # Build memory content using localized format (correct keys)
-        round_content = self._get_localized_message(
-            "memory.round_statement_format",
-            round_num=round_num,
-            statement=statement
-        )
-        
-        if include_internal_reasoning and internal_reasoning:
-            reasoning_text = self._get_localized_message(
-                "memory.internal_reasoning_format",
-                reasoning=internal_reasoning
+        # Build memory content with discussion history and recent reasoning
+        if discussion_history:
+            # Include discussion history
+            round_content = f"Current Discussion History:\n{discussion_history}\n\n"
+            
+            # Add recent reasoning if available
+            if include_internal_reasoning and internal_reasoning:
+                reasoning_text = self._get_localized_message(
+                    "internal_reasoning_format",
+                    reasoning=internal_reasoning
+                )
+                round_content += f"Your Recent Reasoning:\n{reasoning_text}"
+        else:
+            # Fallback to old format when no discussion history available
+            round_content = self._get_localized_message(
+                "round_statement_format",
+                round_num=round_num,
+                statement=statement
             )
-            round_content += f"\n{reasoning_text}"
+            
+            if include_internal_reasoning and internal_reasoning:
+                reasoning_text = self._get_localized_message(
+                    "internal_reasoning_format",
+                    reasoning=internal_reasoning
+                )
+                round_content += f"\n{reasoning_text}"
         
         event_metadata = {
             'round_number': round_num,

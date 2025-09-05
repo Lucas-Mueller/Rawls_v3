@@ -382,7 +382,7 @@ class Phase2Manager:
         )
     
     async def _update_participant_memory_and_context(
-        self, participant, context, statement, internal_reasoning, round_num, participant_idx
+        self, participant, context, statement, internal_reasoning, round_num, participant_idx, discussion_state
     ):
         """Update participant memory and return updated context."""
         include_reasoning = self.config.phase2_include_internal_reasoning_in_memory if self.config else False
@@ -393,7 +393,8 @@ class Phase2Manager:
             statement=statement,
             internal_reasoning=internal_reasoning,
             round_num=round_num,
-            include_internal_reasoning=include_reasoning
+            include_internal_reasoning=include_reasoning,
+            discussion_history=discussion_state.public_history
         )
         # Preserve discussion history in updated context
         updated_ctx = update_participant_context(context, new_round=round_num)
@@ -637,7 +638,7 @@ class Phase2Manager:
                 
                 # Update participant memory and context
                 contexts[participant_idx] = await self._update_participant_memory_and_context(
-                    participant, context, statement, internal_reasoning, round_num, participant_idx
+                    participant, context, statement, internal_reasoning, round_num, participant_idx, discussion_state
                 )
                 
                 # Skip consensus processing for failed responses

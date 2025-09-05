@@ -354,11 +354,11 @@ class Phase1Manager:
             # Use global configuration probabilities
             probabilities = config.income_class_probabilities
         
-        # Apply principle to distributions
+        # Apply principle to distributions (UNWEIGHTED selection per spec)
         chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-            distribution_set.distributions, 
-            parsed_choice, 
-            probabilities,
+            distribution_set.distributions,
+            parsed_choice,
+            None,
             language_manager=self.language_manager
         )
         
@@ -399,7 +399,7 @@ class Phase1Manager:
             distribution_set.distributions,
             assigned_class,
             self.language_manager,  # Pass LanguageManager to method
-            probabilities
+            None  # unweighted display to match selection spec
         )
 
         # Build complete earnings display using LanguageManager

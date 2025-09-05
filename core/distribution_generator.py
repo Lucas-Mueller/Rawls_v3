@@ -153,15 +153,18 @@ class DistributionGenerator:
         probabilities: Optional[IncomeClassProbabilities] = None,
         language_manager = None
     ) -> Tuple[IncomeDistribution, str]:
-        """Apply maximizing average principle with weighted calculation."""
-        best_dist = max(distributions, key=lambda d: d.get_average_income(probabilities))
-        avg_income = best_dist.get_average_income(probabilities)
+        """Apply maximizing average principle using UNWEIGHTED average (spec)."""
+        # Enforce unweighted averages for selection per experiment spec
+        best_dist = max(distributions, key=lambda d: d.get_average_income(None))
+        avg_income = best_dist.get_average_income(None)
         if language_manager:
-            explanation = language_manager.get("constraint_explanations.maximizing_average_explanation", 
-                                             weighted="weighted " if probabilities else "", 
-                                             avg_income=avg_income)
+            explanation = language_manager.get(
+                "constraint_explanations.maximizing_average_explanation",
+                weighted="",  # unweighted selection
+                avg_income=avg_income
+            )
         else:
-            explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average income: ${avg_income:.0f}"
+            explanation = f"Chose distribution with highest average income: ${avg_income:.0f}"
         return best_dist, explanation
     
     @staticmethod
@@ -185,16 +188,18 @@ class DistributionGenerator:
             else:
                 explanation = f"No distribution met floor constraint of ${floor_constraint}. Chose distribution with highest floor: ${best_dist.low}"
         else:
-            # Among valid distributions, choose one with highest average
-            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
-            avg_income = best_dist.get_average_income(probabilities)
+            # Among valid distributions, choose one with highest UNWEIGHTED average
+            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(None))
+            avg_income = best_dist.get_average_income(None)
             if language_manager:
-                explanation = language_manager.get("constraint_explanations.floor_constraint_success", 
-                                                 weighted="weighted " if probabilities else "", 
-                                                 avg_income=avg_income, 
-                                                 constraint_amount=floor_constraint)
+                explanation = language_manager.get(
+                    "constraint_explanations.floor_constraint_success",
+                    weighted="",  # unweighted selection
+                    avg_income=avg_income,
+                    constraint_amount=floor_constraint
+                )
             else:
-                explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting floor constraint of ${floor_constraint}"
+                explanation = f"Chose distribution with highest average (${avg_income:.0f}) meeting floor constraint of ${floor_constraint}"
         
         return best_dist, explanation
     
@@ -219,16 +224,18 @@ class DistributionGenerator:
             else:
                 explanation = f"No distribution met range constraint of ${range_constraint}. Chose distribution with smallest range: ${best_dist.get_range()}"
         else:
-            # Among valid distributions, choose one with highest average
-            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(probabilities))
-            avg_income = best_dist.get_average_income(probabilities)
+            # Among valid distributions, choose one with highest UNWEIGHTED average
+            best_dist = max(valid_distributions, key=lambda d: d.get_average_income(None))
+            avg_income = best_dist.get_average_income(None)
             if language_manager:
-                explanation = language_manager.get("constraint_explanations.range_constraint_success", 
-                                                 weighted="weighted " if probabilities else "", 
-                                                 avg_income=avg_income, 
-                                                 constraint_amount=range_constraint)
+                explanation = language_manager.get(
+                    "constraint_explanations.range_constraint_success",
+                    weighted="",  # unweighted selection
+                    avg_income=avg_income,
+                    constraint_amount=range_constraint
+                )
             else:
-                explanation = f"Chose distribution with highest {'weighted ' if probabilities else ''}average (${avg_income:.0f}) meeting range constraint of ${range_constraint}"
+                explanation = f"Chose distribution with highest average (${avg_income:.0f}) meeting range constraint of ${range_constraint}"
         
         return best_dist, explanation
     
