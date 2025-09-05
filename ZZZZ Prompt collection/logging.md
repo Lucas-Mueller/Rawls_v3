@@ -194,3 +194,23 @@ Voting is unanimous: All Participants must agree on the same principle, if the p
 Consider Spanish and Mandarin as well, translate the text correspondingly. 
 Follow a structured and systematic approach. Create a todo list. 
 Dont overengineer things. Keep things simple while also effective. 
+
+
+
+
+
+Hey Codex  please put the following information in the first reasoning  prompt in phase 2 and in the first memory update call in phase 2. But only in the first respectively. 
+“You are in Phase 2: 
+In this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. 
+THE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. 
+Your choice of principle will be used to pick out those distribution schedules which conform to your principle. 
+Thus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.
+
+Each round of Phase 2 follows this flow: 
+1.	Discussion  2. Voting 
+Voting is unanimous: All Participants must agree on the same principle, if the principle specifies a constraint, the value must also be the same for all participants.”
+
+Consider Spanish and Mandarin as well, translate the text correspondingly. 
+
+Follow a structured and systematic approach. Create a todo list. 
+Dont overengineer things. Keep things simple while also effective. 
