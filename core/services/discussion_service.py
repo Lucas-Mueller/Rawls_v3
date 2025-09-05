@@ -131,11 +131,20 @@ class DiscussionService:
         """
         language_manager = self.language_manager
         
-        return language_manager.get(
-            "prompts.phase2_internal_reasoning_short",
-            round_number=round_num,
-            max_rounds=max_rounds
-        )
+        # Use full prompt with Phase 2 explanation for first round only
+        if round_num == 1:
+            return language_manager.get(
+                "prompts.phase2_internal_reasoning",
+                discussion_history=discussion_state.get_formatted_discussion_history(),
+                round_number=round_num,
+                max_rounds=max_rounds
+            )
+        else:
+            return language_manager.get(
+                "prompts.phase2_internal_reasoning_short",
+                round_number=round_num,
+                max_rounds=max_rounds
+            )
     
     def format_group_composition(self, participant_names: List[str]) -> str:
         """
