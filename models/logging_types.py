@@ -294,6 +294,7 @@ class TargetStateStructure(BaseModel):
         if self.voting_history:
             result["voting_history"] = {
                 "voting_system": self.voting_history.voting_system,
+                "voting_detection_mode": "complex",  # Temporary compatibility shim
                 "total_vote_attempts": self.voting_history.total_vote_attempts,
                 "successful_votes": self.voting_history.successful_votes,
                 "vote_rounds": [

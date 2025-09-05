@@ -1,5 +1,15 @@
 # Recent Activity Duplication Fix Plan
 
+## Current Status
+
+- Implemented: Context-aware prompt selection in `utils/memory_manager.py` with graceful fallback to standard templates.
+- Implemented: `interaction_type` passed from `utils/selective_memory_manager._full_memory_update()` to `MemoryManager.prompt_agent_for_memory_update()`.
+- Implemented: New `_no_recent_activity` prompt variants added to English, Spanish, and Mandarin translation files.
+- Implemented: Unit tests for template selection, fallbacks, guidance styles, and template presence across languages.
+- Unchanged: Flow and routing. Discussion statements still trigger full LLM updates; simple voting events still use direct insertions; timing unchanged.
+
+Recommended next steps: Add integration and end-to-end tests to validate prompt content within real Phase 2 runs and logs.
+
 ## Issue Summary
 
 Agents are experiencing duplication of their own discussion statements during Phase 2:
@@ -24,7 +34,7 @@ The issue stems from `MemoryEventType.DISCUSSION_STATEMENT` events being classif
 
 **File**: `utils/selective_memory_manager.py`
 - `DISCUSSION_STATEMENT` is in `COMPLEX_MEMORY_EVENTS`
-- Complex events route to `_full_memory_update()` which calls `MemoryManager.prompt_agent_for_memory_update()`
+- Complex events route to `_full_memory_update()` which calls `MemoryManager.prompt_agent_for_memory_update()` and passes `interaction_type` from context
 
 **File**: `utils/memory_manager.py`
 - `_create_memory_update_prompt()` uses templates from translations
@@ -65,13 +75,13 @@ The issue stems from `MemoryEventType.DISCUSSION_STATEMENT` events being classif
 
 Instead of modifying the complex routing logic, implement a surgical fix by making the memory update templates context-aware based on `interaction_type`.
 
-### Step 1: Modify Memory Manager Template Creation (with fallback)
+### Step 1: Modify Memory Manager Template Creation (with fallback) — IMPLEMENTED
 
 **File**: `utils/memory_manager.py`
 
 **Current Method**: `_create_memory_update_prompt()`
 
-**Modification**: Add context-aware template selection that checks for discussion-related interaction types and uses "Recent Activity"-free templates. Include a robust fallback to existing templates if new keys are missing to avoid KeyErrors in other languages or stale deployments.
+**Modification**: Add context-aware template selection that checks for discussion-related interaction types and uses "Recent Activity"-free templates. Include a robust fallback to existing templates if new keys are missing to avoid KeyErrors in other languages or stale deployments. Implemented.
 
 ```python
 def _create_memory_update_prompt(
@@ -151,7 +161,7 @@ async def _full_memory_update(
     )
 ```
 
-Also update any direct callers (e.g., voting or Phase 1 flows) to optionally pass `interaction_type` when meaningful. Defaults preserve backward compatibility.
+Implemented for the SelectiveMemoryManager path. Also optional to update any direct callers (e.g., specific voting or Phase 1 flows) to pass `interaction_type` when meaningful. Defaults preserve backward compatibility and are acceptable as-is.
 
 **File**: `utils/memory_manager.py`
 
@@ -182,7 +192,7 @@ async def prompt_agent_for_memory_update(
     # ... rest of existing code ...
 ```
 
-### Step 3: Create New Translation Templates
+### Step 3: Create New Translation Templates — IMPLEMENTED
 
 **Files**: `translations/english_prompts.json`, `translations/spanish_prompts.json`, `translations/mandarin_prompts.json`
 
@@ -216,6 +226,10 @@ Implementation includes explicit template fallback so deployments missing the ne
 - New templates maintain the same core functionality as existing ones
 - Only difference is removal of "Recent Activity" section and rewording to "Your Recent Reasoning and Statement"
 - All three languages (English, Spanish, Mandarin) need consistent template updates
+
+### Polish (Optional)
+- Explicitly pass `interaction_type` in direct `MemoryManager` calls (e.g., from Two-Stage Voting) for clarity, even if default behavior is correct.
+- Review translation files for duplicate keys within the `prompts` section to avoid confusion during maintenance (JSON loading uses the last occurrence).
 
 ### Error Handling
 - Explicit fallback to existing templates if new templates are missing (implemented in `_create_memory_update_prompt`)
@@ -282,25 +296,25 @@ Implementation includes explicit template fallback so deployments missing the ne
 
 ## Timeline Estimation
 
-### Phase 1: Core Implementation (2-3 hours)
-- [ ] Modify `memory_manager.py` template selection logic
-- [ ] Update `selective_memory_manager.py` parameter passing
-- [ ] Create English translation templates
+### Phase 1: Core Implementation (done)
+- [x] Modify `memory_manager.py` template selection logic
+- [x] Update `selective_memory_manager.py` parameter passing
+- [x] Create English translation templates
 
-### Phase 2: Multilingual Support (1-2 hours)  
-- [ ] Create Spanish translation templates
-- [ ] Create Mandarin translation templates
-- [ ] Validate template translations
+### Phase 2: Multilingual Support (done)  
+- [x] Create Spanish translation templates
+- [x] Create Mandarin translation templates
+- [x] Validate template translations
 
-### Phase 3: Testing & Validation (2-3 hours)
-- [ ] Unit test template selection logic
+### Phase 3: Testing & Validation (in progress)
+- [x] Unit test template selection logic
 - [ ] Integration test discussion workflows
 - [ ] End-to-end test Phase 2 experiments
 
-### Phase 4: Documentation & Cleanup (1 hour)
-- [ ] Update code comments and docstrings  
-- [ ] Document new template parameters
-- [ ] Clean up any temporary testing code
+### Phase 4: Documentation & Cleanup (light)
+- [x] Update code comments and docstrings  
+- [x] Document new template parameters
+- [ ] Clean up any temporary testing code (optional)
 
 **Total Estimated Time**: 6-9 hours
 

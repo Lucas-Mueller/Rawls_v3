@@ -516,6 +516,98 @@ class AgentCentricLogger:
                 # Record this agent's vote initiation response
                 self.voting_history.vote_initiation_requests[round_num][agent_log.name] = round_log.initiate_vote
     
+    def update_initiate_vote(self, agent_name: str, round_number: int, value: str) -> bool:
+        """Update the initiate_vote field for a specific agent and round.
+        
+        Args:
+            agent_name: Name of the agent
+            round_number: Discussion round number  
+            value: New value for initiate_vote ("Yes" or "No")
+            
+        Returns:
+            bool: True if update was successful, False otherwise
+        """
+        # Validate input parameters
+        if not agent_name or not isinstance(round_number, int) or not value:
+            return False
+        
+        # Check if agent exists in logs
+        if agent_name not in self.agent_logs:
+            return False
+        
+        # Get the agent's Phase 2 rounds
+        agent_log = self.agent_logs[agent_name]
+        phase_2_rounds = agent_log.phase_2.rounds
+        
+        # Find the specific round to update
+        target_round = None
+        for round_log in phase_2_rounds:
+            if round_log.number_discussion_round == round_number:
+                target_round = round_log
+                break
+        
+        # If round doesn't exist, return False
+        if target_round is None:
+            return False
+        
+        # Update the initiate_vote field
+        target_round.initiate_vote = value
+        
+        return True
+    
+    def _compute_vote_statistics(self):
+        """Compute minimal vote statistics and store in voting_history.vote_statistics."""
+        if not self.voting_history:
+            # No voting history, set default empty statistics
+            return
+        
+        try:
+            # Get base statistics that are already tracked
+            total_attempts = self.voting_history.total_vote_attempts
+            successful_votes = self.voting_history.successful_votes
+            
+            # Compute success rate with division by zero protection
+            success_rate = successful_votes / max(1, total_attempts) if total_attempts > 0 else 0.0
+            
+            # Count failed parsing attempts across all vote rounds
+            failed_parsing_attempts = 0
+            consensus_rounds = []
+            
+            for vote_round in self.voting_history.vote_rounds:
+                # Count parsing failures in this round
+                for participant_vote in vote_round.participant_votes:
+                    if not participant_vote.get('parsing_success', True):
+                        failed_parsing_attempts += 1
+                
+                # Collect rounds where consensus was reached
+                if vote_round.consensus_reached:
+                    consensus_rounds.append(vote_round.round_number)
+            
+            # Compute average consensus round (None if no consensus was ever reached)
+            average_consensus_round = None
+            if consensus_rounds:
+                average_consensus_round = sum(consensus_rounds) / len(consensus_rounds)
+            
+            # Store computed statistics
+            self.voting_history.vote_statistics = {
+                'total_attempts': total_attempts,
+                'successful_votes': successful_votes,
+                'success_rate': success_rate,
+                'failed_parsing_attempts': failed_parsing_attempts,
+                'average_consensus_round': average_consensus_round
+            }
+            
+        except Exception as e:
+            # On any error, set default statistics to avoid breaking the experiment
+            self.voting_history.vote_statistics = {
+                'total_attempts': self.voting_history.total_vote_attempts if self.voting_history else 0,
+                'successful_votes': self.voting_history.successful_votes if self.voting_history else 0,
+                'success_rate': 0.0,
+                'failed_parsing_attempts': 0,
+                'average_consensus_round': None,
+                'computation_error': str(e)
+            }
+
     def generate_target_state(self) -> TargetStateStructure:
         """Generate the complete target state structure."""
         if not self.general_info:
@@ -523,6 +615,9 @@ class AgentCentricLogger:
         
         # Auto-collect vote initiation data from agent round logs before generating target state
         self.collect_vote_initiation_from_rounds()
+        
+        # Compute vote statistics before serialization
+        self._compute_vote_statistics()
         
         agent_data = [
             agent_log.to_target_format() 
@@ -561,6 +656,48 @@ class AgentCentricLogger:
     def get_all_agent_names(self) -> List[str]:
         """Get names of all logged agents."""
         return list(self.agent_logs.keys())
+    
+    def validate_logging_completeness(self) -> List[str]:
+        """
+        Validate that post-Phase 2 logging is complete for all agents.
+        
+        Returns a list of warning strings if any required fields are empty.
+        This is non-blocking - returns warnings but doesn't prevent experiment execution.
+        Used for debugging logging issues.
+        
+        Returns:
+            List[str]: List of warning messages describing any incomplete logging
+        """
+        warnings = []
+        
+        for agent_name, agent_log in self.agent_logs.items():
+            # Check if agent log exists and has Phase 2 data
+            if not agent_log or not agent_log.phase_2:
+                warnings.append(f"Agent '{agent_name}': Missing Phase 2 log data")
+                continue
+            
+            post_discussion = agent_log.phase_2.post_group_discussion
+            if not post_discussion:
+                warnings.append(f"Agent '{agent_name}': Missing post_group_discussion data")
+                continue
+            
+            # Check class_put_in field
+            if not post_discussion.class_put_in or post_discussion.class_put_in.strip() == "":
+                warnings.append(f"Agent '{agent_name}': class_put_in field is empty")
+            
+            # Check final_ranking structure
+            if not post_discussion.final_ranking:
+                warnings.append(f"Agent '{agent_name}': final_ranking data is missing")
+            else:
+                # Check rankings array
+                if not post_discussion.final_ranking.rankings or len(post_discussion.final_ranking.rankings) == 0:
+                    warnings.append(f"Agent '{agent_name}': final_ranking.rankings array is empty")
+                
+                # Check certainty field
+                if not post_discussion.final_ranking.certainty or post_discussion.final_ranking.certainty.strip() == "":
+                    warnings.append(f"Agent '{agent_name}': final_ranking.certainty field is empty")
+        
+        return warnings
     
     @staticmethod
     def _json_serializer(obj):

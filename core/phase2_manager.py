@@ -219,6 +219,44 @@ class Phase2Manager:
             self._log_warning(f"Error during final ranking collection: {str(e)}")
             raise
         
+        # PHASE 3: Log post-discussion state for each participant
+        if logger:
+            self._log_info("Phase 3: Logging post-discussion state for all participants")
+            try:
+                for i, participant in enumerate(self.participants):
+                    participant_name = participant.name
+                    
+                    # Extract required data for logging
+                    class_assigned = assigned_classes.get(participant_name, "unknown")
+                    payoff = payoff_results.get(participant_name, 0.0)
+                    ranking = final_rankings.get(participant_name)
+                    
+                    # Get updated context data
+                    updated_context = updated_contexts[i]
+                    memory_state = updated_context.memory
+                    bank_balance = updated_context.bank_balance
+                    
+                    # Log post-discussion state
+                    if ranking:  # Only log if we have a valid ranking
+                        logger.log_post_discussion(
+                            agent_name=participant_name,
+                            class_assigned=class_assigned,
+                            payoff=payoff,
+                            ranking=ranking,
+                            memory_state=memory_state,
+                            bank_balance=bank_balance,
+                            final_vote=None,  # Not tracking final votes in current implementation
+                            vote_timestamp=None  # Not tracking vote timestamps in current implementation
+                        )
+                        self._log_info(f"Post-discussion state logged for {participant_name}")
+                    else:
+                        self._log_warning(f"No ranking available for {participant_name}, skipping post-discussion logging")
+                
+                self._log_info(f"Post-discussion logging completed for {len(self.participants)} participants")
+            except Exception as e:
+                self._log_warning(f"Error during post-discussion logging: {str(e)}")
+                # Continue execution - logging failure should not break experiment
+        
         return Phase2Results(
             discussion_result=discussion_result,
             payoff_results=payoff_results, 
@@ -380,6 +418,19 @@ class Phase2Manager:
                 )
                 vote_responses[participant.name] = wants_vote
                 
+                # Log individual vote initiation decision
+                if self.agent_logger:
+                    try:
+                        # Convert boolean to "Yes"/"No" string
+                        vote_value = "Yes" if wants_vote else "No"
+                        success = self.agent_logger.update_initiate_vote(participant.name, round_num, vote_value)
+                        if success:
+                            self._log_info(f"Successfully logged vote initiation for {participant.name}: {vote_value}")
+                        else:
+                            self._log_warning(f"Failed to log vote initiation for {participant.name}: {vote_value}")
+                    except Exception as e:
+                        self._log_warning(f"Error logging vote initiation for {participant.name}: {str(e)}")
+                
                 # Update memory with vote decision
                 contexts[participant_idx].memory = await self.memory_service.update_vote_initiation_decision_memory(
                     agent=participant,
@@ -458,6 +509,17 @@ class Phase2Manager:
             except Exception as prompt_error:
                 self._log_warning(f"Error during vote prompting for {participant.name}: {str(prompt_error)}")
                 vote_responses[participant.name] = None
+                
+                # Log error case for vote initiation
+                if self.agent_logger:
+                    try:
+                        success = self.agent_logger.update_initiate_vote(participant.name, round_num, "Error")
+                        if success:
+                            self._log_info(f"Successfully logged vote initiation error for {participant.name}")
+                        else:
+                            self._log_warning(f"Failed to log vote initiation error for {participant.name}")
+                    except Exception as e:
+                        self._log_warning(f"Error logging vote initiation error for {participant.name}: {str(e)}")
         
         # Log voting history
         if self.logger:
