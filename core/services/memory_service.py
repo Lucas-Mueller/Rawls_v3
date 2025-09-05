@@ -232,8 +232,8 @@ class MemoryService:
         """
         # Build memory content with discussion history and recent reasoning
         if discussion_history:
-            # Include discussion history
-            round_content = f"Current Discussion History:\n{discussion_history}\n\n"
+            # Include discussion history (header provided by translation files)
+            round_content = f"{discussion_history}\n\n"
             
             # Add recent reasoning if available
             if include_internal_reasoning and internal_reasoning:

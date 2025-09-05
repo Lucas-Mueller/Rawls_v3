@@ -298,7 +298,7 @@ class Phase2Manager:
                 role_description=agent_config.personality,
                 bank_balance=phase1_result.total_earnings,  # Carry forward earnings
                 memory=validated_memory,  # VALIDATED MEMORY FROM PHASE 1
-                round_number=0,  # Reset for Phase 2
+                round_number=1,  # Start Phase 2 at round 1
                 phase=ExperimentPhase.PHASE_2,
                 memory_character_limit=agent_config.memory_character_limit
             )

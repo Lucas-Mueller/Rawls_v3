@@ -283,6 +283,8 @@ class VotingService:
                 # Get confirmation response from participant with timeout
                 try:
                     confirmation_timeout = self.settings.confirmation_timeout_seconds
+                    # Ensure instruction prompt includes up-to-date discussion transcript for voting confirmation
+                    context.discussion_history = discussion_state.public_history
                     context.interaction_type = "vote_confirmation"
                     
                     result = await asyncio.wait_for(
