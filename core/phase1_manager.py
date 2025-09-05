@@ -408,12 +408,8 @@ class Phase1Manager:
             probabilities
         )
 
-        # Build complete earnings display using LanguageManager
+        # Build complete earnings display using LanguageManager (avoid duplicating the table)
         earnings_display_parts = []
-
-        # Add distributions table (already formatted with LanguageManager)
-        earnings_display_parts.append(comprehensive_data['distributions_table'])
-        earnings_display_parts.append("")  # Empty line
 
         # Add principle outcomes header with localized class name and round number
         principle_outcomes_header = self.language_manager.get(
