@@ -428,7 +428,7 @@ class VotingService:
                 for vote_info in vote_result.individual_votes:
                     if hasattr(self.agent_logger, 'log_participant_vote'):
                         self.agent_logger.log_participant_vote(
-                            participant_name=vote_info.get('name', 'Unknown'),
+                            participant_name=vote_info.get('participant_name', 'Unknown'),
                             raw_response=vote_info.get('raw_response', ''),
                             assessed_choice=vote_info.get('assessed_choice', ''),
                             constraint_amount=vote_info.get('constraint_amount'),

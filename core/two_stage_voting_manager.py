@@ -157,7 +157,21 @@ class TwoStageVotingManager:
                     logger.error(f"  - Raw response: {principle_result.raw_response[:200]}...")
                 else:
                     logger.error("  - principle_result was None")
-                return None  # Voting failed
+                
+                # Create partial participant vote with available data
+                partial_vote = ParticipantVote(
+                    participant_name=participant.name,
+                    principle_num=None,  # Failed to get principle
+                    constraint_amount=None,
+                    principle_selection_result=principle_result,
+                    amount_specification_result=None
+                )
+                participant_votes.append(partial_vote)
+                
+                # Continue to capture partial data from other participants before failing
+                # but mark that voting has failed
+                logger.info("Continuing to collect partial data from remaining participants")
+                continue
             
             principle_num = principle_result.value
 
@@ -191,7 +205,20 @@ class TwoStageVotingManager:
                         logger.error(f"  - Raw response: {amount_result.raw_response[:200]}...")
                     else:
                         logger.error("  - amount_result was None")
-                    return None  # Voting failed
+                    
+                    # Create partial participant vote with available data
+                    partial_vote = ParticipantVote(
+                        participant_name=participant.name,
+                        principle_num=principle_num,  # Stage 1 succeeded
+                        constraint_amount=None,  # Stage 2 failed
+                        principle_selection_result=principle_result,
+                        amount_specification_result=amount_result
+                    )
+                    participant_votes.append(partial_vote)
+                    
+                    # Continue to capture partial data from other participants before failing
+                    logger.info("Continuing to collect partial data from remaining participants")
+                    continue
                 
                 constraint_amount = amount_result.value
 
@@ -218,6 +245,30 @@ class TwoStageVotingManager:
             
             participant_votes.append(participant_vote)
             logger.info(f"Completed two-stage voting for {participant.name}: principle {principle_num}, amount {constraint_amount}")
+        
+        # Check if any participant votes are incomplete (indicating failures)
+        incomplete_votes = []
+        complete_votes = []
+        
+        for vote in participant_votes:
+            if (vote.principle_num is None or 
+                not vote.principle_selection_result or 
+                not vote.principle_selection_result.success or
+                (vote.principle_num in [3, 4] and (not vote.amount_specification_result or not vote.amount_specification_result.success))):
+                incomplete_votes.append(vote)
+            else:
+                complete_votes.append(vote)
+        
+        # If any voting failed, return failure result with partial data
+        if incomplete_votes:
+            logger.error(f"Voting failed for {len(incomplete_votes)} participants out of {len(participant_votes)}")
+            for vote in incomplete_votes:
+                logger.error(f"  - Failed: {vote.participant_name}")
+            
+            # Return failure vote result with all available data (both complete and partial)
+            failure_result = self._create_failure_vote_result(participant_votes)
+            logger.debug(f"Created failure vote result with {len(failure_result.individual_votes)} individual vote records")
+            return failure_result
         
         # Convert to principle choices for consensus checking
         try:
@@ -757,7 +808,7 @@ class TwoStageVotingManager:
 
     def _create_vote_result(self, participant_votes: List[ParticipantVote], principle_choices: List[PrincipleChoice]) -> VoteResult:
         """
-        Create vote result from participant votes with consensus checking.
+        Create vote result from participant votes with consensus checking and individual vote details.
         """
         # Check for consensus - all principle choices must be identical
         if not principle_choices:
@@ -767,6 +818,7 @@ class TwoStageVotingManager:
                 consensus_reached=False,
                 agreed_principle=None,
                 vote_counts={},
+                individual_votes=[],
                 timestamp=datetime.now()
             )
         
@@ -796,11 +848,105 @@ class TwoStageVotingManager:
         else:
             logger.info(f"No consensus reached: {len(vote_groups)} different vote combinations")
         
+        # Build individual vote details from ParticipantVote objects
+        individual_votes = []
+        for vote in participant_votes:
+            # Convert principle number to readable name
+            principle_name = self._get_principle_display_name(vote.principle_num)
+            
+            # Combine raw responses from both stages
+            raw_response = ""
+            if vote.principle_selection_result:
+                raw_response = vote.principle_selection_result.raw_response
+                if vote.amount_specification_result:
+                    raw_response += f" | {vote.amount_specification_result.raw_response}"
+            
+            # Determine parsing success (both stages must succeed)
+            parsing_success = (
+                vote.principle_selection_result is not None and 
+                vote.principle_selection_result.success and
+                (vote.amount_specification_result is None or vote.amount_specification_result.success)
+            )
+            
+            # Create individual vote detail
+            individual_vote = {
+                "participant_name": vote.participant_name,
+                "assessed_choice": principle_name,
+                "constraint_amount": vote.constraint_amount,
+                "raw_response": raw_response,
+                "parsing_success": parsing_success,
+                "vote_timestamp": datetime.now().isoformat()
+            }
+            
+            individual_votes.append(individual_vote)
+        
         return VoteResult(
             votes=principle_choices,
             consensus_reached=consensus_reached,
             agreed_principle=agreed_principle,
             vote_counts=vote_counts,
+            individual_votes=individual_votes,
+            timestamp=datetime.now()
+        )
+
+    def _create_failure_vote_result(self, participant_votes: List[ParticipantVote]) -> VoteResult:
+        """
+        Create vote result for failed votes, capturing partial data that was collected.
+        
+        Args:
+            participant_votes: List of ParticipantVote objects (some may be incomplete)
+            
+        Returns:
+            VoteResult with consensus_reached=False and individual_votes containing partial data
+        """
+        # Build individual vote details from partial ParticipantVote objects
+        individual_votes = []
+        for vote in participant_votes:
+            # Convert principle number to readable name if available
+            principle_name = "Unknown"
+            if vote.principle_num is not None:
+                try:
+                    principle_name = self._get_principle_display_name(vote.principle_num)
+                except Exception as e:
+                    logger.warning(f"Failed to get principle display name for {vote.principle_num}: {e}")
+                    principle_name = f"Principle {vote.principle_num}"
+            
+            # Combine raw responses from available stages
+            raw_response = ""
+            if vote.principle_selection_result:
+                raw_response = vote.principle_selection_result.raw_response
+                if vote.amount_specification_result:
+                    raw_response += f" | {vote.amount_specification_result.raw_response}"
+            elif vote.amount_specification_result:
+                # Edge case: only amount specification available
+                raw_response = vote.amount_specification_result.raw_response
+            
+            # Determine parsing success for available stages
+            parsing_success = False
+            if vote.principle_selection_result:
+                parsing_success = (
+                    vote.principle_selection_result.success and
+                    (vote.amount_specification_result is None or vote.amount_specification_result.success)
+                )
+            
+            # Create individual vote detail with partial data
+            individual_vote = {
+                "participant_name": vote.participant_name,
+                "assessed_choice": principle_name,
+                "constraint_amount": vote.constraint_amount,
+                "raw_response": raw_response,
+                "parsing_success": parsing_success,
+                "vote_timestamp": datetime.now().isoformat()
+            }
+            
+            individual_votes.append(individual_vote)
+        
+        return VoteResult(
+            votes=[],  # No valid principle choices since voting failed
+            consensus_reached=False,
+            agreed_principle=None,
+            vote_counts={},
+            individual_votes=individual_votes,
             timestamp=datetime.now()
         )
 
