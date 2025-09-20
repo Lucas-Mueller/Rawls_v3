@@ -1,0 +1,67 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/configs/hypothesis_1_condition_32_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/results/hypothesis_1_condition_32_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: ed453df0
+Participants: 5
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_0 (gemini-2.5-flash)
+  ✅ Agent_1 (gemma-3-27b-it)
+  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_3 (gemma-3-27b-it)
+  ✅ Agent_4 (gemini-2.5-flash)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+DEBUG: Principle choice response to parse: 'I choose maximizing the average income. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $14,000. I am very sure about this choice.\n\nDistribution 3 offers the highest average income at $26,000. Applying a floor of $14,000 still allows for a substantial average while significantly lifting the income of those in the low and medium-low classes. Given my current financial situation, and my prioritization of a safety net, this distribution feels like the most ethically sound and practically beneficial option. It balances overall prosperity with a guaranteed minimum standard of living, addressing my concerns about both maximizing average income *and* solely focusing on the floor. I believe $14,000 is a reasonable floor – it’s above the lowest income in distributions 1 & 2, and significantly improves upon the $6,000 floor in Distribution 3 without drastically reducing the higher incomes.\n\n\n\n'
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $13,000. I am unsure about this choice.\n\nWhile I’m leaning towards balancing average income with a safety net, and $13,000 feels like a reasonable floor given these distributions, I’m still unsure. I want to see how this choice impacts my earnings and how others justify their decisions before becoming more certain. Distribution 3 already appeared frequently with floor constraints, and $13,000 seems a sensible point to maintain a decent average while lifting the lowest earners above a truly precarious level. However, I’m open to being convinced otherwise.'
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000. I am very sure about this choice.\n\nDist. 2 offers the highest average income ($19,196). Applying my preferred principle, and setting a floor of $12,000, seems like a good balance. While Dist. 3 has a higher average overall ($23,561), its floor is significantly lower at $8,000 – unacceptable given my prioritization of a safety net. Dist. 1’s average is lower, and Dist. 4, while better than Dist. 1, doesn’t offer the highest average *with* a reasonable floor. I’ve learned from Round 1 that the constraint amount is critical, and $12,000 feels like a strong starting point to protect the lowest earners while still allowing for appreciable gains in average income. My experience in Round 1 also showed me that a higher floor doesn’t always result in a better outcome for the medium income class, so I’m carefully balancing the need for a safety net with potential earnings. I am very sure because my previous ranking and experience reinforce this choice.'
+DEBUG: Principle choice response to parse: "I choose maximizing average with floor constraint with a constraint of $13,000. I am unsure about this choice.\n\n\n\nI'm sticking with my preferred principle, balancing average income with a safety net. Given the results from Round 1, $13,000 seems like a reasonable floor – it yielded a decent outcome for the low income class last round. However, I’m still unsure because I want to see how others approach this and whether a slightly higher or lower constraint might yield better overall results. Dist. 3 has a higher average, but Dist. 4 offers a better outcome for the lowest earners. $13,000 feels like a good compromise, but I'm open to being convinced otherwise."
+DEBUG: Principle choice response to parse: "I choose maximizing average with floor constraint with a constraint of $13,000. I am very sure about this choice.\n\nDist. 1 has the highest average, but a very low floor. Dist. 2 has a decent average and a better floor, but Dist. 4 is close in average and also has a reasonable floor. Dist. 3 has the lowest average, making it undesirable. Comparing Dist. 2 and 4, Dist. 2's average is slightly higher and its floor is also higher than Dist. 4. However, a $13,000 floor constraint applied to these distributions will likely yield a good balance. I believe a floor of $13,000 is a reasonable minimum to ensure a basic standard of living while still allowing for a respectable average income. My previous rounds have solidified my belief in this approach – maximizing average income *after* guaranteeing a minimum is the most just, and a constraint around $13,000 seems to strike a good balance based on the observed outcomes. I am confident this will lead to a distribution that prioritizes both overall prosperity and a safety net."
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $13,000. I am unsure about this choice.\n\n\n\n'
+DEBUG: Principle choice response to parse: "I choose maximizing average with floor constraint with a constraint of $13,000. I am very sure about this choice.\n\nMy consistent ranking and experience over the past three rounds have solidified my belief in this principle. While Distribution 2 has the highest average income, it offers a relatively low floor of $12,000. Distribution 3 has a higher floor ($12,000) but a significantly lower average, which I’ve learned isn’t ideal. Distribution 4 is better than 3, but still doesn't maximize the average *and* provide a reasonable floor. \n\nDistribution 1, when applying a $13,000 floor constraint, offers a good balance. It maintains a relatively high average income while ensuring everyone receives a minimum of $13,000. This aligns with my core belief in prioritizing a safety net while still encouraging overall prosperity. I'm confident this approach represents a just distribution, even if it doesn't maximize income for any single class. The $13,000 constraint has proven to be a reasonable level in previous rounds, balancing the need for a minimum standard of living with the potential for economic growth. I anticipate being able to defend this choice effectively in Phase 2."
+DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000. I am unsure about this choice.\n\nMy reasoning is based on the outcomes from the previous rounds. While a $13,000 floor consistently yielded decent, but not optimal, results for my assigned income class, the data suggests exploring lower constraints. Distribution 4, with a $14,000 floor, offers a relatively equitable distribution, but Distribution 3 has a higher average income. Applying a $12,000 floor to these distributions could potentially increase my earnings while still providing a reasonable safety net. I\'m hesitant to go much lower, fearing a significant widening of the income gap. Therefore, $12,000 feels like a strategic compromise, balancing potential personal gain with a degree of fairness. However, I remain unsure as I’m still grappling with the trade-offs and the impact on others. This is, at this point, a calculated gamble based on observed trends rather than a deeply held conviction about the "right" principle.'
+
+🎯 Phase 1 Complete - Duration: 4m 11s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13000)
+
+🏁 Phase 2 Complete with consensus - Duration: 6m 42s
+   Rounds conducted: 2
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 11m 7s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 668.2s
