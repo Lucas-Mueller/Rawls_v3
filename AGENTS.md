@@ -1,49 +1,40 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `core/`: Experiment orchestration (phase managers, distribution generator, originals data).
-- `experiment_agents/`: Participant and utility agents.
-- `config/`: YAML configs and Pydantic models (default: `config/default_config.yaml`).
-- `models/`: Typed dataclasses/enums for principles, results, logging.
-- `utils/`: Logging, model provider, language manager, memory, error handling, runners.
-- `tests/`: Unit in `tests/unit`, integration in `tests/integration`.
-- `docs/`, `reports/`, `translations/`: Documentation, analysis outputs, i18n.
-- Entrypoints: `main.py` (CLI), `run_tests.py` (tests).
+- `core/` orchestrates experiments, including phase managers, distribution helpers, and original dataset loaders.
+- `experiment_agents/` houses participant agents and shared utilities; keep files focused and typed.
+- `config/` stores YAML configs and Pydantic models (`config/default_config.yaml` is the baseline).
+- `models/` defines typed dataclasses/enums for principles, results, and logging payloads.
+- `utils/` collects cross-cutting helpers (logging, language providers, memory, error handling, runners).
+- Tests live under `tests/unit/` and `tests/integration/`; entrypoints are `main.py` for experiments and `run_tests.py` for suites.
 
 ## Build, Test, and Development Commands
-- Setup (Python 3.11+):
-  - `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-- Run experiment:
-  - `python main.py` or `python main.py config/custom.yaml results/out.json`
-- Run all tests:
-  - `python run_tests.py` (imports + unit + integration)
-- Focused runs:
-  - `python run_tests.py unit` | `python run_tests.py integration`
-  - Examples: `python -m unittest tests.unit.test_memory_manager -v` or `python -m unittest discover -s tests/integration -p 'test_*.py' -v`
+- Create the virtualenv and install deps: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+- Run the default experiment: `python main.py` or pass config/output paths (`python main.py config/custom.yaml results/out.json`).
+- Execute the full test matrix: `python run_tests.py`; scope to `unit` or `integration` as needed.
+- Target a specific suite via unittest discovery, e.g., `python -m unittest tests.unit.test_memory_manager -v`.
 
 ## Coding Style & Naming Conventions
-- PEP 8, 4-space indentation. Type hints on public functions.
-- Naming: `snake_case` modules/functions, `PascalCase` classes, `UPPER_CASE` constants.
-- Keep modules focused (< ~500–800 lines). Prefer helpers in `utils/`.
-- No enforced formatter; match existing style. Run tests before PRs.
+- Follow PEP 8 with 4-space indents and type hints on public surfaces.
+- Modules/functions use `snake_case`, classes `PascalCase`, and constants `UPPER_CASE`.
+- Match existing formatting; add concise comments only when clarifying non-obvious logic.
 
 ## Testing Guidelines
-- Framework: `unittest` (some tests use `pytest` markers for asyncio).
-- Layout: unit tests in `tests/unit/test_*.py`, integration in `tests/integration/test_*.py`.
-- Aim to cover new logic, error paths, and config variants. Provide minimal repro cases.
+- Primary framework is `unittest` (async cases may use `pytest` markers).
+- Name tests `test_*` inside `tests/unit` or `tests/integration`; keep fixtures minimal and focused.
+- Cover new logic, error paths, and config variants; run `python run_tests.py` before submitting changes.
 
 ## Commit & Pull Request Guidelines
-- Commits: imperative present, scoped and concise (e.g., `core: fix phase2 retry logic`).
-- Branches: `feature/<short-description>`, `fix/<issue-id>`, `chore/<task>`.
-- PRs: describe purpose and key changes, include test evidence (commands/output), note config or `.env` implications, and link issues.
+- Commits should be imperative and scoped, e.g., `core: fix phase2 retry logic`.
+- Branch naming: `feature/<short-description>`, `fix/<issue-id>`, or `chore/<task>`.
+- PRs must summarize intent, highlight critical changes, link issues, and include test evidence (command + outcome). Mention config or `.env` impacts.
 
 ## Security & Configuration Tips
-- Store secrets in `.env` (e.g., `OPENAI_API_KEY`, `OPENROUTER_API_KEY`); never commit keys.
-- Validate YAML via `ExperimentConfiguration`; add examples under `config/`.
-- Keep analysis artifacts under `reports/`; avoid sensitive data in committed outputs.
+- Store API keys (e.g., `OPENAI_API_KEY`, `OPENROUTER_API_KEY`) in `.env`; never commit secrets.
+- Validate new YAML via `ExperimentConfiguration`; place exemplars under `config/`.
+- Keep analysis artifacts in `reports/`; scrub sensitive data before publishing.
 
 ## Agent-Specific Instructions
-- Add new agents under `experiment_agents/`; keep them small, focused, and typed.
-- Provide configuration hooks in `config/` and update `config/default_config.yaml` if applicable.
-- Add unit tests for agent behavior and integration tests for end-to-end flows.
-
+- Add new agents under `experiment_agents/`; keep behavior modular and reusable.
+- Expose configuration hooks in `config/` and update `config/default_config.yaml` when defaults change.
+- Pair agent updates with unit tests and, when relevant, integration scenarios covering end-to-end flows.
