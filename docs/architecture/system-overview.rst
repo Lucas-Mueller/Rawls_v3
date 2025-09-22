@@ -56,7 +56,7 @@ The central orchestrator that coordinates the complete experimental flow:
 **Key Features:**
 - OpenAI SDK integration for professional tracing
 - Configurable error handling with retry mechanisms
-- Atomic transaction-like experiment execution
+- Structured post-run outputs (agent log + summary)
 - Agent-centric logging system
 
 Phase Managers
@@ -147,10 +147,10 @@ Phase 2: Group Dynamics
 Results Generation
 ~~~~~~~~~~~~~~~~~~
 
-1. **Comprehensive Logging**: Complete transcript of agent interactions
-2. **Statistical Analysis**: Error rates, retry attempts, performance metrics
-3. **Trace Links**: OpenAI platform links for detailed debugging
-4. **JSON Export**: Machine-readable results for analysis
+1. **Agent Log**: Complete transcript of agent interactions saved to ``experiment_results_<timestamp>.json``
+2. **Structured Summary**: Compact overview saved to ``experiment_results_<timestamp>_summary.json``
+3. **Trace Links**: OpenAI platform URLs emitted in the console when tracing is enabled
+4. **Console Output**: Human-readable progress updates and warnings
 
 Technology Stack
 ----------------

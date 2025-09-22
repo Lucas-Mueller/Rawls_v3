@@ -12,7 +12,7 @@ from models import (
 from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 from utils.error_handling import ExperimentErrorHandler
 
 

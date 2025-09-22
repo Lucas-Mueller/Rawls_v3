@@ -11,7 +11,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from core.experiment_manager import FrohlichExperimentManager
 from core.phase1_manager import Phase1Manager
 from core.phase2_manager import Phase2Manager
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 from experiment_agents import ParticipantAgent, UtilityAgent
 from config import ExperimentConfiguration, AgentConfiguration
 from tests.integration.fixtures.experiment_fixtures import ExperimentTestFixture

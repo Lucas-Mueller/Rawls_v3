@@ -20,7 +20,7 @@ from models import (
 from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
 from core.distribution_generator import DistributionGenerator
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 from utils.selective_memory_manager import MemoryEventType
 from agents import Runner
 

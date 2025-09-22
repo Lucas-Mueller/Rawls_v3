@@ -15,4 +15,10 @@ The framework is highly configurable, with experiment parameters defined in YAML
 
 ## Getting Started
 
-To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests.
+To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests. The bundled `run_tests.py` script now supports targeted suites:
+
+```
+python run_tests.py unit
+python run_tests.py integration
+python run_tests.py regression
+```

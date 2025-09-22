@@ -175,6 +175,44 @@ class ExperimentConfiguration(BaseModel):
         # Import here to avoid circular dependency
         from utils.seed_manager import SeedManager
         return SeedManager.generate_seed_from_config(self)
+
+    @classmethod
+    def _validate_top_level_keys(cls, config_data: dict, source: str) -> None:
+        """Ensure only recognised top-level keys are provided."""
+        if not isinstance(config_data, dict):
+            raise ValueError(f"Configuration file {source} did not parse into a mapping.")
+
+        allowed_keys = set(cls.model_fields.keys())
+        unknown_keys = set(config_data.keys()) - allowed_keys
+        if unknown_keys:
+            unknown_list = ", ".join(sorted(unknown_keys))
+            raise ValueError(
+                f"Unknown configuration keys in {source}: {unknown_list}. "
+                "Refer to config/models.py for supported fields."
+            )
+
+    @classmethod
+    def _validate_agent_definitions(cls, config_data: dict, source: str) -> None:
+        """Validate agent entries before Pydantic parsing for clearer errors."""
+        agents = config_data.get('agents')
+        if agents is None:
+            raise ValueError(f"Configuration file {source} is missing required key 'agents'.")
+        if not isinstance(agents, list) or not agents:
+            raise ValueError(f"Configuration file {source} expects 'agents' to be a non-empty list.")
+
+        allowed_agent_fields = set(AgentConfiguration.model_fields.keys())
+        for index, agent in enumerate(agents):
+            if not isinstance(agent, dict):
+                raise ValueError(
+                    f"Agent entry at index {index} in {source} must be a mapping of agent attributes."
+                )
+            unknown_agent_keys = set(agent.keys()) - allowed_agent_fields
+            if unknown_agent_keys:
+                unknown_list = ", ".join(sorted(unknown_agent_keys))
+                agent_name = agent.get('name', f'index {index}')
+                raise ValueError(
+                    f"Agent '{agent_name}' in {source} contains unsupported fields: {unknown_list}."
+                )
     
     @classmethod
     def from_yaml(cls, path: str) -> 'ExperimentConfiguration':
@@ -185,6 +223,9 @@ class ExperimentConfiguration(BaseModel):
         
         with open(yaml_path, 'r') as f:
             config_data = yaml.safe_load(f)
+
+        cls._validate_top_level_keys(config_data, source=str(yaml_path))
+        cls._validate_agent_definitions(config_data, source=str(yaml_path))
         
         return cls(**config_data)
     

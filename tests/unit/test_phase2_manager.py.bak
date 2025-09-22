@@ -27,7 +27,7 @@ from models import (
 from models.principle_types import JusticePrinciple
 from experiment_agents.participant_agent import ParticipantAgent
 from experiment_agents.utility_agent import UtilityAgent
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 
 
 class TestPhase2ManagerInitialization:

@@ -452,7 +452,17 @@ Agent-Centric Logger
 
 Comprehensive logging system organized around individual agent activities and system events.
 
-.. automodule:: utils.agent_centric_logger
+.. automodule:: utils.logging.agent_centric_logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Experiment Summary Utilities
+----------------------------
+
+Structured helpers for generating machine-readable experiment summaries.
+
+.. automodule:: utils.logging.result_summary
    :members:
    :undoc-members:
    :show-inheritance:
@@ -464,9 +474,9 @@ Logging Architecture
 
    .. tab:: Basic Agent Logging
 
-      .. code-block:: python
+.. code-block:: python
 
-         from utils.agent_centric_logger import (
+   from utils.logging.agent_centric_logger import (
              AgentCentricLogger, LogEvent, LogLevel
          )
          

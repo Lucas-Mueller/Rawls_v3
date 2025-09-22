@@ -14,7 +14,7 @@ from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
-from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 
 
 class Phase1Manager:

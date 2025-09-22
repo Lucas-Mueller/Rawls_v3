@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock
 
-from utils.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from models.logging_types import (
     AgentExperimentLog, AgentPhase1Logging, AgentPhase2Logging,
     InitialRankingLog, DemonstrationRoundLog, DiscussionRoundLog,

@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from config import ExperimentConfiguration
 from core.experiment_manager import FrohlichExperimentManager
 from utils.language_manager import create_language_manager, SupportedLanguage
-from utils.process_flow_logger import create_process_logger
+from utils.logging.process_flow_logger import create_process_logger
 
 # Load environment variables from .env file
 load_dotenv()

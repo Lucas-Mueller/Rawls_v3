@@ -7,7 +7,7 @@ Tests the new voting history data structures and AgentCentricLogger methods.
 import unittest
 import json
 from models.logging_types import VotingHistoryLog, VoteRoundDetails, TargetStateStructure, GeneralExperimentInfo
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 
 
 class TestVotingHistoryStructures(unittest.TestCase):

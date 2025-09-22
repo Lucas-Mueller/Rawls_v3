@@ -16,10 +16,10 @@ Run an experiment with the default settings:
    python main.py
 
 This executes using ``config/default_config.yaml`` with these defaults:
-- 3 agents using mixed model providers
-- Mandarin language interface  
-- 10 rounds of Phase 2 discussion
-- Original Values Mode enabled
+- 5 participant agents running ``gpt-4.1-nano``
+- English language prompts
+- 10 rounds available for Phase 2 discussion
+- Original Values Mode enabled for Phase 1 examples
 
 Custom Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,17 +32,19 @@ Specify a custom configuration file:
 
 **Available Example Configurations:**
 
+The ``config/`` directory contains ready-made scenarios, for example:
+
 .. code-block:: bash
 
-   # Multi-language experiments
-   python main.py config/spanish_config.yaml
-   python main.py config/mandarin_config.yaml
-   
-   # Mixed model providers
-   python main.py config/mixed_models_example.yaml
-   
-   # Custom configurations
-   python main.py my_custom_config.yaml
+   # Faster runs with shorter prompts
+   python main.py config/fast.yaml
+
+   # Alternative language prompts
+   python main.py config/cheap_spanish.yaml
+   python main.py config/cheap_mandarin.yaml
+
+   # Your own scenarios
+   python main.py path/to/custom.yaml
 
 Output Control
 ~~~~~~~~~~~~~~
@@ -53,11 +55,11 @@ Control where results are saved:
 
    # Default: experiment_results_YYYYMMDD_HHMMSS.json
    python main.py config.yaml
-   
-   # Custom output file
+
+   # Custom output file (agent log + summary saved side-by-side)
    python main.py config.yaml results/my_experiment.json
-   
-   # Organized by date
+
+   # Organize results by date
    python main.py config.yaml results/2025-08-19/experiment_01.json
 
 Execution Modes
@@ -77,7 +79,7 @@ Standard sequential execution (default):
 2. Initialize agents (parallel for Phase 1 efficiency)
 3. Execute Phase 1: Individual familiarization (parallel)
 4. Execute Phase 2: Group discussion (sequential)
-5. Generate comprehensive results and tracing links
+5. Persist agent-centric logs and summary metrics
 
 Jupyter Notebook Mode
 ~~~~~~~~~~~~~~~~~~~~~
@@ -124,6 +126,23 @@ For interactive experimentation and analysis:
        max_parallel=5  # Adjust based on system resources
    )
 
+Output Artefacts
+----------------
+
+Each run emits two JSON files side-by-side in the chosen output directory:
+
+**Agent-Centric Log** (``experiment_results_<timestamp>.json``)
+   - Experiment metadata and seed information
+   - Detailed Phase 1 and Phase 2 transcripts per participant
+   - Voting history and payoff calculations
+
+**Summary** (``experiment_results_<timestamp>_summary.json``)
+   - Runtime and consensus outcome
+   - Earnings per participant
+   - Agreed principle (if any) and final deliberation round
+
+Use the summary for dashboards or quick diffs, and fall back to the full log when you need to audit the conversation or memory updates.
+
 Model Provider Configuration
 ----------------------------
 
@@ -136,9 +155,7 @@ Use standard OpenAI models:
 
    agents:
      - name: "Alice"
-       model: "gpt-4.1-mini"        # Standard OpenAI
-       model: "gpt-4-turbo"         # More powerful
-       model: "gpt-3.5-turbo"       # Cost-effective
+       model: "gpt-4.1-mini"        # Standard OpenAI choice
 
    utility_agent_model: "gpt-4.1-mini"
 
@@ -158,9 +175,12 @@ Access alternative model providers via OpenRouter:
    agents:
      - name: "Bob"
        model: "google/gemini-2.5-flash"              # Google
-       model: "anthropic/claude-3-5-sonnet-20241022" # Anthropic  
-       model: "meta-llama/llama-3.1-70b-instruct"    # Meta
-       model: "mistralai/mistral-large"               # Mistral
+     - name: "Carol"
+       model: "anthropic/claude-3-5-sonnet-20241022" # Anthropic
+     - name: "Diego"
+       model: "meta-llama/llama-3.1-70b-instruct"   # Meta
+     - name: "Elena"
+       model: "mistralai/mistral-large"              # Mistral
 
    utility_agent_model: "google/gemini-2.5-flash"
 

@@ -16,7 +16,7 @@ from models.experiment_types import ParticipantContext, GroupDiscussionState
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
 from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 from utils.language_manager import create_language_manager
 
 

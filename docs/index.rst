@@ -41,6 +41,7 @@ Quick Links
    architecture/system-overview
    architecture/veil-of-ignorance
    architecture/configuration
+   architecture/experiment-flow
    architecture/logging-data
 
 .. toctree::
@@ -72,6 +73,7 @@ Features
 * **Multi-Language Support**: Full experimental support for English, Spanish, and Mandarin
 * **Agent-Managed Memory**: Agents create and manage their own memory throughout experiments
 * **Comprehensive Tracing**: Built-in OpenAI SDK tracing for debugging and analysis
+* **Structured Summaries**: Automatic JSON summaries to complement detailed agent logs
 * **Configurable Parameters**: YAML-based configuration for all experimental settings
 * **Error Recovery**: Robust error handling with automatic retry mechanisms
 
@@ -93,4 +95,3 @@ Indices and Tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

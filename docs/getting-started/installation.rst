@@ -94,26 +94,11 @@ Test your installation by running the test suite:
 
 .. code-block:: bash
 
-   python run_tests.py
+   python run_tests.py            # full suite
+   python run_tests.py unit       # unit tests only
+   python run_tests.py regression # deterministic regression checks
 
-You should see:
-
-.. code-block:: text
-
-   ============================================================
-   FROHLICH EXPERIMENT TEST RUNNER
-   ============================================================
-   Testing imports...
-   ✓ All core imports successful
-   ✓ Basic functionality test passed
-   ✓ Configuration loading test passed
-
-   Running unit tests...
-   Running integration tests...
-
-   ============================================================
-   ALL TESTS PASSED ✓
-   ============================================================
+Each invocation prints the import smoke test followed by the selected suites.
 
 Quick Test Run
 --------------

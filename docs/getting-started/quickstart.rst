@@ -12,7 +12,7 @@ Your First Experiment
 
       python main.py
 
-   This executes the default experiment with 3 agents using ``gpt-4.1-mini``, running for 3 rounds of Phase 2 discussion.
+   This executes the default experiment with five ``gpt-4.1-nano`` agents and up to ten Phase 2 rounds.
 
 2. **Watch the Output**
 
@@ -28,13 +28,16 @@ Your First Experiment
 
 3. **View Your Results**
 
-   The system generates a comprehensive JSON file with:
+   The system generates two artefacts side-by-side:
+   
+   - ``experiment_results_<timestamp>.json`` — the full agent-centric log
+   - ``experiment_results_<timestamp>_summary.json`` — a compact metrics snapshot
    
    - Complete agent interactions and reasoning
    - Phase 1 individual responses
    - Phase 2 group discussion transcripts
    - Final consensus outcomes
-   - OpenAI trace links for debugging
+   - OpenAI trace links for debugging (when tracing is enabled)
 
 Running with Custom Configuration
 ---------------------------------
@@ -145,7 +148,7 @@ Memory System
 
 Agents automatically manage their own memory:
 
-- **Default Limit**: 50,000 characters
+- **Default Limit**: 25,000 characters (see agent config)
 - **Agent-Controlled**: Agents decide what to remember
 - **Persistent**: Memory carries across both phases
 - **Configurable**: Adjust via ``memory_character_limit``

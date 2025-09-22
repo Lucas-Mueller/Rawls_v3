@@ -1,7 +1,7 @@
-"""
-Utility functions for the Frohlich Experiment.
-"""
+"""Utility namespace for the Frohlich Experiment."""
+
+# Backwards-compatible exports for commonly used helpers.
 from .memory_manager import MemoryManager
-from .agent_centric_logger import AgentCentricLogger
+from .logging.agent_centric_logger import AgentCentricLogger
 
 __all__ = ["MemoryManager", "AgentCentricLogger"]

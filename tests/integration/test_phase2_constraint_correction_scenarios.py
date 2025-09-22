@@ -39,7 +39,7 @@ from models.experiment_types import ParticipantContext, GroupDiscussionState, Ex
 from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
 from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
-from utils.agent_centric_logger import AgentCentricLogger
+from utils.logging.agent_centric_logger import AgentCentricLogger
 
 
 @pytest.mark.integration
