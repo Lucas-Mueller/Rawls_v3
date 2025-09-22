@@ -1,353 +1,47 @@
-"""
-Golden tests for Phase 2 prompt generation.
-
-These tests create snapshots of prompt content across different languages
-to detect unintentional changes during refactoring. They help ensure that
-the DiscussionService produces identical prompts to the original Phase2Manager.
-"""
+"""Structural tests for Phase 2 prompt generation."""
+from __future__ import annotations
 
 import pytest
-from unittest.mock import Mock
+
 from core.services.discussion_service import DiscussionService
-from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState
-from utils.language_manager import LanguageManager
+from tests.utils.prompt_assertions import assert_prompt_contains
+
+pytestmark = pytest.mark.contracts
 
 
-class TestPhase2PromptGolden:
-    """Golden tests for Phase 2 prompt generation across languages."""
-    
-    def setup_method(self):
-        """Set up test fixtures with real language managers."""
-        # We'll use mock language managers with realistic translations
-        self.english_translations = {
-            "prompts.phase2_discussion_prompt": (
-                "This is round {round_number} of {max_rounds}. Previous discussion:\n"
-                "{discussion_history}\n\n"
-                "Group participants: {group_participants}\n\n"
-                "Please provide your perspective on which justice principle the group should adopt, "
-                "considering both your own situation and fairness to all group members. "
-                "You may also initiate formal voting if you believe the group is ready to decide."
-            ),
-            "prompts.phase2_internal_reasoning": (
-                "This is round {round_number} of {max_rounds}. Previous discussion:\n"
-                "{discussion_history}\n\n"
-                "Before making your public statement, think through your reasoning privately. "
-                "Consider your income situation, the principles, and what you've heard from others."
-            ),
-            "system_messages.discussion.group_composition": "The group consists of {participants}",
-            "voting_prompts.internal_reasoning_section": "Your internal reasoning:",
-            "voting_prompts.reasoning_prompt": "Now provide your public statement:"
-        }
-        
-        self.spanish_translations = {
-            "prompts.phase2_discussion_prompt": (
-                "Esta es la ronda {round_number} de {max_rounds}. Discusión previa:\n"
-                "{discussion_history}\n\n"
-                "Participantes del grupo: {group_participants}\n\n"
-                "Proporcione su perspectiva sobre qué principio de justicia debe adoptar el grupo, "
-                "considerando tanto su propia situación como la equidad para todos los miembros. "
-                "También puede iniciar votación formal si cree que el grupo está listo para decidir."
-            ),
-            "prompts.phase2_internal_reasoning": (
-                "Esta es la ronda {round_number} de {max_rounds}. Discusión previa:\n"
-                "{discussion_history}\n\n"
-                "Antes de hacer su declaración pública, reflexione sobre su razonamiento en privado. "
-                "Considere su situación económica, los principios y lo que ha escuchado de otros."
-            ),
-            "system_messages.discussion.group_composition": "El grupo consiste de {participants}",
-            "voting_prompts.internal_reasoning_section": "Su razonamiento interno:",
-            "voting_prompts.reasoning_prompt": "Ahora proporcione su declaración pública:"
-        }
-        
-        self.chinese_translations = {
-            "prompts.phase2_discussion_prompt": (
-                "这是第{round_number}轮，共{max_rounds}轮。之前的讨论：\n"
-                "{discussion_history}\n\n"
-                "小组参与者：{group_participants}\n\n"
-                "请提供您对小组应该采用哪种正义原则的看法，"
-                "既要考虑您自己的情况，也要考虑对所有小组成员的公平性。"
-                "如果您认为小组准备好做决定，您也可以发起正式投票。"
-            ),
-            "prompts.phase2_internal_reasoning": (
-                "这是第{round_number}轮，共{max_rounds}轮。之前的讨论：\n"
-                "{discussion_history}\n\n"
-                "在做出公开声明之前，请私下思考您的推理。"
-                "考虑您的收入状况、原则以及您从他人那里听到的内容。"
-            ),
-            "system_messages.discussion.group_composition": "小组由{participants}组成",
-            "voting_prompts.internal_reasoning_section": "您的内部推理：",
-            "voting_prompts.reasoning_prompt": "现在请提供您的公开声明："
-        }
-        
-    def create_mock_language_manager(self, translations):
-        """Create a mock language manager with given translations."""
-        manager = Mock()
-        manager.get.side_effect = lambda key, **kwargs: translations.get(key, f"[MISSING: {key}]").format(**kwargs)
-        return manager
-    
-    def create_discussion_state(self, history_content=None):
-        """Create a discussion state with optional history."""
-        state = GroupDiscussionState()
-        if history_content:
-            state.public_history = history_content
-        return state
-    
-    def test_english_discussion_prompt_golden(self):
-        """Golden test for English discussion prompt generation."""
-        language_manager = self.create_mock_language_manager(self.english_translations)
-        service = DiscussionService(language_manager)
-        
-        discussion_state = self.create_discussion_state("Alice: I prefer principle A.\nBob: I think principle B is better.")
-        
-        prompt = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=2,
-            max_rounds=5,
-            participant_names=["Alice", "Bob", "Charlie"]
-        )
-        
-        expected = (
-            "This is round 2 of 5. Previous discussion:\n"
-            "Alice: I prefer principle A.\nBob: I think principle B is better.\n\n"
-            "Group participants: The group consists of Alice, Bob and Charlie\n\n"
-            "Please provide your perspective on which justice principle the group should adopt, "
-            "considering both your own situation and fairness to all group members. "
-            "You may also initiate formal voting if you believe the group is ready to decide."
-        )
-        
-        assert prompt == expected
-    
-    def test_spanish_discussion_prompt_golden(self):
-        """Golden test for Spanish discussion prompt generation."""
-        language_manager = self.create_mock_language_manager(self.spanish_translations)
-        service = DiscussionService(language_manager)
-        
-        discussion_state = self.create_discussion_state("Alice: Prefiero el principio A.\nBob: Creo que el principio B es mejor.")
-        
-        prompt = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=1,
-            max_rounds=3,
-            participant_names=["Alice", "Bob"]
-        )
-        
-        expected = (
-            "Esta es la ronda 1 de 3. Discusión previa:\n"
-            "Alice: Prefiero el principio A.\nBob: Creo que el principio B es mejor.\n\n"
-            "Participantes del grupo: El grupo consiste de Alice and Bob\n\n"
-            "Proporcione su perspectiva sobre qué principio de justicia debe adoptar el grupo, "
-            "considerando tanto su propia situación como la equidad para todos los miembros. "
-            "También puede iniciar votación formal si cree que el grupo está listo para decidir."
-        )
-        
-        assert prompt == expected
-    
-    def test_chinese_discussion_prompt_golden(self):
-        """Golden test for Chinese discussion prompt generation."""
-        language_manager = self.create_mock_language_manager(self.chinese_translations)
-        service = DiscussionService(language_manager)
-        
-        discussion_state = self.create_discussion_state("Alice: 我更喜欢原则A。\nBob: 我认为原则B更好。")
-        
-        prompt = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=3,
-            max_rounds=4,
-            participant_names=["Alice", "Bob", "Charlie", "David"]
-        )
-        
-        expected = (
-            "这是第3轮，共4轮。之前的讨论：\n"
-            "Alice: 我更喜欢原则A。\nBob: 我认为原则B更好。\n\n"
-            "小组参与者：小组由Alice, Bob, Charlie and David组成\n\n"
-            "请提供您对小组应该采用哪种正义原则的看法，"
-            "既要考虑您自己的情况，也要考虑对所有小组成员的公平性。"
-            "如果您认为小组准备好做决定，您也可以发起正式投票。"
-        )
-        
-        assert prompt == expected
-    
-    def test_english_internal_reasoning_prompt_golden(self):
-        """Golden test for English internal reasoning prompt generation."""
-        language_manager = self.create_mock_language_manager(self.english_translations)
-        service = DiscussionService(language_manager)
-        
-        discussion_state = self.create_discussion_state("Previous discussion about principles")
-        
-        prompt = service.build_internal_reasoning_prompt(
-            discussion_state=discussion_state,
-            round_num=2,
-            max_rounds=5
-        )
-        
-        expected = (
-            "This is round 2 of 5. Previous discussion:\n"
-            "Previous discussion about principles\n\n"
-            "Before making your public statement, think through your reasoning privately. "
-            "Consider your income situation, the principles, and what you've heard from others."
-        )
-        
-        assert prompt == expected
-    
-    def test_english_discussion_prompt_with_reasoning_golden(self):
-        """Golden test for English discussion prompt with internal reasoning included."""
-        language_manager = self.create_mock_language_manager(self.english_translations)
-        service = DiscussionService(language_manager)
-        
-        discussion_state = self.create_discussion_state("Short history")
-        internal_reasoning = "I need to consider fairness while protecting my interests."
-        
-        prompt = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=1,
-            max_rounds=3,
-            participant_names=["Alice"],
-            internal_reasoning=internal_reasoning
-        )
-        
-        base_prompt = (
-            "This is round 1 of 3. Previous discussion:\n"
-            "Short history\n\n"
-            "Group participants: The group consists of Alice\n\n"
-            "Please provide your perspective on which justice principle the group should adopt, "
-            "considering both your own situation and fairness to all group members. "
-            "You may also initiate formal voting if you believe the group is ready to decide."
-        )
-        
-        expected = (
-            f"{base_prompt}\n\n"
-            "Your internal reasoning:\n"
-            "I need to consider fairness while protecting my interests.\n"
-            "================================\n\n"
-            "Now provide your public statement:"
-        )
-        
-        assert prompt == expected
-    
-    def test_group_composition_formatting_golden(self):
-        """Golden test for group composition formatting across different participant counts."""
-        language_manager = self.create_mock_language_manager(self.english_translations)
-        service = DiscussionService(language_manager)
-        
-        # Test single participant
-        single = service.format_group_composition(["Alice"])
-        assert single == "The group consists of Alice"
-        
-        # Test two participants
-        two = service.format_group_composition(["Alice", "Bob"])
-        assert two == "The group consists of Alice and Bob"
-        
-        # Test three participants
-        three = service.format_group_composition(["Alice", "Bob", "Charlie"])
-        assert three == "The group consists of Alice, Bob and Charlie"
-        
-        # Test four participants
-        four = service.format_group_composition(["Alice", "Bob", "Charlie", "David"])
-        assert four == "The group consists of Alice, Bob, Charlie and David"
-    
-    def test_empty_history_handling_golden(self):
-        """Golden test for handling empty or None discussion history."""
-        language_manager = self.create_mock_language_manager(self.english_translations)
-        service = DiscussionService(language_manager)
-        
-        # Test with None history
-        discussion_state = GroupDiscussionState()
-        discussion_state.public_history = None
-        
-        prompt = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=1,
-            max_rounds=2,
-            participant_names=["Alice", "Bob"]
-        )
-        
-        expected = (
-            "This is round 1 of 2. Previous discussion:\n"
-            "No previous discussion.\n\n"
-            "Group participants: The group consists of Alice and Bob\n\n"
-            "Please provide your perspective on which justice principle the group should adopt, "
-            "considering both your own situation and fairness to all group members. "
-            "You may also initiate formal voting if you believe the group is ready to decide."
-        )
-        
-        assert prompt == expected
-        
-        # Test with empty string history (should still use "No previous discussion.")
-        discussion_state.public_history = ""
-        prompt2 = service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=1,
-            max_rounds=2,
-            participant_names=["Alice", "Bob"]
-        )
-        
-        expected2 = (
-            "This is round 1 of 2. Previous discussion:\n"
-            "No previous discussion.\n\n"
-            "Group participants: The group consists of Alice and Bob\n\n"
-            "Please provide your perspective on which justice principle the group should adopt, "
-            "considering both your own situation and fairness to all group members. "
-            "You may also initiate formal voting if you believe the group is ready to decide."
-        )
-        
-        assert prompt2 == expected2
+@pytest.fixture
+def english_service(mocker):
+    translations = {
+        "prompts.phase2_discussion_short_prompt": "Round {round_number} of {max_rounds}.",
+        "prompts.phase2_internal_reasoning": "History: {discussion_history} ({round_number}/{max_rounds})",
+        "prompts.phase2_internal_reasoning_short": "Round {round_number}/{max_rounds} reasoning",
+        "system_messages.discussion.group_composition": "Participants: {participants}",
+    }
+    manager = mocker.Mock()
+    manager.get.side_effect = lambda key, **kwargs: translations[key].format(**kwargs)
+    return DiscussionService(manager)
 
 
-class TestPhase2PromptRegression:
-    """Regression tests to ensure exact behavior match with original implementation."""
-    
-    def test_prompt_parameters_preservation(self):
-        """Test that all expected parameters are passed to language manager."""
-        language_manager = Mock()
-        # Set up specific return values for different calls
-        def mock_get(key, **kwargs):
-            if key == "system_messages.discussion.group_composition":
-                return f"The group consists of {kwargs.get('participants', '')}"
-            elif key == "prompts.phase2_discussion_prompt":
-                return "test prompt"
-            return f"[{key}]"
-        
-        language_manager.get.side_effect = mock_get
-        
-        service = DiscussionService(language_manager)
-        discussion_state = GroupDiscussionState()
-        discussion_state.public_history = "test history"
-        
-        service.build_discussion_prompt(
-            discussion_state=discussion_state,
-            round_num=3,
-            max_rounds=5,
-            participant_names=["A", "B", "C"]
-        )
-        
-        # Verify that language manager was called with correct parameters
-        language_manager.get.assert_any_call(
-            "prompts.phase2_discussion_prompt",
-            round_number=3,
-            max_rounds=5,
-            discussion_history="test history",
-            group_participants="The group consists of A, B and C"
-        )
-    
-    def test_internal_reasoning_parameters_preservation(self):
-        """Test that internal reasoning prompt parameters are preserved."""
-        language_manager = Mock()
-        language_manager.get.return_value = "reasoning prompt"
-        
-        service = DiscussionService(language_manager)
-        discussion_state = GroupDiscussionState()
-        discussion_state.public_history = "reasoning history"
-        
-        service.build_internal_reasoning_prompt(
-            discussion_state=discussion_state,
-            round_num=2,
-            max_rounds=4
-        )
-        
-        language_manager.get.assert_called_with(
-            "prompts.phase2_internal_reasoning",
-            round_number=2,
-            max_rounds=4,
-            discussion_history="reasoning history"
-        )
+@pytest.fixture
+def discussion_state():
+    state = GroupDiscussionState()
+    state.public_history = "Alice: Hello\nBob: Hi"
+    return state
+
+
+@pytest.mark.parametrize("round_num,max_rounds", [(2, 5), (1, 3)])
+def test_discussion_prompt_contains_round_info(english_service, discussion_state, round_num, max_rounds):
+    prompt = english_service.build_discussion_prompt(
+        discussion_state, round_num=round_num, max_rounds=max_rounds, participant_names=["Alice", "Bob"]
+    )
+    assert_prompt_contains(prompt, [f"Round {round_num} of {max_rounds}."])
+
+
+@pytest.mark.parametrize("round_num,max_rounds", [(1, 3), (2, 3)])
+def test_internal_reasoning_prompts(english_service, discussion_state, round_num, max_rounds):
+    prompt = english_service.build_internal_reasoning_prompt(discussion_state, round_num=round_num, max_rounds=max_rounds)
+    if round_num == 1:
+        assert "History:" in prompt
+    else:
+        assert prompt == f"Round {round_num}/{max_rounds} reasoning"

@@ -17,13 +17,12 @@ Key features:
 import pytest
 import asyncio
 from typing import Dict, List, Optional, Any, Type, Union
+import os
 from abc import ABC, abstractmethod
 from unittest.mock import MagicMock
 from pathlib import Path
 import inspect
 import warnings
-
-from tests.test_base import TracingDisabledTestCase, AsyncTracingDisabledTestCase
 from tests.fixtures.phase2_parsing_fixtures import (
     Phase2ParsingFixtures,
     POSITIVE_VOTE_STATEMENTS,
@@ -256,7 +255,7 @@ class LanguageParityChecker:
 # Parametrized Test Base Classes
 # =============================================================================
 
-class MultilingualTestBase(TracingDisabledTestCase, ABC):
+class MultilingualTestBase(ABC):
     """
     Base class for parametrized multilingual testing with synchronous methods.
     
@@ -264,6 +263,29 @@ class MultilingualTestBase(TracingDisabledTestCase, ABC):
     parametrized test framework with language fixtures and parity checking.
     """
     
+    def setup_method(self, method):  # pragma: no cover - lifecycle hook
+        self.setUp()
+
+    def teardown_method(self, method):  # pragma: no cover - lifecycle hook
+        self.tearDown()
+
+    # ------------------------------------------------------------------
+    # Compatibility assertion helpers (mirroring unittest signatures)
+    # ------------------------------------------------------------------
+    def assertLess(self, a, b, msg: Optional[str] = None) -> None:
+        assert a < b, msg or f"Expected {a!r} to be less than {b!r}"
+
+    def assertGreater(self, a, b, msg: Optional[str] = None) -> None:
+        assert a > b, msg or f"Expected {a!r} to be greater than {b!r}"
+
+    def assertAlmostEqual(
+        self, a, b, places: int = 7, msg: Optional[str] = None
+    ) -> None:
+        assert round(abs(a - b), places) == 0, msg or f"{a!r} != {b!r} within {places} places"
+
+    def fail(self, msg: str) -> None:
+        pytest.fail(msg)
+
     @pytest.fixture(params=SUPPORTED_LANGUAGES)
     def language(self, request):
         """Parametrize tests across all supported languages."""
@@ -310,11 +332,19 @@ class MultilingualTestBase(TracingDisabledTestCase, ABC):
             test_class=self.__class__,
             min_coverage=min_coverage
         )
-    
+
     @abstractmethod
     def setUp(self):
         """Set up test with language validation."""
-        super().setUp()
+        os.environ["OPENAI_AGENTS_DISABLE_TRACING"] = "1"
+        os.environ["OPENAI_DISABLE_TRACING"] = "true"
+        try:
+            from agents import set_tracing_disabled
+
+            set_tracing_disabled(True)
+        except ImportError:  # pragma: no cover - optional dependency
+            pass
+
         # Validate that test data is available
         try:
             stats = LanguageDataLoader.get_fixture_stats()
@@ -323,8 +353,11 @@ class MultilingualTestBase(TracingDisabledTestCase, ABC):
         except Exception as e:
             warnings.warn(f"Error validating fixture data: {e}")
 
+    def tearDown(self):  # pragma: no cover - default no-op
+        return None
 
-class AsyncMultilingualTestBase(AsyncTracingDisabledTestCase, ABC):
+
+class AsyncMultilingualTestBase(MultilingualTestBase, ABC):
     """
     Base class for parametrized multilingual testing with async support.
     
@@ -367,9 +400,7 @@ class AsyncMultilingualTestBase(AsyncTracingDisabledTestCase, ABC):
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.get_language_test_data, language, data_type)
     
-    @abstractmethod
     def setUp(self):
-        """Set up async test with language validation."""
         super().setUp()
 
 

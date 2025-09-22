@@ -15,10 +15,27 @@ The framework is highly configurable, with experiment parameters defined in YAML
 
 ## Getting Started
 
-To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests. The bundled `run_tests.py` script now supports targeted suites:
+To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests.
+
+### Running Tests
+
+Phase A of the testing overhaul standardises on `pytest`:
 
 ```
-python run_tests.py unit
-python run_tests.py integration
-python run_tests.py regression
+python -m pytest -m "not slow"
+python -m pytest -m acceptance  # Acceptance smoke tests
+python -m pytest -m contracts   # Service contract coverage
+python -m pytest -m resilience  # Error-handling coverage
 ```
+
+A convenience `Makefile` is provided:
+
+```
+make test
+make test-acceptance
+make test-contracts
+make test-resilience
+```
+
+The legacy `run_tests.py` wrapper remains for backwards compatibility but will be
+deprecated once all suites are migrated to pytest markers.

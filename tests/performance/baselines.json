@@ -1,0 +1,47 @@
+{
+  "English": {
+    "parsing_time_avg": 0.00040176103405732043,
+    "parsing_time_p95": 0.0004197079979348928,
+    "memory_usage_avg": 104857600.0,
+    "memory_growth_rate": 1024.0,
+    "cache_hit_rate": 0.9486622006498455,
+    "error_rate": 0.0,
+    "language": "English",
+    "created_at": "2025-09-22T13:01:24.376703",
+    "test_conditions": {
+      "python_version": "3.11",
+      "test_statements": 30,
+      "test_iterations": 3
+    }
+  },
+  "Spanish": {
+    "parsing_time_avg": 0.0005224737319319199,
+    "parsing_time_p95": 0.0005321250064298511,
+    "memory_usage_avg": 110100480.0,
+    "memory_growth_rate": 1075.2,
+    "cache_hit_rate": 0.9140270135326364,
+    "error_rate": 0.0,
+    "language": "Spanish",
+    "created_at": "2025-09-22T13:01:24.421683",
+    "test_conditions": {
+      "python_version": "3.11",
+      "test_statements": 30,
+      "test_iterations": 3
+    }
+  },
+  "Mandarin": {
+    "parsing_time_avg": 0.0007791668002028018,
+    "parsing_time_p95": 0.0007977920031407848,
+    "memory_usage_avg": 115343360.00000001,
+    "memory_growth_rate": 1126.4,
+    "cache_hit_rate": 0.9219749979565399,
+    "error_rate": 0.0,
+    "language": "Mandarin",
+    "created_at": "2025-09-22T13:01:24.487818",
+    "test_conditions": {
+      "python_version": "3.11",
+      "test_statements": 30,
+      "test_iterations": 3
+    }
+  }
+}

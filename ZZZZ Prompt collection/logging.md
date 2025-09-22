@@ -5,7 +5,9 @@ The changes needed to be made in irder to fulfill my request.
 Do not code anything yet. 
 Save this report as a .md file int he root directory.
 
-Please review the current implementation of the bank account, Ihave a hunch that its amonut sometimes lacks one round behind... Please review the current implementation of  the bank account system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go  through it step by step.
+Please review the current implementation of the test system. It is partially pretty outdated and not weel designed.  Please systematically evaluate it
+
+Create a report as a .md file with the prefix codex detailing the current implementation and create suggestions to improve the system while also simplifying it.
 
 Then create a report as md. file detailing the current implementation.
 

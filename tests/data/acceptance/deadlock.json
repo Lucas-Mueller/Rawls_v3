@@ -1,0 +1,10 @@
+{
+  "TestAgent1": [
+    "I insist on maximizing average income.",
+    "I cannot accept the floor principle."
+  ],
+  "TestAgent2": [
+    "I insist on maximizing the floor income.",
+    "We remain at an impasse."
+  ]
+}

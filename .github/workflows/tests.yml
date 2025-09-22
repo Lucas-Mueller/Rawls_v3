@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, post-vacay ]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -m "not slow"
+
+      - name: Run acceptance tests
+        run: python -m pytest -m acceptance
+
+      - name: Run service contract tests
+        run: python -m pytest -m contracts
+
+      - name: Run resilience tests
+        run: python -m pytest -m resilience
+
+      - name: Upload coverage report
+        if: always()
+        run: python -m pytest --cov=core --cov=experiment_agents --cov=utils --cov-report=xml
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml

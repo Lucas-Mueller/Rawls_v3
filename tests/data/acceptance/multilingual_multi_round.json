@@ -1,0 +1,14 @@
+{
+  "EnglishAgent": [
+    "Round 1 statement in English.",
+    "Round 2 clarification in English."
+  ],
+  "SpanishAgent": [
+    "Declaración de la ronda 1 en español.",
+    "Aclaración de la ronda 2 en español."
+  ],
+  "MandarinAgent": [
+    "中文第一轮陈述。",
+    "中文第二轮澄清。"
+  ]
+}
