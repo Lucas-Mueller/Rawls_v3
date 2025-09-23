@@ -1,5 +1,7 @@
 an
 
+▌ please implement phase 1-2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make
+▌ mistkaes
 
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 

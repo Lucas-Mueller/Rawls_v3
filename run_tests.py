@@ -3,9 +3,9 @@ Test runner for the Frohlich Experiment.
 
 Usage:
     python run_tests.py [test_type] [--coverage]
-    
+
 Arguments:
-    test_type: 'unit', 'integration', 'regression', or 'all' (default: 'all')
+    test_type: 'unit', 'component', 'integration', 'contracts', 'regression', or 'all' (default: 'all')
     --coverage: Run tests with coverage reporting (requires pytest-cov)
 """
 import sys
@@ -41,7 +41,7 @@ def run_unit_tests(coverage=False):
     test_dir = Path(__file__).parent / "tests" / "unit"
     
     if has_pytest():
-        cmd = [sys.executable, "-m", "pytest", "-q", str(test_dir)]
+        cmd = [sys.executable, "-m", "pytest", "-q", "-m", "component", str(test_dir)]
         if coverage:
             cmd.extend(["--cov=.", "--cov-report=term-missing"])
     else:
@@ -50,6 +50,29 @@ def run_unit_tests(coverage=False):
             print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
         cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
     
+    result = subprocess.run(cmd, cwd=Path(__file__).parent)
+    return result.returncode == 0
+
+
+def run_component_tests(coverage=False):
+    """Run component tests."""
+    print("Running component tests...")
+    test_dir = Path(__file__).parent / "tests" / "component"
+
+    if not test_dir.exists():
+        print("No component tests directory found. Skipping.")
+        return True
+
+    if has_pytest():
+        cmd = [sys.executable, "-m", "pytest", "-q", str(test_dir)]
+        if coverage:
+            cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    else:
+        print("Warning: pytest not available, falling back to unittest. Some async tests may not run properly.")
+        if coverage:
+            print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
+        cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+
     result = subprocess.run(cmd, cwd=Path(__file__).parent)
     return result.returncode == 0
 
@@ -73,13 +96,13 @@ def run_integration_tests(coverage=False):
     return result.returncode == 0
 
 
-def run_regression_tests(coverage=False):
-    """Run regression tests that cover higher-level behaviours."""
-    print("Running regression tests...")
-    test_dir = Path(__file__).parent / "tests" / "regression"
+def run_contract_tests(coverage=False):
+    """Run contract (former regression) tests."""
+    print("Running contract tests...")
+    test_dir = Path(__file__).parent / "tests" / "contracts"
 
     if not test_dir.exists():
-        print("No regression tests directory found. Skipping.")
+        print("No contract tests directory found. Skipping.")
         return True
 
     if has_pytest():
@@ -87,7 +110,7 @@ def run_regression_tests(coverage=False):
         if coverage:
             cmd.extend(["--cov=.", "--cov-report=term-missing"])
     else:
-        print("Warning: pytest not available, falling back to unittest for regression tests.")
+        print("Warning: pytest not available, falling back to unittest for contract tests.")
         if coverage:
             print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
         cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
@@ -141,7 +164,7 @@ def main():
     for arg in args:
         if arg == "--coverage":
             coverage = True
-        elif arg in ["unit", "integration", "regression", "all"]:
+        elif arg in ["unit", "component", "integration", "regression", "contracts", "all"]:
             test_type = arg
     
     print("=" * 60)
@@ -163,14 +186,19 @@ def main():
         if not run_unit_tests(coverage):
             success = False
         print()
-    
+
+    if test_type in ["component", "all"]:
+        if not run_component_tests(coverage):
+            success = False
+        print()
+
     if test_type in ["integration", "all"]:
         if not run_integration_tests(coverage):
             success = False
         print()
 
-    if test_type in ["regression", "all"]:
-        if not run_regression_tests(coverage):
+    if test_type in ["regression", "contracts", "all"]:
+        if not run_contract_tests(coverage):
             success = False
         print()
     
