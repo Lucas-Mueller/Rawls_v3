@@ -88,4 +88,3 @@ def test_format_distributions_table():
     assert "Dist. 1" in table
     assert "$32,000" in table
     assert "$28,000" in table
-*** End Patch

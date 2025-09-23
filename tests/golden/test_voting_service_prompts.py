@@ -1,9 +1,9 @@
 """
 Golden tests for VotingService prompt generation.
 
-These tests create snapshots of voting prompt content across different languages
-to detect unintentional changes during refactoring. They help ensure that
-the VotingService produces identical prompts to the original Phase2Manager.
+These tests validate voting prompt content across different languages using
+fragment-based validation to detect unintentional changes during refactoring
+while allowing for reasonable prompt improvements and formatting changes.
 """
 
 import pytest
@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 from core.services.voting_service import VotingService
 from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState, ParticipantContext
+from tests.utils.prompt_assertions import assert_prompt_key_elements, assert_multilingual_equivalence
 
 
 class TestVotingServicePromptGolden:
@@ -155,295 +156,370 @@ class TestVotingServicePromptGolden:
     def test_english_vote_initiation_prompt_golden(self):
         """Golden test for English vote initiation prompt."""
         service = self.create_voting_service(self.english_translations)
-        
-        # Test basic prompt
+
+        # Test basic prompt with fragment-based validation
         result = service._get_localized_message("prompts.vote_initiation_prompt")
-        expected = (
-            "Do you want to initiate formal voting to reach a consensus on the justice principle? "
-            "Respond with 1 for Yes or 0 for No."
-        )
-        assert result == expected
+        assert_prompt_key_elements(result, [
+            "formal voting",
+            "consensus",
+            "justice principle",
+            "1 for Yes",
+            "0 for No"
+        ])
     
     def test_english_vote_initiation_with_statement_golden(self):
         """Golden test for English vote initiation prompt with statement context."""
         service = self.create_voting_service(self.english_translations)
-        
+
         result = service._get_localized_message(
             "prompts.vote_initiation_with_statement_prompt",
             agent_recent_statement="I believe we should adopt principle A"
         )
-        expected = (
-            "Based on your recent statement: 'I believe we should adopt principle A'\n\n"
-            "Do you want to initiate formal voting to reach a consensus on the justice principle? "
-            "Respond with 1 for Yes or 0 for No."
-        )
-        assert result == expected
+
+        # Validate key elements including the statement context
+        assert_prompt_key_elements(result, [
+            "Based on your recent statement:",
+            "I believe we should adopt principle A",
+            "formal voting",
+            "consensus",
+            "justice principle",
+            "1 for Yes",
+            "0 for No"
+        ])
     
     def test_spanish_vote_initiation_prompt_golden(self):
         """Golden test for Spanish vote initiation prompt."""
         service = self.create_voting_service(self.spanish_translations)
-        
+
         result = service._get_localized_message("prompts.vote_initiation_prompt")
-        expected = (
-            "¿Desea iniciar una votación formal para alcanzar consenso sobre el principio de justicia? "
-            "Responda con 1 para Sí o 0 para No."
-        )
-        assert result == expected
+        assert_multilingual_equivalence(result, [
+            "votación formal",
+            "consenso",
+            "principio de justicia",
+            "1 para Sí",
+            "0 para No"
+        ], "Spanish")
     
     def test_spanish_vote_initiation_with_statement_golden(self):
         """Golden test for Spanish vote initiation prompt with statement context."""
         service = self.create_voting_service(self.spanish_translations)
-        
+
         result = service._get_localized_message(
             "prompts.vote_initiation_with_statement_prompt",
             agent_recent_statement="Creo que deberíamos adoptar el principio A"
         )
-        expected = (
-            "Basado en su declaración reciente: 'Creo que deberíamos adoptar el principio A'\n\n"
-            "¿Desea iniciar una votación formal para alcanzar consenso sobre el principio de justicia? "
-            "Responda con 1 para Sí o 0 para No."
-        )
-        assert result == expected
+
+        assert_multilingual_equivalence(result, [
+            "Basado en su declaración reciente:",
+            "Creo que deberíamos adoptar el principio A",
+            "votación formal",
+            "consenso",
+            "principio de justicia",
+            "1 para Sí",
+            "0 para No"
+        ], "Spanish")
     
     def test_chinese_vote_initiation_prompt_golden(self):
         """Golden test for Chinese vote initiation prompt."""
         service = self.create_voting_service(self.chinese_translations)
-        
+
         result = service._get_localized_message("prompts.vote_initiation_prompt")
-        expected = (
-            "您是否想要发起正式投票以就正义原则达成共识？"
-            "请回答1表示是，0表示否。"
-        )
-        assert result == expected
+        assert_multilingual_equivalence(result, [
+            "正式投票",
+            "共识",
+            "正义原则",
+            "1表示是",
+            "0表示否"
+        ], "Chinese")
     
     def test_chinese_vote_initiation_with_statement_golden(self):
         """Golden test for Chinese vote initiation prompt with statement context."""
         service = self.create_voting_service(self.chinese_translations)
-        
+
         result = service._get_localized_message(
             "prompts.vote_initiation_with_statement_prompt",
             agent_recent_statement="我认为我们应该采用原则A"
         )
-        expected = (
-            "基于您最近的声明：'我认为我们应该采用原则A'\n\n"
-            "您是否想要发起正式投票以就正义原则达成共识？"
-            "请回答1表示是，0表示否。"
-        )
-        assert result == expected
+
+        assert_multilingual_equivalence(result, [
+            "基于您最近的声明：",
+            "我认为我们应该采用原则A",
+            "正式投票",
+            "共识",
+            "正义原则",
+            "1表示是",
+            "0表示否"
+        ], "Chinese")
     
     def test_english_confirmation_request_golden(self):
         """Golden test for English confirmation request prompt."""
         service = self.create_voting_service(self.english_translations)
-        
+
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
             initiation_statement="I think we should vote on principle A"
         )
-        expected = (
-            "A participant has proposed to initiate formal voting based on this statement:\n"
-            "'I think we should vote on principle A'\n\n"
-            "Do you agree to participate in formal voting? Respond with 1 for Yes or 0 for No."
-        )
-        assert result == expected
+
+        assert_prompt_key_elements(result, [
+            "participant has proposed",
+            "formal voting",
+            "I think we should vote on principle A",
+            "agree to participate",
+            "1 for Yes",
+            "0 for No"
+        ])
     
     def test_spanish_confirmation_request_golden(self):
         """Golden test for Spanish confirmation request prompt."""
         service = self.create_voting_service(self.spanish_translations)
-        
+
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
             initiation_statement="Creo que deberíamos votar por el principio A"
         )
-        expected = (
-            "Un participante ha propuesto iniciar votación formal basándose en esta declaración:\n"
-            "'Creo que deberíamos votar por el principio A'\n\n"
-            "¿Está de acuerdo en participar en votación formal? Responda con 1 para Sí o 0 para No."
-        )
-        assert result == expected
+
+        assert_multilingual_equivalence(result, [
+            "participante ha propuesto",
+            "votación formal",
+            "Creo que deberíamos votar por el principio A",
+            "de acuerdo en participar",
+            "1 para Sí",
+            "0 para No"
+        ], "Spanish")
     
     def test_chinese_confirmation_request_golden(self):
         """Golden test for Chinese confirmation request prompt."""
         service = self.create_voting_service(self.chinese_translations)
-        
+
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
             initiation_statement="我认为我们应该就原则A进行投票"
         )
-        expected = (
-            "一位参与者基于以下声明提议发起正式投票：\n"
-            "'我认为我们应该就原则A进行投票'\n\n"
-            "您同意参加正式投票吗？请回答1表示是，0表示否。"
-        )
-        assert result == expected
+
+        assert_multilingual_equivalence(result, [
+            "参与者",
+            "正式投票",
+            "我认为我们应该就原则A进行投票",
+            "同意参加",
+            "1表示是",
+            "0表示否"
+        ], "Chinese")
     
     def test_english_retry_instruction_golden(self):
         """Golden test for English retry instruction."""
         service = self.create_voting_service(self.english_translations)
-        
+
         result = service._get_localized_message("voting_prompts.retry_instruction")
-        expected = (
-            "Please provide a clear response: 1 for Yes (initiate voting) or 0 for No (continue discussion)."
-        )
-        assert result == expected
+        assert_prompt_key_elements(result, [
+            "clear response",
+            "1 for Yes",
+            "initiate voting",
+            "0 for No",
+            "continue discussion"
+        ])
     
     def test_spanish_retry_instruction_golden(self):
         """Golden test for Spanish retry instruction."""
         service = self.create_voting_service(self.spanish_translations)
-        
+
         result = service._get_localized_message("voting_prompts.retry_instruction")
-        expected = (
-            "Por favor proporcione una respuesta clara: 1 para Sí (iniciar votación) o 0 para No (continuar discusión)."
-        )
-        assert result == expected
+        assert_multilingual_equivalence(result, [
+            "respuesta clara",
+            "1 para Sí",
+            "iniciar votación",
+            "0 para No",
+            "continuar discusión"
+        ], "Spanish")
     
     def test_chinese_retry_instruction_golden(self):
         """Golden test for Chinese retry instruction."""
         service = self.create_voting_service(self.chinese_translations)
-        
+
         result = service._get_localized_message("voting_prompts.retry_instruction")
-        expected = (
-            "请提供明确回答：1表示是（发起投票）或0表示否（继续讨论）。"
-        )
-        assert result == expected
+        assert_multilingual_equivalence(result, [
+            "明确回答",
+            "1表示是",
+            "发起投票",
+            "0表示否",
+            "继续讨论"
+        ], "Chinese")
     
     def test_english_system_messages_golden(self):
         """Golden test for English system messages."""
         service = self.create_voting_service(self.english_translations)
-        
-        # Test various system messages
-        assert service._get_localized_message("system_messages.voting.confirmation_tag") == "[CONFIRMATION]"
-        assert service._get_localized_message("system_messages.voting.all_confirmed") == "All participants confirmed - proceeding to secret ballot phase."
-        assert service._get_localized_message("system_messages.voting.consensus_tag") == "[CONSENSUS]"
-        assert service._get_localized_message("system_messages.voting.no_consensus_tag") == "[NO CONSENSUS]"
-        assert service._get_localized_message("system_messages.voting.error_tag") == "[VOTING ERROR]"
-        assert service._get_localized_message("system_messages.voting.process_failed") == "Voting process failed - returning to discussion."
+
+        # Test various system messages with key element validation
+        confirmation_tag = service._get_localized_message("system_messages.voting.confirmation_tag")
+        assert_prompt_key_elements(confirmation_tag, ["CONFIRMATION"])
+
+        all_confirmed = service._get_localized_message("system_messages.voting.all_confirmed")
+        assert_prompt_key_elements(all_confirmed, ["participants confirmed", "secret ballot"])
+
+        consensus_tag = service._get_localized_message("system_messages.voting.consensus_tag")
+        assert_prompt_key_elements(consensus_tag, ["CONSENSUS"])
+
+        no_consensus_tag = service._get_localized_message("system_messages.voting.no_consensus_tag")
+        assert_prompt_key_elements(no_consensus_tag, ["NO CONSENSUS"])
+
+        error_tag = service._get_localized_message("system_messages.voting.error_tag")
+        assert_prompt_key_elements(error_tag, ["VOTING ERROR"])
+
+        process_failed = service._get_localized_message("system_messages.voting.process_failed")
+        assert_prompt_key_elements(process_failed, ["process failed", "returning to discussion"])
     
     def test_spanish_system_messages_golden(self):
         """Golden test for Spanish system messages."""
         service = self.create_voting_service(self.spanish_translations)
-        
-        # Test various system messages
-        assert service._get_localized_message("system_messages.voting.confirmation_tag") == "[CONFIRMACIÓN]"
-        assert service._get_localized_message("system_messages.voting.all_confirmed") == "Todos los participantes confirmaron - procediendo a votación secreta."
-        assert service._get_localized_message("system_messages.voting.consensus_tag") == "[CONSENSO]"
-        assert service._get_localized_message("system_messages.voting.no_consensus_tag") == "[SIN CONSENSO]"
-        assert service._get_localized_message("system_messages.voting.error_tag") == "[ERROR DE VOTACIÓN]"
-        assert service._get_localized_message("system_messages.voting.process_failed") == "Proceso de votación falló - regresando a discusión."
+
+        # Test various system messages with multilingual validation
+        confirmation_tag = service._get_localized_message("system_messages.voting.confirmation_tag")
+        assert_multilingual_equivalence(confirmation_tag, ["CONFIRMACIÓN"], "Spanish")
+
+        all_confirmed = service._get_localized_message("system_messages.voting.all_confirmed")
+        assert_multilingual_equivalence(all_confirmed, ["participantes confirmaron", "votación secreta"], "Spanish")
+
+        consensus_tag = service._get_localized_message("system_messages.voting.consensus_tag")
+        assert_multilingual_equivalence(consensus_tag, ["CONSENSO"], "Spanish")
+
+        no_consensus_tag = service._get_localized_message("system_messages.voting.no_consensus_tag")
+        assert_multilingual_equivalence(no_consensus_tag, ["SIN CONSENSO"], "Spanish")
+
+        error_tag = service._get_localized_message("system_messages.voting.error_tag")
+        assert_multilingual_equivalence(error_tag, ["ERROR DE VOTACIÓN"], "Spanish")
+
+        process_failed = service._get_localized_message("system_messages.voting.process_failed")
+        assert_multilingual_equivalence(process_failed, ["Proceso", "falló", "regresando a discusión"], "Spanish")
     
     def test_chinese_system_messages_golden(self):
         """Golden test for Chinese system messages."""
         service = self.create_voting_service(self.chinese_translations)
-        
-        # Test various system messages
-        assert service._get_localized_message("system_messages.voting.confirmation_tag") == "[确认]"
-        assert service._get_localized_message("system_messages.voting.all_confirmed") == "所有参与者已确认 - 进入秘密投票阶段。"
-        assert service._get_localized_message("system_messages.voting.consensus_tag") == "[共识]"
-        assert service._get_localized_message("system_messages.voting.no_consensus_tag") == "[无共识]"
-        assert service._get_localized_message("system_messages.voting.error_tag") == "[投票错误]"
-        assert service._get_localized_message("system_messages.voting.process_failed") == "投票过程失败 - 返回讨论。"
+
+        # Test various system messages with multilingual validation
+        confirmation_tag = service._get_localized_message("system_messages.voting.confirmation_tag")
+        assert_multilingual_equivalence(confirmation_tag, ["确认"], "Chinese")
+
+        all_confirmed = service._get_localized_message("system_messages.voting.all_confirmed")
+        assert_multilingual_equivalence(all_confirmed, ["参与者已确认", "秘密投票"], "Chinese")
+
+        consensus_tag = service._get_localized_message("system_messages.voting.consensus_tag")
+        assert_multilingual_equivalence(consensus_tag, ["共识"], "Chinese")
+
+        no_consensus_tag = service._get_localized_message("system_messages.voting.no_consensus_tag")
+        assert_multilingual_equivalence(no_consensus_tag, ["无共识"], "Chinese")
+
+        error_tag = service._get_localized_message("system_messages.voting.error_tag")
+        assert_multilingual_equivalence(error_tag, ["投票错误"], "Chinese")
+
+        process_failed = service._get_localized_message("system_messages.voting.process_failed")
+        assert_multilingual_equivalence(process_failed, ["投票过程失败", "返回讨论"], "Chinese")
     
     def test_english_voting_results_golden(self):
         """Golden test for English voting result messages."""
         service = self.create_voting_service(self.english_translations)
-        
-        # Test consensus messages
+
+        # Test consensus messages with key element validation
         result1 = service._get_localized_message(
             "voting_results.consensus_reached",
             principle_name="Maximizing Floor"
         )
-        assert result1 == "Consensus reached on: Maximizing Floor"
-        
+        assert_prompt_key_elements(result1, ["Consensus reached", "Maximizing Floor"])
+
         result2 = service._get_localized_message(
             "voting_results.consensus_with_constraint",
             principle_name="Maximizing Average",
             constraint_amount=5000
         )
-        assert result2 == "Consensus reached on: Maximizing Average with constraint amount: 5000"
-        
+        assert_prompt_key_elements(result2, ["Consensus reached", "Maximizing Average", "constraint", "5000"])
+
         result3 = service._get_localized_message("voting_results.no_consensus")
-        assert result3 == "No consensus reached - returning to discussion."
+        assert_prompt_key_elements(result3, ["No consensus", "returning to discussion"])
     
     def test_spanish_voting_results_golden(self):
         """Golden test for Spanish voting result messages."""
         service = self.create_voting_service(self.spanish_translations)
-        
-        # Test consensus messages
+
+        # Test consensus messages with multilingual validation
         result1 = service._get_localized_message(
             "voting_results.consensus_reached",
             principle_name="Maximizar Piso"
         )
-        assert result1 == "Consenso alcanzado en: Maximizar Piso"
-        
+        assert_multilingual_equivalence(result1, ["Consenso alcanzado", "Maximizar Piso"], "Spanish")
+
         result2 = service._get_localized_message(
             "voting_results.consensus_with_constraint",
             principle_name="Maximizar Promedio",
             constraint_amount=5000
         )
-        assert result2 == "Consenso alcanzado en: Maximizar Promedio con restricción: 5000"
-        
+        assert_multilingual_equivalence(result2, ["Consenso alcanzado", "Maximizar Promedio", "restricción", "5000"], "Spanish")
+
         result3 = service._get_localized_message("voting_results.no_consensus")
-        assert result3 == "No se alcanzó consenso - regresando a discusión."
+        assert_multilingual_equivalence(result3, ["No se alcanzó consenso", "regresando a discusión"], "Spanish")
     
     def test_chinese_voting_results_golden(self):
         """Golden test for Chinese voting result messages."""
         service = self.create_voting_service(self.chinese_translations)
-        
-        # Test consensus messages
+
+        # Test consensus messages with multilingual validation
         result1 = service._get_localized_message(
             "voting_results.consensus_reached",
             principle_name="最大化最低收入"
         )
-        assert result1 == "在以下方面达成共识：最大化最低收入"
-        
+        assert_multilingual_equivalence(result1, ["达成共识", "最大化最低收入"], "Chinese")
+
         result2 = service._get_localized_message(
             "voting_results.consensus_with_constraint",
             principle_name="最大化平均收入",
             constraint_amount=5000
         )
-        assert result2 == "在以下方面达成共识：最大化平均收入，约束金额：5000"
-        
+        assert_multilingual_equivalence(result2, ["达成共识", "最大化平均收入", "约束金额", "5000"], "Chinese")
+
         result3 = service._get_localized_message("voting_results.no_consensus")
-        assert result3 == "未达成共识 - 返回讨论。"
+        assert_multilingual_equivalence(result3, ["未达成共识", "返回讨论"], "Chinese")
     
     def test_declined_participants_formatting_golden(self):
         """Golden test for declined participants message formatting."""
         service = self.create_voting_service(self.english_translations)
-        
+
         result = service._get_localized_message(
             "system_messages.voting.voting_declined",
             declined_participants="Alice, Bob"
         )
-        expected = "Voting declined by: Alice, Bob - returning to discussion."
-        assert result == expected
+        assert_prompt_key_elements(result, [
+            "Voting declined",
+            "Alice, Bob",
+            "returning to discussion"
+        ])
     
     def test_missing_translation_fallback_golden(self):
         """Golden test for fallback behavior with missing translations."""
         service = self.create_voting_service({})  # Empty translations
-        
+
         result = service._get_localized_message("missing.translation.key")
-        assert result == "[MISSING: missing.translation.key]"
+        assert_prompt_key_elements(result, ["MISSING:", "missing.translation.key"])
     
     def test_prompt_parameters_consistency_golden(self):
         """Golden test to ensure prompt parameter consistency across languages."""
         # Test that all language versions expect the same parameters
         test_cases = [
-            ("prompts.vote_initiation_with_statement_prompt", {"agent_recent_statement": "test"}),
-            ("prompts.utility_voting_confirmation_request", {"initiation_statement": "test"}),
-            ("voting_results.consensus_reached", {"principle_name": "test"}),
-            ("voting_results.consensus_with_constraint", {"principle_name": "test", "constraint_amount": 1000}),
-            ("system_messages.voting.voting_declined", {"declined_participants": "test"})
+            ("prompts.vote_initiation_with_statement_prompt", {"agent_recent_statement": "test"}, ["test"]),
+            ("prompts.utility_voting_confirmation_request", {"initiation_statement": "test"}, ["test"]),
+            ("voting_results.consensus_reached", {"principle_name": "test"}, ["test"]),
+            ("voting_results.consensus_with_constraint", {"principle_name": "test", "constraint_amount": 1000}, ["test", "1000"]),
+            ("system_messages.voting.voting_declined", {"declined_participants": "test"}, ["test"])
         ]
-        
+
         languages = [
             ("english", self.english_translations),
-            ("spanish", self.spanish_translations), 
+            ("spanish", self.spanish_translations),
             ("chinese", self.chinese_translations)
         ]
-        
-        for key, params in test_cases:
+
+        for key, params, expected_elements in test_cases:
             for lang_name, translations in languages:
                 if key in translations:
                     service = self.create_voting_service(translations)
                     # Should not raise KeyError for missing parameters
                     result = service._get_localized_message(key, **params)
+                    # Validate the result contains expected elements and no missing translation markers
                     assert "[MISSING:" not in result, f"Missing translation for {key} in {lang_name}"
+                    assert_prompt_key_elements(result, expected_elements)

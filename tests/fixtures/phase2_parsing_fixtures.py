@@ -24,6 +24,7 @@ from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
 from experiment_agents.utility_agent import UtilityAgent
 from experiment_agents.participant_agent import ParticipantAgent
+from utils.language_manager import create_language_manager, SupportedLanguage
 
 
 # =============================================================================
@@ -448,9 +449,25 @@ class Phase2ParsingFixtures:
     """Main fixture provider for Phase 2 parsing tests."""
     
     @staticmethod
-    def create_test_utility_agent(model: str = "gpt-4o-mini", temperature: float = 0.0, experiment_language: str = "english") -> UtilityAgent:
+    def create_test_utility_agent(model: str = "stub-model", temperature: float = 0.0, experiment_language: str = "english") -> UtilityAgent:
         """Create utility agent for testing with multilingual support."""
-        return UtilityAgent(utility_model=model, temperature=temperature, experiment_language=experiment_language)
+        # Map language string to SupportedLanguage enum
+        language_map = {
+            "english": SupportedLanguage.ENGLISH,
+            "spanish": SupportedLanguage.SPANISH,
+            "chinese": SupportedLanguage.MANDARIN,
+            "mandarin": SupportedLanguage.MANDARIN
+        }
+
+        supported_language = language_map.get(experiment_language.lower(), SupportedLanguage.ENGLISH)
+        language_manager = create_language_manager(supported_language)
+
+        return UtilityAgent(
+            utility_model=model,
+            temperature=temperature,
+            experiment_language=experiment_language,
+            language_manager=language_manager
+        )
     
     @staticmethod
     def create_mock_participant_agent(name: str) -> ParticipantAgent:
@@ -896,15 +913,64 @@ class FlexibleTestValidation:
 
 
 # =============================================================================
+# Spanish Constraint Testing Utilities
+# =============================================================================
+
+class SpanishConstraintTestHelpers:
+    """Utility functions extracted from BaseSpanishConstraintTest for fixture-based testing."""
+
+    @staticmethod
+    async def parse_constraint_amount_from_statement(
+        utility_agent: UtilityAgent,
+        statement: str
+    ) -> Optional[int]:
+        """Helper to parse constraint amounts from Spanish statements."""
+        await utility_agent.async_init()
+        try:
+            # Create a full statement with the constraint
+            full_statement = f"Elijo maximización del ingreso promedio {statement}"
+            result = await utility_agent.parse_participant_preference(
+                full_statement, participant_name="TestParticipant"
+            )
+            return result.constraint_amount if result else None
+        except Exception:
+            return None
+
+    @staticmethod
+    async def parse_full_preference_statement(
+        utility_agent: UtilityAgent,
+        statement: str
+    ) -> Optional[PrincipleChoice]:
+        """Helper to parse full preference statements."""
+        await utility_agent.async_init()
+        try:
+            result = await utility_agent.parse_participant_preference(
+                statement, participant_name="TestParticipant"
+            )
+            return result
+        except Exception:
+            return None
+
+
+# =============================================================================
 # Export convenience functions
 # =============================================================================
 
 # Convenience functions for easy import
 create_test_utility_agent = Phase2ParsingFixtures.create_test_utility_agent
-create_mock_participant = Phase2ParsingFixtures.create_mock_participant_agent  
+create_mock_participant = Phase2ParsingFixtures.create_mock_participant_agent
 create_test_context = Phase2ParsingFixtures.create_test_participant_context
 create_test_config = Phase2ParsingFixtures.create_test_experiment_config
 create_principle_choice = Phase2ParsingFixtures.create_principle_choice
+
+# Spanish constraint helpers
+parse_constraint_amount = SpanishConstraintTestHelpers.parse_constraint_amount_from_statement
+parse_preference_statement = SpanishConstraintTestHelpers.parse_full_preference_statement
+
+# Pytest fixture for Spanish constraint tests
+def create_spanish_utility_agent() -> UtilityAgent:
+    """Create utility agent specifically configured for Spanish constraint testing."""
+    return create_test_utility_agent(model="stub-model", temperature=0.0, experiment_language="spanish")
 
 # Enhanced fixture support
 get_enhanced_constraint_cases = EnhancedConstraintFixtures.get_constraint_test_cases_with_tolerance

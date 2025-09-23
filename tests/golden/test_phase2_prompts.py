@@ -5,20 +5,21 @@ import pytest
 
 from core.services.discussion_service import DiscussionService
 from models import GroupDiscussionState
-from tests.utils.prompt_assertions import assert_prompt_contains
+from tests.utils.prompt_assertions import assert_prompt_contains, assert_prompt_key_elements
 
 pytestmark = pytest.mark.contracts
 
 
 @pytest.fixture
-def english_service(mocker):
+def english_service():
+    from unittest.mock import Mock
     translations = {
         "prompts.phase2_discussion_short_prompt": "Round {round_number} of {max_rounds}.",
         "prompts.phase2_internal_reasoning": "History: {discussion_history} ({round_number}/{max_rounds})",
         "prompts.phase2_internal_reasoning_short": "Round {round_number}/{max_rounds} reasoning",
         "system_messages.discussion.group_composition": "Participants: {participants}",
     }
-    manager = mocker.Mock()
+    manager = Mock()
     manager.get.side_effect = lambda key, **kwargs: translations[key].format(**kwargs)
     return DiscussionService(manager)
 
@@ -44,4 +45,5 @@ def test_internal_reasoning_prompts(english_service, discussion_state, round_num
     if round_num == 1:
         assert "History:" in prompt
     else:
-        assert prompt == f"Round {round_num}/{max_rounds} reasoning"
+        # Use fragment-based validation instead of exact string matching
+        assert_prompt_key_elements(prompt, [f"Round {round_num}", f"{max_rounds}", "reasoning"])

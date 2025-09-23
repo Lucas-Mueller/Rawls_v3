@@ -3,9 +3,9 @@ Test runner for the Frohlich Experiment.
 
 Usage:
     python run_tests.py [test_type] [--coverage]
-    
+
 Arguments:
-    test_type: 'unit', 'integration', 'regression', or 'all' (default: 'all')
+    test_type: 'unit', 'integration', 'regression', 'resilience', or 'all' (default: 'all')
     --coverage: Run tests with coverage reporting (requires pytest-cov)
 """
 import sys
@@ -96,6 +96,29 @@ def run_regression_tests(coverage=False):
     return result.returncode == 0
 
 
+def run_resilience_tests(coverage: bool = False) -> bool:
+    """Run resilience tests that exercise failure and recovery paths."""
+    print("Running resilience tests...")
+    test_dir = Path(__file__).parent / "tests" / "resilience"
+
+    if not test_dir.exists():
+        print("No resilience tests directory found. Skipping.")
+        return True
+
+    if has_pytest():
+        cmd = [sys.executable, "-m", "pytest", "-q", str(test_dir)]
+        if coverage:
+            cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    else:
+        print("Warning: pytest not available, falling back to unittest for resilience tests.")
+        if coverage:
+            print("Warning: Coverage reporting requires pytest-cov. Running without coverage.")
+        cmd = [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"]
+
+    result = subprocess.run(cmd, cwd=Path(__file__).parent)
+    return result.returncode == 0
+
+
 def run_import_test():
     """Test that all modules can be imported without errors."""
     print("Testing imports...")
@@ -141,7 +164,7 @@ def main():
     for arg in args:
         if arg == "--coverage":
             coverage = True
-        elif arg in ["unit", "integration", "regression", "all"]:
+        elif arg in ["unit", "integration", "regression", "resilience", "all"]:
             test_type = arg
     
     print("=" * 60)
@@ -173,7 +196,12 @@ def main():
         if not run_regression_tests(coverage):
             success = False
         print()
-    
+
+    if test_type in ["resilience", "all"]:
+        if not run_resilience_tests(coverage):
+            success = False
+        print()
+
     print("=" * 60)
     if success:
         print("ALL TESTS PASSED ✓")

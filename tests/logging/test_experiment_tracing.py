@@ -19,9 +19,8 @@ from models.principle_types import (
     PrincipleChoice,
     JusticePrinciple,
     CertaintyLevel,
-    IncomeClass,
 )
-from models.experiment_types import IncomeDistribution
+from models.experiment_types import IncomeDistribution, IncomeClass
 
 
 class StubParticipant:
@@ -135,13 +134,10 @@ async def test_experiment_trace_metadata(monkeypatch):
 
     participant_agents = [StubParticipant(cfg) for cfg in config.agents]
 
-    async def fake_create_participants(*_args, **_kwargs):
+    async def fake_create_participants(self):
         return participant_agents
 
-    monkeypatch.setattr(
-        "experiment_agents.participant_agent.create_participant_agents_with_dynamic_temperature",
-        fake_create_participants,
-    )
+    monkeypatch.setattr(FrohlichExperimentManager, "_create_participants", fake_create_participants)
     monkeypatch.setattr("core.experiment_manager.UtilityAgent", StubUtilityAgent)
     monkeypatch.setattr("core.experiment_manager.Phase1Manager", StubPhase1Manager)
     monkeypatch.setattr("core.experiment_manager.Phase2Manager", StubPhase2Manager)
@@ -172,7 +168,43 @@ async def test_experiment_trace_metadata(monkeypatch):
 
     monkeypatch.setattr("core.experiment_manager.trace", DummyTrace)
 
-    language_manager = SimpleNamespace(get=lambda key, **kwargs: key)
+    language_manager = SimpleNamespace(
+        get=lambda key, **kwargs: key,
+        format_memory_section=lambda memory, **kwargs: memory,
+        get_localized_principle_name=lambda principle, **kwargs: str(principle),
+        get_localized_principle_description=lambda principle, **kwargs: f"Description for {principle}",
+        format_number=lambda num, **kwargs: str(num),
+        format_currency=lambda amount, **kwargs: f"${amount:,.2f}",
+        get_phase1_instructions=lambda round_number, **kwargs: f"Phase 1 instructions for round {round_number}",
+        get_phase2_instructions=lambda round_number, max_rounds=5, **kwargs: f"Phase 2 instructions for round {round_number} of {max_rounds}",
+        get_parser_instructions=lambda **kwargs: "Parser instructions",
+        get_validator_instructions=lambda **kwargs: "Validator instructions",
+        get_experiment_explanation=lambda **kwargs: "Experiment explanation",
+        get_prompt=lambda category, prompt_key, **kwargs: f"{category}_{prompt_key}",
+        get_message=lambda category, message_group, message_key, **kwargs: f"{category}_{message_group}_{message_key}",
+        format_context_info=lambda name, role_description, bank_balance, **kwargs: f"Context for {name}",
+        format_memory_context=lambda name, bank_balance, personality, **kwargs: f"Memory context for {name}",
+        format_phase2_discussion_instructions=lambda **kwargs: "Phase 2 discussion instructions",
+        get_principle_list_formatted=lambda list_type="detailed", **kwargs: "Formatted principle list",
+        get_two_stage_principle_selection_prompt=lambda **kwargs: "Two stage principle selection prompt",
+        get_two_stage_amount_specification_prompt=lambda principle_name, **kwargs: f"Amount specification for {principle_name}",
+        get_justice_principle_name=lambda principle_key, **kwargs: str(principle_key),
+        get_certainty_level_name=lambda certainty_key, **kwargs: str(certainty_key),
+        get_phase_name=lambda phase_key, **kwargs: str(phase_key),
+        format_amount_display=lambda amount, **kwargs: f"${amount:,}",
+        get_two_stage_timeout_message=lambda **kwargs: "Timeout message",
+        get_validation_message=lambda validation_key, **kwargs: f"Validation: {validation_key}",
+        get_error_message=lambda error_key, **kwargs: f"Error: {error_key}",
+        get_success_message=lambda success_key, **kwargs: f"Success: {success_key}",
+        get_status_message=lambda status_key, **kwargs: f"Status: {status_key}",
+        get_principle_choice_parsing_prompt=lambda response, **kwargs: f"Parse choice from: {response}",
+        get_principle_ranking_parsing_prompt=lambda response, **kwargs: f"Parse ranking from: {response}",
+        get_constraint_re_prompt=lambda participant_name, principle_name, constraint_type, **kwargs: f"Constraint re-prompt for {participant_name}",
+        get_format_improvement_prompt=lambda response, parse_type, **kwargs: f"Format improvement for {parse_type}",
+        get_two_stage_error_message=lambda error_type, attempt, max_attempts, **kwargs: f"Error {error_type}, attempt {attempt}/{max_attempts}",
+        get_justice_principle_name_english=lambda principle_key, **kwargs: str(principle_key),
+        get_certainty_level_name_english=lambda certainty_key, **kwargs: str(certainty_key),
+    )
     manager = FrohlichExperimentManager(config, "config/default_config.yaml", language_manager=language_manager)
     manager.agent_logger = StubAgentLogger()
 

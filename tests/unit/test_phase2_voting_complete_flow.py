@@ -64,12 +64,12 @@ async def test_ranking_parsing_disambiguates_vote_prompts(monkeypatch, utility_a
         runner,
         {
             "Response Parser": [
-                '{"rankings": [
+                '''{"rankings": [
                     {"principle": "maximizing_average_floor_constraint", "rank": 1},
                     {"principle": "maximizing_average_range_constraint", "rank": 2},
                     {"principle": "maximizing_average", "rank": 3},
                     {"principle": "maximizing_floor", "rank": 4}
-                ], "certainty": "sure"}'
+                ], "certainty": "sure"}'''
             ]
         },
     )

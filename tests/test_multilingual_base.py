@@ -257,13 +257,19 @@ class LanguageParityChecker:
 
 class MultilingualTestBase(ABC):
     """
-    Base class for parametrized multilingual testing with synchronous methods.
-    
-    This class provides the infrastructure for Step 3.1 of the implementation plan:
-    parametrized test framework with language fixtures and parity checking.
+    DEPRECATED: Base class for parametrized multilingual testing with synchronous methods.
+
+    This class is deprecated as of Phase A2 completion. Tests should now define
+    their own language-specific fixtures (or reuse suite-local helpers) instead of
+    inheriting from this base class.
     """
     
     def setup_method(self, method):  # pragma: no cover - lifecycle hook
+        warnings.warn(
+            "MultilingualTestBase is deprecated. Prefer suite-local language fixtures instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.setUp()
 
     def teardown_method(self, method):  # pragma: no cover - lifecycle hook
@@ -359,9 +365,11 @@ class MultilingualTestBase(ABC):
 
 class AsyncMultilingualTestBase(MultilingualTestBase, ABC):
     """
-    Base class for parametrized multilingual testing with async support.
-    
-    Extends MultilingualTestBase for async test methods and coroutines.
+    DEPRECATED: Base class for parametrized multilingual testing with async support.
+
+    This class is deprecated as of Phase A2 completion. Async suites should define
+    their own fixtures (or share helpers within the suite) rather than inheriting
+    from this base class. Use pytest-asyncio markers and fixtures directly.
     """
     
     @pytest.fixture(params=SUPPORTED_LANGUAGES)
@@ -401,6 +409,11 @@ class AsyncMultilingualTestBase(MultilingualTestBase, ABC):
         return await loop.run_in_executor(None, self.get_language_test_data, language, data_type)
     
     def setUp(self):
+        warnings.warn(
+            "AsyncMultilingualTestBase is deprecated. Prefer suite-local async fixtures instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         super().setUp()
 
 

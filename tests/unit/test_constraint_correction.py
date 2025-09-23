@@ -1,299 +1,352 @@
 """
-Unit tests for constraint correction functionality in Phase 2 voting.
+Test constraint validation and correction functionality.
+
+Tests production UtilityAgent methods for constraint validation,
+re-prompting, and ballots handling for constraint principles.
 """
 
-import unittest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-
-from core.phase2_manager import Phase2Manager
-from experiment_agents import UtilityAgent, ParticipantAgent
-from models import PrincipleChoice, JusticePrinciple, ParticipantContext, ExperimentPhase, GroupDiscussionState
-from config import ExperimentConfiguration, AgentConfiguration
-from config.phase2_settings import Phase2Settings
+import pytest
+from experiment_agents.utility_agent import UtilityAgent
+from models.principle_types import JusticePrinciple, PrincipleChoice
+from utils.language_manager import create_language_manager, SupportedLanguage
 
 
-class TestConstraintCorrection(unittest.TestCase):
-    """Test constraint correction functionality."""
-    
-    def setUp(self):
-        """Set up test fixtures."""
-        # Create mock participants and utility agent
-        self.mock_participant = MagicMock(spec=ParticipantAgent)
-        self.mock_participant.name = "TestAgent"
-        self.mock_participant.agent = AsyncMock()
-        
-        self.participants = [self.mock_participant]
-        
-        # Create utility agent
-        self.utility_agent = UtilityAgent(utility_model="gpt-4o-mini", temperature=0.0)
-        
-        # Create phase 2 manager
-        self.mock_config = MagicMock(spec=ExperimentConfiguration)
-        self.mock_config.phase2_settings = Phase2Settings.get_default()
-        self.mock_config.memory_guidance_style = "narrative"
-        
-        self.phase2_manager = Phase2Manager(
-            participants=self.participants,
-            utility_agent=self.utility_agent,
-            experiment_config=self.mock_config
+class TestConstraintCorrection:
+    """Test constraint validation and correction using production methods."""
+
+    @pytest.fixture
+    def utility_agent(self):
+        """Create utility agent for testing."""
+        language_manager = create_language_manager(SupportedLanguage.ENGLISH)
+        return UtilityAgent(
+            utility_model="stub-model",
+            temperature=0.0,
+            experiment_language="english",
+            language_manager=language_manager,
         )
-        
-        # Create test contexts
-        self.contexts = [
-            ParticipantContext(
-                name="TestAgent",
-                role_description="Test participant",
-                bank_balance=100.0,
-                memory="Initial memory",
-                round_number=1,
-                phase=ExperimentPhase.PHASE_2,
-                memory_character_limit=50000
+
+    @pytest.mark.asyncio
+    async def test_constraint_validation_floor_principle(self, utility_agent):
+        """Test constraint validation for floor constraint principle."""
+
+        # Valid floor constraint
+        valid_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=15000,
+            certainty="sure",
+            reasoning="Floor constraint of $15,000"
+        )
+
+        # Invalid floor constraint (missing amount)
+        invalid_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Floor constraint without amount"
+        )
+
+        # Invalid floor constraint (zero amount)
+        zero_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=0,
+            certainty="sure",
+            reasoning="Floor constraint with zero"
+        )
+
+        # Test valid constraint
+        assert await utility_agent.validate_constraint_specification(valid_choice) is True
+
+        # Test invalid constraints
+        assert await utility_agent.validate_constraint_specification(invalid_choice) is False
+        assert await utility_agent.validate_constraint_specification(zero_choice) is False
+
+    @pytest.mark.asyncio
+    async def test_constraint_validation_range_principle(self, utility_agent):
+        """Test constraint validation for range constraint principle."""
+
+        # Valid range constraint
+        valid_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            constraint_amount=25000,
+            certainty="sure",
+            reasoning="Range constraint of $25,000"
+        )
+
+        # Invalid range constraint (missing amount)
+        invalid_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Range constraint without amount"
+        )
+
+        # Test valid constraint
+        assert await utility_agent.validate_constraint_specification(valid_choice) is True
+
+        # Test invalid constraint
+        assert await utility_agent.validate_constraint_specification(invalid_choice) is False
+
+    @pytest.mark.asyncio
+    async def test_constraint_validation_non_constraint_principles(self, utility_agent):
+        """Test that non-constraint principles don't require constraint amounts."""
+
+        # Maximizing floor (no constraint needed)
+        floor_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_FLOOR,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Just maximizing floor income"
+        )
+
+        # Maximizing average (no constraint needed)
+        average_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Just maximizing average income"
+        )
+
+        # Both should be valid without constraint amounts
+        assert await utility_agent.validate_constraint_specification(floor_choice) is True
+        assert await utility_agent.validate_constraint_specification(average_choice) is True
+
+        # They should also be valid WITH constraint amounts (ignored)
+        floor_choice.constraint_amount = 10000
+        average_choice.constraint_amount = 20000
+
+        assert await utility_agent.validate_constraint_specification(floor_choice) is True
+        assert await utility_agent.validate_constraint_specification(average_choice) is True
+
+    @pytest.mark.asyncio
+    async def test_constraint_re_prompt_generation(self, utility_agent):
+        """Test re-prompt generation for missing constraints."""
+
+        # Floor constraint missing
+        floor_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Floor constraint without amount"
+        )
+
+        # Range constraint missing
+        range_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+            constraint_amount=None,
+            certainty="sure",
+            reasoning="Range constraint without amount"
+        )
+
+        # Test re-prompt generation
+        floor_prompt = await utility_agent.re_prompt_for_constraint("TestAgent", floor_choice)
+        range_prompt = await utility_agent.re_prompt_for_constraint("TestAgent", range_choice)
+
+        assert floor_prompt is not None
+        assert isinstance(floor_prompt, str)
+        assert len(floor_prompt) > 0
+
+        assert range_prompt is not None
+        assert isinstance(range_prompt, str)
+        assert len(range_prompt) > 0
+
+        # Prompts should be different for different constraint types
+        assert floor_prompt != range_prompt
+
+    @pytest.mark.asyncio
+    async def test_ballot_consensus_with_constraints(self, utility_agent, stubbed_runner):
+        """Test ballot consensus checking with constraint principles."""
+
+        # Consensus case: All agents choose same principle with same constraint
+        consensus_ballots = [
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=15000,
+                certainty="sure",
+                reasoning="Floor constraint of $15,000"
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=15000,
+                certainty="sure",
+                reasoning="Floor constraint of $15,000"
             )
         ]
-        
-        # Create discussion state
-        self.discussion_state = GroupDiscussionState()
-        
-    def test_constraint_correction_success_floor(self):
-        """Test successful constraint correction for floor constraint principle."""
-        
-        async def run_test():
-            # Create ballot with missing constraint
-            ballot = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure",
-                reasoning="Test ballot"
-            )
-            ballots = [ballot]
-            warnings = ["Ballot missing constraint amount for maximizing_average_floor_constraint"]
-            
-            # Mock the agent response and extraction
-            mock_result = MagicMock()
-            mock_result.final_output = "I want a floor constraint of $15,000"
-            
-            with patch('agents.Runner.run', return_value=mock_result):
-                with patch.object(self.utility_agent, '_extract_constraint_amount_flexible', return_value=15000):
-                    with patch('utils.memory_manager.MemoryManager.prompt_agent_for_memory_update', return_value="Updated memory"):
-                        
-                        result = await self.phase2_manager._handle_constraint_corrections(
-                            ballots, self.contexts, warnings, self.discussion_state
-                        )
-                        
-                        # Should return True (success)
-                        self.assertTrue(result)
-                        
-                        # Ballot should be updated with constraint amount
-                        self.assertEqual(ballot.constraint_amount, 15000)
-                        
-                        # Discussion state should show success message
-                        self.assertIn("Corrected 1 missing constraint amounts", self.discussion_state.public_history)
-        
-        asyncio.run(run_test())
-    
-    def test_constraint_correction_success_range(self):
-        """Test successful constraint correction for range constraint principle."""
-        
-        async def run_test():
-            # Create ballot with missing constraint
-            ballot = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure", 
-                reasoning="Test ballot"
-            )
-            ballots = [ballot]
-            warnings = ["Ballot missing constraint amount for maximizing_average_range_constraint"]
-            
-            # Mock the agent response and extraction
-            mock_result = MagicMock()
-            mock_result.final_output = "I choose a range constraint of $25,000"
-            
-            with patch('agents.Runner.run', return_value=mock_result):
-                with patch.object(self.utility_agent, '_extract_constraint_amount_flexible', return_value=25000):
-                    with patch('utils.memory_manager.MemoryManager.prompt_agent_for_memory_update', return_value="Updated memory"):
-                        
-                        result = await self.phase2_manager._handle_constraint_corrections(
-                            ballots, self.contexts, warnings, self.discussion_state
-                        )
-                        
-                        # Should return True (success)
-                        self.assertTrue(result)
-                        
-                        # Ballot should be updated with constraint amount
-                        self.assertEqual(ballot.constraint_amount, 25000)
-        
-        asyncio.run(run_test())
-    
-    def test_constraint_correction_failure(self):
-        """Test constraint correction failure when amount cannot be extracted."""
-        
-        async def run_test():
-            # Create ballot with missing constraint
-            ballot = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure",
-                reasoning="Test ballot"
-            )
-            ballots = [ballot]
-            warnings = ["Ballot missing constraint amount for maximizing_average_floor_constraint"]
-            
-            # Mock the agent response and failed extraction
-            mock_result = MagicMock()
-            mock_result.final_output = "I'm not sure about the exact amount"
-            
-            with patch('agents.Runner.run', return_value=mock_result):
-                with patch.object(self.utility_agent, '_extract_constraint_amount_flexible', return_value=None):
-                    
-                    result = await self.phase2_manager._handle_constraint_corrections(
-                        ballots, self.contexts, warnings, self.discussion_state
-                    )
-                    
-                    # Should return False (failure)
-                    self.assertFalse(result)
-                    
-                    # Ballot should still have no constraint amount
-                    self.assertIsNone(ballot.constraint_amount)
-                    
-                    # Discussion state should show failure message
-                    self.assertIn("Could not correct missing constraint amounts", self.discussion_state.public_history)
-        
-        asyncio.run(run_test())
-    
-    def test_constraint_correction_no_corrections_needed(self):
-        """Test when no ballots need constraint correction."""
-        
-        async def run_test():
-            # Create ballot that doesn't need correction (single ballot to match single participant)
-            ballots = [
-                PrincipleChoice(
-                    principle=JusticePrinciple.MAXIMIZING_FLOOR,  # Doesn't require constraint
-                    constraint_amount=None,
-                    certainty="sure",
-                    reasoning="Test ballot"
-                )
-            ]
-            warnings = []
-            
-            result = await self.phase2_manager._handle_constraint_corrections(
-                ballots, self.contexts, warnings, self.discussion_state
-            )
-            
-            # Should return False since no corrections were made
-            self.assertFalse(result)
-        
-        asyncio.run(run_test())
-    
-    def test_constraint_correction_timeout(self):
-        """Test constraint correction when agent times out."""
-        
-        async def run_test():
-            # Create ballot with missing constraint
-            ballot = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure",
-                reasoning="Test ballot"
-            )
-            ballots = [ballot]
-            warnings = ["Ballot missing constraint amount for maximizing_average_floor_constraint"]
-            
-            # Mock timeout
-            with patch('agents.Runner.run', side_effect=asyncio.TimeoutError()):
-                
-                result = await self.phase2_manager._handle_constraint_corrections(
-                    ballots, self.contexts, warnings, self.discussion_state
-                )
-                
-                # Should return False (failure due to timeout)
-                self.assertFalse(result)
-                
-                # Ballot should still have no constraint amount
-                self.assertIsNone(ballot.constraint_amount)
-        
-        asyncio.run(run_test())
-    
-    def test_constraint_correction_mixed_results(self):
-        """Test constraint correction with mixed success/failure results."""
-        
-        async def run_test():
-            # Create second participant for this test
-            mock_participant2 = MagicMock(spec=ParticipantAgent)
-            mock_participant2.name = "TestAgent2"
-            mock_participant2.agent = AsyncMock()
-            
-            # Add second participant temporarily
-            original_participants = self.phase2_manager.participants
-            self.phase2_manager.participants = [self.participants[0], mock_participant2]
-            
-            # Create second context
-            context2 = ParticipantContext(
-                name="TestAgent2",
-                role_description="Test participant 2", 
-                bank_balance=100.0,
-                memory="Initial memory 2",
-                round_number=1,
-                phase=ExperimentPhase.PHASE_2,
-                memory_character_limit=50000
-            )
-            
-            # Create ballots with different correction needs
-            ballot1 = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure",
-                reasoning="Test ballot 1"
-            )
-            ballot2 = PrincipleChoice(
-                principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
-                constraint_amount=None,
-                certainty="sure",
-                reasoning="Test ballot 2"
-            )
-            
-            ballots = [ballot1, ballot2]
-            contexts = [self.contexts[0], context2]  # Two contexts for two ballots
-            warnings = ["Multiple missing constraint amounts"]
-            
-            # Mock responses - first succeeds, second fails
-            mock_results = [
-                MagicMock(final_output="Floor constraint of $15,000"),
-                MagicMock(final_output="I don't know the amount")
-            ]
-            
-            def side_effect(*args, **kwargs):
-                return mock_results.pop(0)
-            
-            # Mock extraction - first succeeds, second fails
-            extract_results = [15000, None]
-            def extract_side_effect(*args, **kwargs):
-                return extract_results.pop(0) if extract_results else None
-            
-            with patch('agents.Runner.run', side_effect=side_effect):
-                with patch.object(self.utility_agent, '_extract_constraint_amount_flexible', side_effect=extract_side_effect):
-                    with patch('utils.memory_manager.MemoryManager.prompt_agent_for_memory_update', return_value="Updated memory"):
-                        
-                        result = await self.phase2_manager._handle_constraint_corrections(
-                            ballots, contexts, warnings, self.discussion_state
-                        )
-                        
-                        # Should return True since at least one correction was made
-                        self.assertTrue(result)
-                        
-                        # First ballot should be corrected, second should not
-                        self.assertEqual(ballot1.constraint_amount, 15000)
-                        self.assertIsNone(ballot2.constraint_amount)
-                        
-                        # Should show success message for partial correction
-                        self.assertIn("Corrected 1 missing constraint amounts", self.discussion_state.public_history)
-                        
-                        # Restore original participants
-                        self.phase2_manager.participants = original_participants
-        
-        asyncio.run(run_test())
 
+        has_consensus, consensus_choice, warnings = utility_agent.check_ballot_consensus(consensus_ballots)
 
-if __name__ == '__main__':
-    unittest.main()
+        assert has_consensus is True
+        assert consensus_choice is not None
+        assert consensus_choice.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT
+        assert consensus_choice.constraint_amount == 15000
+        assert len(warnings) == 0
+
+    @pytest.mark.asyncio
+    async def test_ballot_consensus_different_constraints(self, utility_agent, stubbed_runner):
+        """Test ballot consensus fails with different constraint amounts."""
+
+        # No consensus case: Same principle, different constraints
+        different_constraint_ballots = [
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=15000,
+                certainty="sure",
+                reasoning="Floor constraint of $15,000"
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=20000,
+                certainty="sure",
+                reasoning="Floor constraint of $20,000"
+            )
+        ]
+
+        has_consensus, consensus_choice, warnings = utility_agent.check_ballot_consensus(different_constraint_ballots)
+
+        assert has_consensus is False
+        assert consensus_choice is None
+        assert len(warnings) > 0
+        assert "Different constraint amounts" in str(warnings)
+
+    @pytest.mark.asyncio
+    async def test_ballot_consensus_missing_constraints(self, utility_agent, stubbed_runner):
+        """Test ballot consensus fails with missing constraint amounts."""
+
+        # Missing constraint amounts
+        missing_constraint_ballots = [
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=None,
+                certainty="sure",
+                reasoning="Floor constraint without amount"
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=None,
+                certainty="sure",
+                reasoning="Floor constraint without amount"
+            )
+        ]
+
+        has_consensus, consensus_choice, warnings = utility_agent.check_ballot_consensus(missing_constraint_ballots)
+
+        # Should not achieve consensus with missing constraints
+        assert has_consensus is False
+        assert consensus_choice is None
+
+    @pytest.mark.asyncio
+    async def test_mixed_constraint_scenarios(self, utility_agent, stubbed_runner):
+        """Test various mixed constraint scenarios."""
+
+        # One valid, one invalid constraint
+        mixed_ballots = [
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=15000,
+                certainty="sure",
+                reasoning="Floor constraint of $15,000"
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                constraint_amount=None,
+                certainty="sure",
+                reasoning="Floor constraint without amount"
+            )
+        ]
+
+        has_consensus, consensus_choice, warnings = utility_agent.check_ballot_consensus(mixed_ballots)
+
+        assert has_consensus is False
+        assert consensus_choice is None
+
+    @pytest.mark.asyncio
+    async def test_non_constraint_principle_consensus(self, utility_agent, stubbed_runner):
+        """Test consensus works for non-constraint principles."""
+
+        # Non-constraint principles should achieve consensus easily
+        non_constraint_ballots = [
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_FLOOR,
+                constraint_amount=None,
+                certainty="sure",
+                reasoning="Maximizing floor income"
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_FLOOR,
+                constraint_amount=None,
+                certainty="sure",
+                reasoning="Maximizing floor income"
+            )
+        ]
+
+        has_consensus, consensus_choice, warnings = utility_agent.check_ballot_consensus(non_constraint_ballots)
+
+        assert has_consensus is True
+        assert consensus_choice is not None
+        assert consensus_choice.principle == JusticePrinciple.MAXIMIZING_FLOOR
+        assert len(warnings) == 0
+
+    @pytest.mark.asyncio
+    async def test_constraint_amount_validation_edge_cases(self, utility_agent):
+        """Test edge cases for constraint amount validation."""
+
+        # Negative constraint amount
+        negative_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=-1000,
+            certainty="sure",
+            reasoning="Negative constraint"
+        )
+
+        # Very large constraint amount
+        large_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=1000000,
+            certainty="sure",
+            reasoning="Large constraint"
+        )
+
+        # Minimal valid constraint amount
+        minimal_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=1,
+            certainty="sure",
+            reasoning="Minimal constraint"
+        )
+
+        # Test validations
+        assert await utility_agent.validate_constraint_specification(negative_choice) is False
+        assert await utility_agent.validate_constraint_specification(large_choice) is True
+        assert await utility_agent.validate_constraint_specification(minimal_choice) is True
+
+    @pytest.mark.asyncio
+    async def test_multilingual_constraint_validation(self, utility_agent):
+        """Test constraint validation works with multilingual reasoning."""
+
+        # English reasoning
+        english_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=15000,
+            certainty="sure",
+            reasoning="Floor constraint of $15,000"
+        )
+
+        # Spanish reasoning
+        spanish_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=15000,
+            certainty="sure",
+            reasoning="Restricción de piso de $15,000"
+        )
+
+        # Mandarin reasoning
+        mandarin_choice = PrincipleChoice(
+            principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+            constraint_amount=15000,
+            certainty="sure",
+            reasoning="底线约束为$15,000"
+        )
+
+        # All should validate regardless of reasoning language
+        assert await utility_agent.validate_constraint_specification(english_choice) is True
+        assert await utility_agent.validate_constraint_specification(spanish_choice) is True
+        assert await utility_agent.validate_constraint_specification(mandarin_choice) is True
