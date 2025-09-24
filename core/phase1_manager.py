@@ -15,6 +15,7 @@ from experiment_agents import update_participant_context, UtilityAgent, Particip
 from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.seed_manager import SeedManager
 
 
 class Phase1Manager:
@@ -25,7 +26,7 @@ class Phase1Manager:
         self.utility_agent = utility_agent
         self.language_manager = language_manager
         self.error_handler = error_handler
-        self.seed_manager = seed_manager
+        self.seed_manager = seed_manager or SeedManager()
         self.logger = None  # Will be set in run_phase1
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:

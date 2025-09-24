@@ -20,10 +20,9 @@ Sample output files from experiments used for testing:
 
 ## Usage
 
-These fixtures are **not** loaded by the modern layered suites. They are kept so
-archived analyses (for example
-`archive/letter_based_legacy/*/letter_based_principle_detection_report*.md`)
-can still cite the original artefacts. When adding new fixtures, prefer the
+These fixtures are **not** loaded by the modern layered suites. They remain only
+for occasional manual experiments or when preparing new deterministic fixtures.
+When adding new fixtures, prefer the
 prompt-harness helpers in `tests/support`; only drop files here if a scenario
 must persist alongside documentation.
 

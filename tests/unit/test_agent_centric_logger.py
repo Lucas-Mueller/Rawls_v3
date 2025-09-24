@@ -254,6 +254,23 @@ class TestAgentCentricLogger:
 
 class TestMemoryStateCapture:
     """Test the MemoryStateCapture utility class."""
+
+    def _init_logger(self) -> AgentCentricLogger:
+        logger = AgentCentricLogger()
+        participant = Mock(spec=ParticipantAgent)
+        participant.name = "Agent1"
+        config = Mock(spec=ExperimentConfiguration)
+        config.agents = [
+            Mock(spec=AgentConfiguration, **{
+                'name': 'Agent1',
+                'model': 'o3-mini',
+                'temperature': 0.7,
+                'personality': 'cautious',
+                'reasoning_enabled': True,
+            })
+        ]
+        logger.initialize_experiment([participant], config)
+        return logger
     
     def test_capture_pre_round_state(self):
         """Test capturing pre-round state."""
@@ -278,15 +295,47 @@ class TestMemoryStateCapture:
         empty_formatted = MemoryStateCapture.format_alternative_payoffs({})
         assert empty_formatted == "No alternative payoffs calculated"
     
-    def test_extract_confidence_from_response(self):
-        """Test extracting confidence from response text."""
-# This method was removed as confidence is now handled by structured PrincipleRanking objects
-        # Skip this test as the method no longer exists
-        pytest.skip("Method removed - confidence now handled by PrincipleRanking objects")
-    
-    def test_extract_vote_intention(self):
-        """Test removed - vote intention detection no longer used."""
-        pytest.skip("Vote intention detection removed - using formal voting system instead")
+    def test_log_initial_ranking_records_certainty(self):
+        """Certainty should now be sourced from structured PrincipleRanking objects."""
+        logger = self._init_logger()
+
+        from models import PrincipleRanking, RankedPrinciple, JusticePrinciple, CertaintyLevel
+
+        ranking = PrincipleRanking(
+            rankings=[
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4),
+            ],
+            certainty=CertaintyLevel.VERY_SURE,
+        )
+
+        logger.log_initial_ranking("Agent1", ranking, "initial memory", 0.0)
+
+        entry = logger.agent_logs["Agent1"].phase_1.initial_ranking
+        assert entry.ranking_result is not None
+        assert entry.ranking_result.certainty == CertaintyLevel.VERY_SURE.value
+
+    def test_vote_intention_field_remains_empty(self):
+        """Vote intention is no longer inferred directly by the logger."""
+        logger = self._init_logger()
+
+        sentinel_vote = "provided by manager"
+        logger.log_discussion_round(
+            "Agent1",
+            1,
+            1,
+            "Internal reasoning",
+            "Public statement",
+            initiate_vote=sentinel_vote,
+            favored_principle="maximizing_floor",
+            memory_state="memory",
+            bank_balance=0.0,
+        )
+
+        round_log = logger.agent_logs["Agent1"].phase_2.rounds[0]
+        assert round_log.initiate_vote == sentinel_vote
 
 
 class TestTargetStateFormat:

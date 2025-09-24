@@ -44,11 +44,9 @@ and any remaining gaps or follow-up work.
 - **Current state** – Legacy `.bak` suites were removed, the `tests/_legacy`
   directory no longer exists, and performance folders are archived. Fixtures
   in `tests/fixtures` were trimmed to active ones.
-- **Gaps / notes** – Remaining letter-rejection scenarios were archived under
-  `archive/letter_based_legacy/validation_tests`, and legacy unit suites that
-  exercised deprecated parsing helpers now live in
-  `archive/tests_unit_legacy`. Reintroduce only if they are rebuilt on top of
-  the prompt harness.
+- **Gaps / notes** – Legacy unit suites that exercised deprecated parsing
+  helpers have been removed; rebuild scenarios on top of the prompt harness if
+  the coverage is still required.
 
 ### Phase 3 – Shared Test Infrastructure
 
@@ -168,12 +166,8 @@ and any remaining gaps or follow-up work.
 
 ## Key Follow-ups
 
-1. Introduce a small set of live integration/CLI tests to satisfy Phase 5 and
-   Phase 10 requirements for end-to-end multilingual coverage.
-2. Decide how to treat `tests/validation` so the suite aligns with the layered
-   topology (migrate into component/live or archive).
-3. Flesh out the migration ledger and knowledge-transfer notes to close the
-   remaining Phase 8 deliverables and retain historical context.
-4. Establish a lightweight cadence checklist and metrics aggregation process
+1. Expand the CLI smoke (now in `tests/integration/test_cli_live.py`) with
+   additional language rotations once live credentials are available.
+2. Establish a lightweight cadence checklist and metrics aggregation process
    (even a manual dashboard) to complete the long-term maintenance vision from
    Phase 9 and reinforce the success criteria.

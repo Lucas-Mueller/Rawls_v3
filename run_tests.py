@@ -75,6 +75,8 @@ def _run_pytest(
         report_file = Path(handle.name)
         handle.close()
         env[LANGUAGE_REPORT_ENV] = str(report_file)
+        env.setdefault("LIVE_PRIMARY_LANGUAGE", "english")
+        env.setdefault("LIVE_LANGUAGES", "0")
 
     if has_pytest():
         cmd = _pytest_cmd(marker, path, coverage)

@@ -151,7 +151,8 @@ Deliverables: updated scripts, CI YAML, sample reports.
 1. **Port high-value logic**
  - Translate existing assertion logic from `.bak` files into new component suites, swapping mocks for live agents.
  - Preserve insights from parsing tests by transforming them into contract checks or prompt regression tests that use real outputs.
-  - Relocate legacy unit suites that relied on removed parsing helpers to `archive/tests_unit_legacy` once their behaviour is covered by modern harness-based tests.
+  - Ensure any remaining references to retired suites are removed once their
+    behaviour is rebuilt on top of the prompt harness.
 2. **Document staged removal**
    - Track migration progress; delete legacy files once equivalent coverage in new structure exists.
 3. **Knowledge transfer**

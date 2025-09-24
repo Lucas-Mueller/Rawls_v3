@@ -123,17 +123,30 @@ Unit Testing
 Test Structure
 ~~~~~~~~~~~~~
 
-Unit tests are organized by module in the `tests/unit/` directory:
+Unit tests are organised around deterministic helpers in the `tests/unit/`
+directory. The active suite focuses on configuration validation, model helper
+logic, and the memory/error subsystems; parsing/voting coverage now lives in
+the component layer alongside the prompt harness.
 
 .. code-block:: text
 
    tests/unit/
+   ├── test_agent_centric_logger.py
    ├── test_distribution_generator.py
-   ├── test_language_manager.py
+   ├── test_error_handler.py
+   ├── test_experiment_configuration_yaml.py
+   ├── test_group_discussion_state.py
    ├── test_memory_manager.py
    ├── test_model_provider.py
-   ├── test_models.py
-   └── test_translation_validation.py
+   ├── test_model_provider_info.py
+   ├── test_original_values_data.py
+   ├── test_original_values_mode.py
+   ├── test_phase2_context_initialization.py
+   ├── test_principle_choice_validation.py
+   ├── test_reasoning_error_handling.py
+   ├── test_reproducibility.py
+   ├── test_retry_helpers.py
+   └── test_utility_agent_parsing.py
 
 **Example Unit Test Structure:**
 
