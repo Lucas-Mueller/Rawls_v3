@@ -15,10 +15,13 @@ The framework is highly configurable, with experiment parameters defined in YAML
 
 ## Getting Started
 
-To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests. The bundled `run_tests.py` script now supports targeted suites:
+To get started with the Frohlich Experiment framework, please refer to the `GEMINI.md` file for a detailed project overview, key components, and instructions on how to run experiments and tests. The bundled `run_tests.py` script now supports layered selections and live toggles:
 
 ```
-python run_tests.py unit
-python run_tests.py integration
-python run_tests.py regression
+python run_tests.py unit component   # fast feedback (unit + component)
+python run_tests.py integration      # heavier multilingual flows
+python run_tests.py contracts        # snapshot/golden checks
+RUN_LIVE_TESTS=0 python run_tests.py integration  # force-skip live suites
 ```
+
+Set `OPENAI_API_KEY` in your environment (or `.env`) to enable live component/integration runs; without it, the runner skips suites that require LLM access and explains how to re-enable them.

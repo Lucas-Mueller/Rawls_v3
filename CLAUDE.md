@@ -105,7 +105,10 @@ python run_tests.py
 
 # Specific test types
 python run_tests.py unit
+python run_tests.py component  # Component tests with language coverage enforcement
 python run_tests.py integration
+python run_tests.py contracts  # Contract/regression tests
+python run_tests.py live       # Live tests requiring API keys
 
 # With coverage
 python run_tests.py --coverage

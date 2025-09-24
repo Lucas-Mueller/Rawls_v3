@@ -246,7 +246,7 @@ Daily Development
 
       # Edit code
       # Run tests frequently
-      python run_tests.py
+      python run_tests.py unit component
       
       # Test specific modules
       python -m unittest tests.unit.test_your_module -v
@@ -268,21 +268,30 @@ Daily Development
 Running Tests
 ~~~~~~~~~~~~
 
-**Full Test Suite**:
+**Fast Feedback Suite (default)**:
 
 .. code-block:: bash
 
-   python run_tests.py
+   python run_tests.py unit component
 
 **Specific Test Categories**:
 
 .. code-block:: bash
 
-   # Unit tests only
+   # Unit-only logic
    python run_tests.py unit
-   
-   # Integration tests only  
+
+   # Component + live multilingual flows
+   python run_tests.py component
    python run_tests.py integration
+
+   # Contract/golden artefact checks
+   python run_tests.py contracts
+
+   # Skip live suites even when credentials are present
+   RUN_LIVE_TESTS=0 python run_tests.py integration
+
+Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environment or ``.env`` file to enable live runs; without them the runner will automatically skip suites that call real LLMs and explain how to re-enable coverage.
 
 **Individual Test Files**:
 
@@ -383,7 +392,7 @@ Common Development Issues
 
    Tests failing due to API rate limits
    
-   Solution: Some tests are skipped in the default configuration. Use test configurations with mock responses.
+   Solution: Pause live suites by exporting ``RUN_LIVE_TESTS=0`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
 
 Debugging Tools
 ~~~~~~~~~~~~~~

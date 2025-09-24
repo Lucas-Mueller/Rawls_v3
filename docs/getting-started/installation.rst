@@ -94,11 +94,12 @@ Test your installation by running the test suite:
 
 .. code-block:: bash
 
-   python run_tests.py            # full suite
-   python run_tests.py unit       # unit tests only
-   python run_tests.py regression # deterministic regression checks
+   python run_tests.py unit component   # fast feedback across unit + component
+   python run_tests.py integration      # full multilingual flows with live LLMs
+   python run_tests.py contracts        # snapshot/golden checks
+   RUN_LIVE_TESTS=0 python run_tests.py integration  # force skip live suites
 
-Each invocation prints the import smoke test followed by the selected suites.
+If ``OPENAI_API_KEY`` is not set, the runner automatically skips suites that require live LLM calls and prints guidance for re-enabling them. Each invocation prints the import smoke test followed by the selected suites.
 
 Quick Test Run
 --------------

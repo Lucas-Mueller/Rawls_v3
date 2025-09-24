@@ -1,7 +1,6 @@
 an
 
-▌ please implement phase 1-2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make
-▌ mistkaes
+please implement phase 5, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
 
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 
@@ -216,3 +215,8 @@ Consider Spanish and Mandarin as well, translate the text correspondingly.
 
 Follow a structured and systematic approach. Create a todo list. 
 Dont overengineer things. Keep things simple while also effective. 
+
+
+Hey Codex this codebase contains a lot of legacy code which is either overengineered parts of the code or parts of the code which are not needed anymore. Please create a document as a .md file in the folder z_cleanup which contains each occurence of uneeded code or code that is overengineered and can be simplified. Write for each occurence why you put it there. 
+
+Hey Codex 

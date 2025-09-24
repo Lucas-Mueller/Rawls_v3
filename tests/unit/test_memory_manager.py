@@ -490,18 +490,20 @@ class TestMemoryManagerIntegration(unittest.TestCase):
             with patch.object(MemoryManager, '_create_memory_update_prompt', return_value="Mocked prompt") as mock_create_prompt:
                 # Test with discussion interaction type
                 await MemoryManager.prompt_agent_for_memory_update(
-                    mock_agent, mock_context, "Round content", 
+                    mock_agent, mock_context, "Round content",
                     language_manager=mock_language_manager,
                     interaction_type="statement"
                 )
-                
+
                 # Verify that _create_memory_update_prompt was called with the interaction_type
                 mock_create_prompt.assert_called_once_with(
-                    "Previous memory", 
-                    "Round content", 
+                    "Previous memory",
+                    "Round content",
                     "narrative",  # default guidance style
                     mock_language_manager,
-                    "statement"  # interaction_type should be passed through
+                    "statement",  # interaction_type should be passed through
+                    None,
+                    None,
                 )
         
         # Run the async test
@@ -544,14 +546,16 @@ class TestMemoryManagerIntegration(unittest.TestCase):
                                 language_manager=mock_language_manager,
                                 interaction_type=interaction_type
                             )
-                            
+
                             # Verify parameters passed to template selection
                             mock_create_prompt.assert_called_once_with(
-                                "Previous memory", 
-                                "Round content", 
+                                "Previous memory",
+                                "Round content",
                                 guidance_style,
                                 mock_language_manager,
-                                interaction_type
+                                interaction_type,
+                                None,
+                                None,
                             )
         
         # Run the async test

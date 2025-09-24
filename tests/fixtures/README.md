@@ -1,6 +1,10 @@
 # Test Fixtures
 
-This directory contains test data, configuration files, and sample outputs used by the test suite.
+This directory contains legacy fixture material that remains for reference and
+for manually recreating historical scenarios referenced in the documentation.
+Active unit/component suites now rely on factories in `tests/support`, so the
+files here are only required when reproducing archived reports or crafting new
+fixtures via `tests/templates/fixture_definition_template.py`.
 
 ## Directory Structure
 
@@ -16,7 +20,12 @@ Sample output files from experiments used for testing:
 
 ## Usage
 
-These fixtures are used by integration and unit tests to provide consistent test data:
+These fixtures are **not** loaded by the modern layered suites. They are kept so
+archived analyses (for example
+`archive/letter_based_legacy/*/letter_based_principle_detection_report*.md`)
+can still cite the original artefacts. When adding new fixtures, prefer the
+prompt-harness helpers in `tests/support`; only drop files here if a scenario
+must persist alongside documentation.
 
 ```python
 # Example usage in tests
@@ -28,7 +37,10 @@ config_path = fixtures_dir / "configs" / "test_complex_mode_config.yaml"
 
 ## Guidelines
 
-- **Do not modify** existing fixture files unless updating test requirements
-- **Add new fixtures** when tests need consistent data
-- **Document** any new fixtures in this README
-- **Keep fixtures minimal** - only include data necessary for testing
+- **Do not modify** existing fixture files unless updating linked documentation.
+- **Add new fixtures** here only if they need to persist outside the prompt
+  harness/config factories.
+- **Document** any new fixtures in this README and reference the consuming
+  guide or report.
+- **Keep fixtures minimal** – prefer generated data via `tests/support`
+  utilities for active tests.

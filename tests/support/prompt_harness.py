@@ -153,6 +153,7 @@ class PromptHarness:
         language: SupportedLanguage,
         agent_count: Optional[int] = None,
         initialize: bool = True,
+        preserve_config_languages: bool = False,
     ) -> List[ParticipantAgent]:
         """Provision participant agents based on the harness configuration."""
         count = agent_count or len(self.experiment_config.agents)
@@ -162,13 +163,20 @@ class PromptHarness:
                 f"Requested {count} agents but base configuration only defines {len(self.experiment_config.agents)}"
             )
         updated_configs: List[AgentConfiguration] = []
-        for config in agent_configs:
+        for idx, config in enumerate(agent_configs):
+            if preserve_config_languages:
+                lang_value = config.language
+                supported = _coerce_supported_language(lang_value)
+            else:
+                supported = language
+                lang_value = supported.value.lower()
             updated_configs.append(
-                config.model_copy(update={"language": language.value.lower()})
+                config.model_copy(update={"language": lang_value})
             )
 
-        language_manager = self.create_language_manager(language)
-        localized_config = self.build_localized_config(language, updated_configs)
+        effective_language = language if not preserve_config_languages else _coerce_supported_language(agent_configs[0].language)
+        language_manager = self.create_language_manager(effective_language)
+        localized_config = self.build_localized_config(effective_language, updated_configs)
         if initialize:
             return await create_participant_agents_with_dynamic_temperature(
                 updated_configs,

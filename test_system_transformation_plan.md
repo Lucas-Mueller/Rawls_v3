@@ -47,6 +47,8 @@ Deliverables: inventory spreadsheet, retention decisions, updated CONTRIBUTING n
    - Update references in CI configs if any point to `.bak` files.
 2. **Cull unused directories**
    - Remove empty/pycache-only folders (`tests/acceptance`, `tests/logging`, `tests/resilience`, `tests/services`).
+   - Archive legacy validation suites (`tests/validation/`) once their scenarios
+     are replaced by the layered component coverage.
 3. **Archive performance/resilience experiments**
    - Move long-running suites (`tests/performance/test_multilingual_scalability.py:1`, `tests/performance/test_memory_leak_detection.py:1`) to `archive/` or convert into documented manual procedures if they remain useful.
 4. **Normalize fixtures**
@@ -147,8 +149,9 @@ Deliverables: updated scripts, CI YAML, sample reports.
 
 ## 8. Migration of Existing Tests
 1. **Port high-value logic**
-   - Translate existing assertion logic from `.bak` files into new component suites, swapping mocks for live agents.
-   - Preserve insights from parsing tests by transforming them into contract checks or prompt regression tests that use real outputs.
+ - Translate existing assertion logic from `.bak` files into new component suites, swapping mocks for live agents.
+ - Preserve insights from parsing tests by transforming them into contract checks or prompt regression tests that use real outputs.
+  - Relocate legacy unit suites that relied on removed parsing helpers to `archive/tests_unit_legacy` once their behaviour is covered by modern harness-based tests.
 2. **Document staged removal**
    - Track migration progress; delete legacy files once equivalent coverage in new structure exists.
 3. **Knowledge transfer**
@@ -160,15 +163,11 @@ Deliverables: migration checklist, PRs aligning removal with new coverage, histo
 
 ## 9. Long-term Maintenance
 1. **Playbook**
-   - Update/test README sections describing how to run suites locally with/without credentials.
-   - Provide troubleshooting guide for rate limit errors, multilingual prompt drift.
-2. **Review cadence**
-   - Quarterly audit of suite runtime and cost.
-   - Ensure prompt harness stays aligned with production agents when models change.
-3. **Metrics**
-   - Track coverage per layer, per language, and LLM cost; publish dashboards if possible.
+   - Update/review README sections
+   - Update the documentation in docs
 
-Deliverables: living documentation, scheduled reviews, metrics dashboards.
+
+Deliverables: living documentation
 
 ---
 
