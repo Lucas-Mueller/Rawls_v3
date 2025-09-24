@@ -31,7 +31,7 @@ async def test_phase2_manager_runs_with_live_agents(language, prompt_harness_thr
     agent_logger = AgentCentricLogger()
     agent_logger.initialize_experiment(participants, localized_config)
 
-    phase1_manager = Phase1Manager(participants, utility_agent, language_manager)
+    phase1_manager = Phase1Manager(participants, utility_agent, language_manager, seed_manager=harness.seed_manager)
     phase1_process_logger = create_process_logger("minimal", use_colors=False)
     with capture_process_flow_output(phase1_process_logger):
         phase1_results = await phase1_manager.run_phase1(localized_config, agent_logger, phase1_process_logger)

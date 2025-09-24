@@ -272,16 +272,11 @@ The `hypothesis_testing/` directory contains organized experimental conditions:
 
 ## Important Instruction Reminders
 
-- Do what has been asked; nothing more, nothing less
-- NEVER create files unless they're absolutely necessary for achieving your goal
+- Do what has been asked; stay focused
+- Do not create files unless they're absolutely necessary for achieving your goal
 - ALWAYS prefer editing an existing file to creating a new one  
 - NEVER proactively create documentation files (*.md) or README files unless explicitly requested by the User
 - ALWAYS USE a systematic approach
 - Heavily use detailed and systematic to do lists
 - Obey the principle of simplicity, do not overengineer things. Stay effective
 
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

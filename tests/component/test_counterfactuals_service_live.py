@@ -39,7 +39,7 @@ async def test_counterfactuals_service_outputs(language, prompt_harness_three_ag
     # Produce phase1 results via Phase1Manager to feed into Phase2
     from core.phase1_manager import Phase1Manager
 
-    phase1_manager = Phase1Manager(participants, utility_agent, language_manager)
+    phase1_manager = Phase1Manager(participants, utility_agent, language_manager, seed_manager=harness.seed_manager)
     phase1_process_logger = create_process_logger("minimal", use_colors=False)
     with capture_process_flow_output(phase1_process_logger):
         phase1_results = await phase1_manager.run_phase1(localized_config, agent_logger, phase1_process_logger)

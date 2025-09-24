@@ -15,3 +15,4 @@ Review complete run through Mandarin / Spanish
 Nice to have
 GUI 
 LOG  Each Agent what the did, 
+Memory via OpenAI Memory

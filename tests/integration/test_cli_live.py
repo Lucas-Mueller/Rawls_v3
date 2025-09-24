@@ -12,7 +12,7 @@ import pytest
 from tests.support import build_experiment_configuration
 from utils.language_manager import SupportedLanguage
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.integration
