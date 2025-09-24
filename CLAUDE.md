@@ -100,23 +100,36 @@ python main.py config/custom_config.yaml results/my_experiment.json
 
 ### Testing
 ```bash
-# Run all tests
+# Run all tests (sequential: unit -> component -> integration -> contracts -> live)
 python run_tests.py
 
 # Specific test types
-python run_tests.py unit
-python run_tests.py component  # Component tests with language coverage enforcement
-python run_tests.py integration
-python run_tests.py contracts  # Contract/regression tests
-python run_tests.py live       # Live tests requiring API keys
+python run_tests.py unit                    # Fast unit tests
+python run_tests.py component               # Component tests with language coverage enforcement
+python run_tests.py integration             # Heavier multilingual flows
+python run_tests.py contracts               # Contract/regression tests (golden snapshots)
+python run_tests.py live                    # Live tests requiring API keys
 
-# With coverage
+# Multiple test types in sequence
+python run_tests.py unit component          # Fast feedback loop
+python run_tests.py integration contracts   # Comprehensive validation
+
+# Control live test execution
+RUN_LIVE_TESTS=0 python run_tests.py integration  # Force-skip live suites
+RUN_LIVE_TESTS=1 python run_tests.py live         # Force-enable live tests
+
+# With coverage reporting
 python run_tests.py --coverage
+python run_tests.py unit --coverage         # Coverage for specific test type
 
 # Advanced pytest commands
 python -m pytest tests/unit/test_specific_file.py -v
 python -m pytest -k "test_pattern" -v
 python -m pytest tests/unit/ --tb=short
+
+# Language coverage validation
+# Component and live tests enforce coverage across english, spanish, mandarin
+# Set LANGUAGE_REPORT_PATH environment variable for detailed language test reporting
 
 # Standalone issue-specific test scripts (located in project root)
 python test_compromise_forgetting_issue.py
@@ -143,8 +156,18 @@ pip install -r requirements.txt
 # Set up environment variables (create .env file)
 OPENAI_API_KEY=your_key_here
 
+# Optional: Control OpenAI Agents SDK tracing
+OPENAI_AGENTS_DISABLE_TRACING=1    # Disable tracing for tests
+OPENAI_DISABLE_TRACING=true
+
+# Optional: Test system environment variables
+RUN_LIVE_TESTS=1                   # Enable live tests (default: auto-detect API key)
+LANGUAGE_REPORT_PATH=/path/to/report.json  # Language coverage reporting
+
 # Install R programming language support (for statistical analysis)
 # R package "languageserver" is also recommended
+
+# Python 3.11+ is required
 ```
 
 ### Documentation
@@ -167,6 +190,12 @@ The project does not have dedicated linting commands configured. When working on
 - Follow existing code style and patterns
 - Run the test suite to ensure changes don't break functionality
 - Use the import test in `run_tests.py` to verify module integrity
+
+#### Testing Requirements for API Access
+- **OPENAI_API_KEY** required for live tests and some component/integration tests
+- Tests automatically detect API key availability and skip/enable live tests accordingly
+- Use `RUN_LIVE_TESTS=0` to force-skip live tests even with API key present
+- Component tests require multilingual coverage (English, Spanish, Mandarin) when live tests are enabled
 
 ## Multi-Language Support
 
@@ -220,14 +249,32 @@ The framework includes sophisticated memory management through MemoryService:
 
 ## Testing Strategy
 
-- **Unit tests**: Component-level testing in `tests/unit/`
+The testing framework provides layered test execution with automatic API key detection:
+
+- **Unit tests** (`tests/unit/`): Component-level testing
   - Individual service testing for isolated behavior validation
   - Protocol-based dependency injection for clean service testing
-- **Integration tests**: Cross-component testing in `tests/integration/`
+  - Fast execution, no external dependencies
+- **Component tests** (`tests/component/`): Mid-level integration testing
+  - Requires API key for LLM interactions
+  - Enforces multilingual coverage (English, Spanish, Mandarin)
+  - Language coverage validation with detailed reporting
+- **Integration tests** (`tests/integration/`): Cross-component testing
   - End-to-end Phase 2 workflows through services
   - Service interaction and memory consistency validation
-- **Import validation**: Automatic module import testing
-- **Multilingual validation**: Translation consistency checks
+  - Heavier multilingual flows requiring API access
+- **Contract tests** (`tests/contracts/`): Regression and golden snapshot testing
+  - Validates expected behaviors against baseline results
+  - Snapshot comparisons for consistent outputs
+- **Live tests**: Full system validation with external API calls
+  - Most comprehensive validation requiring API access
+  - Automatically enabled when OPENAI_API_KEY is present
+
+### Test Execution Patterns
+- **Fast feedback**: `python run_tests.py unit component`
+- **Full validation**: `python run_tests.py` (runs all test types sequentially)
+- **API-free testing**: `RUN_LIVE_TESTS=0 python run_tests.py integration`
+- **Import validation**: Automatic module import testing across all layers
 - **Service Testing**: Focused testing of service responsibilities and boundaries
 
 ## Tracing and Observability

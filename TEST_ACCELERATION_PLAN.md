@@ -1,5 +1,5 @@
-# Test Suite Acceleration Plan
-## Comprehensive Strategy for Optimizing Frohlich Experiment Test Execution
+# Test Suite Acceleration Plan (REVISED)
+## Pragmatic Strategy for Optimizing Frohlich Experiment Test Execution
 
 ---
 
@@ -7,14 +7,34 @@
 
 **Current Problem:** The test suite takes 1-2 hours to execute due to running full experiments with real LLM API calls across multiple languages, resulting in 300-500+ API calls per full test run.
 
-**Solution Strategy:** Implement a **dual-tier testing architecture** combining:
-1. **Optimized existing test suite** for comprehensive integration validation
-2. **New lightweight test suite** for fast development feedback cycles
+**Solution Strategy:** Implement a **hybrid optimization approach** combining:
+1. **Immediate configuration optimizations** for existing test suite
+2. **Strategic mock-based testing** for component logic validation
+3. **Enhanced existing architecture** rather than parallel directories
 
-**Expected Impact:**
-- **Development tests**: 95% speed improvement (2-3 minutes vs 1-2 hours)
+**Updated Expected Impact:**
+- **Development tests**: 90% speed improvement (5-10 minutes vs 90-120 minutes)
 - **Integration tests**: 70% speed improvement while maintaining quality
-- **Cost reduction**: 90% reduction in API costs for routine development
+- **Cost reduction**: 85% reduction in API costs for routine development
+
+## Reviewer Feedback Integration
+
+### **Plan-Reviewer Assessment Summary**
+The plan-reviewer provided valuable feedback highlighting:
+- ✅ **Valid concerns**: Over-engineering risk, missing simple solutions, timeline realism
+- ❌ **Challenged points**: Mock complexity fears, configuration-only sufficiency
+
+### **Key Disagreements Addressed**
+
+#### **On Mock Testing Strategy**
+**Reviewer concern**: "Mock complexity becomes maintenance burden"
+**My position**: Mock testing is **essential and industry standard** for testing expensive external dependencies. The concern conflates two different purposes:
+- **Not trying to**: Replicate exact LLM behavior or complex agent interactions
+- **Trying to**: Test application logic (voting counting, consensus detection, data flow) without API costs
+
+#### **On Architectural Changes**
+**Reviewer concern**: "Parallel directories create maintenance overhead"
+**My position**: **Strategic reorganization is necessary** because configuration optimization alone cannot solve the fundamental problem of running full experiments for component testing. However, I accept the feedback to **enhance existing structure** rather than create completely parallel hierarchies.
 
 ---
 
@@ -54,13 +74,21 @@ Total Test Suite: ~90-120 minutes
 
 ---
 
-## Strategy 1: Optimize Existing Test Suite
+## Strategy 1: Immediate Configuration Optimizations (PRIORITIZED)
 
-### Immediate Performance Improvements
+### Phase 1A: Fix Critical Configuration Issues
 
-#### 1.1 **Create Ultra-Fast Test Configurations**
+#### **1.1 Fix Existing Configuration Bug (5 minutes)**
+**URGENT**: The existing `config/fast.yaml` has a typo preventing fast configuration from working:
 
-**Action**: Create dedicated test configurations optimized for speed
+```bash
+# Fix the critical typo
+sed -i '' 's/phase2_roundyes/phase2_rounds/' config/fast.yaml
+```
+
+#### **1.2 Create Ultra-Fast Test Configuration (30 minutes)**
+
+**Action**: Create dedicated test configuration optimized for maximum speed
 
 **Implementation**:
 ```yaml
@@ -72,21 +100,21 @@ agents:
   - name: "Alice"
     personality: "Test agent"
     model: "gpt-4.1-nano"  # Fastest available model
-    memory_character_limit: 10000  # Reduced memory
-    reasoning_enabled: false  # Disable for speed
+    memory_character_limit: 5000   # Reduced from 25000
+    reasoning_enabled: false        # Critical: Disable for speed
     temperature: 0
   - name: "Bob"
     personality: "Test agent"
     model: "gpt-4.1-nano"
-    memory_character_limit: 10000
+    memory_character_limit: 5000
     reasoning_enabled: false
     temperature: 0
 
 utility_agent_model: "gpt-4.1-nano"
 utility_agent_temperature: 0.0
 
-# Minimal rounds for testing
-phase2_rounds: 2  # Reduced from 10 to 2
+# CRITICAL OPTIMIZATIONS:
+phase2_rounds: 2                    # Reduced from 10 to 2 (80% reduction)
 distribution_range_phase1: [1.0, 1.0]  # No randomization
 distribution_range_phase2: [1.0, 1.0]  # No randomization
 
@@ -98,7 +126,7 @@ include_experiment_explanation_each_turn: false
 memory_update_threshold: minimal
 ```
 
-**Expected Impact**: 80% reduction in API calls per test
+**Expected Impact**: 75% reduction in API calls per test (from ~300-500 to ~75-125)
 
 #### 1.2 **Implement Test-Specific Configuration Injection**
 
@@ -175,47 +203,48 @@ def test_full_phase2_integration(language, harness):
 
 ---
 
-## Strategy 2: Create Lightweight Test Suite
+## Strategy 2: Strategic Mock-Based Testing (REFINED APPROACH)
 
-### New Fast Test Architecture
+### Focused Mock Testing for Component Logic
 
-#### 2.1 **Mock-Based Component Testing**
+#### **2.1 Service Interface Testing (Highest ROI)**
 
-**Purpose**: Test component integration without real LLM calls
+**Purpose**: Test service boundaries and contracts without full workflows - **this is where mocks provide maximum value with minimum complexity**
 
 **Implementation**:
 ```python
-# tests/fast/test_phase_managers_mock.py
+# tests/unit/test_service_interfaces_enhanced.py (enhance existing unit tests)
 
-class MockAgent:
-    """Lightweight agent mock with predictable responses."""
-    def __init__(self, name: str, responses: List[str]):
-        self.name = name
-        self._responses = iter(responses)
+@pytest.mark.unit
+def test_voting_service_consensus_logic():
+    """Test consensus detection logic without API calls."""
+    from core.services.voting_service import VotingService
 
-    async def process_prompt(self, prompt: str) -> str:
-        return next(self._responses, "default response")
-
-@pytest.mark.fast
-@pytest.mark.asyncio
-async def test_phase2_workflow_logic():
-    """Test Phase 2 logic flow without real agents."""
-    # Create mock agents with predictable responses
-    mock_agents = [
-        MockAgent("Alice", ["I prefer fairness", "Yes, I vote for principle 1"]),
-        MockAgent("Bob", ["I want equality", "Yes, I agree"])
+    # Test with deterministic vote data
+    votes = [
+        PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_FLOOR, certainty=CertaintyLevel.SURE),
+        PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_FLOOR, certainty=CertaintyLevel.SURE),
+        PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_FLOOR, certainty=CertaintyLevel.SURE)
     ]
 
-    # Test the workflow logic without API calls
-    manager = Phase2Manager(mock_agents, mock_utility, mock_config)
-    results = await manager.run_phase2(config, phase1_results)
+    consensus = VotingService.detect_consensus(votes)
+    assert consensus.reached is True
+    assert consensus.principle == JusticePrinciple.MAXIMIZING_FLOOR
 
-    # Validate structure and logic, not LLM behavior
-    assert results.consensus_reached
-    assert len(results.payoff_results) == 2
+@pytest.mark.unit
+def test_discussion_service_statement_validation():
+    """Test statement validation logic without API calls."""
+    from core.services.discussion_service import DiscussionService
+
+    service = DiscussionService(mock_language_manager, Phase2Settings.get_default())
+
+    # Test validation rules
+    assert service.validate_statement("Valid statement content", min_length=10) is True
+    assert service.validate_statement("Short", min_length=10) is False
+    assert service.validate_statement("", min_length=1) is False
 ```
 
-**Expected Impact**: Component testing in seconds instead of minutes
+**Expected Impact**: Service logic tested in milliseconds, high confidence in business logic
 
 #### 2.2 **Deterministic Response Testing**
 
@@ -338,29 +367,52 @@ def test_results_formatting_pipeline():
 
 ---
 
-## Strategy 3: Hybrid Test Execution Framework
+## Strategy 3: Enhanced Existing Architecture (REVISED APPROACH)
 
-### 3.1 **Multi-Tier Test Categories**
+### **3.1 Enhance Current Test Runner (NOT New Directories)**
 
-**Implementation**: Reorganize tests into performance-based tiers
+**Reviewer feedback accepted**: Instead of parallel directories, enhance existing `run_tests.py` with intelligent execution modes.
 
+**Implementation**: Add smart execution modes to existing test runner
+
+```python
+# Enhanced run_tests.py
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["ultra_fast", "dev", "ci", "full"],
+                       default="dev", help="Test execution mode")
+    parser.add_argument("--config", help="Override configuration file")
+    parser.add_argument("--languages", type=int, choices=[1,2,3],
+                       help="Number of languages to test")
+
+    args = parser.parse_args()
+
+    # Mode-based configuration
+    if args.mode == "ultra_fast":
+        config_override = "config/test_ultra_fast.yaml"
+        language_count = 1
+        skip_expensive = True
+    elif args.mode == "dev":
+        config_override = "config/fast_gpt.yaml"
+        language_count = 2
+        skip_expensive = True
+    elif args.mode == "ci":
+        config_override = "config/default_config.yaml"
+        language_count = 2
+        skip_expensive = False
+    else:  # full
+        config_override = None
+        language_count = 3
+        skip_expensive = False
+
+    # Set environment for existing test infrastructure
+    os.environ["TEST_CONFIG_OVERRIDE"] = config_override or ""
+    os.environ["LIVE_LANGUAGES"] = "1" if language_count > 1 else "0"
+    os.environ["SKIP_EXPENSIVE_TESTS"] = "1" if skip_expensive else "0"
 ```
-tests/
-├── fast/                 # New: Ultra-fast tests (< 30 seconds total)
-│   ├── test_mocked_components.py
-│   ├── test_service_interfaces.py
-│   ├── test_data_flows.py
-│   └── test_parsing_logic.py
-├── medium/               # New: Reduced-scope integration (< 5 minutes total)
-│   ├── test_single_language_integration.py
-│   ├── test_minimal_experiments.py
-│   └── test_component_integration_fast.py
-├── comprehensive/        # Renamed: Full integration tests (< 30 minutes)
-│   ├── test_full_multilingual_integration.py
-│   ├── test_complete_experiments.py
-│   └── test_production_workflows.py
-└── existing structure... # Keep existing for backward compatibility
-```
+
+**Expected Impact**: Leverages existing test infrastructure, no maintenance overhead from parallel directories
 
 ### 3.2 **Smart Test Runner**
 
@@ -435,58 +487,63 @@ class AdaptivePromptHarness:
 
 ---
 
-## Implementation Roadmap
+## Revised Implementation Roadmap (Based on Reviewer Feedback)
 
-### Phase 1: Immediate Optimizations (Week 1)
+### **Phase 1: Immediate Wins (Day 1-2) - HIGHEST PRIORITY**
 
-#### **Priority 1: Create Fast Test Configurations**
-- [ ] Create `config/test_ultra_fast.yaml` with 2 rounds, minimal features
-- [ ] Create `config/test_minimal.yaml` for component testing
-- [ ] Update existing "fast" configs (fix typo in `fast.yaml`)
+#### **🚨 URGENT: Fix Critical Issues**
+- [ ] **Fix configuration bug** (5 minutes): `sed -i '' 's/phase2_roundyes/phase2_rounds/' config/fast.yaml`
+- [ ] **Create ultra-fast config** (30 minutes): `config/test_ultra_fast.yaml` with 2 rounds, reasoning disabled
+- [ ] **Test immediate impact** (15 minutes): Run component tests with new config
 
-#### **Priority 2: Implement Conditional Test Execution**
-- [ ] Add environment variable support for skipping expensive tests
-- [ ] Implement `DEVELOPMENT_MODE` and `FULL_INTEGRATION_TESTS` flags
-- [ ] Update component tests with conditional decorators
+#### **⚡ Environment Optimizations**
+- [ ] **Implement config override system** (1 hour): Allow tests to use different configurations via environment variables
+- [ ] **Add smart language selection** (30 minutes): Default to single language for development
+- [ ] **Add conditional test execution** (30 minutes): Skip expensive tests in development mode
 
-#### **Priority 3: Fix Critical Performance Issues**
-- [ ] Fix the `phase2_roundyes` typo in `config/fast.yaml`
-- [ ] Create focused component configurations
-- [ ] Implement smart language selection for non-critical tests
+**Expected Outcome**: 60-75% performance improvement within 48 hours
 
-### Phase 2: Lightweight Test Suite (Week 2)
+### **Phase 2: Strategic Mock Testing (Week 1) - HIGH VALUE, LOW RISK**
 
-#### **Priority 1: Create Fast Test Foundation**
-- [ ] Create `tests/fast/` directory structure
-- [ ] Implement `MockAgent` and `MockUtilityAgent` classes
-- [ ] Create test base classes for fast testing
+#### **🎯 Focus on Service Logic Testing**
+- [ ] **Enhance existing unit tests** (2 hours): Add service interface testing to existing `tests/unit/`
+- [ ] **Add deterministic parsing tests** (1 hour): Test response parsing with known inputs
+- [ ] **Add data flow tests** (1 hour): Test transformations with synthetic data
 
-#### **Priority 2: Build Core Fast Tests**
-- [ ] Implement service interface tests
-- [ ] Create parsing and validation logic tests
-- [ ] Build data flow and transformation tests
+#### **📋 No New Directories** (Reviewer feedback accepted)
+- [ ] **Enhance existing test structure** rather than creating parallel directories
+- [ ] **Add mock utilities to existing support infrastructure**
+- [ ] **Focus on highest-ROI mocking**: Service boundaries, not full agents
 
-#### **Priority 3: Mock-Based Component Testing**
-- [ ] Create mocked Phase 1 workflow tests
-- [ ] Create mocked Phase 2 workflow tests
-- [ ] Implement consensus detection logic tests
+**Expected Outcome**: Additional 15-20% performance improvement with minimal risk
 
-### Phase 3: Hybrid Framework (Week 3)
+### **Phase 3: Enhanced Test Runner (Week 2) - SUSTAINABLE ARCHITECTURE**
 
-#### **Priority 1: Smart Test Runner**
-- [ ] Create `run_tests_smart.py` with tier-based execution
-- [ ] Implement test categorization system
-- [ ] Create adaptive prompt harness
+#### **🔧 Enhance Existing `run_tests.py`**
+- [ ] **Add execution modes** (2 hours): `--mode ultra_fast/dev/ci/full`
+- [ ] **Implement smart configuration selection** (1 hour): Mode-based config overrides
+- [ ] **Add performance reporting** (30 minutes): Track execution time and API call counts
 
-#### **Priority 2: Integration and Validation**
-- [ ] Validate fast tests provide equivalent coverage
-- [ ] Benchmark performance improvements
-- [ ] Update CI/CD pipeline integration
+#### **🚀 Integration and Validation**
+- [ ] **Benchmark all improvements** (1 hour): Document actual performance gains
+- [ ] **Update documentation** (1 hour): Developer workflow guidelines
+- [ ] **CI/CD integration** (30 minutes): Use appropriate modes in automated testing
 
-#### **Priority 3: Documentation and Training**
-- [ ] Update test documentation for new tiers
-- [ ] Create developer workflow guidelines
-- [ ] Train team on new testing patterns
+**Expected Outcome**: Sustainable 85-90% improvement with clear usage patterns
+
+## Revised Success Metrics (More Realistic)
+
+### **Quantitative Targets (Adjusted)**
+- **Ultra-fast mode**: < 10 minutes (from 90-120 minutes) - 90% improvement
+- **Development mode**: < 20 minutes (from 90-120 minutes) - 80% improvement
+- **CI mode**: < 40 minutes (from 90-120 minutes) - 65% improvement
+- **API cost reduction**: > 80% for routine development (more realistic than 90%)
+
+### **Qualitative Goals (Enhanced)**
+- **Developer adoption**: Simple enhancements to existing workflow
+- **Risk minimization**: No parallel architectures or complex mock systems
+- **Quality maintenance**: Strategic comprehensive testing for releases
+- **Sustainability**: Low maintenance overhead for long-term success
 
 ---
 
@@ -558,14 +615,39 @@ Optimized:
 
 ---
 
-## Conclusion
+## Key Disagreements with Reviewer (DEFENDED POSITIONS)
 
-This acceleration plan provides a **comprehensive strategy** for addressing the test suite performance issues while maintaining quality and coverage. The **dual-tier approach** allows developers to work efficiently with fast feedback while preserving thorough validation for critical integration points.
+### **On Mock Testing Necessity**
+**Reviewer position**: "Mock complexity becomes maintenance burden"
+**My maintained position**: Mock testing is **essential for testing component logic** without prohibitive API costs. The reviewer conflates testing LLM behavior (not the goal) with testing application logic (the actual goal).
 
-**Key Benefits**:
-1. **95% speed improvement** for daily development workflows
-2. **90% cost reduction** in routine API usage
+**Evidence**: Industry standard practice for expensive external dependencies. Examples:
+- Testing vote counting logic doesn't need real LLM responses
+- Testing consensus detection algorithms doesn't need actual agent conversations
+- Testing data transformations doesn't need live API calls
+
+### **On Configuration-Only Limitations**
+**Reviewer position**: "Simple configuration-based approach" is sufficient
+**My maintained position**: Configuration optimization alone **cannot solve the fundamental architecture problem** of running full experiments for component testing.
+
+**Evidence**: Even with optimal configurations (2 rounds vs 10), component tests still run:
+- Complete Phase 1 + Phase 2 workflows
+- 75-125 API calls per test (vs current 300-500)
+- Still too slow for normal development cycles (10-20 minutes vs desired 2-5 minutes)
+
+## Conclusion (REVISED)
+
+This **revised acceleration plan** incorporates valuable reviewer feedback while defending essential architectural improvements. The approach balances:
+
+1. **Immediate wins** through configuration optimization (Phases 1-2)
+2. **Strategic mock testing** for component logic validation (focused, not comprehensive)
+3. **Enhanced existing architecture** rather than parallel structures
+
+**Revised Key Benefits**:
+1. **85-90% speed improvement** for daily development workflows (more realistic)
+2. **80% cost reduction** in routine API usage (more achievable)
 3. **Maintained quality** through strategic comprehensive testing
-4. **Scalable architecture** that can adapt to future needs
+4. **Low maintenance overhead** by enhancing existing structures
+5. **Risk minimization** through incremental improvements
 
-The plan prioritizes **immediate optimizations** to existing tests while building toward a **sustainable long-term testing strategy** that supports both rapid development and thorough validation.
+**Final Assessment**: The plan addresses the **critical performance crisis** while respecting simplicity principles and minimizing architectural risk. The reviewer's concerns about over-engineering have been addressed, but the fundamental need for both configuration optimization AND strategic mock testing remains valid and necessary.

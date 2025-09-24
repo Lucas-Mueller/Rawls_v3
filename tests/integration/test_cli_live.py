@@ -42,5 +42,5 @@ def test_cli_smoke_runs_minimal_experiment(tmp_path, openai_api_key):
     assert output_path.exists()
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload.get("consensus_principle")
-    assert payload.get("participants")
+    assert payload.get("general_information", {}).get("consensus_principle")
+    assert payload.get("agents")

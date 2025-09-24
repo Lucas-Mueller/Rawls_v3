@@ -31,11 +31,15 @@ class Phase1Manager:
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
-        
+
         # Set logger instance for use in helper methods
         self.logger = logger
-        
-        
+
+        # Log language information for test validation
+        if process_logger and self.language_manager:
+            language_name = self.language_manager.current_language.value
+            process_logger.log_technical(f"Phase 1 executing with language: {language_name}")
+
         tasks = []
         for i, participant in enumerate(self.participants):
             agent_config = config.agents[i]

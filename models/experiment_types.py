@@ -217,6 +217,7 @@ class Phase2Results(BaseModel):
     """Complete results for Phase 2."""
     discussion_result: GroupDiscussionResult
     payoff_results: Dict[str, float] = Field(default_factory=dict, description="Final payoffs for each participant")
+    alternative_earnings_by_agent: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Counterfactual earnings by participant under each principle")
     final_rankings: Dict[str, PrincipleRanking] = Field(default_factory=dict, description="Final principle rankings by each participant")
 
 

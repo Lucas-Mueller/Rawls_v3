@@ -259,7 +259,8 @@ class Phase2Manager:
         
         return Phase2Results(
             discussion_result=discussion_result,
-            payoff_results=payoff_results, 
+            payoff_results=payoff_results,
+            alternative_earnings_by_agent=alternative_earnings_by_agent,
             final_rankings=final_rankings
         )
     
