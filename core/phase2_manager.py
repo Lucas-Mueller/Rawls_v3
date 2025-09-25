@@ -91,7 +91,8 @@ class Phase2Manager:
             settings=self.settings,
             logger=logger,
             seed_manager=self.seed_manager,
-            memory_service=self.memory_service
+            memory_service=self.memory_service,
+            config=self.config
         )
         
         self._services_initialized = True

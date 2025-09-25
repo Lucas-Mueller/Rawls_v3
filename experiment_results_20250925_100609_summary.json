@@ -1,0 +1,36 @@
+{
+  "experiment_id": "43d46f38-0a38-4846-98f8-d556e76840eb",
+  "timestamp": "2025-09-25T10:12:00.607374",
+  "total_runtime_seconds": 344.5575,
+  "config_file": "test_retry_english_detailed.yaml",
+  "seed": {
+    "value": 42,
+    "source": "explicit"
+  },
+  "phase1": {
+    "participant_count": 2,
+    "average_earnings": 7.95
+  },
+  "phase2": {
+    "consensus_reached": true,
+    "agreed_principle": {
+      "name": "maximizing_floor",
+      "constraint": null
+    },
+    "final_round": 1
+  },
+  "participants": [
+    {
+      "name": "RetryAgent1",
+      "phase1_earnings": 8.5,
+      "phase2_earnings": 1.91,
+      "total_earnings": 10.41
+    },
+    {
+      "name": "RetryAgent2",
+      "phase1_earnings": 7.4,
+      "phase2_earnings": 1.51,
+      "total_earnings": 8.91
+    }
+  ]
+}

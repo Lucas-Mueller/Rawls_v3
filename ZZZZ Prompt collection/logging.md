@@ -219,7 +219,15 @@ Dont overengineer things. Keep things simple while also effective.
 
 Hey Claude this codebase contains a lot of legacy code which is either overengineered parts of the code or parts of the code which are not needed anymore. Please create a document as a .md file in the folder z_cleanup which contains each occurence of uneeded code or code that is overengineered and can be simplified. Write for each occurence why you put it there. Think hard! 
 
-Hey Codex 
+Hey Claude, 
+please do the fololowing:
+1. review the backend integrtaion of the different model providers used by the agent in this repo. 
+2. Research how the Azure Open AI integration works 
+3. Fomrulate a plan to integrate the Azure Open AI into the repo, the model selection should work like this "azure/model_id" elg, "azure/gpt-4o" save this plan as a .md file in the root directory. 
+
+Work sysetmtaically . Create a todo list. Think
+
+
 
 
 Upper 

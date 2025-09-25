@@ -19,10 +19,12 @@ from models import (
 )
 from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
+from agents import Runner
 from core.distribution_generator import DistributionGenerator
 from utils.logging.agent_centric_logger import AgentCentricLogger
 from utils.selective_memory_manager import MemoryEventType
-from agents import Runner
+from utils.memory_manager import MemoryManager
+from utils.parsing_errors import create_parsing_error
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -99,7 +101,8 @@ class CounterfactualsService:
         settings: Phase2Settings,
         logger: Optional[Logger] = None,
         seed_manager: Optional[SeedManager] = None,
-        memory_service: Optional[MemoryServiceProvider] = None
+        memory_service: Optional[MemoryServiceProvider] = None,
+        config: Optional[ExperimentConfiguration] = None
     ):
         """
         Initialize CounterfactualsService with dependencies.
@@ -110,12 +113,14 @@ class CounterfactualsService:
             logger: Optional logger for service operations
             seed_manager: Optional seed manager for reproducible randomness
             memory_service: Optional memory service for updating participant memory
+            config: Optional experiment configuration for retry support
         """
         self.language_manager = language_manager
         self.settings = settings
         self.logger = logger or logging.getLogger(__name__)
         self.seed_manager = seed_manager
         self.memory_service = memory_service
+        self.config = config
         # Cache Phase 2 probabilities for consistent displays
         self._phase2_probabilities = None
     
@@ -673,11 +678,16 @@ class CounterfactualsService:
             
             for i, participant in enumerate(participants):
                 context = contexts[i]
-                
-                # Create async task for getting final ranking - no result delivery needed
-                task = asyncio.create_task(
-                    self._get_final_ranking_task_streamlined(participant, context, utility_agent)
-                )
+
+                # Create async task for getting final ranking - use retry method if enabled
+                if self.config and self.config.enable_intelligent_retries:
+                    task = asyncio.create_task(
+                        self._get_final_ranking_task_with_retry(participant, context, utility_agent)
+                    )
+                else:
+                    task = asyncio.create_task(
+                        self._get_final_ranking_task_streamlined(participant, context, utility_agent)
+                    )
                 final_ranking_tasks.append((task, participant.name))
             
             # Gather just the tasks for asyncio
@@ -835,3 +845,218 @@ class CounterfactualsService:
                 rankings=default_rankings,
                 certainty=CertaintyLevel.NO_OPINION
             )
+
+
+    async def _get_final_ranking_task_with_retry(
+        self,
+        participant: "ParticipantAgent",
+        context: ParticipantContext,
+        utility_agent
+    ) -> PrincipleRanking:
+        """
+        Get final ranking from a single participant with retry support.
+
+        This method follows the Phase 1 retry pattern, using the config's
+        enable_intelligent_retries setting to determine whether to apply
+        intelligent retry logic with participant feedback.
+
+        Args:
+            participant: The participant agent
+            context: Pre-updated participant context with results in memory
+            utility_agent: Utility agent for parsing responses
+
+        Returns:
+            PrincipleRanking from the participant
+        """
+        try:
+            # No memory update needed - context is pre-updated from deliver_results_and_update_memory
+
+            # Get final ranking prompt
+            final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
+
+            # Clear stale context values to prevent discussion-mode formatting in final ranking prompts
+            context.interaction_type = None
+            context.round_number = 0
+            context.internal_reasoning = ""
+            context.discussion_history = ""
+
+            # Always get initial response from participant
+            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            text_response = result.final_output
+
+            # Check if intelligent retries are enabled and config is available
+            if self.config and self.config.enable_intelligent_retries:
+                # Create retry callback that handles participant re-prompting
+                async def retry_callback(feedback: str) -> str:
+                    try:
+                        self.logger.info(f"Intelligent retry callback triggered for {participant.name} in Phase 2 final ranking")
+
+                        # Build retry prompt with original prompt + feedback + guidance
+                        retry_prompt = self._build_retry_prompt(final_ranking_prompt, feedback, self.config.retry_feedback_detail)
+
+                        # Get participant's retry response
+                        retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                        retry_response = retry_result.final_output
+
+                        # Update participant memory with retry experience if enabled
+                        if self.config.memory_update_on_retry:
+                            await self._update_memory_with_retry_experience(
+                                participant, context, feedback, retry_response
+                            )
+
+                        self.logger.info(f"Retry callback successful for {participant.name}, response length: {len(retry_response)}")
+                        return retry_response
+
+                    except Exception as e:
+                        self.logger.warning(f"Retry callback failed for {participant.name} in Phase 2 final ranking: {e}")
+                        # Return empty string to signal failure to utility agent
+                        return ""
+
+                # Use enhanced parsing with feedback capability
+                parsed_ranking = await utility_agent.parse_principle_ranking_enhanced_with_feedback(
+                    text_response,
+                    max_retries=self.config.max_participant_retries + 1,  # +1 for initial attempt
+                    participant_retry_callback=retry_callback
+                )
+            else:
+                # Fall back to existing enhanced parsing without retries
+                try:
+                    parsed_ranking = await utility_agent.parse_principle_ranking_enhanced(text_response)
+                except Exception as e:
+                    # Log parsing failure and re-raise with context
+                    self.logger.warning(f"Failed to parse Phase 2 final ranking for {participant.name}: {e}")
+                    # Create classified parsing error for better error handling
+                    parsing_error = create_parsing_error(
+                        response=text_response,
+                        parsing_operation="phase2_final_ranking",
+                        expected_format="ranking",
+                        additional_context={
+                            "participant_name": participant.name,
+                            "task_name": "phase2_final_ranking",
+                            "retry_enabled": False
+                        },
+                        cause=e
+                    )
+                    raise parsing_error
+
+            return parsed_ranking
+
+        except Exception as e:
+            self.logger.warning(f"Failed to get final ranking from {participant.name}: {e}")
+            # Return default ranking
+            default_rankings = [
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_FLOOR, rank=1),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE, rank=2),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, rank=3),
+                RankedPrinciple(principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT, rank=4)
+            ]
+            return PrincipleRanking(
+                rankings=default_rankings,
+                certainty=CertaintyLevel.NO_OPINION
+            )
+
+    def _build_retry_prompt(self, original_prompt: str, feedback: str, detail_level: str) -> str:
+        """Build retry prompt with feedback and guidance."""
+        language_manager = self.language_manager
+
+        # Base retry prompt structure
+        retry_intro = language_manager.get('retry_prompts.retry_needed_intro') if hasattr(language_manager, 'retry_prompts') else "Let me try to provide a better response."
+
+        # Add detail based on configuration
+        if detail_level == "detailed":
+            retry_prompt = f"""{retry_intro}
+
+{language_manager.get('retry_prompts.feedback_header') if hasattr(language_manager, 'retry_prompts') else 'Feedback on previous response:'} {feedback}
+
+{language_manager.get('retry_prompts.original_request') if hasattr(language_manager, 'retry_prompts') else 'Please respond to the original request:'} {original_prompt}"""
+        else:
+            # Concise version
+            retry_prompt = f"""{retry_intro}
+
+{feedback}
+
+{original_prompt}"""
+
+        return retry_prompt
+
+    async def _update_memory_with_retry_experience(
+        self,
+        participant: "ParticipantAgent",
+        context: ParticipantContext,
+        feedback: str,
+        retry_response: str
+    ) -> None:
+        """
+        Update participant memory with retry experience using MemoryService.
+
+        Uses the semantically appropriate update_memory_selective method with
+        SIMPLE_STATUS_UPDATE event type for retry experiences, avoiding
+        inappropriate use of update_final_results_memory.
+
+        Args:
+            participant: The participant agent whose memory needs updating
+            context: Current participant context
+            feedback: Feedback provided for the retry
+            retry_response: The participant's retry response
+        """
+        try:
+            language_manager = self.language_manager
+            retry_memory_content = f"""{language_manager.get('memory_field_labels.retry_feedback') if hasattr(language_manager, 'retry_prompts') else 'Retry feedback:'} {feedback}
+{language_manager.get('memory_field_labels.your_response') if hasattr(language_manager, 'retry_prompts') else 'My retry response:'} {retry_response}"""
+
+            # Use MemoryService if available, otherwise fallback to MemoryManager
+            if self.memory_service:
+                try:
+                    # Import MemoryEventType for proper retry experience classification
+                    from utils.selective_memory_manager import MemoryEventType
+
+                    # Use MemoryService for memory update with appropriate event type
+                    # SIMPLE_STATUS_UPDATE is appropriate for retry experiences
+                    updated_memory = await self.memory_service.update_memory_selective(
+                        agent=participant,
+                        context=context,
+                        content=retry_memory_content,
+                        event_type=MemoryEventType.SIMPLE_STATUS_UPDATE,
+                        event_metadata={
+                            'retry_context': True,
+                            'participant_name': participant.name,
+                            'has_feedback': bool(feedback),
+                            'has_retry_response': bool(retry_response)
+                        },
+                        config=self.config
+                    )
+                    context.memory = updated_memory
+                    self.logger.info(f"Updated {participant.name} memory with retry experience via MemoryService")
+                except Exception as e:
+                    self.logger.warning(f"Failed to update memory via MemoryService for {participant.name}, falling back to MemoryManager: {e}")
+                    # Fallback to MemoryManager
+                    await self._fallback_memory_update(participant, context, retry_memory_content)
+            else:
+                # Fallback to MemoryManager
+                await self._fallback_memory_update(participant, context, retry_memory_content)
+
+        except Exception as e:
+            self.logger.warning(f"Failed to update memory with retry experience for {participant.name}: {e}")
+
+    async def _fallback_memory_update(
+        self,
+        participant: "ParticipantAgent",
+        context: ParticipantContext,
+        retry_memory_content: str
+    ) -> None:
+        """Fallback memory update using MemoryManager."""
+        try:
+            # Use existing memory guidance style from config if available
+            memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+            updated_memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, retry_memory_content,
+                memory_guidance_style=memory_guidance_style,
+                language_manager=self.language_manager,
+                error_handler=None,  # We don't have error_handler in service
+                utility_agent=None   # We don't have utility_agent in service
+            )
+            context.memory = updated_memory
+            self.logger.info(f"Updated {participant.name} memory with retry experience via MemoryManager fallback")
+        except Exception as e:
+            self.logger.warning(f"MemoryManager fallback also failed for {participant.name}: {e}")
+
