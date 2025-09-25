@@ -1,0 +1,42 @@
+{
+  "experiment_id": "c37861fe-c6ce-4ee3-a306-6b85d1166439",
+  "timestamp": "2025-09-25T13:36:26.361583",
+  "total_runtime_seconds": 239.8666,
+  "config_file": "fast_gpt.yaml",
+  "seed": {
+    "value": 42,
+    "source": "explicit"
+  },
+  "phase1": {
+    "participant_count": 3,
+    "average_earnings": 9.2667
+  },
+  "phase2": {
+    "consensus_reached": true,
+    "agreed_principle": {
+      "name": "maximizing_average",
+      "constraint": null
+    },
+    "final_round": 1
+  },
+  "participants": [
+    {
+      "name": "Alice",
+      "phase1_earnings": 7.3,
+      "phase2_earnings": 9.63,
+      "total_earnings": 16.93
+    },
+    {
+      "name": "Boris",
+      "phase1_earnings": 10.3,
+      "phase2_earnings": 17.78,
+      "total_earnings": 28.08
+    },
+    {
+      "name": "James",
+      "phase1_earnings": 10.2,
+      "phase2_earnings": 17.78,
+      "total_earnings": 27.98
+    }
+  ]
+}

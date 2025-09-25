@@ -319,11 +319,11 @@ class FrohlichExperimentManager:
                         
                         if not consensus_valid:
                             if process_logger:
-                                process_logger.log_warning("Consensus validation failed - final consensus may not align with discussion content")
+                                process_logger.log_warning("AI assessment: Discussion content doesn't clearly support the voted consensus")
                                 for warning in validation_warnings:
                                     process_logger.log_technical(f"Consensus validation: {warning}")
                             else:
-                                logger.warning("Consensus validation failed - final consensus may not align with discussion content")
+                                logger.warning("AI assessment: Discussion content doesn't clearly support the voted consensus")
                                 for warning in validation_warnings:
                                     logger.warning(f"Consensus validation: {warning}")
                         else:

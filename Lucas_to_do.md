@@ -4,7 +4,7 @@ note to claude: Dont delete
 
 High Priority
 Fix testing or leave it as is --> Fixed
-Fix Phase counter
+Fix Phase counter 
 Investigate why so many runs failed --> In progress
 
 
