@@ -220,3 +220,14 @@ Dont overengineer things. Keep things simple while also effective.
 Hey Claude this codebase contains a lot of legacy code which is either overengineered parts of the code or parts of the code which are not needed anymore. Please create a document as a .md file in the folder z_cleanup which contains each occurence of uneeded code or code that is overengineered and can be simplified. Write for each occurence why you put it there. Think hard! 
 
 Hey Codex 
+
+
+Upper 
+
+Brustpresse
+Latzug / Rudern (alternating)
+Schulterpresse
+Arme  
+Butterfly 
+
+

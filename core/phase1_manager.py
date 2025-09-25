@@ -2,7 +2,8 @@
 Phase 1 manager for individual participant familiarization.
 """
 import asyncio
-from typing import List
+import logging
+from typing import List, Callable, Awaitable
 from agents import Agent, Runner
 
 from models import (
@@ -16,6 +17,9 @@ from core.distribution_generator import DistributionGenerator
 from utils.memory_manager import MemoryManager
 from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from utils.seed_manager import SeedManager
+from utils.parsing_errors import ParsingError, detect_parsing_failure_type, create_parsing_error
+
+logger = logging.getLogger(__name__)
 
 
 class Phase1Manager:
@@ -72,7 +76,164 @@ class Phase1Manager:
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
-    
+
+    async def _execute_ranking_with_retry(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        prompt: str,
+        config: ExperimentConfiguration,
+        task_name: str
+    ) -> tuple[PrincipleRanking, str]:
+        """
+        Execute ranking with intelligent retry logic.
+
+        This method handles the core retry logic for ranking tasks, using the
+        UtilityAgent's enhanced parsing with feedback and optionally updating
+        participant memory with retry experiences.
+
+        Args:
+            participant: The participant agent
+            context: Current participant context
+            prompt: The ranking prompt
+            config: Experiment configuration
+            task_name: Name of the ranking task for logging
+
+        Returns:
+            Tuple of (parsed_ranking, round_content_for_memory)
+        """
+        # Always get initial response from participant
+        result = await Runner.run(participant.agent, prompt, context=context)
+        text_response = result.final_output
+
+        # Check if intelligent retries are enabled
+        if config.enable_intelligent_retries:
+            # Create retry callback that handles participant re-prompting
+            async def retry_callback(feedback: str) -> str:
+                try:
+                    logger.info(f"Intelligent retry callback triggered for {participant.name} in {task_name}")
+
+                    # Build retry prompt with original prompt + feedback + guidance
+                    retry_prompt = self._build_retry_prompt(prompt, feedback, config.retry_feedback_detail)
+
+                    # Get participant's retry response
+                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_response = retry_result.final_output
+
+                    # Update participant memory with retry experience if enabled
+                    if config.memory_update_on_retry:
+                        await self._update_memory_with_retry_experience(
+                            participant, context, feedback, retry_response, config
+                        )
+
+                    logger.info(f"Retry callback successful for {participant.name}, response length: {len(retry_response)}")
+                    return retry_response
+
+                except Exception as e:
+                    logger.error(f"Retry callback failed for {participant.name} in {task_name}: {e}")
+                    # Return empty string to signal failure to utility agent
+                    return ""
+
+            # Use enhanced parsing with feedback capability
+            parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced_with_feedback(
+                text_response,
+                max_retries=config.max_participant_retries + 1,  # +1 for initial attempt
+                participant_retry_callback=retry_callback
+            )
+        else:
+            # Fall back to existing enhanced parsing without retries
+            try:
+                parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
+            except Exception as e:
+                # Log parsing failure and re-raise with context
+                self._log_warning(f"Failed to parse ranking for {participant.name} in {task_name}: {e}")
+                # Create classified parsing error for better error handling
+                parsing_error = create_parsing_error(
+                    response=text_response,
+                    parsing_operation=task_name,
+                    expected_format="ranking",
+                    additional_context={
+                        "participant_name": participant.name,
+                        "task_name": task_name,
+                        "retry_enabled": config.enable_intelligent_retries
+                    },
+                    cause=e
+                )
+                raise parsing_error
+
+        # Create round content for memory
+        language_manager = self.language_manager
+        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {prompt}
+{language_manager.get('memory_field_labels.your_response')} {text_response}
+{language_manager.get('memory_field_labels.outcome')} {self._get_completion_message_for_task(task_name)}"""
+
+        return parsed_ranking, round_content
+
+    def _build_retry_prompt(self, original_prompt: str, feedback: str, detail_level: str) -> str:
+        """Build retry prompt with feedback and guidance."""
+        language_manager = self.language_manager
+
+        # Base retry prompt structure
+        retry_intro = language_manager.get('retry_prompts.retry_needed_intro') if hasattr(language_manager, 'retry_prompts') else "Let me try to provide a better response."
+
+        # Add detail based on configuration
+        if detail_level == "detailed":
+            retry_prompt = f"""{retry_intro}
+
+{language_manager.get('retry_prompts.feedback_header') if hasattr(language_manager, 'retry_prompts') else 'Feedback on previous response:'} {feedback}
+
+{language_manager.get('retry_prompts.original_request') if hasattr(language_manager, 'retry_prompts') else 'Please respond to the original request:'} {original_prompt}"""
+        else:
+            # Concise version
+            retry_prompt = f"""{retry_intro}
+
+{feedback}
+
+{original_prompt}"""
+
+        return retry_prompt
+
+    async def _update_memory_with_retry_experience(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        feedback: str,
+        retry_response: str,
+        config: ExperimentConfiguration
+    ) -> None:
+        """Update participant memory with retry experience."""
+        try:
+            language_manager = self.language_manager
+            retry_memory_content = f"""{language_manager.get('memory_field_labels.retry_feedback') if hasattr(language_manager, 'retry_prompts') else 'Retry feedback:'} {feedback}
+{language_manager.get('memory_field_labels.your_response') if hasattr(language_manager, 'retry_prompts') else 'My retry response:'} {retry_response}"""
+
+            # Use existing memory guidance style from config
+            memory_guidance_style = config.memory_guidance_style if config else "narrative"
+            updated_memory = await MemoryManager.prompt_agent_for_memory_update(
+                participant, context, retry_memory_content,
+                memory_guidance_style=memory_guidance_style,
+                language_manager=self.language_manager,
+                error_handler=self.error_handler,
+                utility_agent=self.utility_agent
+            )
+            context.memory = updated_memory
+            self._log_info(f"Updated {participant.name} memory with retry experience")
+        except Exception as e:
+            self._log_warning(f"Failed to update memory with retry experience for {participant.name}: {e}")
+
+    def _get_completion_message_for_task(self, task_name: str) -> str:
+        """Get appropriate completion message for a ranking task."""
+        language_manager = self.language_manager
+
+        # Map task names to appropriate completion messages
+        task_messages = {
+            "initial_ranking": language_manager.get('memory_outcomes.completed_initial_ranking') if hasattr(language_manager, 'memory_outcomes') else "Completed initial ranking",
+            "post_explanation_ranking": language_manager.get('memory_outcomes.completed_post_explanation_ranking') if hasattr(language_manager, 'memory_outcomes') else "Completed post-explanation ranking",
+            "final_ranking": language_manager.get('memory_outcomes.completed_final_ranking') if hasattr(language_manager, 'memory_outcomes') else "Completed final ranking"
+        }
+
+        return task_messages.get(task_name, f"Completed {task_name}")
+
     
     async def _run_single_participant_phase1(
         self,
@@ -89,7 +250,7 @@ class Phase1Manager:
         context.round_number = 0
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Initial ranking", 0.1)
-        initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config)
+        initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config, config)
         
         # Log initial ranking with current memory state
         if logger:
@@ -136,7 +297,7 @@ class Phase1Manager:
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Post-explanation ranking", 0.4)
         post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
-            participant, context, agent_config
+            participant, context, agent_config, config
         )
         
         # Log post-explanation ranking
@@ -220,7 +381,7 @@ class Phase1Manager:
         context.round_number = 5
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Final ranking", 0.9)
-        final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config)
+        final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config, config)
         
         # Log final ranking
         if logger:
@@ -253,29 +414,20 @@ class Phase1Manager:
         )
     
     async def _step_1_1_initial_ranking(
-        self, 
-        participant: ParticipantAgent, 
+        self,
+        participant: ParticipantAgent,
         context: ParticipantContext,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        config: ExperimentConfiguration
     ) -> tuple[PrincipleRanking, str]:
         """Step 1.1: Initial principle ranking with certainty."""
-        
+
         ranking_prompt = self._build_ranking_prompt()
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, ranking_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
-        
-        # Create round content for memory
-        language_manager = self.language_manager
-        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {ranking_prompt}
-{language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_initial_ranking')}"""
-        
-        return parsed_ranking, round_content
+
+        # Use intelligent retry helper - handles both retry and non-retry paths
+        return await self._execute_ranking_with_retry(
+            participant, context, ranking_prompt, config, "initial_ranking"
+        )
     
     async def _step_1_2_detailed_explanation(
         self,
@@ -488,51 +640,33 @@ class Phase1Manager:
         self,
         participant: ParticipantAgent,
         context: ParticipantContext,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        config: ExperimentConfiguration
     ) -> tuple[PrincipleRanking, str]:
         """Step 1.2b: Post-explanation principle ranking."""
-        
+
         post_explanation_prompt = self._build_post_explanation_ranking_prompt()
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, post_explanation_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
-        
-        # Create round content for memory
-        language_manager = self.language_manager
-        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {post_explanation_prompt}
-{language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_post_explanation_ranking')}"""
-        
-        return parsed_ranking, round_content
+
+        # Use intelligent retry helper - handles both retry and non-retry paths
+        return await self._execute_ranking_with_retry(
+            participant, context, post_explanation_prompt, config, "post_explanation_ranking"
+        )
     
     async def _step_1_4_final_ranking(
         self,
         participant: ParticipantAgent,
         context: ParticipantContext,
-        agent_config: AgentConfiguration
+        agent_config: AgentConfiguration,
+        config: ExperimentConfiguration
     ) -> tuple[PrincipleRanking, str]:
         """Step 1.4: Final principle ranking after experience."""
-        
+
         final_ranking_prompt = self._build_final_ranking_prompt()
-        
-        # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
-        text_response = result.final_output
-        
-        # Parse using enhanced utility agent with retry logic
-        parsed_ranking = await self.utility_agent.parse_principle_ranking_enhanced(text_response)
-        
-        # Create round content for memory
-        language_manager = self.language_manager
-        round_content = f"""{language_manager.get('memory_field_labels.prompt')} {final_ranking_prompt}
-{language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.completed_final_ranking')}"""
-        
-        return parsed_ranking, round_content
+
+        # Use intelligent retry helper - handles both retry and non-retry paths
+        return await self._execute_ranking_with_retry(
+            participant, context, final_ranking_prompt, config, "final_ranking"
+        )
     
     def _build_ranking_prompt(self) -> str:
         """Build prompt for principle ranking."""

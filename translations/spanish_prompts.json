@@ -428,5 +428,27 @@
     "retry_instruction": "⚠️ Por favor responda exactamente con 1 (para votar ahora) o 0 (para continuar la discusión)",
     "internal_reasoning_section": "=== SU RAZONAMIENTO INTERNO ===",
     "reasoning_prompt": "Basado en su razonamiento interno anterior, ¿cuál es su declaración al grupo?"
+  },
+  "parsing_feedback": {
+    "choice_format_confusion": {
+      "explanation": "Proporcionaste una declaración de elección (\"Elijo X\") en lugar de un formato de clasificación.",
+      "instruction": "Por favor, proporciona una clasificación numerada de los 4 principios del 1 (mejor) al 4 (peor).",
+      "example": "1. Maximizar ingresos mínimos\n2. Maximizar ingresos promedio\n3. Maximizar promedio con restricción mínima\n4. Maximizar promedio con restricción de rango"
+    },
+    "incomplete_ranking": {
+      "explanation": "Tu clasificación está incompleta - faltan algunos principios.",
+      "instruction": "Por favor, clasifica TODOS los 4 principios de justicia del 1 al 4.",
+      "example": "Asegúrate de incluir:\n1. [Primera opción]\n2. [Segunda opción]\n3. [Tercera opción]\n4. [Cuarta opción]"
+    },
+    "no_numbered_list": {
+      "explanation": "Proporcionaste una respuesta en lenguaje natural en lugar de una lista numerada.",
+      "instruction": "Por favor, usa un formato numerado para clasificar los principios.",
+      "example": "Formato: 1. [nombre del principio], 2. [nombre del principio], etc."
+    },
+    "empty_response": {
+      "explanation": "Tu respuesta estaba vacía o era demasiado corta para analizar.",
+      "instruction": "Por favor, proporciona una respuesta completa clasificando los principios de justicia.",
+      "example": "Ejemplo: 1. Tu primera opción, 2. Segunda opción, 3. Tercera opción, 4. Última opción"
+    }
   }
 }

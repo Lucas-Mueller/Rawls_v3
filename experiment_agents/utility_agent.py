@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import os
-from typing import Optional, List
+from typing import Optional, List, Callable, Awaitable
 from agents import Agent, Runner
 from agents.tracing.setup import get_trace_provider
 
@@ -18,6 +18,7 @@ from utils.error_handling import (
     ExperimentError, ErrorSeverity, ExperimentErrorCategory
 )
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
+from utils.parsing_errors import ParsingError, ParsingFailureType, detect_parsing_failure_type, create_parsing_error
 
 logger = logging.getLogger(__name__)
 
@@ -649,6 +650,236 @@ class UtilityAgent:
             principle_name=principle_name,
             constraint_type=constraint_type
         )
+
+    def generate_parsing_feedback(
+        self,
+        original_response: str,
+        failure_type: ParsingFailureType,
+        attempt_number: int,
+        expected_format: str = "ranking"
+    ) -> str:
+        """
+        Generate contextual feedback for parsing failures.
+
+        This method creates intelligent, multilingual feedback based on the specific
+        type of parsing failure encountered. The feedback is tailored to help
+        participants understand what went wrong and how to provide a proper response.
+
+        Args:
+            original_response: The raw response that failed to parse
+            failure_type: The classified type of parsing failure
+            attempt_number: Which retry attempt this is (1-based)
+            expected_format: The expected response format ('ranking', 'choice', etc.)
+
+        Returns:
+            Multilingual feedback string to help the participant retry
+
+        Example:
+            >>> feedback = utility_agent.generate_parsing_feedback(
+            ...     original_response="I choose option A",
+            ...     failure_type=ParsingFailureType.CHOICE_FORMAT_CONFUSION,
+            ...     attempt_number=1
+            ... )
+        """
+
+        # Map failure types to template keys
+        failure_type_keys = {
+            ParsingFailureType.CHOICE_FORMAT_CONFUSION: "choice_format_confusion",
+            ParsingFailureType.INCOMPLETE_RANKING: "incomplete_ranking",
+            ParsingFailureType.NO_NUMBERED_LIST: "no_numbered_list",
+            ParsingFailureType.EMPTY_RESPONSE: "empty_response"
+        }
+
+        # Get the template key, fallback to empty_response if not found
+        template_key = failure_type_keys.get(failure_type, "empty_response")
+
+        # Get language-specific templates from language manager
+        try:
+            template = {
+                "explanation": self.language_manager.get(f"parsing_feedback.{template_key}.explanation") or "Your response could not be parsed correctly.",
+                "instruction": self.language_manager.get(f"parsing_feedback.{template_key}.instruction") or "Please provide a complete response ranking the justice principles.",
+                "example": self.language_manager.get(f"parsing_feedback.{template_key}.example") or "Example: 1. Your top choice, 2. Second choice, 3. Third choice, 4. Last choice"
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get parsing feedback template for {template_key}: {e}")
+            # Fallback to English hard-coded template
+            fallback_template = {
+                "explanation": "Your response could not be parsed correctly.",
+                "instruction": "Please provide a complete response ranking the justice principles.",
+                "example": "Example: 1. Your top choice, 2. Second choice, 3. Third choice, 4. Last choice"
+            }
+            template = fallback_template
+
+        # Build feedback message with language-specific phrases
+        attempt_phrase = {
+            "english": f"Attempt {attempt_number}",
+            "spanish": f"Intento {attempt_number}",
+            "mandarin": f"第{attempt_number}次尝试"
+        }.get(self.experiment_language.lower(), f"Attempt {attempt_number}")
+
+        parsing_issue_phrase = {
+            "english": "Parsing Issue",
+            "spanish": "Problema de Análisis",
+            "mandarin": "解析问题"
+        }.get(self.experiment_language.lower(), "Parsing Issue")
+
+        feedback_parts = [
+            f"⚠️ {parsing_issue_phrase} ({attempt_phrase}):",
+            "",
+            template["explanation"],
+            "",
+            template["instruction"],
+            "",
+            "📝 " + template["example"]
+        ]
+
+        # Add response preview for context (truncated if too long)
+        if original_response and len(original_response.strip()) > 0:
+            response_preview_phrase = {
+                "english": "Your response",
+                "spanish": "Tu respuesta",
+                "mandarin": "您的回复"
+            }.get(self.experiment_language.lower(), "Your response")
+
+            preview = original_response[:100] + "..." if len(original_response) > 100 else original_response
+            feedback_parts.extend([
+                "",
+                f"🔍 {response_preview_phrase}: \"{preview}\""
+            ])
+
+        return "\n".join(feedback_parts)
+
+    async def parse_principle_ranking_enhanced_with_feedback(
+        self,
+        response: str,
+        max_retries: int = 3,
+        participant_retry_callback: Optional[Callable[[str], Awaitable[str]]] = None
+    ) -> PrincipleRanking:
+        """
+        Enhanced parsing with participant feedback capability.
+
+        This method extends the existing parse_principle_ranking_enhanced method
+        to include intelligent feedback generation when parsing fails. It uses
+        the new error classification system to provide contextual guidance to
+        participants for retry attempts.
+
+        Args:
+            response: Participant's response to parse
+            max_retries: Maximum number of retry attempts
+            participant_retry_callback: Optional callback for participant retry communication
+
+        Returns:
+            PrincipleRanking instance if parsing succeeds
+
+        Raises:
+            ParsingError: If all retry attempts fail, with classified failure type
+        """
+        await self.async_init()
+
+        # Track parsing attempts and errors for analysis
+        parsing_attempts = []
+        last_parsing_error = None
+
+        for attempt in range(max_retries):
+            try:
+                # Try the existing enhanced parsing method
+                return await self.parse_principle_ranking_enhanced(response, max_retries=1)
+
+            except ExperimentError as e:
+                # Convert to parsing error with classification
+                failure_type = detect_parsing_failure_type(response, "ranking")
+                if failure_type is None:
+                    # Default classification based on error message
+                    if "incomplete" in str(e).lower():
+                        failure_type = ParsingFailureType.INCOMPLETE_RANKING
+                    elif "choice" in str(e).lower():
+                        failure_type = ParsingFailureType.CHOICE_FORMAT_CONFUSION
+                    else:
+                        failure_type = ParsingFailureType.NO_NUMBERED_LIST
+
+                parsing_error = create_parsing_error(
+                    response=response,
+                    parsing_operation="principle ranking",
+                    expected_format="ranking",
+                    additional_context={
+                        "attempt_number": attempt + 1,
+                        "max_retries": max_retries,
+                        "experiment_language": self.experiment_language,
+                        "utility_model": self.utility_model
+                    },
+                    cause=e
+                )
+
+                parsing_attempts.append({
+                    "attempt": attempt + 1,
+                    "failure_type": failure_type,
+                    "error_message": str(e),
+                    "response_length": len(response)
+                })
+
+                last_parsing_error = parsing_error
+
+                # If this is not the final attempt and we have a retry callback
+                if attempt < max_retries - 1 and participant_retry_callback:
+                    try:
+                        # Generate intelligent feedback (synchronous method)
+                        feedback = self.generate_parsing_feedback(
+                            original_response=response,
+                            failure_type=failure_type,
+                            attempt_number=attempt + 1,
+                            expected_format="ranking"
+                        )
+
+                        # Use callback to request retry from participant
+                        new_response = await participant_retry_callback(feedback)
+
+                        if new_response and new_response.strip():
+                            response = new_response  # Use new response for next attempt
+                            logger.info(f"Received retry response for attempt {attempt + 2}: {len(new_response)} chars")
+                        else:
+                            logger.warning(f"Empty retry response received for attempt {attempt + 2}")
+
+                    except Exception as callback_error:
+                        logger.error(f"Retry callback failed on attempt {attempt + 1}: {callback_error}")
+                        # Continue with original response if callback fails
+
+                # Add exponential backoff between attempts
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.5 * (2 ** attempt))
+
+        # All attempts failed - create comprehensive error with parsing history
+        if last_parsing_error:
+            # Limit response length in context to prevent memory issues
+            context_response = response[:500] + "..." if len(response) > 500 else response
+
+            last_parsing_error.parsing_context.update({
+                "parsing_attempts": parsing_attempts,
+                "total_attempts": len(parsing_attempts),
+                "final_response": context_response
+            })
+
+            # Increment retry count to match total attempts
+            for _ in range(len(parsing_attempts) - 1):
+                last_parsing_error.increment_retry()
+
+            logger.error(f"Failed to parse principle ranking after {max_retries} attempts with feedback. "
+                        f"Failure types: {[attempt['failure_type'].value for attempt in parsing_attempts]}")
+            raise last_parsing_error
+
+        # Fallback error if no parsing error was created
+        final_error = create_parsing_error(
+            response=response,
+            parsing_operation="principle ranking with feedback",
+            expected_format="ranking",
+            additional_context={
+                "max_retries": max_retries,
+                "experiment_language": self.experiment_language,
+                "parsing_attempts": parsing_attempts
+            }
+        )
+
+        logger.error(f"Principle ranking parsing failed completely after {max_retries} attempts")
+        raise final_error
 
     async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
         """

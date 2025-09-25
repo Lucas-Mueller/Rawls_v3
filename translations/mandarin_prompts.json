@@ -429,5 +429,27 @@
     "retry_instruction": "⚠️ 请准确回答1（现在投票）或0（继续讨论）",
     "internal_reasoning_section": "=== 您的内部推理 ===",
     "reasoning_prompt": "基于您上述的内部推理，您对小组的陈述是什么？"
+  },
+  "parsing_feedback": {
+    "choice_format_confusion": {
+      "explanation": "您提供了选择陈述（\"我选择X\"）而不是排序格式。",
+      "instruction": "请提供所有4个原则从1（最好）到4（最差）的编号排序。",
+      "example": "1. 最低收入最大化\n2. 平均收入最大化\n3. 在最低收入约束条件下最大化平均收入\n4. 在范围约束条件下最大化平均收入"
+    },
+    "incomplete_ranking": {
+      "explanation": "您的排序不完整 - 缺少一些原则。",
+      "instruction": "请对所有4个正义原则从1到4进行排序。",
+      "example": "确保包含：\n1. [第一选择]\n2. [第二选择]\n3. [第三选择]\n4. [第四选择]"
+    },
+    "no_numbered_list": {
+      "explanation": "您提供了自然语言回复而不是编号列表。",
+      "instruction": "请使用编号格式对原则进行排序。",
+      "example": "格式：1. [原则名称]，2. [原则名称]，等等。"
+    },
+    "empty_response": {
+      "explanation": "您的回复为空或过短，无法解析。",
+      "instruction": "请提供完整的回复，对正义原则进行排序。",
+      "example": "例子：1. 您的首选，2. 第二选择，3. 第三选择，4. 最后选择"
+    }
   }
 }

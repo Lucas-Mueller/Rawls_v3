@@ -16,6 +16,11 @@ from tests.support import PromptHarness, build_experiment_configuration
 LANGUAGE_REPORT_ENV = "LANGUAGE_REPORT_PATH"
 PRIMARY_LANGUAGE_ENV = "LIVE_PRIMARY_LANGUAGE"
 ALL_LANGUAGES_ENV = "LIVE_LANGUAGES"
+# Test acceleration environment variables
+FULL_INTEGRATION_TESTS_ENV = "FULL_INTEGRATION_TESTS"
+DEVELOPMENT_MODE_ENV = "DEVELOPMENT_MODE"
+TEST_CONFIG_OVERRIDE_ENV = "TEST_CONFIG_OVERRIDE"
+SKIP_EXPENSIVE_TESTS_ENV = "SKIP_EXPENSIVE_TESTS"
 TRUTHY_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -42,6 +47,8 @@ def pytest_configure(config):
         ("contracts", "contract snapshot tests"),
         ("live", "tests that hit live LLM endpoints"),
         ("requires_openai", "test requires OPENAI_API_KEY for live LLM calls"),
+        ("expensive", "expensive tests that may be skipped in development mode"),
+        ("fast", "fast tests suitable for development workflows"),
     ):
         config.addinivalue_line("markers", f"{marker}: {description}")
 
@@ -73,19 +80,52 @@ def openai_api_key():
 @pytest.fixture
 def prompt_harness(openai_api_key):
     """Provide a prompt harness backed by a slim experiment configuration."""
-    config = build_experiment_configuration(agent_count=1)
+    from tests.support.config_factory import build_configuration_for_test_mode
+    from utils.language_manager import SupportedLanguage
+
+    # Use configuration override if available, otherwise use development mode
+    config_override = _get_test_config_override()
+    if config_override:
+        try:
+            from tests.support.config_factory import load_base_configuration, clone_config_with_language
+            config = load_base_configuration(config_override)
+            config = clone_config_with_language(config, SupportedLanguage.ENGLISH, agent_count=1)
+        except FileNotFoundError:
+            # Fall back to test mode configuration
+            config = build_configuration_for_test_mode("dev", agent_count=1)
+    else:
+        config = build_configuration_for_test_mode("dev", agent_count=1)
+
     return PromptHarness(config)
 
 
 @pytest.fixture
 def prompt_harness_three_agents(openai_api_key):
     """Prompt harness for scenarios that need three participants."""
-    config = build_experiment_configuration(agent_count=3)
+    from tests.support.config_factory import build_configuration_for_test_mode
+    from utils.language_manager import SupportedLanguage
+
+    # Use configuration override if available, otherwise use development mode
+    config_override = _get_test_config_override()
+    if config_override:
+        try:
+            from tests.support.config_factory import load_base_configuration, clone_config_with_language
+            config = load_base_configuration(config_override)
+            config = clone_config_with_language(config, SupportedLanguage.ENGLISH, agent_count=3)
+        except FileNotFoundError:
+            # Fall back to test mode configuration
+            config = build_configuration_for_test_mode("dev", agent_count=3)
+    else:
+        config = build_configuration_for_test_mode("dev", agent_count=3)
+
     return PromptHarness(config)
 
 
 def pytest_collection_modifyitems(session, config, items):
     base = Path(config.rootpath)
+    skip_expensive = _skip_expensive_tests()
+    development_mode = _is_development_mode()
+
     for item in items:
         try:
             path = Path(item.fspath)
@@ -100,6 +140,7 @@ def pytest_collection_modifyitems(session, config, items):
         marker_names = {mark.name for mark in item.iter_markers()}
         fixturenames = getattr(item, "fixturenames", ())
 
+        # Add layer-based markers automatically
         if layer == "component" and "component" not in marker_names:
             item.add_marker("component")
         elif layer == "integration" and "integration" not in marker_names:
@@ -108,6 +149,20 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker("unit")
         elif layer == "contracts" and "contracts" not in marker_names:
             item.add_marker("contracts")
+
+        # Auto-mark expensive tests based on layer and existing markers
+        if layer in ["component", "integration"] and "live" in marker_names:
+            if "expensive" not in marker_names:
+                item.add_marker("expensive")
+
+        # Skip expensive tests if configured
+        if skip_expensive and "expensive" in marker_names:
+            item.add_marker(pytest.mark.skip(reason="Expensive test skipped (SKIP_EXPENSIVE_TESTS=1)"))
+
+        # In development mode, skip comprehensive integration tests unless explicitly enabled
+        if (development_mode and not _is_full_integration_enabled() and
+            layer == "integration" and "live" in marker_names):
+            item.add_marker(pytest.mark.skip(reason="Integration test skipped in development mode"))
 
         if "language" not in fixturenames or not hasattr(item, "callspec"):
             continue
@@ -204,3 +259,29 @@ def _all_languages_requested() -> bool:
     if raw is None:
         return False
     return raw.strip().lower() in TRUTHY_VALUES
+
+
+def _is_development_mode() -> bool:
+    """Check if we're in development mode (default True)."""
+    raw = os.getenv(DEVELOPMENT_MODE_ENV, "1")  # Default to development mode
+    return raw.strip().lower() in TRUTHY_VALUES
+
+
+def _is_full_integration_enabled() -> bool:
+    """Check if full integration tests are enabled."""
+    raw = os.getenv(FULL_INTEGRATION_TESTS_ENV, "0")  # Default to disabled
+    return raw.strip().lower() in TRUTHY_VALUES
+
+
+def _skip_expensive_tests() -> bool:
+    """Check if expensive tests should be skipped."""
+    raw = os.getenv(SKIP_EXPENSIVE_TESTS_ENV, "0")  # Default to run expensive tests
+    return raw.strip().lower() in TRUTHY_VALUES
+
+
+def _get_test_config_override() -> str | None:
+    """Get configuration override from environment variable."""
+    override = os.getenv(TEST_CONFIG_OVERRIDE_ENV)
+    if override and override.strip():
+        return override.strip()
+    return None

@@ -3,7 +3,7 @@ Configuration models for the Frohlich Experiment.
 """
 import yaml
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
 from models.experiment_types import IncomeClassProbabilities
 from .phase2_settings import Phase2Settings
@@ -93,9 +93,26 @@ class ExperimentConfiguration(BaseModel):
     selective_memory_updates: bool = Field(True, description="Enable selective memory updates to reduce LLM calls for simple events")
     memory_update_threshold: str = Field("moderate", description="Memory update threshold: 'minimal', 'moderate', or 'comprehensive'")
     batch_simple_events: bool = Field(False, description="Batch multiple simple memory events together (future enhancement)")
-    
+
     # Voting detection configuration - removed (always uses complex mode)
-    
+
+    # Intelligent retry mechanism configuration
+    enable_intelligent_retries: bool = Field(
+        True, description="Enable intelligent retry mechanism for parsing failures"
+    )
+    max_participant_retries: int = Field(
+        2, ge=0, le=5, description="Maximum retry attempts for ranking failures (0-5 range)"
+    )
+    enable_progressive_guidance: bool = Field(
+        True, description="Provide more specific guidance on subsequent retry attempts"
+    )
+    memory_update_on_retry: bool = Field(
+        True, description="Update agent memory with retry experiences and feedback"
+    )
+    retry_feedback_detail: Literal["concise", "detailed"] = Field(
+        "concise", description="Level of detail in retry feedback: 'concise' or 'detailed'"
+    )
+
     # Reproducibility configuration
     seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")
     
@@ -137,8 +154,17 @@ class ExperimentConfiguration(BaseModel):
         if v not in valid_thresholds:
             raise ValueError(f"Invalid memory update threshold: {v}. Must be one of {valid_thresholds}")
         return v
-    
-    
+
+    @field_validator('retry_feedback_detail')
+    @classmethod
+    def validate_retry_feedback_detail(cls, v):
+        """Validate retry feedback detail level is supported."""
+        valid_detail_levels = ["concise", "detailed"]
+        if v not in valid_detail_levels:
+            raise ValueError(f"Invalid retry feedback detail level: {v}. Must be one of {valid_detail_levels}")
+        return v
+
+
     @field_validator('distribution_range_phase1', 'distribution_range_phase2')
     @classmethod
     def validate_distribution_range(cls, v):

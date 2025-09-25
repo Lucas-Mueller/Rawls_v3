@@ -375,5 +375,27 @@
     "retry_instruction": "⚠️ Please respond with exactly 1 (to vote now) or 0 (to continue discussion)",
     "internal_reasoning_section": "=== YOUR INTERNAL REASONING ===",
     "reasoning_prompt": "Based on your internal reasoning above, what is your statement to the group?"
+  },
+  "parsing_feedback": {
+    "choice_format_confusion": {
+      "explanation": "You provided a choice statement (\"I choose X\") instead of a ranking format.",
+      "instruction": "Please provide a numbered ranking of all 4 principles from 1 (best) to 4 (worst).",
+      "example": "1. Maximizing floor income\n2. Maximizing average income\n3. Maximizing average with floor constraint\n4. Maximizing average with range constraint"
+    },
+    "incomplete_ranking": {
+      "explanation": "Your ranking is incomplete - some principles are missing.",
+      "instruction": "Please rank ALL 4 justice principles from 1 to 4.",
+      "example": "Make sure to include:\n1. [First choice]\n2. [Second choice]\n3. [Third choice]\n4. [Fourth choice]"
+    },
+    "no_numbered_list": {
+      "explanation": "You provided a natural language response instead of a numbered list.",
+      "instruction": "Please use a numbered format to rank the principles.",
+      "example": "Format: 1. [principle name], 2. [principle name], etc."
+    },
+    "empty_response": {
+      "explanation": "Your response was empty or too short to parse.",
+      "instruction": "Please provide a complete response ranking the justice principles.",
+      "example": "Example: 1. Your top choice, 2. Second choice, 3. Third choice, 4. Last choice"
+    }
   }
 }
