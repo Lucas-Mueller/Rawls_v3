@@ -1,15 +1,15 @@
 # Gemini API Integration - Final Simplified Plan
 
 ## Executive Summary
-Add native Gemini API support with minimal complexity, explicit behavior, and a single OpenRouter fallback for resilience.
+Add native Gemini API support with explicit behavior, clear errors, and NO automatic retries or fallbacks.
 
-## Core Principles (Revised)
-1. **Explicit Over Implicit**: No hidden conversions or auto-prefixing
-2. **Clear Errors**: Tell users exactly what's wrong and how to fix it
-3. **Simple Retry**: Only retry on "model not found" → OpenRouter fallback
-4. **Maintain Conventions**: "/" still forces OpenRouter as originally requested
+## Core Principles
+1. **Explicit Over Implicit**: What you specify is what you get
+2. **Fail Fast**: Clear, actionable error messages
+3. **No Hidden Magic**: No retries, no fallbacks, no surprises
+4. **Maintain Conventions**: "/" forces OpenRouter as originally requested
 
-## Simplified Model Detection
+## Model Detection Logic (No Retries, No Rule 4)
 
 ```python
 def detect_model_provider(model_string: str) -> Tuple[str, str]:
@@ -20,7 +20,7 @@ def detect_model_provider(model_string: str) -> Tuple[str, str]:
     1. Models with "/" → Always OpenRouter (explicit selection)
     2. gemini/gemma models → Gemini API if key exists, else error
     3. gpt/o1/o3 models → OpenAI API if key exists, else error
-    4. Unknown models → Try OpenAI (existing behavior)
+    4. Unknown models → Clear error (no defaults)
     """
     # Rule 1: Explicit OpenRouter via "/"
     if "/" in model_string:
@@ -50,85 +50,66 @@ def detect_model_provider(model_string: str) -> Tuple[str, str]:
             f"  2. Use 'openai/{model_string}' with OPENROUTER_API_KEY"
         )
 
-    # Rule 4: Unknown models - default to OpenAI
-    if os.getenv("OPENAI_API_KEY"):
-        return model_string, "openai"
-
+    # Unknown models - explicit error
     raise ValueError(
-        f"Unknown model '{model_string}' requires OPENAI_API_KEY.\n"
+        f"Unknown model '{model_string}'.\n"
         f"Solutions:\n"
-        f"  1. Set OPENAI_API_KEY environment variable\n"
-        f"  2. Use explicit provider prefix (e.g., 'anthropic/{model_string}') with OPENROUTER_API_KEY"
+        f"  1. Use explicit provider prefix (e.g., 'anthropic/{model_string}')\n"
+        f"  2. Check model name spelling\n"
+        f"  3. Use OpenRouter format with provider prefix"
     )
 ```
 
-## Minimal Retry Logic
+## Simple Model Creation (No Retries)
 
 ```python
-async def create_model_with_simple_retry(
-    model_string: str,
-    temperature: float = 0.7
-) -> Tuple[Any, dict]:
+async def create_model_config(model_string: str, temperature: float = 0.7):
     """
-    Create model with simple OpenRouter fallback on "model not found" ONLY.
+    Create model configuration - NO RETRIES.
 
-    NO cross-provider mapping.
-    NO complex retry chains.
-    Just a simple fallback to OpenRouter if the exact model isn't found.
+    Explicit behavior: fails immediately with clear error if anything goes wrong.
     """
-    # Get primary provider (will raise clear error if API key missing)
-    processed_model, primary_provider = detect_model_provider(model_string)
+    from utils.model_provider import detect_model_provider
+    from utils.gemini_client import GeminiChatCompletionsModel
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    from utils.openrouter_client import get_openrouter_client
 
-    # Try primary provider
-    try:
-        model_config = await create_for_provider(processed_model, primary_provider, temperature)
-        logger.info(f"✅ Loaded {model_string} from {primary_provider}")
-        return model_config, {"provider": primary_provider}
+    # Get provider (raises clear error if API key missing)
+    processed_model, provider = detect_model_provider(model_string)
 
-    except ModelNotFoundError as e:
-        # ONLY retry on "model not found" - not other errors
-        logger.warning(f"Model {model_string} not found in {primary_provider}: {e}")
-
-        # Simple fallback to OpenRouter if available
-        if primary_provider != "openrouter" and os.getenv("OPENROUTER_API_KEY"):
-            # Determine OpenRouter format
-            base_model = model_string.split("/")[-1]
-            if base_model.lower().startswith(("gemini", "gemma")):
-                openrouter_model = f"google/{base_model}"
-            elif base_model.lower().startswith(("gpt", "o1", "o3")):
-                openrouter_model = f"openai/{base_model}"
-            else:
-                openrouter_model = base_model  # Try as-is for unknown models
-
-            logger.info(f"🔄 Retrying with OpenRouter as {openrouter_model}...")
-
-            try:
-                model_config = await create_for_provider(openrouter_model, "openrouter", temperature)
-                logger.info(f"✅ Loaded {model_string} from OpenRouter (fallback)")
-                return model_config, {"provider": "openrouter", "fallback": True}
-            except Exception as retry_error:
-                logger.error(f"❌ OpenRouter fallback also failed: {retry_error}")
-                raise  # Re-raise original error
-
-        # No fallback available or fallback failed
-        raise
-
-    except Exception as e:
-        # Any other error - don't retry, just fail with clear message
-        logger.error(f"❌ Failed to load {model_string} from {primary_provider}: {e}")
-        raise
+    # Create appropriate model config
+    if provider == "gemini":
+        return GeminiChatCompletionsModel(
+            model=processed_model
+        )
+    elif provider == "openrouter":
+        return OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_openrouter_client()
+        )
+    else:  # openai
+        return model_string  # OpenAI Agents SDK handles string directly
 ```
 
-## Gemini Client (Minimal)
+## Minimal Gemini Client
 
 ```python
-# utils/gemini_client.py - Only essential code
-from google import genai
+# utils/gemini_client.py
+"""Minimal Gemini API adapter for OpenAI Agents SDK compatibility."""
+
+import os
+import asyncio
 from functools import lru_cache
+from typing import List, Dict, Any
+
+from google import genai
 
 @lru_cache(maxsize=1)
 def get_gemini_client():
     """Get singleton Gemini client using GEMINI_API_KEY."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not set")
     return genai.Client()  # Uses GEMINI_API_KEY from env
 
 class GeminiChatCompletionsModel:
@@ -138,20 +119,53 @@ class GeminiChatCompletionsModel:
         self.model = model
         self.client = get_gemini_client()
 
-    async def create(self, messages, **kwargs):
-        # Simple message conversion (no complex mapping)
+    def _format_messages(self, messages: List[Dict]) -> str:
+        """Convert OpenAI messages to Gemini format."""
+        parts = []
+        for msg in messages:
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            if role == 'system':
+                parts.append(f"Instructions: {content}")
+            elif role == 'assistant':
+                parts.append(f"Assistant: {content}")
+            else:
+                parts.append(f"User: {content}")
+        return "\n\n".join(parts)
+
+    async def create(self, messages: List[Dict], **kwargs):
+        """Create completion via Gemini API."""
+        # Format messages
         content = self._format_messages(messages)
 
-        # Basic parameter mapping
+        # Build config
         config = {}
         if 'temperature' in kwargs:
             config['temperature'] = kwargs['temperature']
+        if 'max_tokens' in kwargs:
+            config['max_output_tokens'] = kwargs['max_tokens']
 
-        # Call Gemini API
-        response = await self._call_gemini(content, config)
+        # Call Gemini (sync call in executor for async compatibility)
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.client.models.generate_content(
+                model=self.model,
+                contents=content,
+                config=config if config else None
+            )
+        )
 
         # Return OpenAI-compatible format
-        return self._format_response(response)
+        return {
+            'choices': [{
+                'message': {
+                    'role': 'assistant',
+                    'content': response.text
+                },
+                'finish_reason': 'stop'
+            }]
+        }
 ```
 
 ## Clear User Documentation
@@ -159,87 +173,126 @@ class GeminiChatCompletionsModel:
 ```markdown
 # Model Configuration Guide
 
-## Simple Rules
+## Simple, Explicit Rules
 
-### Native API (Best Performance)
+### Native APIs (Fastest)
 ```yaml
 # Requires GEMINI_API_KEY
-model: gemini-2.5-flash
+agents:
+  - model: gemini-2.5-flash
 
 # Requires OPENAI_API_KEY
-model: gpt-4o
+agents:
+  - model: gpt-4o
 ```
 
 ### OpenRouter (Universal)
 ```yaml
 # Requires OPENROUTER_API_KEY
-model: google/gemini-2.5-flash
-model: openai/gpt-4o
-model: anthropic/claude-3
+agents:
+  - model: google/gemini-2.5-flash
+  - model: openai/gpt-4o
+  - model: anthropic/claude-3
 ```
 
-## What Happens When
+## What Happens - No Surprises
 
 | Your Config | Available Keys | Result |
 |-------------|----------------|---------|
-| `gemini-2.5-flash` | GEMINI_API_KEY | ✅ Uses native Gemini |
-| `gemini-2.5-flash` | Only OPENROUTER_API_KEY | ❌ Error: Set GEMINI_API_KEY or use `google/gemini-2.5-flash` |
-| `gpt-4o` | OPENAI_API_KEY | ✅ Uses native OpenAI |
-| `gpt-4o` | Only OPENROUTER_API_KEY | ❌ Error: Set OPENAI_API_KEY or use `openai/gpt-4o` |
-| `google/gemini-2.5-flash` | OPENROUTER_API_KEY | ✅ Uses OpenRouter |
+| `gemini-2.5-flash` | ✅ GEMINI_API_KEY | Uses native Gemini |
+| `gemini-2.5-flash` | ❌ No GEMINI_API_KEY | **Error**: Tells you to set key or use `google/gemini-2.5-flash` |
+| `gpt-4o` | ✅ OPENAI_API_KEY | Uses native OpenAI |
+| `gpt-4o` | ❌ No OPENAI_API_KEY | **Error**: Tells you to set key or use `openai/gpt-4o` |
+| `google/gemini-2.5-flash` | ✅ OPENROUTER_API_KEY | Uses OpenRouter |
+| `claude-3` | Any keys | **Error**: Unknown model, use `anthropic/claude-3` |
 
-## Simple Retry Behavior
+## NO Hidden Behavior
+- ❌ No automatic retries
+- ❌ No fallbacks to different providers
+- ❌ No model substitutions
+- ✅ Clear errors with exact solutions
+- ✅ What you write is what you get
 
-**ONLY on "model not found" errors:**
-- If `gemini-2.5-flash` not found in Gemini → tries `google/gemini-2.5-flash` via OpenRouter
-- If `gpt-4o` not found in OpenAI → tries `openai/gpt-4o` via OpenRouter
-- Other errors → Fail immediately with clear message
-
-## No Hidden Magic
-- No automatic conversions
-- No cross-provider model mapping
-- Clear errors tell you exactly what to do
+## Environment Variables
+Set only what you need:
+- `GEMINI_API_KEY`: For native Gemini models
+- `OPENAI_API_KEY`: For native OpenAI models
+- `OPENROUTER_API_KEY`: For any model via OpenRouter
 ```
 
 ## Implementation Checklist
 
-### Phase 1: Core (2-3 hours)
+### Phase 1: Core Implementation (2 hours)
 - [ ] Add `google-generativeai` to requirements.txt
-- [ ] Create minimal `utils/gemini_client.py` (~50 lines)
-- [ ] Update `detect_model_provider()` in `model_provider.py` (~30 lines change)
+- [ ] Create minimal `utils/gemini_client.py` (~60 lines)
+- [ ] Update `detect_model_provider()` in `model_provider.py` (~20 lines change)
+- [ ] Update `create_model_config()` to handle Gemini (~10 lines)
 
-### Phase 2: Retry (1-2 hours)
-- [ ] Add simple retry logic for "model not found" only
-- [ ] Clear logging of retry attempts
+### Phase 2: Integration (1 hour)
+- [ ] Update `dynamic_model_capabilities.py` for Gemini temperature testing
+- [ ] Ensure clean error messages propagate to users
 
-### Phase 3: Testing (2-3 hours)
+### Phase 3: Testing (2 hours)
 - [ ] Test with GEMINI_API_KEY only
-- [ ] Test with OPENROUTER_API_KEY only
-- [ ] Test retry on model not found
-- [ ] Test clear error messages
+- [ ] Test with no GEMINI_API_KEY (verify error message)
+- [ ] Test with OPENROUTER_API_KEY fallback
+- [ ] Test unknown models (verify clear error)
 
-### Phase 4: Documentation (1 hour)
-- [ ] Update README with examples
+### Phase 4: Documentation (30 minutes)
+- [ ] Update README examples
 - [ ] Create example configs
 - [ ] Document environment variables
 
-## What We're NOT Doing
-❌ Cross-provider model mapping (GPT → Gemini equivalents)
-❌ Hidden auto-prefixing behavior
-❌ Complex retry chains
-❌ Automatic fallbacks for all errors
-❌ Breaking existing configurations
+## What We're NOT Implementing
+❌ **NO retry logic** - If it fails, it fails with clear error
+❌ **NO fallbacks** - Explicit provider selection only
+❌ **NO Rule 4** - Unknown models get explicit error
+❌ **NO auto-prefixing** - Users must be explicit
+❌ **NO model mapping** - No GPT→Gemini equivalents
+
+## Implementation Details
+
+### File: `utils/model_provider.py`
+```python
+# Add to existing imports
+from utils.gemini_client import GeminiChatCompletionsModel
+
+# Replace detect_model_provider function
+def detect_model_provider(model_string: str) -> Tuple[str, str]:
+    # [Use code from Model Detection Logic section above]
+
+# Update create_model_config
+def create_model_config(model_string: str, temperature: float = 0.7):
+    processed_model, provider = detect_model_provider(model_string)
+
+    if provider == "gemini":
+        return GeminiChatCompletionsModel(model=processed_model)
+    elif provider == "openrouter":
+        return OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_openrouter_client()
+        )
+    else:  # openai
+        return model_string
+```
+
+### File: `requirements.txt`
+```txt
+# Add to existing requirements
+google-generativeai>=0.8.0
+```
 
 ## Success Metrics
-✅ Native Gemini works when API key present
+✅ Native Gemini works when GEMINI_API_KEY present
 ✅ Clear errors guide users to solutions
-✅ Simple retry ONLY for "model not found"
-✅ "/" convention preserved for explicit OpenRouter
-✅ Total new code < 150 lines
+✅ "/" convention preserved for OpenRouter
+✅ No hidden behavior or surprises
+✅ Total new code < 100 lines
+✅ Zero breaking changes
 
 ## Complexity Analysis
-- **Previous Plan**: 7/10 complexity
-- **This Plan**: 3/10 complexity
-- **Value Delivered**: 7/10 (native Gemini performance when needed)
-- **Code Changes**: ~100 lines total
-- **Risk**: Low (explicit behavior, clear errors)
+- **Complexity**: 2/10 (very simple)
+- **Value**: 7/10 (native Gemini performance)
+- **Risk**: 1/10 (explicit behavior, no surprises)
+- **Code Changes**: ~90 lines total
+- **User Impact**: Positive (clear, predictable behavior)
