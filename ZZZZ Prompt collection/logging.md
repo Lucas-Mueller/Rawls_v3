@@ -7,29 +7,11 @@ The changes needed to be made in irder to fulfill my request.
 Do not code anything yet. 
 Save this report as a .md file int he root directory.
 
-Please review the current implementation of the bank account, Ihave a hunch that its amonut sometimes lacks one round behind... Please review the current implementation of  the bank account system. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go  through it step by step.
-
-Then create a report as md. file detailing the current implementation.
 
 
 
-Hey Codex, please create a plan to remove Call 1. Deliver this plan as a .md file with the prefix codex. Pleae consider all the systems affected by this removal. 
-Create a detailed plan that is focused on the deletion of this call. 
 
-Hey Claude, please review the current implementation of  the discussion history across phase 2. Please systematically evaluate it. Create an extensive to do list, highlighting a systemitcal approach. Go through it step by step. 
-Then create a report as a .md file with the prefix codex detailing the current implementation.
 
-Please check whether its correct or not.
-
-Hey Codex, can you please thoroughly review the calls following the end of the phase 2 discussion? 
-I see in an external monitoring tool 3 distinct calls are made to the agents:
-1. Memory Update Call incl. Results from Group Discussion (old short) format 
-2. Memory Update Call incl. Results from Group Discussion new long format with counterfacutals. 
-3. Call for ranking the principles
-
-I cannot identify Call 1 in the code! Please find it for me 
-
-Be thorugh and think!
 
 hat round to be there as well so that it says e.g. 
 "Chosen Principle: maximizing_average
@@ -239,7 +221,11 @@ Schulterpresse
 Arme  
 Butterfly 
 
-
+ lets not implement yet, first review the plan using the reviewing
+  subagent. Send him the plan then engange iwth the feedbakc. Adapt the
+  plan if you agree with the or parts of the feedback. Critically discuses
+  with the agent feedback you dont buy into. Think hard. Use a structured
+  approach. Create ToDO list 
 
 
 I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 

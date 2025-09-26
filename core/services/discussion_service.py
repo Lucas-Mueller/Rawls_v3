@@ -46,6 +46,7 @@ class ParticipantContext(Protocol):
 class AgentConfiguration(Protocol):
     """Protocol for agent configuration."""
     language: str
+    reasoning_enabled: bool
 
 
 class DiscussionService:
@@ -341,9 +342,16 @@ class DiscussionService:
         """Extract language from agent configuration."""
         return getattr(agent_config, 'language', 'english')  # Default fallback
     
-    def should_use_reasoning(self) -> bool:
-        """Check if reasoning is enabled based on Phase2Settings."""
-        return self.settings.reasoning_enabled
+    def should_use_reasoning(self, agent_config: AgentConfiguration) -> bool:
+        """Check if reasoning is enabled for this specific agent.
+
+        Args:
+            agent_config: Agent configuration containing reasoning preference
+
+        Returns:
+            True if agent should use reasoning, defaults to True if not specified
+        """
+        return getattr(agent_config, 'reasoning_enabled', True)
     
     
     async def get_participant_statement_with_retry(
@@ -388,7 +396,7 @@ class DiscussionService:
                 
                 # Step 1: Get internal reasoning if enabled - SIMPLIFIED
                 internal_reasoning = ""
-                if self.should_use_reasoning():
+                if self.should_use_reasoning(agent_config):
                     try:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
                             discussion_state, context.round_number, max_rounds
@@ -504,7 +512,7 @@ class DiscussionService:
 
                 # Get internal reasoning if enabled (existing logic)
                 internal_reasoning = ""
-                if self.should_use_reasoning():
+                if self.should_use_reasoning(agent_config):
                     try:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
                             discussion_state, context.round_number, max_rounds

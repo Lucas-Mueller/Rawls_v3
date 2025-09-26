@@ -4,11 +4,11 @@ note to claude: Dont delete
 
 High Priority
 Fix testing or leave it as is --> Fixed
-Implement GEMINI API natively
-Fix Phase counter 
+Implement GEMINI API natively --> WIP 
+Fix Phase counter --> WIP 
 Investigate why so many runs failed --> Probably fixed
 
-Reasoing parameter not funcitnla?
+Reasoing parameter not funcitnla? --> Fixed
 
 Phase 2 description
 
