@@ -819,6 +819,7 @@ class TwoStageVotingManager:
                 agreed_principle=None,
                 vote_counts={},
                 individual_votes=[],
+                disagreement_summary="voting_failed",
                 timestamp=datetime.now()
             )
         
@@ -840,13 +841,38 @@ class TwoStageVotingManager:
         # Consensus reached if all votes are in a single group
         consensus_reached = len(vote_groups) == 1
         agreed_principle = None
-        
+        disagreement_summary = None
+
         if consensus_reached:
             # Get the agreed principle (first choice since all are identical)
             agreed_principle = principle_choices[0]
             logger.info(f"Consensus reached: {agreed_principle.principle.value} with constraint {agreed_principle.constraint_amount}")
         else:
             logger.info(f"No consensus reached: {len(vote_groups)} different vote combinations")
+
+            # Generate disagreement summary with language keys for localization
+            principles_voted = set()
+            constraint_amounts = {}
+
+            for (principle, constraint), choices in vote_groups.items():
+                principles_voted.add(principle)
+                if principle not in constraint_amounts:
+                    constraint_amounts[principle] = set()
+                if constraint is not None:
+                    constraint_amounts[principle].add(constraint)
+
+            if len(principles_voted) > 1:
+                # Different principles chosen - use language key
+                disagreement_summary = "principle_disagreement"
+            else:
+                # Same principle but different constraints
+                principle = list(principles_voted)[0]
+                amounts = constraint_amounts[principle]
+                if len(amounts) > 1:
+                    # Store both the type and details for proper localization
+                    disagreement_summary = f"constraint_disagreement:{principle}:{','.join(str(a) for a in sorted(amounts))}"
+                else:
+                    disagreement_summary = "mixed_disagreement"
         
         # Build individual vote details from ParticipantVote objects
         individual_votes = []
@@ -886,6 +912,7 @@ class TwoStageVotingManager:
             agreed_principle=agreed_principle,
             vote_counts=vote_counts,
             individual_votes=individual_votes,
+            disagreement_summary=disagreement_summary,
             timestamp=datetime.now()
         )
 
@@ -947,6 +974,7 @@ class TwoStageVotingManager:
             agreed_principle=None,
             vote_counts={},
             individual_votes=individual_votes,
+            disagreement_summary="voting_failed",
             timestamp=datetime.now()
         )
 

@@ -114,4 +114,5 @@ class VoteResult(BaseModel):
     agreed_principle: Optional[PrincipleChoice] = None
     vote_counts: Dict[str, int] = Field(default_factory=dict)
     individual_votes: List[Dict[str, Any]] = Field(default_factory=list, description="Individual vote details for each participant")
+    disagreement_summary: Optional[str] = None
     timestamp: Optional[datetime] = Field(default_factory=datetime.now)

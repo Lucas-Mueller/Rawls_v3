@@ -509,20 +509,41 @@ class VotingService:
         
         else:
             self._log_info(f"No consensus reached - disagreement details: {vote_result.disagreement_summary}")
-            
-            # Add no consensus message to public history with safe translation handling
-            try:
-                no_consensus_msg = self.language_manager.get("voting_results.no_consensus")
-            except Exception as e:
-                self._log_warning(f"Failed to get localized no consensus message: {e}")
-                no_consensus_msg = "No consensus reached"  # Fallback English message
-            
+
+            # Get localized no consensus message based on disagreement type
             try:
                 no_consensus_tag = self._get_localized_message('system_messages.voting.no_consensus_tag')
             except Exception as e:
                 self._log_warning(f"Failed to get localized no consensus tag: {e}")
                 no_consensus_tag = "[NO CONSENSUS]"  # Fallback English tag
-            
+
+            # Generate appropriate localized message based on disagreement type
+            try:
+                if vote_result.disagreement_summary == "principle_disagreement":
+                    no_consensus_msg = self.language_manager.get("phase2_voting_no_consensus_principle_disagreement")
+                elif vote_result.disagreement_summary and vote_result.disagreement_summary.startswith("constraint_disagreement:"):
+                    # Extract principle and amounts from the summary
+                    parts = vote_result.disagreement_summary.split(":")
+                    if len(parts) >= 2:
+                        principle = parts[1]
+                        # Get localized principle name
+                        try:
+                            principle_name = self.language_manager.get(f"common.principle_names.{principle}")
+                        except:
+                            principle_name = principle
+                        no_consensus_msg = self.language_manager.get(
+                            "phase2_voting_no_consensus_constraint_disagreement",
+                            principle_name=principle_name
+                        )
+                    else:
+                        no_consensus_msg = self.language_manager.get("phase2_voting_no_consensus_mixed_disagreement")
+                else:
+                    no_consensus_msg = self.language_manager.get("phase2_voting_no_consensus_mixed_disagreement")
+            except Exception as e:
+                self._log_warning(f"Failed to get localized no consensus message: {e}")
+                # Fallback to simple message
+                no_consensus_msg = "No consensus reached - discussion continues"
+
             discussion_state.public_history += f"\n{no_consensus_tag} {no_consensus_msg}"
         
         return vote_result
