@@ -16,7 +16,6 @@ from experiment_agents import create_participant_agent, UtilityAgent, Participan
 from experiment_agents.participant_agent import create_participant_agents_with_dynamic_temperature
 from core import Phase1Manager, Phase2Manager
 from utils.logging.agent_centric_logger import AgentCentricLogger
-from utils.logging.result_summary import build_experiment_summary
 from utils.error_handling import (
     ExperimentError, ExperimentLogicError, SystemError, AgentCommunicationError,
     ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
@@ -522,12 +521,6 @@ class FrohlichExperimentManager:
         logger.info(f"Results saved to: {output_path}")
         logger.info(f"Seed used: {results.seed_used} ({results.seed_source})")
 
-        summary_payload = build_experiment_summary(results, self.config_file_path)
-        summary_path = Path(output_path)
-        summary_file = summary_path.with_name(f"{summary_path.stem}_summary.json")
-        summary_file.parent.mkdir(parents=True, exist_ok=True)
-        summary_file.write_text(json.dumps(summary_payload, indent=2))
-        logger.info(f"Summary saved to: {summary_file}")
     
     def get_experiment_summary(self, results: ExperimentResults) -> str:
         """Generate a human-readable summary of the experiment."""

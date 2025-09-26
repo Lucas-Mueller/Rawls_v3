@@ -148,9 +148,8 @@ Results Generation
 ~~~~~~~~~~~~~~~~~~
 
 1. **Agent Log**: Complete transcript of agent interactions saved to ``experiment_results_<timestamp>.json``
-2. **Structured Summary**: Compact overview saved to ``experiment_results_<timestamp>_summary.json``
-3. **Trace Links**: OpenAI platform URLs emitted in the console when tracing is enabled
-4. **Console Output**: Human-readable progress updates and warnings
+2. **Trace Links**: OpenAI platform URLs emitted in the console when tracing is enabled
+3. **Console Output**: Human-readable progress updates and warnings
 
 Technology Stack
 ----------------

@@ -6,10 +6,11 @@ with multilingual support and language-aware validation.
 """
 
 import asyncio
-from typing import List, Optional, Protocol, Tuple, Any
+from typing import List, Optional, Protocol, Tuple, Any, Callable, Awaitable
 from agents import Runner
 from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState
+from utils.statement_validation_errors import StatementValidationFailureType
 
 
 class LanguageProvider(Protocol):
@@ -205,7 +206,107 @@ class DiscussionService:
             
         self._log_info(f"Valid statement received from {participant_name} ({statement_length} characters, language: {language})")
         return True
-    
+
+    def generate_statement_validation_feedback(
+        self,
+        original_statement: str,
+        failure_type: StatementValidationFailureType,
+        attempt_number: int,
+        min_required_length: int,
+        language: str = "english"
+    ) -> str:
+        """
+        Generate contextual feedback for statement validation failures.
+
+        Follows exact pattern of UtilityAgent.generate_parsing_feedback() but for statements.
+        Provides specific guidance based on the failure type to help participants improve.
+
+        Args:
+            original_statement: The statement that failed validation
+            failure_type: Type of validation failure
+            attempt_number: Current attempt number (1-based)
+            min_required_length: Minimum required length for statements
+            language: Language for localized feedback
+
+        Returns:
+            Formatted feedback message for the participant
+        """
+        # Map failure types to template keys
+        failure_type_keys = {
+            StatementValidationFailureType.TOO_SHORT: "too_short",
+            StatementValidationFailureType.EMPTY_RESPONSE: "empty_response",
+            StatementValidationFailureType.MINIMAL_CONTENT: "minimal_content"
+        }
+
+        template_key = failure_type_keys.get(failure_type, "too_short")
+
+        # Get language-specific templates from language manager
+        try:
+            template = {
+                "explanation": self._get_localized_message(f"statement_validation_feedback.{template_key}.explanation"),
+                "instruction": self._get_localized_message(f"statement_validation_feedback.{template_key}.instruction"),
+                "example": self._get_localized_message(f"statement_validation_feedback.{template_key}.example")
+            }
+        except Exception as e:
+            # Fallback to English hard-coded templates
+            fallback_templates = {
+                "too_short": {
+                    "explanation": "Your statement needs to be more detailed for meaningful discussion.",
+                    "instruction": f"Please provide at least {min_required_length} characters explaining your reasoning or perspective.",
+                    "example": "Example: I believe we should focus on maximizing average income because it provides the best overall outcome for our group while still considering fairness."
+                },
+                "empty_response": {
+                    "explanation": "No statement was provided for this discussion round.",
+                    "instruction": "Please share your thoughts, analysis, or preferences regarding the justice principles being discussed.",
+                    "example": "Example: Based on our discussion, I think the floor constraint approach is most appropriate because it ensures basic security for everyone."
+                },
+                "minimal_content": {
+                    "explanation": "While your agreement is noted, discussion benefits from detailed reasoning.",
+                    "instruction": "Please explain your reasoning and add your analysis to help the group reach consensus.",
+                    "example": "Example: I agree with the previous point about floor constraints because they provide essential security while still allowing for economic growth."
+                }
+            }
+            template = fallback_templates.get(template_key, fallback_templates["too_short"])
+
+        # Build feedback message with language-specific phrases (exact A1/A2 pattern)
+        attempt_phrase = {
+            "english": f"Attempt {attempt_number}",
+            "spanish": f"Intento {attempt_number}",
+            "mandarin": f"第{attempt_number}次尝试"
+        }.get(language.lower(), f"Attempt {attempt_number}")
+
+        validation_issue_phrase = {
+            "english": "Statement Issue",
+            "spanish": "Problema de Declaración",
+            "mandarin": "陈述问题"
+        }.get(language.lower(), "Statement Issue")
+
+        feedback_parts = [
+            f"⚠️ {validation_issue_phrase} ({attempt_phrase}):",
+            "",
+            template["explanation"],
+            "",
+            template["instruction"],
+            "",
+            "💡 " + template["example"]
+        ]
+
+        # Add statement preview for context
+        if original_statement and len(original_statement.strip()) > 0:
+            statement_preview_phrase = {
+                "english": "Your statement",
+                "spanish": "Tu declaración",
+                "mandarin": "您的陈述"
+            }.get(language.lower(), "Your statement")
+
+            preview = original_statement[:50] + "..." if len(original_statement) > 50 else original_statement
+            feedback_parts.extend([
+                "",
+                f"🔍 {statement_preview_phrase}: \"{preview}\""
+            ])
+
+        return "\n".join(feedback_parts)
+
     def is_cjk_language(self, language: str) -> bool:
         """
         Check if language uses CJK characters.
@@ -350,7 +451,185 @@ class DiscussionService:
         
         # Should not reach here due to raise in final attempt
         raise RuntimeError("Unexpected end of retry loop")
-    
+
+    async def get_participant_statement_with_intelligent_retry(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        discussion_state: GroupDiscussionState,
+        agent_config: AgentConfiguration,
+        participant_names: List[str],
+        max_rounds: int,
+        max_retries: Optional[int] = None,
+        participant_retry_callback: Optional[Callable[[str], Awaitable[str]]] = None,
+        utility_agent = None
+    ) -> Tuple[str, str]:
+        """
+        Enhanced statement retrieval with intelligent feedback capability.
+
+        Follows EXACT same pattern as UtilityAgent parse_*_enhanced_with_feedback methods.
+        Only difference: validates statements instead of parsing responses.
+
+        Args:
+            participant: The participant agent to get statement from
+            context: The participant's context for the round
+            discussion_state: Current discussion state with history
+            agent_config: Agent configuration settings
+            participant_names: List of participant names for group composition
+            max_rounds: Maximum number of rounds in the experiment
+            max_retries: Optional override for max retry attempts
+            participant_retry_callback: Optional callback for participant retry communication
+            utility_agent: Utility agent for failure classification
+
+        Returns:
+            Tuple of (statement, internal_reasoning)
+
+        Raises:
+            Exception: If all retry attempts are exhausted
+        """
+        max_attempts = max_retries or self.settings.max_statement_retries
+        timeout_seconds = self.settings.statement_timeout_seconds
+
+        # Track validation attempts and errors for analysis (exact A1/A2 pattern)
+        validation_attempts = []
+        last_validation_error = None
+
+        for attempt in range(max_attempts):
+            try:
+                # Log retry attempts (existing logic)
+                if attempt > 0:
+                    self._log_info(f"Statement retry {attempt + 1}/{max_attempts} for {participant.name}")
+                    backoff_time = self.settings.retry_backoff_factor ** (attempt - 1)
+                    await asyncio.sleep(backoff_time)
+
+                # Get internal reasoning if enabled (existing logic)
+                internal_reasoning = ""
+                if self.should_use_reasoning():
+                    try:
+                        reasoning_prompt = self.build_internal_reasoning_prompt(
+                            discussion_state, context.round_number, max_rounds
+                        )
+                        context.interaction_type = "internal_reasoning"
+
+                        reasoning_result = await asyncio.wait_for(
+                            Runner.run(participant.agent, reasoning_prompt, context=context),
+                            timeout=self.settings.reasoning_timeout_seconds
+                        )
+                        internal_reasoning = reasoning_result.final_output or ""
+                    except Exception:
+                        internal_reasoning = ""  # Simple fallback
+
+                # Store reasoning in context (existing logic)
+                if hasattr(context, 'internal_reasoning'):
+                    context.internal_reasoning = internal_reasoning
+
+                # Build discussion prompt (existing logic)
+                discussion_prompt = self.build_discussion_prompt(
+                    discussion_state=discussion_state,
+                    round_num=context.round_number,
+                    max_rounds=max_rounds,
+                    participant_names=participant_names,
+                    internal_reasoning=internal_reasoning
+                )
+
+                context.interaction_type = "statement"
+
+                # Execute with timeout (existing logic)
+                result = await asyncio.wait_for(
+                    Runner.run(participant.agent, discussion_prompt, context=context),
+                    timeout=timeout_seconds
+                )
+
+                statement = result.final_output
+
+                # Enhanced validation with failure classification (NEW - follows A1/A2 pattern)
+                agent_language = self._get_agent_language(agent_config)
+                min_length = self.get_min_statement_length(agent_language)
+
+                if not self.validate_statement(statement, participant.name, agent_language):
+                    # Classify the validation failure type using utility agent (robust vs pattern matching)
+                    if utility_agent:
+                        try:
+                            failure_type = await utility_agent.classify_statement_validation_failure(
+                                statement=statement,
+                                min_length=min_length,
+                                language=agent_language,
+                                context=f"Discussion round {context.round_number}"
+                            )
+                        except Exception as e:
+                            self._log_warning(f"Utility agent classification failed: {e}, using fallback")
+                            # Fallback classification
+                            if not statement or len(statement.strip()) < 3:
+                                failure_type = StatementValidationFailureType.EMPTY_RESPONSE
+                            elif len(statement.strip()) < min_length:
+                                failure_type = StatementValidationFailureType.TOO_SHORT
+                            else:
+                                failure_type = StatementValidationFailureType.MINIMAL_CONTENT
+                    else:
+                        # Fallback classification when no utility agent provided
+                        if not statement or len(statement.strip()) < 3:
+                            failure_type = StatementValidationFailureType.EMPTY_RESPONSE
+                        elif len(statement.strip()) < min_length:
+                            failure_type = StatementValidationFailureType.TOO_SHORT
+                        else:
+                            failure_type = StatementValidationFailureType.MINIMAL_CONTENT
+
+                    validation_attempts.append({
+                        "attempt": attempt + 1,
+                        "failure_type": failure_type,
+                        "statement_length": len(statement) if statement else 0
+                    })
+
+                    # If not final attempt and we have retry callback
+                    if attempt < max_attempts - 1 and participant_retry_callback:
+                        try:
+                            # Generate intelligent feedback (synchronous method)
+                            feedback = self.generate_statement_validation_feedback(
+                                original_statement=statement,
+                                failure_type=failure_type,
+                                attempt_number=attempt + 1,
+                                min_required_length=min_length,
+                                language=agent_language
+                            )
+
+                            # Use callback to request retry from participant
+                            new_response = await participant_retry_callback(feedback)
+
+                            if new_response and new_response.strip():
+                                self._log_info(f"Received retry response for statement validation attempt {attempt + 2}: {len(new_response)} chars")
+                                # Continue to next attempt (the new_response will be used via the callback mechanism)
+                                continue
+                            else:
+                                self._log_warning(f"Empty retry response received for statement validation attempt {attempt + 2}")
+
+                        except Exception as callback_error:
+                            self._log_warning(f"Retry callback failed on statement validation attempt {attempt + 1}: {callback_error}")
+                            # Continue with normal retry logic if callback fails
+
+                    if attempt < max_attempts - 1:
+                        continue
+                    else:
+                        # Final attempt failed - create comprehensive error
+                        last_validation_error = f"Invalid statement after {max_attempts} attempts. " + \
+                            f"Failure types: {[attempt['failure_type'].value for attempt in validation_attempts]}"
+                        raise ValueError(last_validation_error)
+
+                self._log_info(f"Successfully retrieved statement from {participant.name}")
+                return statement, internal_reasoning
+
+            except asyncio.TimeoutError:
+                self._log_warning(f"Statement timeout for {participant.name} (attempt {attempt + 1})")
+                if attempt == max_attempts - 1:
+                    raise
+
+            except Exception as e:
+                self._log_warning(f"Statement error for {participant.name} (attempt {attempt + 1}): {str(e)}")
+                if attempt == max_attempts - 1:
+                    raise
+
+        # Should not reach here due to raise in final attempt
+        raise RuntimeError("Unexpected end of retry loop")
+
     def manage_discussion_history_length(self, discussion_state: GroupDiscussionState) -> None:
         """
         Keep discussion history under limit by trimming oldest content.

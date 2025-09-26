@@ -1,0 +1,39 @@
+{
+  "experiment_id": "efb22b4e-6cae-4954-bc1f-c094947e42b9",
+  "timestamp": "2025-09-25T14:29:28.807364",
+  "total_runtime_seconds": 2361.9287,
+  "config_file": "gpt_5.yaml",
+  "seed": {
+    "value": 42,
+    "source": "explicit"
+  },
+  "phase1": {
+    "participant_count": 3,
+    "average_earnings": 8.9
+  },
+  "phase2": {
+    "consensus_reached": false,
+    "agreed_principle": null,
+    "final_round": 5
+  },
+  "participants": [
+    {
+      "name": "Alice",
+      "phase1_earnings": 9.1,
+      "phase2_earnings": 13.5,
+      "total_earnings": 22.6
+    },
+    {
+      "name": "Gordon",
+      "phase1_earnings": 9.6,
+      "phase2_earnings": 14.21,
+      "total_earnings": 23.81
+    },
+    {
+      "name": "James",
+      "phase1_earnings": 8.0,
+      "phase2_earnings": 14.21,
+      "total_earnings": 22.21
+    }
+  ]
+}

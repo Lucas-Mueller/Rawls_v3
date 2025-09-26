@@ -4,6 +4,7 @@ Phase 2 manager for group discussion and consensus building.
 import asyncio
 import time
 from typing import List, Optional
+from agents import Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
@@ -324,19 +325,70 @@ class Phase2Manager:
         self._log_info(f"=== REQUESTING STATEMENT FROM {participant.name} ===")
         self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
         
-        # Get participant statement
+        # Get participant statement with intelligent retry support
         start_time = time.time()
         participant_names = [p.name for p in self.participants]
         # Ensure instruction prompt includes up-to-date discussion transcript
         context.discussion_history = discussion_state.public_history
-        statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_retry(
-            participant=participant,
-            context=context,
-            discussion_state=discussion_state,
-            agent_config=agent_config,
-            participant_names=participant_names,
-            max_rounds=self.config.phase2_rounds
-        )
+
+        # Use intelligent retry if enabled (following EXACT A1/A2 pattern)
+        if self.config.enable_intelligent_retries:
+            # Create retry callback that handles participant re-prompting (EXACT A1/A2 pattern)
+            async def retry_callback(feedback: str) -> str:
+                try:
+                    self.logger.info(f"Intelligent retry callback triggered for {participant.name} in statement validation")
+
+                    # Build discussion prompt (same as original)
+                    discussion_prompt = self.discussion_service.build_discussion_prompt(
+                        discussion_state=discussion_state,
+                        round_num=context.round_number,
+                        max_rounds=self.config.phase2_rounds,
+                        participant_names=participant_names,
+                        internal_reasoning=getattr(context, 'internal_reasoning', "")
+                    )
+
+                    # Build retry prompt with original prompt + feedback + guidance
+                    retry_prompt = self._build_statement_retry_prompt(discussion_prompt, feedback, self.config.retry_feedback_detail)
+
+                    # Get participant's retry response
+                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_response = retry_result.final_output
+
+                    # Update participant memory with retry experience if enabled
+                    if self.config.memory_update_on_retry:
+                        await self._update_memory_with_retry_experience(
+                            participant, context, feedback, retry_response, self.config
+                        )
+
+                    self.logger.info(f"Retry callback successful for {participant.name}, response length: {len(retry_response)}")
+                    return retry_response
+
+                except Exception as e:
+                    self.logger.error(f"Retry callback failed for {participant.name} in statement validation: {e}")
+                    return ""  # Return empty string to signal failure
+
+            # Use enhanced method with feedback capability (same as A1/A2)
+            statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_intelligent_retry(
+                participant=participant,
+                context=context,
+                discussion_state=discussion_state,
+                agent_config=agent_config,
+                participant_names=participant_names,
+                max_rounds=self.config.phase2_rounds,
+                max_retries=self.config.max_participant_retries + 1,  # +1 for initial attempt
+                participant_retry_callback=retry_callback,
+                utility_agent=self.utility_agent
+            )
+        else:
+            # Fall back to existing method without intelligent retries
+            statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_retry(
+                participant=participant,
+                context=context,
+                discussion_state=discussion_state,
+                agent_config=agent_config,
+                participant_names=participant_names,
+                max_rounds=self.config.phase2_rounds
+            )
         response_time = time.time() - start_time
         
         # Check if response is quarantined
@@ -692,4 +744,69 @@ class Phase2Manager:
             discussion_history=discussion_state.public_history,
             vote_history=discussion_state.vote_history
         )
-    
+
+    def _build_statement_retry_prompt(self, original_prompt: str, feedback: str, detail_level: str) -> str:
+        """Build retry prompt with statement validation feedback (EXACT A1/A2 pattern)."""
+        language_manager = self.language_manager
+
+        # Base retry prompt structure (EXACT A1/A2 pattern)
+        retry_intro = language_manager.get('retry_prompts.retry_needed_intro',
+                                        fallback="Let me try to provide a better response.")
+
+        # Add detail based on configuration (EXACT A1/A2 pattern)
+        if detail_level == "detailed":
+            retry_prompt = f"""{retry_intro}
+
+{language_manager.get('retry_prompts.feedback_header', fallback='Feedback on previous response:')} {feedback}
+
+{language_manager.get('retry_prompts.original_request', fallback='Please respond to the original request:')} {original_prompt}"""
+        else:
+            # Concise version
+            retry_prompt = f"""{retry_intro}
+
+{feedback}
+
+{original_prompt}"""
+
+        return retry_prompt
+
+    async def _update_memory_with_retry_experience(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        feedback: str,
+        retry_response: str,
+        config: ExperimentConfiguration
+    ) -> None:
+        """Update participant memory with retry experience (EXACT A1/A2 pattern)."""
+        try:
+            language_manager = self.language_manager
+
+            # Create memory content for retry experience
+            retry_memory_content = f"""{language_manager.get('memory_field_labels.feedback_received', fallback='Feedback received:')} {feedback[:200]}...
+{language_manager.get('memory_field_labels.improved_response', fallback='Improved response:')} {retry_response[:300]}...
+{language_manager.get('memory_field_labels.outcome', fallback='Outcome:')} {language_manager.get('memory_outcomes.statement_retry_successful', fallback='Successfully provided improved statement after feedback')}"""
+
+            # Use MemoryService for consistent memory updates
+            if hasattr(self, 'memory_service') and self.memory_service:
+                # Import MemoryEventType if needed
+                try:
+                    from utils.memory_content import MemoryEventType
+                    updated_memory = await self.memory_service.update_memory_selective(
+                        agent=participant,
+                        context=context,
+                        content=retry_memory_content,
+                        event_type=MemoryEventType.RETRY_EXPERIENCE,
+                        event_metadata={"retry_type": "statement_validation", "successful": True}
+                    )
+                    context.memory = updated_memory
+                except ImportError:
+                    # Fallback to simple memory update if MemoryEventType not available
+                    context.memory += f"\n\n{retry_memory_content}"
+
+            self.logger.info(f"Updated memory with retry experience for {participant.name}")
+
+        except Exception as e:
+            self.logger.warning(f"Failed to update memory with retry experience for {participant.name}: {e}")
+            # Non-fatal: continue execution
+

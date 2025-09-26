@@ -19,6 +19,7 @@ from utils.error_handling import (
 )
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 from utils.parsing_errors import ParsingError, ParsingFailureType, detect_parsing_failure_type, create_parsing_error
+from utils.statement_validation_errors import StatementValidationFailureType
 
 logger = logging.getLogger(__name__)
 
@@ -388,6 +389,135 @@ class UtilityAgent:
             ExperimentErrorCategory.VALIDATION_ERROR,
             ErrorSeverity.FATAL
         )
+
+    async def parse_principle_choice_enhanced_with_feedback(
+        self,
+        response: str,
+        max_retries: int = 3,
+        participant_retry_callback: Optional[Callable[[str], Awaitable[str]]] = None
+    ) -> PrincipleChoice:
+        """
+        Enhanced principle choice parsing with participant feedback capability.
+
+        This method extends the existing parse_principle_choice_enhanced method
+        to include intelligent feedback generation when parsing fails. It follows
+        the exact same pattern as parse_principle_ranking_enhanced_with_feedback().
+
+        Args:
+            response: Participant's response to parse
+            max_retries: Maximum number of retry attempts
+            participant_retry_callback: Optional callback for participant retry communication
+
+        Returns:
+            PrincipleChoice instance if parsing succeeds
+
+        Raises:
+            ParsingError: If all retry attempts fail, with classified failure type
+        """
+        await self.async_init()
+
+        # Track parsing attempts and errors for analysis
+        parsing_attempts = []
+        last_parsing_error = None
+
+        for attempt in range(max_retries):
+            try:
+                # Try the existing enhanced parsing method
+                return await self.parse_principle_choice_enhanced(response, max_retries=1)
+
+            except ExperimentError as e:
+                # Convert to parsing error with classification
+                failure_type = detect_parsing_failure_type(response, "choice")
+                if failure_type is None:
+                    # Default classification for principle choice
+                    if not response or len(response.strip()) < 10:
+                        failure_type = ParsingFailureType.EMPTY_RESPONSE
+                    else:
+                        failure_type = ParsingFailureType.NO_NUMBERED_LIST
+
+                parsing_error = create_parsing_error(
+                    response=response,
+                    parsing_operation="principle choice",
+                    expected_format="choice",
+                    additional_context={
+                        "attempt_number": attempt + 1,
+                        "max_retries": max_retries,
+                        "experiment_language": self.experiment_language,
+                        "utility_model": self.utility_model
+                    },
+                    cause=e
+                )
+
+                parsing_attempts.append({
+                    "attempt": attempt + 1,
+                    "failure_type": failure_type,
+                    "error_message": str(e),
+                    "response_length": len(response)
+                })
+
+                last_parsing_error = parsing_error
+
+                # If this is not the final attempt and we have a retry callback
+                if attempt < max_retries - 1 and participant_retry_callback:
+                    try:
+                        # Generate intelligent feedback (synchronous method)
+                        feedback = self.generate_parsing_feedback(
+                            original_response=response,
+                            failure_type=failure_type,
+                            attempt_number=attempt + 1,
+                            expected_format="choice"
+                        )
+
+                        # Use callback to request retry from participant
+                        new_response = await participant_retry_callback(feedback)
+
+                        if new_response and new_response.strip():
+                            response = new_response  # Use new response for next attempt
+                            logger.info(f"Received retry response for choice parsing attempt {attempt + 2}: {len(new_response)} chars")
+                        else:
+                            logger.warning(f"Empty retry response received for choice parsing attempt {attempt + 2}")
+
+                    except Exception as callback_error:
+                        logger.error(f"Retry callback failed on choice parsing attempt {attempt + 1}: {callback_error}")
+                        # Continue with original response if callback fails
+
+                # Add exponential backoff between attempts
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.5 * (2 ** attempt))
+
+        # All attempts failed - create comprehensive error with parsing history
+        if last_parsing_error:
+            # Limit response length in context to prevent memory issues
+            context_response = response[:500] + "..." if len(response) > 500 else response
+
+            last_parsing_error.parsing_context.update({
+                "parsing_attempts": parsing_attempts,
+                "total_attempts": len(parsing_attempts),
+                "final_response": context_response
+            })
+
+            # Increment retry count to match total attempts
+            for _ in range(len(parsing_attempts) - 1):
+                last_parsing_error.increment_retry()
+
+            logger.error(f"Failed to parse principle choice after {max_retries} attempts with feedback. "
+                        f"Failure types: {[attempt['failure_type'].value for attempt in parsing_attempts]}")
+            raise last_parsing_error
+
+        # Fallback error if no parsing error was created
+        final_error = create_parsing_error(
+            response=response,
+            parsing_operation="principle choice with feedback",
+            expected_format="choice",
+            additional_context={
+                "max_retries": max_retries,
+                "experiment_language": self.experiment_language,
+                "parsing_attempts": parsing_attempts
+            }
+        )
+
+        logger.error(f"Principle choice parsing failed completely after {max_retries} attempts")
+        raise final_error
 
     async def parse_principle_ranking_enhanced(self, response: str, max_retries: int = 3) -> PrincipleRanking:
         """Parse principle ranking from participant response."""
@@ -880,6 +1010,91 @@ class UtilityAgent:
 
         logger.error(f"Principle ranking parsing failed completely after {max_retries} attempts")
         raise final_error
+
+    async def classify_statement_validation_failure(
+        self,
+        statement: str,
+        min_length: int,
+        language: str,
+        context: str = ""
+    ) -> StatementValidationFailureType:
+        """
+        Use utility agent to classify why a statement validation failed.
+
+        More robust than pattern matching - handles edge cases and provides
+        accurate classification for appropriate feedback generation.
+
+        Called only on validation failures (not every statement) for efficiency.
+        Follows exact A1/A2 pattern of "fast validation → classify failure → feedback".
+
+        Args:
+            statement: The statement that failed validation
+            min_length: Minimum required length for statements
+            language: Language of the experiment (english, spanish, mandarin)
+            context: Optional context about the discussion round
+
+        Returns:
+            StatementValidationFailureType: Classification of the failure type
+        """
+        await self.async_init()
+
+        # Calculate actual length for prompt
+        actual_length = len(statement.strip()) if statement else 0
+
+        # Build classification prompt
+        try:
+            classification_prompt = self.language_manager.get(
+                "prompts.statement_validation_classification",
+                statement=statement,
+                min_length=min_length,
+                actual_length=actual_length,
+                language=language,
+                context=context
+            )
+        except Exception:
+            # Fallback prompt if translation key is missing
+            classification_prompt = f"""Analyze this discussion statement that failed validation:
+
+Statement: '{statement}'
+Minimum required length: {min_length} characters
+Actual length: {actual_length} characters
+Language: {language}
+Context: {context}
+
+Classify why this statement failed validation. Respond with exactly one of these classifications:
+- EMPTY_RESPONSE: if the statement is empty or contains only whitespace
+- TOO_SHORT: if the statement is below minimum length but has some content
+- MINIMAL_CONTENT: if the statement meets length requirements but lacks substantive discussion content
+
+Classification:"""
+
+        try:
+            result = await run_without_tracing(self.parser_agent, classification_prompt)
+            classification_response = result.final_output.strip().upper()
+
+            # Parse the classification response
+            if "EMPTY_RESPONSE" in classification_response:
+                return StatementValidationFailureType.EMPTY_RESPONSE
+            elif "MINIMAL_CONTENT" in classification_response:
+                return StatementValidationFailureType.MINIMAL_CONTENT
+            elif "TOO_SHORT" in classification_response:
+                return StatementValidationFailureType.TOO_SHORT
+            else:
+                # Default fallback based on observable characteristics
+                if actual_length < min_length:
+                    return StatementValidationFailureType.TOO_SHORT
+                else:
+                    return StatementValidationFailureType.MINIMAL_CONTENT
+
+        except Exception as e:
+            logger.warning(f"Failed to classify statement validation failure: {e}")
+            # Graceful fallback to simple length-based classification
+            if not statement or len(statement.strip()) < 3:
+                return StatementValidationFailureType.EMPTY_RESPONSE
+            elif actual_length < min_length:
+                return StatementValidationFailureType.TOO_SHORT
+            else:
+                return StatementValidationFailureType.MINIMAL_CONTENT
 
     async def validate_consensus_against_discussion(self, discussion_content: str, consensus_principle: str) -> tuple[bool, List[str]]:
         """

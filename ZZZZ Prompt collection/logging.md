@@ -1,6 +1,7 @@
 an
 
 please implement phase 5, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
+Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 
@@ -239,3 +240,7 @@ Arme
 Butterfly 
 
 
+
+
+I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 
+  sysetmatic approach! Use todo list. think hard. Work hard. Create a report as a .md file. If necessary create tests. 

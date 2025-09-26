@@ -136,12 +136,7 @@ Each run emits two JSON files side-by-side in the chosen output directory:
    - Detailed Phase 1 and Phase 2 transcripts per participant
    - Voting history and payoff calculations
 
-**Summary** (``experiment_results_<timestamp>_summary.json``)
-   - Runtime and consensus outcome
-   - Earnings per participant
-   - Agreed principle (if any) and final deliberation round
-
-Use the summary for dashboards or quick diffs, and fall back to the full log when you need to audit the conversation or memory updates.
+Use the full log when you need to audit the conversation, memory updates, or analyze detailed agent interactions.
 
 Model Provider Configuration
 ----------------------------

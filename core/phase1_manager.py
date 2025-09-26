@@ -470,7 +470,43 @@ class Phase1Manager:
         
         # Parse using enhanced utility agent with retry logic
         print(f"DEBUG: Principle choice response to parse: {repr(text_response)}")
-        parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
+
+        if config.enable_intelligent_retries:
+            # Create retry callback that handles participant re-prompting (exact A1 pattern)
+            async def retry_callback(feedback: str) -> str:
+                try:
+                    logger.info(f"Intelligent retry callback triggered for {participant.name} in principle choice")
+
+                    # Build retry prompt with original prompt + feedback + guidance
+                    retry_prompt = self._build_retry_prompt(application_prompt, feedback, config.retry_feedback_detail)
+
+                    # Get participant's retry response
+                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_response = retry_result.final_output
+
+                    # Update participant memory with retry experience if enabled
+                    if config.memory_update_on_retry:
+                        await self._update_memory_with_retry_experience(
+                            participant, context, feedback, retry_response, config
+                        )
+
+                    logger.info(f"Retry callback successful for {participant.name}, response length: {len(retry_response)}")
+                    return retry_response
+
+                except Exception as e:
+                    logger.error(f"Retry callback failed for {participant.name} in principle choice: {e}")
+                    # Return empty string to signal failure to utility agent
+                    return ""
+
+            # Use enhanced parsing with feedback capability (same as A1)
+            parsed_choice = await self.utility_agent.parse_principle_choice_enhanced_with_feedback(
+                text_response,
+                max_retries=config.max_participant_retries + 1,  # +1 for initial attempt
+                participant_retry_callback=retry_callback
+            )
+        else:
+            # Fall back to existing parsing without retries
+            parsed_choice = await self.utility_agent.parse_principle_choice_enhanced(text_response)
         
         # Validate constraint specification
         max_retries = 2

@@ -40,8 +40,7 @@ High-Level Timeline
 
 8. **Persistence & Reporting**
    - ``FrohlichExperimentManager.save_results`` writes the agent-centric log to ``experiment_results_<timestamp>.json``.
-   - ``build_experiment_summary`` generates ``experiment_results_<timestamp>_summary.json`` with compact metrics.
-   - Console output lists both file locations and, when applicable, the OpenAI trace URL.
+   - Console output lists the file location and, when applicable, the OpenAI trace URL.
 
 Cross-Referencing Modules
 -------------------------

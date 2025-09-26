@@ -28,10 +28,9 @@ Your First Experiment
 
 3. **View Your Results**
 
-   The system generates two artefacts side-by-side:
-   
+   The system generates:
+
    - ``experiment_results_<timestamp>.json`` — the full agent-centric log
-   - ``experiment_results_<timestamp>_summary.json`` — a compact metrics snapshot
    
    - Complete agent interactions and reasoning
    - Phase 1 individual responses

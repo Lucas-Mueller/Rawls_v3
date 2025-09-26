@@ -137,10 +137,35 @@
     
     "two_stage_amount_specification": "SECRET BALLOT - STEP 2 OF 2\n\nYou selected {principle_name}.\n\nThis principle requires you to specify a constraint amount in dollars. This amount will be compared with other participants' amounts to determine if consensus is reached.\n\nFor consensus, all participants must choose:\n- The same principle number AND\n- The same constraint amount (if applicable)\n\nImportant: Enter full income dollars (e.g., $15,000 or $20,000), not payoff dollars. Do NOT scale by the $1 per $10,000 payoff rate.\n\nPlease specify your constraint amount as a whole dollar amount:",
     
-    
-    "phase1_distributions_intro": "Here are some example distributions to help you understand:"
+
+    "phase1_distributions_intro": "Here are some example distributions to help you understand:",
+    "statement_validation_classification": "Analyze this discussion statement that failed validation:\n\nStatement: '{statement}'\nMinimum required length: {min_length} characters\nActual length: {actual_length} characters\nLanguage: {language}\nContext: {context}\n\nClassify why this statement failed validation. Respond with exactly one of these classifications:\n- EMPTY_RESPONSE: if the statement is empty or contains only whitespace\n- TOO_SHORT: if the statement is below minimum length but has some content\n- MINIMAL_CONTENT: if the statement meets length requirements but lacks substantive discussion content\n\nClassification:"
   },
-  
+
+  "statement_validation_feedback": {
+    "too_short": {
+      "explanation": "Your statement needs more detail to contribute meaningfully to the discussion.",
+      "instruction": "Please provide more explanation of your reasoning, preferences, or analysis.",
+      "example": "For example: 'I believe we should prioritize maximizing average income because it provides the best overall outcome while maintaining fairness across all income levels.'"
+    },
+    "empty_response": {
+      "explanation": "No statement was provided for this discussion round.",
+      "instruction": "Please share your thoughts, analysis, or preferences about the justice principles.",
+      "example": "For example: 'Based on our discussion, I think the floor constraint approach ensures basic security for everyone while still allowing economic growth.'"
+    },
+    "minimal_content": {
+      "explanation": "While your agreement is noted, detailed reasoning helps the group reach consensus.",
+      "instruction": "Please explain why you agree and add your own analysis or perspective.",
+      "example": "For example: 'I agree with the floor income approach because it guarantees basic dignity for all members, which aligns with core principles of social justice.'"
+    }
+  },
+
+  "retry_prompts": {
+    "retry_needed_intro": "Let me try to provide a better response.",
+    "feedback_header": "Feedback on previous response:",
+    "original_request": "Please respond to the original request:"
+  },
+
   "errors": {
     "two_stage_respond_with_number_only": "Invalid response (attempt {attempt}/{max_attempts}). You must respond with exactly one number: 1, 2, 3, or 4.",
     "two_stage_use_digits_not_words": "Invalid response (attempt {attempt}/{max_attempts}). Please use digits (1, 2, 3, or 4), not words.",
@@ -180,7 +205,9 @@
     "original_values_situation": "Situation:",
     "distribution_multiplier": "Distribution Multiplier:",
     "your_payoff": "Your Payoff (already in your bank account):",
-    "outcome": "Outcome:"
+    "outcome": "Outcome:",
+    "feedback_received": "Feedback received:",
+    "improved_response": "Improved response:"
   },
   "context_phase2_discussion_header": "GROUP DISCUSSION - Round {round_number} of {max_rounds}",
   "context_group_composition_format": "Participants: {participants}",
@@ -194,7 +221,8 @@
     "completed_final_ranking": "Completed final ranking of justice principles after experiencing all four rounds.",
     "made_discussion_statement": "Made statement in Round {round_number} of group discussion.",
     "agreed_to_vote": "Agreed to proceed with voting",
-    "declined_to_vote": "Declined to vote"
+    "declined_to_vote": "Declined to vote",
+    "statement_retry_successful": "Successfully provided improved statement after feedback"
   },
   "memory": {
     "round_statement_format": "Round {round_num}: Your statement: {statement}",
