@@ -12,7 +12,7 @@ agents:
     
   - name: "James" 
     personality: "You care for the poor"
-    model:'google/gemini-2.0-flash-lite-001'
+    model:'google/gemini-2.0-flash-lite-00
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: false

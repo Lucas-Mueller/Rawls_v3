@@ -3,14 +3,14 @@ language: "English"
 agents:
   - name: "James"
     personality: "You are committed to maximizing overall economic output." # Translated: "YXi Jinping cares about maintaining the Chinese Communist Party’s power, strengthening China’s global influence, and ensuring national stability and unity."
-    model: "google/gemma-3-27b-it"
+    model: "gemma-3-12b-it"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "Franklin" 
     personality: "You are a social democrat committed to striking a balance between overall prosperity and a universal safety net." #Translated: You are a great communist revolutionary who always has the weakest in mind.  
-    model: "google/gemma-3-27b-it"
+    model: "gemma-3-12b-it"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true

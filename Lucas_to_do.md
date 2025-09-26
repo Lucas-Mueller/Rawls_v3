@@ -3,14 +3,16 @@ note to claude: Dont delete
 
 
 High Priority
-Fix testing or leave it as is --> Fixed
-Implement GEMINI API natively --> WIP 
-Fix Phase counter --> WIP 
+Fix testing or leave it as is --> Done
+Implement GEMINI API natively --> Done 
+Fix Phase counter --> Done
 Investigate why so many runs failed --> Probably fixed
+Reasoing parameter not funcitnla? --> Done
 
-Reasoing parameter not funcitnla? --> Fixed
+
 
 Phase 2 description
+Memory update before voting decisions   
 
 
 Review complete run through English

@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Optional, Tuple, List
 from agents import Agent, Runner, ModelSettings
 from agents.tracing.setup import get_trace_provider
-from utils.model_provider import detect_model_provider, _append_nitro_suffix
+from utils.model_provider import detect_model_provider_legacy, _append_nitro_suffix
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 from utils.openrouter_client import get_openrouter_client
 import os
@@ -89,16 +89,17 @@ async def test_temperature_support(model_string: str, cache: Optional[Temperatur
     logger.info(f"Testing temperature support for model: {model_string}")
     
     try:
-        # Create model configuration
-        processed_model, is_openrouter = detect_model_provider(model_string)
-        
-        if is_openrouter:
-            model_config = OpenAIChatCompletionsModel(
-                model=_append_nitro_suffix(processed_model, is_openrouter),
-                openai_client=get_openrouter_client()
-            )
-        else:
-            model_config = model_string
+        # Create model configuration using new provider detection
+        from utils.model_provider import detect_model_provider, create_model_config
+
+        try:
+            # Use the new create_model_config that handles all providers
+            model_config = create_model_config(model_string)
+        except ValueError as e:
+            # If API key is missing, we can't test
+            logger.warning(f"Cannot test temperature support for {model_string}: {e}")
+            cache.set(model_string, False)
+            return False, f"Cannot test: {str(e)}", e
         
         # Test 1: Try creating agent with temperature
         try:
@@ -293,16 +294,15 @@ async def create_agent_with_temperature_retry(
         
         return agent, temp_info
     
-    # Step 2: Create model config
-    processed_model, is_openrouter = detect_model_provider(model_string)
-    
-    if is_openrouter:
-        model_config = OpenAIChatCompletionsModel(
-            model=_append_nitro_suffix(processed_model, is_openrouter),
-            openai_client=get_openrouter_client()
-        )
-    else:
-        model_config = model_string
+    # Step 2: Create model config using new provider detection
+    from utils.model_provider import create_model_config
+
+    try:
+        model_config = create_model_config(model_string)
+    except ValueError as e:
+        # If API key is missing, we can't create agent
+        logger.error(f"Cannot create agent for {model_string}: {e}")
+        raise
     
     # Prepare agent kwargs with model
     final_kwargs = agent_kwargs.copy()

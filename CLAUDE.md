@@ -228,7 +228,9 @@ This script automatically runs all YAML configurations in sequence and saves res
 pip install -r requirements.txt
 
 # Set up environment variables (create .env file)
-OPENAI_API_KEY=your_key_here
+OPENAI_API_KEY=your_openai_key_here
+GEMINI_API_KEY=your_gemini_key_here        # Optional: For native Gemini models
+OPENROUTER_API_KEY=your_openrouter_key_here  # Optional: For OpenRouter models
 
 # Optional: Control OpenAI Agents SDK tracing
 OPENAI_AGENTS_DISABLE_TRACING=1    # Disable tracing for tests
@@ -283,6 +285,15 @@ The framework supports English, Spanish, and Mandarin experiments:
 - Prompts are managed via `translations/` JSON files
 - Language manager handles localization (`utils/language_manager.py`)
 - Agent language preferences configured per-agent in YAML
+
+## Model Provider Support
+
+The framework supports multiple LLM providers with intelligent detection:
+- **OpenAI Models**: Native API for `gpt-*`, `o1-*`, `o3-*` models
+- **Google Gemini**: Native API for `gemini-*`, `gemma-*` models
+- **OpenRouter**: Universal proxy for any model using `provider/model` format
+
+See `GEMINI_INTEGRATION.md` for detailed Gemini setup and usage.
 
 ## Voting System
 

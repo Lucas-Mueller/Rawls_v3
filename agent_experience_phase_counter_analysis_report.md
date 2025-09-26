@@ -84,17 +84,71 @@ Step 1.4: Final ranking → context.round_number = 5
 - ✅ **Memory Continuity**: Phase transitions maintain proper context
 - ✅ **Type Safety**: Strong typing prevents round/phase mismatches
 
+### 🚨 **ISSUE 4: Memory Update Phase Capitalization Inconsistency**
+
+**Problem**: Agents see inconsistent phase capitalization between regular context and memory updates.
+
+**Evidence Found**:
+```
+Regular Context Display:
+"Current Phase: Phase 1\nRound: 3\n"
+
+Memory Update Context Display:
+"Current Phase: phase_1\nRound: 3\n"
+```
+
+**Root Cause Analysis**:
+- **Memory Context**: `format_memory_context()` uses raw enum value (line 472)
+  ```python
+  phase_str = phase.value  # Results in "phase_1" or "phase_2"
+  ```
+- **Regular Context**: `format_context_info()` properly formats (line 288)
+  ```python
+  phase=context.phase.value.replace('_', ' ').title()  # Results in "Phase 1" or "Phase 2"
+  ```
+
+**Agent Impact**:
+- **Severe Confusion**: Same agent sees both "Current Phase: Phase 1" and "Current Phase: phase_1"
+- **Inconsistent Experience**: Different capitalization for identical information
+- **Memory Inconsistency**: Agents incorporate "phase_1" into their memory content
+- **Multi-language Issue**: Affects all language translations
+
+**Specific Locations**:
+- `experiment_agents/participant_agent.py:243` - Passes raw enum to memory context
+- `utils/language_manager.py:472` - Uses enum.value without formatting
+- `translations/*/prompts.json` → `context_memory_update_format` - Shows unformatted phase
+
 ## Agent Experience Pain Points Summary
 
 | Issue | Severity | Agent Impact | Frequency |
 |-------|----------|--------------|-----------|
+| **Memory Phase Capitalization** | **CRITICAL** | **Severe confusion, inconsistent experience** | **Every memory update** |
 | Round -1 Visibility | HIGH | Counterintuitive, confusing | Every Phase 1 explanation |
 | Round 0 Reuse | MEDIUM | Logical inconsistency | Twice per Phase 1 |
 | Mixed Round Philosophy | LOW | Subtle confusion | Phase transitions |
 
 ## Improvement Plan
 
-### **IMMEDIATE FIXES (High Priority)**
+### **IMMEDIATE FIXES (Critical Priority)**
+
+#### **Fix 0: Memory Update Phase Capitalization (CRITICAL)**
+**Problem**: Agents see inconsistent phase capitalization ("Phase 1" vs "phase_1")
+**Solution**: Make memory context use the same formatting as regular context
+
+**Implementation**:
+```python
+# In utils/language_manager.py:472, change this:
+phase_str = phase.value if hasattr(phase, 'value') else str(phase) if phase else "Phase 1"
+
+# To this:
+if hasattr(phase, 'value'):
+    phase_str = phase.value.replace('_', ' ').title()  # "phase_1" → "Phase 1"
+else:
+    phase_str = str(phase) if phase else "Phase 1"
+```
+
+**Files to Modify**:
+- `utils/language_manager.py:472` - Fix phase formatting in `format_memory_context()`
 
 #### **Fix 1: Eliminate Round -1 for Agents**
 **Problem**: Agents see "Round: -1" which is confusing

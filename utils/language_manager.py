@@ -469,11 +469,14 @@ class LanguageManager:
                              role_description: str = None, phase=None, round_number: int = 0) -> str:
         """Format minimal context for memory updates only."""
         # Convert phase enum to string if needed
-        phase_str = phase.value if hasattr(phase, 'value') else str(phase) if phase else "Phase 1"
-        
+        if hasattr(phase, 'value'):
+            phase_str = phase.value.replace('_', ' ').title()  # "phase_1" → "Phase 1"
+        else:
+            phase_str = str(phase) if phase else "Phase 1"
+
         # Use provided role_description or fall back to personality
         actual_role = role_description if role_description is not None else personality
-        
+
         return self.get("prompts.context_memory_update_format",
                        name=name,
                        role_description=actual_role,
