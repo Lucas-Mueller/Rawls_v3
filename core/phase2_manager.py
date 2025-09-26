@@ -690,10 +690,8 @@ class Phase2Manager:
                         internal_reasoning, statement, context
                     )
                 
-                # Update participant memory and context
-                contexts[participant_idx] = await self._update_participant_memory_and_context(
-                    participant, context, statement, internal_reasoning, round_num, participant_idx, discussion_state
-                )
+                # Update context round number only (memory update deferred to post-round phase)
+                contexts[participant_idx].round_number = round_num
                 
                 # Skip consensus processing for failed responses
                 if is_fallback:
@@ -721,7 +719,29 @@ class Phase2Manager:
             
             # Update last round finisher for next round
             last_round_finisher = current_round_finisher
-            
+
+            # Post-round symmetric memory update phase
+            self._log_info(f"Starting post-round memory updates for round {round_num} with complete context")
+            for participant_idx, participant in enumerate(self.participants):
+                if participant.name in participant_recent_statements:
+                    # Ensure context has complete discussion history before memory update
+                    contexts[participant_idx].discussion_history = discussion_state.public_history
+
+                    # Update memory with complete round context
+                    contexts[participant_idx] = await self._update_participant_memory_and_context(
+                        participant, contexts[participant_idx],
+                        participant_recent_statements[participant.name],
+                        participant_recent_reasoning[participant.name],
+                        round_num, participant_idx, discussion_state
+                    )
+                    self._log_info(f"Updated memory for {participant.name} with complete round {round_num} context")
+                else:
+                    # Update context for participants without statements (fallback cases)
+                    contexts[participant_idx].round_number = round_num
+                    contexts[participant_idx].discussion_history = discussion_state.public_history
+
+            self._log_info(f"Completed symmetric memory updates for round {round_num}")
+
             # Try to initiate voting at end of round
             consensus_result = await self._attempt_end_of_round_voting(
                 round_num, contexts, participant_recent_statements, 

@@ -10,7 +10,15 @@ Save this report as a .md file int he root directory.
 
 
 
+Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings. Focus on information that might influence your choices about justice principles or help you in group discussions.
 
+--> Inc
+
+Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.
+
+Besides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.
+
+Focus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory
 
 
 hat round to be there as well so that it says e.g. 

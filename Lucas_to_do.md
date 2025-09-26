@@ -3,16 +3,19 @@ note to claude: Dont delete
 
 
 High Priority
+
+
 Fix testing or leave it as is --> Done
 Implement GEMINI API natively --> Done 
 Fix Phase counter --> Done
 Investigate why so many runs failed --> Probably fixed
 Reasoing parameter not funcitnla? --> Done
 
+Memory Update Phae 1 emphasis payoff --> WIP
 
 
 Phase 2 description
-Memory update before voting decisions   
+Memory update before voting decisions  --> Done 
 
 
 Review complete run through English
