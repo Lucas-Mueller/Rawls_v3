@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import Mock, AsyncMock, patch
 import asyncio
 from utils.memory_manager import MemoryManager
+from models import ExperimentPhase
 from utils.error_handling import MemoryError, ExperimentError
 
 
@@ -22,6 +23,9 @@ class TestMemoryManager(unittest.TestCase):
         self.mock_context = Mock()
         self.mock_context.memory = "Current memory content"
         self.mock_context.memory_character_limit = 1000
+        self.mock_context.round_number = 2
+        self.mock_context.phase = ExperimentPhase.PHASE_2
+        self.mock_context.bank_balance = 0.0
     
     def test_validate_memory_length_valid(self):
         """Test memory length validation with valid memory."""
@@ -81,6 +85,33 @@ class TestMemoryManager(unittest.TestCase):
         self.assertIn("New round information", prompt)
         self.assertIn("Return your complete updated memory", prompt)
     
+
+    def test_prompt_agent_for_memory_update_explicit_metadata(self):
+        """Explicit phase/round parameters should override context defaults."""
+        async def run_test():
+            self.mock_agent.update_memory.return_value = "Updated memory content"
+            round_content = "Test round content"
+
+            mock_language_manager = Mock()
+            mock_language_manager.get.return_value = "Mock prompt template"
+
+            result = await MemoryManager.prompt_agent_for_memory_update(
+                self.mock_agent,
+                self.mock_context,
+                round_content,
+                language_manager=mock_language_manager,
+                round_number=7,
+                phase=ExperimentPhase.PHASE_1
+            )
+
+            self.assertEqual(result, "Updated memory content")
+            self.mock_agent.update_memory.assert_awaited_once()
+            _, kwargs = self.mock_agent.update_memory.call_args
+            self.assertEqual(kwargs.get('phase'), ExperimentPhase.PHASE_1)
+            self.assertEqual(kwargs.get('round_number'), 7)
+
+        asyncio.run(run_test())
+
     def test_prompt_agent_for_memory_update_success(self):
         """Test successful agent memory update."""
         async def run_test():
@@ -100,7 +131,10 @@ class TestMemoryManager(unittest.TestCase):
             
             # Verify
             self.assertEqual(result, "Updated memory content")
-            self.mock_agent.update_memory.assert_called_once()
+            self.mock_agent.update_memory.assert_awaited_once()
+            _, kwargs = self.mock_agent.update_memory.call_args
+            self.assertEqual(kwargs.get('phase'), ExperimentPhase.PHASE_2)
+            self.assertEqual(kwargs.get('round_number'), 2)
         
         asyncio.run(run_test())
     

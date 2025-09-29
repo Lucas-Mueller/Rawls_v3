@@ -10,6 +10,9 @@ Reasoing parameter not funcitnla? --> Done
 Memory Update Phae 1 emphasis payoff --> Done
 More emphasis on the recent activity simialray to phase 1 demonstration rounds --> Done
 Probabilites need to be explained --> Done 
+Example amount in voting call remove --> Done
+Phase 2 description --> probabilites are different stakes are much higher --> Already there (Reasoning Call)
+Memory update before voting decisions  --> Done 
 
 WIP
 Round counter in post disucssion phase 2 is wrong --> WIP
@@ -24,17 +27,9 @@ Investigate why so many runs failed --> Probably fixed --> Test needed
 
 Backlog
 
-Example amount in voting call remove  
 Reproducability Test 
-Phase 2 description --> probabilites are different stakes are much higher --> Already there (Reasoning Call)
+Testing Suite Update
 
-
-
-
-
-
-
-Memory update before voting decisions  --> Done 
 
 
 Review complete run through English --> WIP 

@@ -25,6 +25,8 @@ from utils.error_handling import (
     handle_experiment_errors
 )
 
+from models import ExperimentPhase
+
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
     from models.experiment_types import ParticipantContext
@@ -91,7 +93,25 @@ class MemoryManager:
         # Use provided error handler or fall back to global one
         if error_handler is None:
             error_handler = get_global_error_handler()
-        
+
+        # Resolve effective phase and round metadata for prompt selection and agent context
+        effective_round = round_number if round_number is not None else getattr(context, 'round_number', None)
+        phase_candidate = phase if phase is not None else getattr(context, 'phase', None)
+
+        if isinstance(phase_candidate, ExperimentPhase):
+            effective_phase_enum = phase_candidate
+        elif isinstance(phase_candidate, str):
+            try:
+                effective_phase_enum = ExperimentPhase(phase_candidate)
+            except ValueError:
+                effective_phase_enum = ExperimentPhase.PHASE_1
+        else:
+            effective_phase_enum = ExperimentPhase.PHASE_1
+
+        effective_phase_value = effective_phase_enum.value
+        agent_round_number = effective_round if effective_round is not None else getattr(context, 'round_number', 0) or 0
+        prompt_round_number = effective_round if effective_round is not None else agent_round_number
+
         for attempt in range(max_retries):
             try:
                 # Check if memory needs compression before update
@@ -104,11 +124,22 @@ class MemoryManager:
                 
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
-                    memory_to_use, round_content, memory_guidance_style, language_manager, interaction_type, round_number, phase
+                    memory_to_use,
+                    round_content,
+                    memory_guidance_style,
+                    language_manager,
+                    interaction_type,
+                    prompt_round_number,
+                    effective_phase_value
                 )
                 
-                # Get updated memory from agent
-                updated_memory = await agent.update_memory(prompt, context.bank_balance)
+                # Get updated memory from agent with accurate phase/round metadata
+                updated_memory = await agent.update_memory(
+                    prompt,
+                    context.bank_balance,
+                    phase=effective_phase_enum,
+                    round_number=agent_round_number
+                )
                 
                 # Check memory length with 15% tolerance buffer
                 char_limit = agent.config.memory_character_limit
