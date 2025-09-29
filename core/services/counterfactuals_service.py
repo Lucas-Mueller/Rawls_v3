@@ -814,15 +814,15 @@ class CounterfactualsService:
         """
         try:
             # No memory update needed - context is pre-updated from deliver_results_and_update_memory
-            
+
             # Get final ranking using proven Phase 1 pattern
             final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
-            
+
             # Clear stale context values to prevent discussion-mode formatting in final ranking prompts
             context.interaction_type = None
-            context.round_number = 0
+            context.round_number = None
             context.internal_reasoning = ""
-            context.discussion_history = ""
+            context.discussion_history = None
             
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
             text_response = result.final_output
@@ -876,9 +876,9 @@ class CounterfactualsService:
 
             # Clear stale context values to prevent discussion-mode formatting in final ranking prompts
             context.interaction_type = None
-            context.round_number = 0
+            context.round_number = None
             context.internal_reasoning = ""
-            context.discussion_history = ""
+            context.discussion_history = None
 
             # Always get initial response from participant
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)

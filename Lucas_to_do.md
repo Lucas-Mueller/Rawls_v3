@@ -6,21 +6,30 @@ Done
 Fix testing or leave it as is --> Done
 Implement GEMINI API natively --> Done 
 Fix Phase counter --> Done
-Investigate why so many runs failed --> Probably fixed
 Reasoing parameter not funcitnla? --> Done
 Memory Update Phae 1 emphasis payoff --> Done
+More emphasis on the recent activity simialray to phase 1 demonstration rounds --> Done
+Probabilites need to be explained --> Done 
+
+WIP
+Round counter in post disucssion phase 2 is wrong --> WIP
+Memory Update Call in phase 2, phase wrong, round wrong
+Principle description end of phase 2 wehn no concsensus wasreached --> WIP 
+
+
+Check if problem still there
+Discussion hisortry bold in memory update call 
+Investigate why so many runs failed --> Probably fixed --> Test needed
 
 
 Backlog
 
-Phase 1 demonstration rounds __>???
-Probabilites need to be explained --> Done 
+Example amount in voting call remove  
+Reproducability Test 
+Phase 2 description --> probabilites are different stakes are much higher --> Already there (Reasoning Call)
 
 
-Phase 2 description --> probabilites are different stakes are much higher 
-Principle description end of phase 2 wehn no concsensus wasreached
-More emphasis on the recent activity simialray to phase 1 demonstration rounds
-Phase counter in post disucssion phase 2 is wrong 
+
 
 
 
