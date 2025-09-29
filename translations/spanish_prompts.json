@@ -96,7 +96,7 @@
     "distribution_distributions_table_header": "Distribuciones de ingresos:\n\n",
     "distribution_distributions_table_column_header": "| Clase de Ingresos | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n",
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
-    "context_memory_section_format": "**=== SU MEMORIA ===**\n{memory}\n====================",
+    "context_memory_section_format": "=== SU MEMORIA ===\n{memory}\n====================",
     "context_memory_summary_format": "=== ASPECTOS CLAVE ===\n{memory_summary}\n=======================",
     "context_memory_empty_placeholder": "(Vacío)",
     "context_memory_summary_empty_placeholder": "Aún no hay conocimientos clave.",
@@ -405,7 +405,11 @@
       "your_class": "Su Clase",
       "your_income": "Sus Ingresos",
       "your_earnings": "Sus Ganancias"
-    }
+    },
+    "choice_summary_header": "**RESUMEN DE TU ELECCIÓN**",
+    "choice_summary_line": "Elegiste: {principle_name}{constraint_display}",
+    "choice_outcome_line": "Tu resultado: {distribution} → {class_name} → {income} → {earnings}",
+    "choice_brief_explanation": "Tu {principle_type} llevó a que se seleccionara {distribution}{class_assignment}."
   },
   "constraint_explanations": {
     "floor_constraint_fallback": "Ninguna distribución cumplió la restricción de piso de ${constraint_amount:,}. Se eligió la distribución con el piso más alto: ${actual_floor:,}",

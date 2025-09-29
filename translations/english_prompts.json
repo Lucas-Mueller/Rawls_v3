@@ -70,7 +70,7 @@
     "phase2_internal_reasoning_short": "GROUP DISCUSSION - Round {round_number} of {max_rounds} (Internal Reasoning)\n\nBefore making your public statement, consider internally:\n- What is your current position on which justice principle the group should adopt?\n- How has the discussion so far influenced your thinking?\n- Are you ready to call for a vote, or do you need more discussion?\n\nProvide your internal reasoning (this will not be shared with other participants).",
     "context_context_info_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\nRound: {round_number}\n\n{formatted_memory}\n\n{internal_reasoning_section}\n\n{experiment_explanation}\n\n{phase_instructions}\n\n{language_instruction}\n",
     "context_memory_update_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\nRound: {round_number}\n\nYou are updating your memory.\n",
-    "context_memory_section_format": "**=== YOUR MEMORY ===**\n{memory}\n====================",
+    "context_memory_section_format": "=== YOUR MEMORY ===\n{memory}\n====================",
     "context_memory_summary_format": "=== MEMORY HIGHLIGHTS ===\n{memory_summary}\n=========================",
     "context_memory_empty_placeholder": "(Empty)",
     "context_memory_summary_empty_placeholder": "No key insights yet.",
@@ -379,7 +379,11 @@
       "your_class": "Your Class",
       "your_income": "Your Income",
       "your_earnings": "Your Earnings"
-    }
+    },
+    "choice_summary_header": "**YOUR CHOICE SUMMARY**",
+    "choice_summary_line": "You chose: {principle_name}{constraint_display}",
+    "choice_outcome_line": "Your outcome: {distribution} → {class_name} → {income} → {earnings}",
+    "choice_brief_explanation": "Your {principle_type} led to {distribution} being selected{class_assignment}."
   },
   "constraint_explanations": {
     "floor_constraint_fallback": "No distribution met floor constraint of ${constraint_amount:,}. Chose distribution with highest floor: ${actual_floor:,}",

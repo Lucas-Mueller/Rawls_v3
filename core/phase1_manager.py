@@ -616,6 +616,49 @@ class Phase1Manager:
         # Build complete earnings display using LanguageManager (avoid duplicating the table)
         earnings_display_parts = []
 
+        # SURGICAL ADDITION: Build summary section BEFORE comprehensive display
+        summary_parts = []
+
+        # Find agent's choice in outcomes
+        agent_outcome = None
+        for outcome in comprehensive_data['outcomes']:
+            if (outcome['principle_key'] == parsed_choice.principle.value and
+                outcome.get('constraint_amount') == parsed_choice.constraint_amount):
+                agent_outcome = outcome
+                break
+
+        if agent_outcome:
+            # Choice summary header
+            summary_parts.append(self.language_manager.get('comprehensive_earnings.choice_summary_header'))
+
+            # Choice summary line
+            constraint_display = f" (${parsed_choice.constraint_amount:,})" if parsed_choice.constraint_amount else ""
+            choice_summary = self.language_manager.get(
+                'comprehensive_earnings.choice_summary_line',
+                principle_name=agent_outcome['principle_name'],
+                constraint_display=constraint_display
+            )
+            summary_parts.append(choice_summary)
+
+            # Outcome line
+            choice_outcome = self.language_manager.get(
+                'comprehensive_earnings.choice_outcome_line',
+                distribution=self.language_manager.get('distributions.distribution_label',
+                                                     number=agent_outcome['distribution_index'] + 1),
+                class_name=comprehensive_data['class_display_name'],
+                income=self.language_manager.get('constraint_formatting.currency_format',
+                                               amount=agent_outcome['agent_income']),
+                earnings=self.language_manager.get('constraint_formatting.currency_format',
+                                                 amount=agent_outcome['agent_earnings'])
+            )
+            summary_parts.append(choice_outcome)
+
+            # Add empty line separator
+            summary_parts.append("")
+
+        # Prepend summary to earnings_display_parts (BEFORE existing comprehensive display)
+        earnings_display_parts.extend(summary_parts)
+
         # Add principle outcomes header with localized class name and round number
         principle_outcomes_header = self.language_manager.get(
             'comprehensive_earnings.principle_outcomes_header',

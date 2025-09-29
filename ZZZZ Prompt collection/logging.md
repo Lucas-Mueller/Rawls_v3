@@ -235,7 +235,7 @@ Butterfly
  lets not implement yet, first review the plan using the reviewing
   subagent. Send him the plan then engange iwth the feedbakc. Adapt the
   plan if you agree with the or parts of the feedback. Critically discuses
-  with the agent feedback you dont buy into. Think hard. Use a structured
+  with the agent feedback you dont buy into. Use a structured
   approach. Create ToDO list 
 
 

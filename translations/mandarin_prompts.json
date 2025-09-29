@@ -133,7 +133,7 @@
     "format_class_assignment_format": "这将把您分配到以下收入类别：{assigned_class}",
     "format_floor_constraint_example": "下限限制：\"我选择平均值最大化，下限为 15 000 美元\"",
     "format_range_constraint_example": "范围限制：\"我选择平均值最大化，范围限制为 20 000 美元\"",
-    "context_memory_section_format": "**===你的记忆===**\n{memory}\n====================",
+    "context_memory_section_format": "===你的记忆===\n{memory}\n====================",
     "context_memory_summary_format": "===关键要点===\n{memory_summary}\n==================",
     "context_memory_empty_placeholder": "（空）",
     "context_memory_summary_empty_placeholder": "尚无关键见解。",
@@ -406,7 +406,11 @@
       "your_class": "您的阶层",
       "your_income": "您的收入",
       "your_earnings": "您的收益"
-    }
+    },
+    "choice_summary_header": "**您的选择摘要**",
+    "choice_summary_line": "您选择了：{principle_name}{constraint_display}",
+    "choice_outcome_line": "您的结果：{distribution} → {class_name} → {income} → {earnings}",
+    "choice_brief_explanation": "您的{principle_type}导致选择了{distribution}{class_assignment}。"
   },
   "constraint_explanations": {
     "floor_constraint_fallback": "没有分配方案满足底线约束 ${constraint_amount:,}。已选择底线最高的分配方案：${actual_floor:,}",
