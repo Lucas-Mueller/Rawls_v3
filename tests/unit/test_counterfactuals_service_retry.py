@@ -549,7 +549,9 @@ class TestMemoryIntegration:
                 memory_guidance_style="narrative",
                 language_manager=service.language_manager,
                 error_handler=None,
-                utility_agent=None
+                utility_agent=None,
+                round_number=getattr(context, 'round_number', None),
+                phase=getattr(context, 'phase', None) or "phase_2"
             )
 
             # Verify context memory was updated

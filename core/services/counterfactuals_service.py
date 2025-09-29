@@ -1048,12 +1048,19 @@ class CounterfactualsService:
         try:
             # Use existing memory guidance style from config if available
             memory_guidance_style = self.config.memory_guidance_style if self.config else "narrative"
+
+            # Extract round and phase information for proper template selection
+            round_number = getattr(context, 'round_number', None)
+            phase = getattr(context, 'phase', None) or "phase_2"  # Default to phase_2 since this is CounterfactualsService
+
             updated_memory = await MemoryManager.prompt_agent_for_memory_update(
                 participant, context, retry_memory_content,
                 memory_guidance_style=memory_guidance_style,
                 language_manager=self.language_manager,
                 error_handler=None,  # We don't have error_handler in service
-                utility_agent=None   # We don't have utility_agent in service
+                utility_agent=None,   # We don't have utility_agent in service
+                round_number=round_number,
+                phase=phase
             )
             context.memory = updated_memory
             self.logger.info(f"Updated {participant.name} memory with retry experience via MemoryManager fallback")

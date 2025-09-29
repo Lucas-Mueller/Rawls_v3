@@ -1,5 +1,8 @@
 an
 
+Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
+
+
 please implement phase 5, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
 Employ a systematic approach. Cretae a todo list.
 
@@ -238,3 +241,29 @@ Butterfly
 
 I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 
   sysetmatic approach! Use todo list. think hard. Work hard. Create a report as a .md file. If necessary create tests. 
+
+
+Pleae improve the current way the result is presented to the agent. This is the current way (english).
+"
+Your Response: I choose maximizing average with floor constraint with a constraint of $13,000. I am very sure about this choice.
+Chosen Principle: maximizing_average_floor_constraint
+Constraint Amount: 13000
+Assigned Class: Medium high
+Situation: A
+Your Payoff (already in your bank account): 2.20
+
+=== PAYOFF NOTIFICATION ===
+ROUND 1 CHOICE RESULTS - PRINCIPLE OUTCOMES FOR Medium high CLASS:
+
+Maximizing Floor Income → Distribution 4 → $22,000 → $2.2
+Maximizing Average Income → Distribution 3 → $29,000 → $2.9
+Floor constraint ≤ $12,000 → Distribution 1 → $25,000 → $2.5
+Floor constraint ≤ $10,000 → Distribution 2 → $30,000 → $3.0
+Floor constraint ≤ $6,000 → Distribution 3 → $29,000 → $2.9
+Floor constraint ≤ $13,000 → Distribution 4 → $22,000 → $2.2 ← YOUR ASSIGNED PRINCIPLE
+Range constraint ≤ $16,000 → Distribution 1 → $25,000 → $2.5
+Range constraint ≤ $25,000 → Distribution 3 → $29,000 → $2.9
+Range constraint ≤ $24,000 → Distribution 3 → $29,000 → $2.9
+Range constraint ≤ $12,000 → Distribution 4 → $22,000 → $2.2 Outcome: Applied chosen justice principle in demonstration Round 1." 
+
+Plese think on how to imrpove it without changing the code significantly. I want to make it as easy as possible for the agent to understand what happened and the consequnces of their choice. Important I dont want to nudge them. 

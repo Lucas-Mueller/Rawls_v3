@@ -137,7 +137,7 @@ class DiscussionService:
         if round_num == 1:
             return language_manager.get(
                 "prompts.phase2_internal_reasoning",
-                discussion_history=discussion_state.get_formatted_discussion_history(),
+                discussion_history=discussion_state.public_history,
                 round_number=round_num,
                 max_rounds=max_rounds
             )

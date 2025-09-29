@@ -214,7 +214,9 @@ class Phase1Manager:
                 memory_guidance_style=memory_guidance_style,
                 language_manager=self.language_manager,
                 error_handler=self.error_handler,
-                utility_agent=self.utility_agent
+                utility_agent=self.utility_agent,
+                round_number=context.round_number,
+                phase="phase_1"
             )
             context.memory = updated_memory
             self._log_info(f"Updated {participant.name} memory with retry experience")
@@ -265,7 +267,9 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
+            round_number=context.round_number,
+            phase="phase_1"
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -288,7 +292,9 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
+            round_number=context.round_number,
+            phase="phase_1"
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -313,7 +319,9 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
+            round_number=context.round_number,
+            phase="phase_1"
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -374,7 +382,9 @@ class Phase1Manager:
             memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
             
             context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
+                round_number=context.round_number,
+                phase="phase_1"
             )
         
         # 1.4 Final Ranking
@@ -396,7 +406,9 @@ class Phase1Manager:
         # Update memory with agent using new guidance style
         memory_guidance_style = config.memory_guidance_style if config else "narrative"
         context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent
+            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
+            round_number=context.round_number,
+            phase="phase_1"
         )
         context = update_participant_context(context, new_round=context.round_number)
         
@@ -665,8 +677,10 @@ class Phase1Manager:
         # Add explicit payoff line
         round_content += f"\n{language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}"
         
-        # Add comprehensive earnings display
-        round_content += f"\n\n{earnings_display}"
+        # Add comprehensive earnings display with conditional header
+        if earnings_display:
+            payoff_header = language_manager.get('memory_field_labels.payoff_notification_header')
+            round_content += f"\n\n{payoff_header}\n{earnings_display}"
         
         round_content += f"\n{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"
         
@@ -759,10 +773,13 @@ class Phase1Manager:
                         low_n = language_manager.get('common.income_classes.low')
                         if language == 'english':
                             prob_header = "The probabilities for each class are as follows"
+                            prob_disclaimer = "Note: These probabilities are for this example only and may be different in subsequent rounds. They can vary significantly."
                         elif language == 'spanish':
                             prob_header = "Las probabilidades para cada clase son las siguientes"
+                            prob_disclaimer = "Nota: Estas probabilidades son solo para este ejemplo y pueden ser diferentes en rondas posteriores. Pueden variar significativamente."
                         else:
                             prob_header = "各收入类别的概率如下"
+                            prob_disclaimer = "注意：这些概率仅适用于此示例，在后续轮次中可能会有所不同。它们可能会显著变化。"
                         prob_lines = [
                             prob_header,
                             f"{high_n}: {probs.high*100:.0f}%",
@@ -770,6 +787,8 @@ class Phase1Manager:
                             f"{m_n}: {probs.medium*100:.0f}%",
                             f"{ml_n}: {probs.medium_low*100:.0f}%",
                             f"{low_n}: {probs.low*100:.0f}%",
+                            "",
+                            prob_disclaimer,
                             ""
                         ]
                     else:
