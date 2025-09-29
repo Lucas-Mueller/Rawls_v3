@@ -4,7 +4,7 @@ Participant agent system for the Frohlich Experiment.
 from agents import Agent, RunContextWrapper, ModelSettings, Runner
 
 from config import AgentConfiguration
-from models import ParticipantContext, ExperimentPhase
+from models import ParticipantContext, ExperimentPhase, ExperimentStage
 from utils.model_provider import create_model_config_with_temperature_detection, create_model_settings, create_model_config_sync
 from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 # Voting tools removed - now using prompt-based voting
@@ -260,25 +260,58 @@ def _generate_dynamic_instructions(
     )
     
     # Get phase-specific instructions using language manager
+    stage = getattr(context, 'stage', None)
+    stage_key = stage.value if isinstance(stage, ExperimentStage) else stage
+
+    # Initialize variables for Phase 2 context header
+    phase2_max_rounds = None
+    phase2_participant_names = None
+
     if context.phase == ExperimentPhase.PHASE_2:
-        # Build Phase 2 instruction block with discussion transcript
         max_rounds = experiment_config.phase2_rounds if experiment_config else 5
+        phase2_max_rounds = max_rounds  # Store for context header
+
+        # Extract participant names for context header
         participant_names = []
         try:
             if experiment_config and getattr(experiment_config, 'agents', None):
                 participant_names = [getattr(a, 'name', '') for a in experiment_config.agents if getattr(a, 'name', '')]
         except Exception:
             participant_names = []
-        phase_instructions = language_manager.format_phase2_discussion_instructions(
-            round_number=context.round_number,
-            max_rounds=max_rounds,
-            participant_names=participant_names,
-            discussion_history=getattr(context, 'discussion_history', '') or ''
-        )
+        phase2_participant_names = participant_names  # Store for context header
+
+        if stage_key == ExperimentStage.DISCUSSION.value:
+            phase_instructions = language_manager.format_phase2_discussion_instructions(
+                round_number=context.round_number,
+                max_rounds=max_rounds,
+                participant_names=participant_names,
+                discussion_history=getattr(context, 'discussion_history', '') or ''
+            )
+        elif stage_key:
+            phase_instructions = language_manager.get_context_stage_instruction(
+                stage_key,
+                round_number=context.round_number,
+                max_rounds=max_rounds
+            )
+        else:
+            phase_instructions = language_manager.format_phase2_discussion_instructions(
+                round_number=context.round_number,
+                max_rounds=max_rounds,
+                participant_names=participant_names,
+                discussion_history=getattr(context, 'discussion_history', '') or ''
+            )
     else:
-        phase_instructions = _get_phase_specific_instructions_translated(
-            context.phase, context.round_number, language_manager, experiment_config
-        )
+        if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:
+            phase_instructions = language_manager.get_phase1_instructions(context.round_number)
+        elif stage_key:
+            phase_instructions = language_manager.get_context_stage_instruction(
+                stage_key,
+                round_number=context.round_number
+            )
+        else:
+            phase_instructions = _get_phase_specific_instructions_translated(
+                context.phase, context.round_number, language_manager, experiment_config
+            )
     
     # Format everything using language manager with config-aware explanation inclusion
     return language_manager.format_context_info(
@@ -291,7 +324,10 @@ def _generate_dynamic_instructions(
         personality=config.personality,
         phase_instructions=phase_instructions,
         experiment_config=experiment_config,
-        internal_reasoning=getattr(context, 'internal_reasoning', '')
+        internal_reasoning=getattr(context, 'internal_reasoning', ''),
+        stage=stage,
+        max_rounds=phase2_max_rounds,
+        participant_names=phase2_participant_names
     )
 
 
@@ -316,7 +352,8 @@ def update_participant_context(
     context: ParticipantContext,
     balance_change: float = 0.0,
     new_round: int = None,
-    new_phase: ExperimentPhase = None
+    new_phase: ExperimentPhase = None,
+    new_stage: ExperimentStage | None = None
 ) -> ParticipantContext:
     """Update participant context with new information (memory handled separately)."""
     
@@ -331,7 +368,8 @@ def update_participant_context(
         memory_character_limit=context.memory_character_limit,
         interaction_type=context.interaction_type,  # Preserve interaction_type for tool availability
         internal_reasoning=context.internal_reasoning,
-        discussion_history=getattr(context, 'discussion_history', '')
+        discussion_history=getattr(context, 'discussion_history', ''),
+        stage=new_stage if new_stage is not None else context.stage
     )
     
     return updated_context

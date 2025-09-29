@@ -110,12 +110,10 @@ class DiscussionService:
             Formatted discussion prompt with group composition (reasoning handled by system context)
         """
         language_manager = self.language_manager
-        
-        # Use short, task-focused prompt. Discussion transcript is provided via instructions.
+
+        # Use short, task-focused prompt. Discussion transcript and round info are provided via context header.
         return language_manager.get(
-            "prompts.phase2_discussion_short_prompt",
-            round_number=round_num,
-            max_rounds=max_rounds
+            "prompts.phase2_discussion_short_prompt"
         )
     
     def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 

@@ -407,11 +407,49 @@ class LanguageManager:
         """Get translated name for a phase."""
         return self.get(f"common.phase_names.{phase_key}")
     
+    def get_context_stage_instruction(self, stage_key: str, round_number: int | None = None, max_rounds: int | None = None) -> str:
+        """Get localized instruction text for a specific experiment stage."""
+        try:
+            instruction = self.get(f"prompts.context_stage_prompts.{stage_key}",
+                                   round_number=round_number if round_number is not None else "",
+                                   max_rounds=max_rounds if max_rounds is not None else "")
+        except KeyError:
+            # Fallback to a simple English string if translation missing
+            instruction = stage_key.replace('_', ' ').title()
+        if stage_key == "application" and round_number is not None and round_number > 0:
+            instruction = f"{instruction} (Round {round_number})"
+        if stage_key == "discussion" and round_number is not None and max_rounds is not None:
+            instruction = f"{instruction} (Round {round_number} of {max_rounds})"
+        return instruction
+    
     def format_context_info(self, name: str, role_description: str, bank_balance: float,
                            phase: str, round_number: int, formatted_memory: str,
-                           personality: str, phase_instructions: str, experiment_config=None, 
-                           internal_reasoning: str = "") -> str:
-        """Format the main context information display."""
+                           personality: str, phase_instructions: str, experiment_config=None,
+                           internal_reasoning: str = "",
+                           stage: Optional[Any] = None,
+                           max_rounds: Optional[int] = None,
+                           participant_names: Optional[List[str]] = None) -> str:
+        """
+        Format the main context information display.
+
+        Args:
+            name: Participant name
+            role_description: Role description
+            bank_balance: Current bank balance
+            phase: Current phase
+            round_number: Current round number
+            formatted_memory: Formatted memory content
+            personality: Participant personality
+            phase_instructions: Phase-specific instructions
+            experiment_config: Optional experiment configuration
+            internal_reasoning: Optional internal reasoning content
+            stage: Optional ExperimentStage for conditional formatting
+            max_rounds: Optional maximum rounds for discussion header
+            participant_names: Optional participant names for discussion header
+
+        Returns:
+            Formatted context information string
+        """
         
         # Track first turn per phase for experiment explanation gating
         if not hasattr(self, '_first_turn_tracker'):
@@ -449,15 +487,35 @@ class LanguageManager:
         # Format internal reasoning section if available
         internal_reasoning_section = ""
         if internal_reasoning and internal_reasoning.strip():
-            internal_reasoning_section = self.get("prompts.internal_reasoning_context_format", 
+            internal_reasoning_section = self.get("prompts.internal_reasoning_context_format",
                                                  internal_reasoning=internal_reasoning)
-        
+
+        # Format discussion header section if in discussion stage
+        discussion_header_section = ""
+        if stage and max_rounds and participant_names:
+            # Import ExperimentStage dynamically to avoid circular imports
+            from models.experiment_types import ExperimentStage
+
+            if stage == ExperimentStage.DISCUSSION:
+                # Format participant list using language-aware method
+                participant_list = self.format_participant_list(participant_names)
+
+                # Only add header if we have valid data
+                if participant_list and round_number:
+                    discussion_header_section = self.get(
+                        "prompts.context_discussion_header_section",
+                        round_number=round_number,
+                        max_rounds=max_rounds,
+                        participants=participant_list
+                    )
+
         return self.get("prompts.context_context_info_format",
                        name=name,
-                       role_description=role_description, 
+                       role_description=role_description,
                        bank_balance=bank_balance,
                        phase=localized_phase,
                        round_number=round_number,
+                       discussion_header_section=discussion_header_section,
                        formatted_memory=formatted_memory,
                        internal_reasoning_section=internal_reasoning_section,
                        experiment_explanation=experiment_explanation,
@@ -484,7 +542,39 @@ class LanguageManager:
                        phase=phase_str,
                        round_number=round_number,
                        personality=personality)
-    
+
+    def format_participant_list(self, participant_names: List[str]) -> str:
+        """
+        Format participant list with language-appropriate conjunctions.
+
+        Args:
+            participant_names: List of participant names
+
+        Returns:
+            Formatted participant list string
+
+        Examples:
+            ["Alice"] → "Alice"
+            ["Alice", "Bob"] → "Alice and Bob"
+            ["Alice", "Bob", "Carol"] → "Alice, Bob, and Carol"
+        """
+        if not participant_names:
+            return ""
+
+        if len(participant_names) == 1:
+            return participant_names[0]
+
+        if len(participant_names) == 2:
+            return self.get("common.list_formatting.two_items",
+                           first=participant_names[0],
+                           second=participant_names[1])
+
+        # Three or more participants
+        items_list = ", ".join(participant_names[:-1])
+        return self.get("common.list_formatting.three_plus_items",
+                       items=items_list,
+                       last=participant_names[-1])
+
     def format_memory_section(self, memory: str, display_mode: str = "full", context_type: str = "general") -> str:
         """
         Format the memory section display.

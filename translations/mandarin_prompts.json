@@ -3,7 +3,11 @@
   "experiment_description": "Multi-language experiment for studying distributive justice preferences",
   "experiment_author": "Research Team",
   "experiment_version": "3.0",
-  "supported_languages": ["English", "Spanish", "Mandarin"],
+  "supported_languages": [
+    "English",
+    "Spanish",
+    "Mandarin"
+  ],
   "default_language": "English",
   "master_principle_descriptions": {
     "maximizing_floor": "**最低收入最大化**：选择使社会最低收入最大化的分配。此原则仅考虑社会中最弱势个体的福利。在判断收入分配时，确保最贫穷者获得最高收入的分配是最公正的。除非能够提高最底层人群的收入，否则任何人的收入都不能增加。",
@@ -49,13 +53,17 @@
     "yes_no": {
       "yes": "是",
       "no": "否"
+    },
+    "list_formatting": {
+      "conjunction": "和",
+      "two_items": "{first}和{second}",
+      "three_plus_items": "{items}和{last}"
     }
   },
   "distributions": {
-    "income_class_header": "收入类别",
+    "income_class_header": "收入阶层",
     "column_header": "分配 {number}",
-    "distribution_label": "分配 {number}",
-    "average_row_label": "平均值"
+    "distribution_label": "分配 {number}"
   },
   "prompts": {
     "experiment_explanation": "\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n",
@@ -64,7 +72,7 @@
     "phase1_rounds1_4_principle_application": "",
     "phase1_round5_final_ranking": "",
     "phase2_discussion_prompt": "⚠️  **关键规则：只有正式投票才能达成有约束力的共识！**\n\n讨论本身无法创建协议。每轮结束时，系统会询问您是否要发起投票\n\n{group_participants}\n\n小组讨论 - 第{round_number}轮，共{max_rounds}轮\n\n讨论历史：\n{discussion_history}\n\n你在这一轮对小组的陈述是什么？",
-    "phase2_discussion_short_prompt": "小组讨论 - 第{round_number}轮，共{max_rounds}轮\n\n你在这一轮对小组的陈述是什么？",
+    "phase2_discussion_short_prompt": "你在这一轮对小组的陈述是什么？",
     "utility_voting_confirmation_request": "投票确认：一位小组成员表达了对公正原则投票的意愿。\n\n发起陈述：\"{initiation_statement}\"\n\n现在请确认你的选择：\n- 回答 1：是的，我确认开始正式投票\n- 回答 0：不，我需要更多讨论时间\n\n请只回答数字：1 或 0\n你的回答将对所有参与者可见。",
     "utility_secret_ballot_request": "投票会议 - 秘密投票\n\n请选择您偏好的公正原则进行秘密投票：\n\n{master_principle_descriptions}\n\n重要：如果选择约束原则，您必须指定约束金额（美元）。请使用您一直讨论的收入规模（$12,000-$32,000）来指定约束金额。\n\n您的投票完全保密，不会向其他参与者透露。\n\n请按以下格式回答：\"我的投票选择是[原则][如适用需包含约束]\"",
     "utility_parser_instructions": "\n您是弗罗里希实验的专用解析器。请遵循为每个解析任务提供的具体指示，并以所要求的格式回应。\n",
@@ -82,11 +90,8 @@
     "phase1_round_memory_template": "提示：{application_prompt}\n您的回复：{text_response}\n您的选择：{chosen_principle_display}\n\n一轮 {round_num} 结果：\n{counterfactual_table}\n\n您本轮的实际收入：${earnings:.2f}\n您目前的总收入：${total_earnings:.2f}",
     "phase1_detailed_principles_explanation": "以下是每个公正原则如何应用于收入分配的例子：\n\n分配示例：\n| 收入类别 | 分配1 | 分配2 | 分配3 | 分配4 |\n|--------------|---------|---------|---------|----------|\n| 高收入 | $32,000 | $28,000 | $31,000 | $21,000 |\n| 中高收入 | $27,000 | $22,000 | $24,000 | $20,000 |\n| 中等收入 | $24,000 | $20,000 | $21,000 | $19,000 |\n| 中低收入 | $13,000 | $17,000 | $16,000 | $16,000 |\n| 低收入 | $12,000 | $13,000 | $14,000 | $15,000 |\n\n每个原则如何选择：\n- **{principle_name_floor}**：会选择分配4（最高低收入：$15,000）\n- **{principle_name_average}**：会选择分配1（最高平均：$21,600）\n- **{principle_name_floor_constraint}，约束≤$13,000**：会选择分配1\n- **{principle_name_floor_constraint}，约束≤$14,000**：会选择分配3\n- **{principle_name_range_constraint}，约束≥$20,000**：会选择分配1\n- **{principle_name_range_constraint}，约束≥$15,000**：会选择分配2\n\n学习这些示例，了解每个原则在实践中的作用。",
     "phase1_post_explanation_ranking_prompt": "在了解每项公正原则如何应用于收入分配后，请再次将四项原则从最佳（1）到最差（4）排序：\n\n{master_principle_descriptions}\n\n回答格式：\n请按以下格式组织你的回答：\n1. [您的最佳选择]\n2. [您的第二选择]\n3. [您的第三选择]\n4. [您的最差选择]\n\n整体确定性：[很不确定/不确定/无意见/确定/很确定]\n\n重要：您必须提供所有4个原则的编号排序，不能只给出一个选择。\n\n提供您的排名。",
-    
     "two_stage_principle_selection": "秘密投票 - 第1步共2步\n\n所有参与者同意投票。你的投票完全私密 - 其他参与者不会看到你的个人选择。\n\n请用数字选择你偏好的公正原则：\n\n1. 最低收入最大化\n2. 平均收入最大化\n3. 在最低收入约束条件下最大化平均收入\n4. 在范围约束条件下最大化平均收入\n\n重要：原则3和4需要在下一步指定约束金额。\n\n你的私密投票选择（1、2、3或4）：",
-    
     "two_stage_amount_specification": "秘密投票 - 第2步共2步\n\n你选择了{principle_name}。\n\n此原则要求你指定约束金额（美元）。此金额将与其他参与者的金额进行比较以确定是否达成共识。\n\n要达成共识，所有参与者必须选择：\n- 相同的原则编号和\n- 相同的约束金额（如适用）\n\n重要：输入完整的收入美元，而不是支付美元。不要按1美元兑10,000美元的支付率进行缩放。\n\n请指定你的约束金额为整数美元金额：",
-    
     "phase1_initial_ranking_prompt": "这是您第一次为这四项正义原则排序：\n\n{master_principle_descriptions}\n\n请根据你的初步理解，将原则从最佳（1）到最差（4）排序。\n\n回答格式：\n请按以下格式组织你的回答：\n1. [您的最佳选择]\n2. [您的第二选择]\n3. [您的第三选择]\n4. [您的最差选择]\n\n整体确定性：[很不确定/不确定/无意见/确定/很确定]\n\n重要：您必须提供所有4个原则的编号排序，不能只给出一个选择。\n\n请提供您的排序。",
     "distribution_distributions_table_header": "收入分配：\n\n",
     "distribution_distributions_table_column_header": "| 收入类别1 | Dist.2 | Dist.3 | Dist.4 |\n",
@@ -98,14 +103,14 @@
     "utility_llm_parse_vote_intention": "分析参与者的陈述，检测他们是否在表达投票意图或发起投票（复杂模式）。\n\n要分析的陈述：\"{statement}\"\n\n寻找各种形式的明确投票意图：\n- 直接提议：\"我提议我们投票\"、\"我们投票吧\"、\"我认为我们应该投票\"\n- 准备就绪：\"我准备投票\"、\"准备投票\"、\"我们准备投票\"\n- 呼吁：\"呼吁投票\"、\"我们呼吁投票\"、\"投票时间\"\n- 建议：\"我们应该投票吗？\"、\"我们现在可以投票吗？\"、\"我们投票？\"\n- 最终确定：\"我们最终确定这个\"、\"决定时间\"、\"我们做决定\"\n- 程序性：\"转入投票\"、\"进行投票\"、\"进行投票\"\n\n表示投票意图的短语：\n✅ \"我认为我们现在应该投票\"\n✅ \"我们对此投票吧\"\n✅ \"准备投票\"\n✅ \"呼吁投票\"\n✅ \"我们应该投票吗？\"\n✅ \"投票时间\"\n✅ \"我提议进行投票\"\n✅ \"用投票最终确定\"\n✅ \"转入投票阶段\"\n✅ \"我准备投票\"\n\n不是投票意图的短语：\n❌ \"我可能投票支持某个原则\"（讨论投票选择，非发起投票）\n❌ \"投票很重要\"（关于投票的一般讨论）\n❌ \"你会投票支持什么？\"（询问选择，非发起）\n❌ \"我需要更多时间思考\"（延迟，非发起）\n❌ \"我们再讨论\"（继续讨论，非转入投票）\n\n投票意图检测的例子：\n- \"我认为我们应该投票\" → 检测到投票意图：参与者提议小组投票\n- \"准备对原则投票\" → 检测到投票意图：参与者表达准备对原则投票\n- \"我们对此呼吁投票\" → 检测到投票意图：参与者呼吁投票\n\n如果你检测到投票意图，回复：\n检测到投票意图：[投票意图的简要描述]\n\n如果未检测到投票意图，回复：\n无投票意图\n\n要宽泛地检测 - 如果有合理证据表明他们想发起投票，就检测它。",
     "utility_llm_parse_constraint_amount": "从这个关于基于约束的正义原则的参与者回复中提取约束金额。\n\n回复：\"{response}\"\n原则类型：{principle}\n\n你的任务是找到他们为约束指定的美元金额。寻找各种格式：\n\n美元金额：\n- \"$15,000\"、\"$20000\"、\"$25,000\"\n- \"15,000美元\"、\"20000美元\"、\"25k美元\"\n- \"一万五千\"、\"两万\"、\"25k\"\n- \"$15K\"、\"20K\"、\"$25,000美元\"\n\n约束上下文：\n- \"底线约束$15,000\"\n- \"底线$20,000\"\n- \"范围约束设置为$25,000\"\n- \"限制差距为$30,000\"\n- \"最低收入$18,000\"\n- \"最大范围$22,000\"\n\n要忽略的非约束指标：\n- \"无约束\"、\"没有约束\"、\"无约束\"\n- \"零约束\"、\"没有额外约束\"\n- \"不受约束\"、\"无限制\"\n\n验证规则：\n- 金额必须在$1,000到$100,000之间（合理范围）\n- 忽略负数或零\n- 转换\"k\"符号（15k = 15,000）\n- 处理有逗号和无逗号的格式\n\n例子：\n- \"底线约束原则，底线约束$15,000\" → 约束金额：15000\n- \"最大化平均，范围约束25k\" → 约束金额：25000\n- \"范围约束原则，$30,000范围限制\" → 约束金额：30000\n- \"原则无约束\" → 无约束金额\n- \"我选择约束原则\" → 无约束金额（缺少金额）\n\n如果你找到有效的约束金额，回复：\n约束金额：[数值金额]\n\n如果未找到有效的约束金额，回复：\n无约束金额\n\n如果提到多个金额，提取最明确陈述的金额。",
     "memory_memory_update_prompt": "将最近活动中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n最近活动：\n{round_content}\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
-    "memory_memory_update_prompt_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n当前讨论历史：\n{round_content}\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
+    "memory_memory_update_prompt_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n=== 当前讨论历史 ===\n{round_content}\n======================\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
     "memory_narrative_update_prompt": "将最近活动中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n最近活动：\n{round_content}\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
-    "memory_narrative_update_prompt_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n当前讨论历史：\n{round_content}\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
+    "memory_narrative_update_prompt_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n=== 当前讨论历史 ===\n{round_content}\n======================\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
     "memory_compression_prompt": "您的记忆接近{memory_limit}字符限制。返回包含您经验中最重要见解和模式的完整压缩记忆。专注于关键决策、学习和策略变化。目标长度：大约{target_length}字符。\n\n您当前要压缩的记忆：\n{current_memory}\n\n返回：您完整的压缩记忆（不是带前缀的摘要）",
     "memory_memory_update_prompt_first_round": "将最近活动中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n最近活动：\n{round_content}\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
-    "memory_memory_update_prompt_first_round_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n当前讨论历史：\n{round_content}\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
+    "memory_memory_update_prompt_first_round_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n=== 当前讨论历史 ===\n{round_content}\n======================\n\n返回：你完整更新的记忆（不要增量变化或前缀如'记忆更新：'）",
     "memory_narrative_update_prompt_first_round": "将最近活动中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n最近活动：\n{round_content}\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
-    "memory_narrative_update_prompt_first_round_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n当前讨论历史：\n{round_content}\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
+    "memory_narrative_update_prompt_first_round_no_recent_activity": "将当前讨论历史和您最近的推理中的心得体会完整地更新到您的记忆中。既要包括以前记忆中的重要信息，也要包括新的学习内容。\n\n除了你的记忆和当前的讨论历史，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。\n\n重点关注可能会影响你对正义原则的选择或在小组讨论中对你有帮助的信息。请特别注意结果的模式、意外结果，以及不同原则在实践中的表现与理论上的差异。专注于改变的内容和关键见解，而不是规则或记录。\n\n你之前的记忆：\n{current_memory}\n\n您正在参与一项研究公正原则和收入分配的实验。\n\n实验分为两个主要阶段：\n\n阶段1：您将单独学习四种不同的公正原则，并将其应用于收入分配。您将被要求按照偏好对这些原则进行排序，并将它们应用到具体情景中。您的选择将影响您的收入。\n\n阶段2：您将参加小组讨论，就小组应采用的公正原则达成共识。然后，小组选择的原则将用于确定每个人的最终收入。\n\n在整个实验过程中，要深思熟虑地对待原则和其他参与者。\n\n你们现在处于第二阶段：\n在这部分实验中，你们作为一个小组，要为自己选择一条原则。这个选择将决定你们在这部分实验中的回报。你们的报酬将按以下方式确定。这些分布不必与第一部分的分布相似。\n这部分实验的风险比第一部分高得多。\n您选择的原则将用于选出符合您原则的分配表。\n因此，举例来说，如果你选择的原则是平均收入最大化，那么你就意味着小组希望选出平均收入最高的分配方案。  然后，你们每个人都将从该分配中随机分配到一份收入。这就是你们第二部分的回报。然后，小组选择的原则将用于确定每个人的最终收入。\n\n第二阶段的每一轮都按照以下流程进行：\n1.    讨论  2. 投票\n一致投票：所有参与者必须就同一原则达成一致，如果该原则规定了约束条件，则所有参与者的约束条件值也必须相同。\n\n=== 当前讨论历史 ===\n{round_content}\n======================\n\n返回：你完整更新的记忆作为连续叙述（不要添加前缀如'记忆更新：'）",
     "memory_empty_memory_placeholder": "（空）",
     "system_error_messages_memory_limit_exceeded": "您的内存超出了字符限制。请浓缩您的记忆，保留最重要的信息。",
     "system_error_messages_invalid_principle_choice": "检测到无效原则选择。请从四个可用的公正原则中选择一个。",
@@ -139,7 +144,7 @@
     "context_memory_summary_empty_placeholder": "尚无关键见解。",
     "internal_reasoning_context_format": "=== 您的内部推理 ===\n{internal_reasoning}\n================================",
     "language_instruction": "请只用中文回答。",
-    "context_context_info_format": "\n姓名：{name}\n角色描述：{role_description}\n银行余额： ${bank_balance:.2f}\n当前阶段：{phase}\n回合数：{round_number}\n\n{formatted_memory}\n\n{internal_reasoning_section}\n\n{experiment_explanation}\n\n{phase_instructions}\n\n{language_instruction}\n",
+    "context_context_info_format": "\n姓名：{name}\n角色描述：{role_description}\n银行余额： ${bank_balance:.2f}\n当前阶段：{phase}\n{discussion_header_section}\n{formatted_memory}\n\n{internal_reasoning_section}\n\n{experiment_explanation}\n\n{phase_instructions}\n\n{language_instruction}\n",
     "context_memory_update_format": "\n姓名：{name}\n角色描述：{role_description}\n银行余额：${bank_balance:.2f}\n当前阶段：{phase}\n回合数：{round_number}\n\n你正在更新你的记忆。\n",
     "utility_string_parser_agent_name": "响应解析器",
     "utility_string_validator_agent_name": "响应验证器",
@@ -163,15 +168,15 @@
     "vote_initiation_with_reasoning_prompt": "投票决定点\n\n=== 您的内部推理 ===\n{internal_reasoning}\n================================\n\n讨论已经进行，你可能感到已经准备好进入正式投票。\n\n基于您上述的内部推理和到目前为止的讨论，你现在想开始这个投票过程吗？\n- 1 如果你想开始投票过程\n- 0 如果你现在不想投票\n\n你的回答（1或0）：",
     "vote_initiation_with_statement_and_reasoning_prompt": "你刚刚向小组发表了这个声明：\n\"{agent_recent_statement}\"\n\n=== 您的内部推理 ===\n{internal_reasoning}\n================================\n\n基于您上述的内部推理、您最近的声明和到目前为止的讨论，你想现在就正义原则开始正式投票吗？\n\n请回答：\n- 1 如果你想现在开始投票\n- 0 如果你现在不想投票\n\n你的回答（1或0）：",
     "memory_insertions": {
-        "vote_initiation_decision": "第{round_num}轮：我选择了{decision}。",
-        "confirmation_response": "投票确认：我{response}参加正式投票。",
-        "secret_ballot_choice": "秘密投票：我投票支持{principle_name}。",
-        "amount_specification": "约束金额：我指定了{amount}。",
-        "status_update": "状态：{status_message}",
-        "initiate_voting": "开始投票",
-        "continue_discussion": "继续讨论",
-        "agreed_to": "同意了",
-        "declined_to": "拒绝了"
+      "vote_initiation_decision": "第{round_num}轮：我选择了{decision}。",
+      "confirmation_response": "投票确认：我{response}参加正式投票。",
+      "secret_ballot_choice": "秘密投票：我投票支持{principle_name}。",
+      "amount_specification": "约束金额：我指定了{amount}。",
+      "status_update": "状态：{status_message}",
+      "initiate_voting": "开始投票",
+      "continue_discussion": "继续讨论",
+      "agreed_to": "同意了",
+      "declined_to": "拒绝了"
     },
     "phase2_detailed_results_header": "第2阶段最终结果\n\n共识状态：{consensus_status}\n您的收入等级分配：{assigned_class}\n您的收入：${earnings:.2f}",
     "phase2_counterfactual_table_header": "反事实分析 - 您在每个原则下的收入情况：\n┌─────────────────────────────────────────┬──────────┬──────────┐\n│ 正义原则                               │ 收入     │ 收益     │\n├─────────────────────────────────────────┼──────────┼──────────┤",
@@ -188,18 +193,36 @@
       "floor_constraint_payoffs_worst": "- 最低收入约束的最差结果：本应少获得${worst_diff:.2f}"
     },
     "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。",
-    
-    "phase1_distributions_intro": "以下是一些示例分配，帮助您理解："
+    "phase1_distributions_intro": "以下是一些示例分配，帮助您理解：",
+    "context_stage_prompts": {
+      "initial_ranking": "Phase 1 – Initial ranking. Provide your preference ordering as instructed.",
+      "principle_explanation": "Phase 1 – Principle explanation. Review the guidance and absorb the information provided.",
+      "post_explanation_ranking": "Phase 1 – Post-explanation ranking. Update your ordering based on what you learned.",
+      "application": "Phase 1 – Demonstration round. Apply the principle to the current distributions.",
+      "discussion": "Phase 2 – Group discussion. Contribute to the shared dialogue this round.",
+      "voting": "Phase 2 – Voting stage. Decide whether to initiate or participate in voting.",
+      "results": "Phase 2 – Results review. Examine the outcomes delivered below.",
+      "final_ranking": "Phase 2 – Final ranking. Provide your concluding ordering of the principles."
+    }
   },
   "results": {
-    "phase2_header": "第二阶段最终结果",
-    "assigned_income_class": "分配的收入等级：{class_name}",
-    "class_probabilities_header": "各收入类别的概率：",
-    "counterfactuals_header": "反事实分析",
+    "phase2_header": "第2阶段最终结果",
+    "counterfactual_header": "反事实分析 - 您在每个原则下的收入情况：",
     "table_headers": {
       "principle": "正义原则",
       "income": "收入",
       "earnings": "收益"
+    },
+    "consensus_status": "共识状态：",
+    "key_insights": "关键见解：",
+    "assigned_income_class": "分配的收入类别：",
+    "counterfactuals_header": "反事实分析：",
+    "income_classes": {
+      "very_high": "非常高",
+      "high": "高",
+      "medium": "中等",
+      "low": "低",
+      "very_low": "非常低"
     }
   },
   "errors": {
@@ -228,7 +251,7 @@
   "memory_field_labels": {
     "prompt": "提示：",
     "your_response": "您的回复：",
-    "your_rankings": "您的排名：", 
+    "your_rankings": "您的排名：",
     "your_post_explanation_rankings": "您的后解释排名：",
     "your_final_rankings": "您的最终排名：",
     "your_statement": "您的发言：",
@@ -246,6 +269,7 @@
   },
   "context_phase2_discussion_header": "小组讨论 - 第{round_number}轮，共{max_rounds}轮",
   "context_group_composition_format": "参与者：{participants}",
+  "context_discussion_header_section": "\n小组讨论 - 第 {round_number} 轮，共 {max_rounds} 轮\n\n参与者：{participants}\n",
   "context_discussion_history_section_format": "=== 讨论历史 ===\n{discussion_history}\n==================",
   "no_previous_discussion_placeholder": "目前没有先前的讨论。",
   "memory_outcomes": {
@@ -344,7 +368,7 @@
   "system_messages": {
     "voting": {
       "initiated_tag": "[投票启动]",
-      "confirmation_tag": "[投票确认]", 
+      "confirmation_tag": "[投票确认]",
       "result_tag": "[投票结果]",
       "error_tag": "[投票错误]",
       "initiated_message": "{name}已启动正式投票",
@@ -364,26 +388,6 @@
       "retry_hint": "请确保您的回应包含关于您对正义原则立场的明确陈述"
     }
   },
-  "results": {
-    "phase2_header": "第2阶段最终结果",
-    "counterfactual_header": "反事实分析 - 您在每个原则下的收入情况：",
-    "table_headers": {
-      "principle": "正义原则",
-      "income": "收入", 
-      "earnings": "收益"
-    },
-    "consensus_status": "共识状态：",
-    "key_insights": "关键见解：",
-    "assigned_income_class": "分配的收入类别：",
-    "counterfactuals_header": "反事实分析：",
-    "income_classes": {
-      "very_high": "非常高",
-      "high": "高", 
-      "medium": "中等",
-      "low": "低",
-      "very_low": "非常低"
-    }
-  },
   "comprehensive_earnings": {
     "distributions_table_header": "实验分配和选择映射",
     "principle_outcomes_header": "第{round_number}轮选择结果 - {class_name}类别的原则结果：",
@@ -393,6 +397,9 @@
       "assigned_principle": " ← 您的指定原则",
       "group_choice": " ← 您组的选择"
     },
+    "no_consensus_summary_header": "**未达成共识**",
+    "no_consensus_explanation": "经过{rounds}轮讨论后，您的小组未能就正义原则达成一致。收入在所有参与者之间随机分配。",
+    "no_consensus_outcome_line": "您的随机分配：{class_name}类别 → ${earnings:.2f}收入",
     "constraint_analysis_header": "约束分析结果：",
     "outcome_summary": "不同约束下的结果总结：",
     "selected_distribution": "选择的分配：",
@@ -424,11 +431,6 @@
     "floor_constraint": "最低收入约束 ≤ {amount}",
     "range_constraint": "范围约束 ≤ {amount}",
     "currency_format": "${amount:,}"
-  },
-  "distributions": {
-    "income_class_header": "收入阶层",
-    "column_header": "分配 {number}",
-    "distribution_label": "分配 {number}"
   },
   "voting_prompts": {
     "retry_instruction": "⚠️ 请准确回答1（现在投票）或0（继续讨论）",
