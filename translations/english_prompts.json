@@ -233,7 +233,7 @@
   },
   "context_phase2_discussion_header": "GROUP DISCUSSION - Round {round_number} of {max_rounds}",
   "context_group_composition_format": "Participants: {participants}",
-  "context_discussion_header_section": "\ngroup discussion - round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
+  "context_discussion_header_section": "\nGroup Discussion - Round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
   "context_discussion_history_section_format": "=== DISCUSSION HISTORY ===\n{discussion_history}\n==========================",
   "no_previous_discussion_placeholder": "No previous discussion.",
   "memory_outcomes": {
