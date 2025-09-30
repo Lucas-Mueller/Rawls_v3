@@ -503,7 +503,7 @@ class LanguageManager:
                 # Only add header if we have valid data
                 if participant_list and round_number:
                     discussion_header_section = self.get(
-                        "prompts.context_discussion_header_section",
+                        "context_discussion_header_section",
                         round_number=round_number,
                         max_rounds=max_rounds,
                         participants=participant_list
