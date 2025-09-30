@@ -524,7 +524,9 @@ class LanguageManager:
                        language_instruction=language_instruction)
     
     def format_memory_context(self, name: str, bank_balance: float, personality: str,
-                             role_description: str = None, phase=None, round_number: int = 0) -> str:
+                             role_description: str = None, phase=None, round_number: int = 0,
+                             stage: Optional[Any] = None,
+                             experiment_config=None) -> str:
         """Format minimal context for memory updates only."""
         # Convert phase enum to string if needed
         if hasattr(phase, 'value'):
@@ -535,13 +537,43 @@ class LanguageManager:
         # Use provided role_description or fall back to personality
         actual_role = role_description if role_description is not None else personality
 
+        # Format discussion header section if in discussion stage
+        discussion_header_section = ""
+        if stage and experiment_config:
+            # Import ExperimentStage dynamically to avoid circular imports
+            from models.experiment_types import ExperimentStage
+
+            if stage == ExperimentStage.DISCUSSION:
+                # Extract max rounds and participant names from experiment_config
+                max_rounds = experiment_config.phase2_rounds if experiment_config else 5
+                participant_names = []
+                try:
+                    if experiment_config and getattr(experiment_config, 'agents', None):
+                        participant_names = [getattr(a, 'name', '') for a in experiment_config.agents if getattr(a, 'name', '')]
+                except Exception:
+                    participant_names = []
+
+                # Format participant list using language-aware method
+                if participant_names and round_number:
+                    participant_list = self.format_participant_list(participant_names)
+
+                    # Only add header if we have valid data
+                    if participant_list:
+                        discussion_header_section = self.get(
+                            "context_discussion_header_section",
+                            round_number=round_number,
+                            max_rounds=max_rounds,
+                            participants=participant_list
+                        )
+
         return self.get("prompts.context_memory_update_format",
                        name=name,
                        role_description=actual_role,
                        bank_balance=bank_balance,
                        phase=phase_str,
                        round_number=round_number,
-                       personality=personality)
+                       personality=personality,
+                       discussion_header_section=discussion_header_section)
 
     def format_participant_list(self, participant_names: List[str]) -> str:
         """

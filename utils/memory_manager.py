@@ -138,7 +138,8 @@ class MemoryManager:
                     prompt,
                     context.bank_balance,
                     phase=effective_phase_enum,
-                    round_number=agent_round_number
+                    round_number=agent_round_number,
+                    stage=context.stage
                 )
                 
                 # Check memory length with 15% tolerance buffer

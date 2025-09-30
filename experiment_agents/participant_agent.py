@@ -108,17 +108,18 @@ class ParticipantAgent:
             return self.config.name
         return self.agent.name
     
-    async def update_memory(self, prompt: str, current_bank_balance: float = 0.0, 
+    async def update_memory(self, prompt: str, current_bank_balance: float = 0.0,
                            phase: ExperimentPhase = ExperimentPhase.PHASE_1,
                            round_number: int = 0,
-                           role_description: str = None) -> str:
+                           role_description: str = None,
+                           stage: ExperimentStage = None) -> str:
         """Agent updates their own memory based on prompt using minimal context."""
         # Ensure agent is initialized
         await self.async_init()
-        
+
         # Use provided role_description or fall back to config personality
         actual_role = role_description if role_description is not None else self.config.personality
-        
+
         # Create a specialized memory update context that uses minimal formatting
         temp_context = ParticipantContext(
             name=self.config.name,
@@ -128,12 +129,13 @@ class ParticipantAgent:
             round_number=round_number,
             phase=phase,
             memory_character_limit=self.config.memory_character_limit,
-            interaction_type="memory_update"  # For consistency with existing interaction types
+            interaction_type="memory_update",  # For consistency with existing interaction types
+            stage=stage  # Pass stage for discussion header display
         )
-        
+
         # Store actual role description for formatting
         temp_context._actual_role_description = actual_role
-        
+
         result = await Runner.run(self.agent, prompt, context=temp_context)
         return result.final_output
     
@@ -241,7 +243,9 @@ def _generate_dynamic_instructions(
             personality=config.personality,
             role_description=actual_role,
             phase=context.phase,
-            round_number=context.round_number
+            round_number=context.round_number,
+            stage=context.stage,
+            experiment_config=experiment_config
         )
     
     # Standard context formatting for regular operations
