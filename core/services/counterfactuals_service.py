@@ -123,6 +123,8 @@ class CounterfactualsService:
         self.config = config
         # Cache Phase 2 probabilities for consistent displays
         self._phase2_probabilities = None
+        # Track assigned distributions for no-consensus scenarios
+        self._assigned_distributions = {}
     
     async def apply_group_principle_and_calculate_payoffs(
         self,
@@ -132,15 +134,15 @@ class CounterfactualsService:
     ) -> tuple[Dict[str, float], Dict[str, str], Dict[str, Dict[str, float]], Any]:
         """
         Apply chosen principle or random assignment if no consensus.
-        
+
         Updated contract: returns (payoffs, assigned_classes, alternative_earnings_by_agent, distribution_set)
         Handles consensus vs random assignment logic.
-        
+
         Args:
             discussion_result: Result of group discussion with consensus info
             config: Experiment configuration
             participants: List of participant agents
-            
+
         Returns:
             tuple: (payoffs dict, assigned_classes dict, alternative_earnings_by_agent dict, distribution_set)
         """
@@ -151,24 +153,26 @@ class CounterfactualsService:
             distribution_set = DistributionGenerator.generate_dynamic_distribution(
                 config.distribution_range_phase2
             )
-            
+
             payoffs = {}
             assigned_classes = {}
+            # Track which distribution was assigned to each participant (for no-consensus display)
+            assigned_distributions = {}
             consensus_principle = None
             constraint_amount = None
-            
+
             if discussion_result.consensus_reached and discussion_result.agreed_principle:
                 # Apply agreed principle
                 consensus_principle = discussion_result.agreed_principle
                 constraint_amount = consensus_principle.constraint_amount
-                
+
                 chosen_distribution, explanation = DistributionGenerator.apply_principle_to_distributions(
-                    distribution_set.distributions, 
-                    discussion_result.agreed_principle, 
+                    distribution_set.distributions,
+                    discussion_result.agreed_principle,
                     config.income_class_probabilities,
                     language_manager=self.language_manager
                 )
-                
+
                 # Assign each participant to income class and calculate payoff
                 for participant in participants:
                     assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, config.income_class_probabilities, random_gen=self.seed_manager.random if self.seed_manager else None)
@@ -181,15 +185,22 @@ class CounterfactualsService:
                         random_distribution = self.seed_manager.random.choice(distribution_set.distributions)
                     else:
                         random_distribution = random.choice(distribution_set.distributions)
+                    # Track which distribution index was assigned (1-indexed for display)
+                    distribution_index = distribution_set.distributions.index(random_distribution) + 1
+                    assigned_distributions[participant.name] = distribution_index
                     assigned_class, earnings = DistributionGenerator.calculate_payoff(random_distribution, config.income_class_probabilities, random_gen=self.seed_manager.random if self.seed_manager else None)
                     payoffs[participant.name] = earnings
                     assigned_classes[participant.name] = assigned_class.value
-            
+
+            # Store assigned distributions for use in comprehensive display
+            self._assigned_distributions = assigned_distributions
+
             # Calculate counterfactual earnings for transparency
             alternative_earnings_by_agent = await self.calculate_phase2_counterfactuals(
-                distribution_set, assigned_classes, consensus_principle, constraint_amount
+                distribution_set, assigned_classes, consensus_principle, constraint_amount,
+                probabilities=config.income_class_probabilities
             )
-            
+
             self.logger.debug(f"Payoffs calculated for {len(participants)} participants")
             return payoffs, assigned_classes, alternative_earnings_by_agent, distribution_set
             
@@ -202,49 +213,118 @@ class CounterfactualsService:
         distribution_set,
         assigned_classes: Dict[str, str],
         consensus_principle: Optional[PrincipleChoice] = None,
-        constraint_amount: Optional[int] = None
+        constraint_amount: Optional[int] = None,
+        probabilities = None
     ) -> Dict[str, Dict[str, float]]:
         """
         Calculate alternative earnings under all 4 principles for transparency.
-        
+
         Calculate what each agent would earn under all four principles
-        using their assigned income class from Phase 2.
-        
+        using their assigned income class from Phase 2. Uses appropriate constraint
+        values for each principle type to avoid incorrect constraint reuse.
+        Uses weighted probabilities to ensure consistent distribution selection.
+
         Args:
             distribution_set: The distribution set generated for Phase 2
             assigned_classes: Dict mapping participant names to their assigned income classes
             consensus_principle: The principle chosen by consensus (if any)
-            constraint_amount: The constraint amount used (if any)
-            
+            constraint_amount: The constraint amount used (if any) - DEPRECATED, use consensus_principle
+            probabilities: Income class probabilities for weighted average calculation
+
         Returns:
             Dict[agent_name, Dict[principle_key, earnings]]
         """
         try:
+            from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
+
             alternative_earnings_by_agent = {}
-            
+
+            # Determine constraint values to use for each constraint type
+            # If consensus reached with a constraint principle, use that value
+            # Otherwise use representative values from the distributions
+            floor_constraint_value = None
+            range_constraint_value = None
+
+            if consensus_principle and consensus_principle.constraint_amount:
+                if consensus_principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
+                    floor_constraint_value = consensus_principle.constraint_amount
+                elif consensus_principle.principle == JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT:
+                    range_constraint_value = consensus_principle.constraint_amount
+
+            # If no consensus value, use median values from distributions
+            if floor_constraint_value is None:
+                floor_values = sorted([d.low for d in distribution_set.distributions])
+                floor_constraint_value = floor_values[len(floor_values) // 2]
+
+            if range_constraint_value is None:
+                range_values = sorted([d.get_range() for d in distribution_set.distributions])
+                range_constraint_value = range_values[len(range_values) // 2]
+
             for participant_name, class_str in assigned_classes.items():
                 # Convert string back to enum - handle different formats
                 if class_str.startswith('IncomeClass.'):
                     # Handle enum string representation like 'IncomeClass.high'
                     enum_value = class_str.split('.')[1].lower()
                 else:
-                    # Handle direct value like 'high' or 'MEDIUM HIGH' 
+                    # Handle direct value like 'high' or 'MEDIUM HIGH'
                     enum_value = class_str.lower().replace(' ', '_')
-                
+
                 assigned_class = IncomeClass(enum_value)
-                
-                # Use the same method as Phase 1 for calculating counterfactuals
-                alternative_earnings = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
-                    distribution_set.distributions,
-                    assigned_class,
-                    constraint_amount
+
+                # Calculate earnings for each principle with appropriate constraint values
+                alternative_earnings = {}
+
+                # 1. Maximizing floor - no constraint
+                floor_choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_FLOOR,
+                    certainty=CertaintyLevel.SURE
                 )
-                
+                dist, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distribution_set.distributions, floor_choice, probabilities, None
+                )
+                income = dist.get_income_by_class(assigned_class)
+                alternative_earnings['maximizing_floor'] = round(income / 10000.0, 2)
+
+                # 2. Maximizing average - no constraint
+                avg_choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_AVERAGE,
+                    certainty=CertaintyLevel.SURE
+                )
+                dist, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distribution_set.distributions, avg_choice, probabilities, None
+                )
+                income = dist.get_income_by_class(assigned_class)
+                alternative_earnings['maximizing_average'] = round(income / 10000.0, 2)
+
+                # 3. Maximizing average with floor constraint - use appropriate floor value
+                floor_constraint_choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
+                    constraint_amount=floor_constraint_value,
+                    certainty=CertaintyLevel.SURE
+                )
+                dist, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distribution_set.distributions, floor_constraint_choice, probabilities, None
+                )
+                income = dist.get_income_by_class(assigned_class)
+                alternative_earnings['maximizing_average_floor_constraint'] = round(income / 10000.0, 2)
+
+                # 4. Maximizing average with range constraint - use appropriate range value
+                range_constraint_choice = PrincipleChoice(
+                    principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
+                    constraint_amount=range_constraint_value,
+                    certainty=CertaintyLevel.SURE
+                )
+                dist, _ = DistributionGenerator.apply_principle_to_distributions(
+                    distribution_set.distributions, range_constraint_choice, probabilities, None
+                )
+                income = dist.get_income_by_class(assigned_class)
+                alternative_earnings['maximizing_average_range_constraint'] = round(income / 10000.0, 2)
+
                 alternative_earnings_by_agent[participant_name] = alternative_earnings
-            
-            self.logger.debug(f"Counterfactuals calculated for {len(assigned_classes)} participants")
+
+            self.logger.debug(f"Counterfactuals calculated for {len(assigned_classes)} participants with proper constraint handling and weighted probabilities")
             return alternative_earnings_by_agent
-            
+
         except Exception as e:
             self.logger.warning(f"Failed to calculate counterfactuals: {e}")
             raise
@@ -290,28 +370,26 @@ class CounterfactualsService:
             class_assignment = lang_manager.get('results.assigned_income_class', class_name=assigned_class_label)
             result_parts.append(class_assignment)
             
-            # Consensus information
+            # Consensus information - only show for consensus case
+            # (no-consensus message is shown in comprehensive display to avoid duplication)
             if consensus_result.consensus_reached and consensus_result.agreed_principle:
                 # Get localized principle name using slug-based approach
                 principle_slug = consensus_result.agreed_principle.principle.value
                 principle_name = lang_manager.get(f"common.principle_names.{principle_slug}")
-                
+
                 # Use constraint template if constraint amount exists
                 if consensus_result.agreed_principle.constraint_amount is not None:
                     consensus_msg = lang_manager.get(
-                        "voting_results.consensus_with_constraint", 
+                        "voting_results.consensus_with_constraint",
                         principle_name=principle_name,
                         constraint_amount=consensus_result.agreed_principle.constraint_amount
                     )
                 else:
                     consensus_msg = lang_manager.get(
-                        "voting_results.consensus_reached", 
+                        "voting_results.consensus_reached",
                         principle_name=principle_name
                     )
                 result_parts.append(consensus_msg + ".")
-            else:
-                no_consensus_msg = lang_manager.get("phase2_no_consensus")
-                result_parts.append(no_consensus_msg + ".")
             
             # Add comprehensive earnings display
             # Convert string assigned_class to IncomeClass enum
@@ -422,9 +500,12 @@ class CounterfactualsService:
                     'comprehensive_earnings.no_consensus_explanation',
                     rounds=consensus_result.final_round
                 )
+                # Get the distribution number that was randomly assigned to this participant
+                distribution_num = self._assigned_distributions.get(participant_name, 1)  # Default to 1 if not found
                 no_consensus_outcome = lang_manager.get(
                     'comprehensive_earnings.no_consensus_outcome_line',
                     class_name=comprehensive_data['class_display_name'],
+                    distribution_num=distribution_num,
                     earnings=final_earnings
                 )
 

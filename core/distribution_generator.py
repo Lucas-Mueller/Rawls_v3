@@ -347,58 +347,85 @@ class DistributionGenerator:
     
     @staticmethod
     def calculate_alternative_earnings_by_principle_fixed_class(
-        distributions: List[IncomeDistribution], 
+        distributions: List[IncomeDistribution],
         assigned_class: IncomeClass,
         constraint_amount: Optional[int] = None
     ) -> dict:
-        """Calculate what participant would have earned under each principle with FIXED class assignment."""
+        """
+        Calculate what participant would have earned under each principle with FIXED class assignment.
+
+        Uses appropriate constraint values for each principle type to avoid incorrect constraint reuse.
+        Floor constraints use median floor value, range constraints use median range value.
+
+        Args:
+            distributions: List of distributions to apply principles to
+            assigned_class: The income class assigned to the participant
+            constraint_amount: DEPRECATED - Not used to avoid constraint reuse bug
+
+        Returns:
+            Dict mapping principle names to earnings
+        """
         from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
-        
+
         alternative_earnings = {}
-        
+
+        # Determine constraint values to use for each constraint type
+        # Use median values from distributions to avoid constraint reuse bug
+        floor_values = sorted([d.low for d in distributions])
+        floor_constraint_value = floor_values[len(floor_values) // 2]
+
+        range_values = sorted([d.get_range() for d in distributions])
+        range_constraint_value = range_values[len(range_values) // 2]
+
         # Define all four principles
         principles = [
             JusticePrinciple.MAXIMIZING_FLOOR,
-            JusticePrinciple.MAXIMIZING_AVERAGE, 
+            JusticePrinciple.MAXIMIZING_AVERAGE,
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
         ]
-        
+
         for principle in principles:
             try:
-                # Create a principle choice (use provided constraint_amount or default)
-                if principle in [JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT, 
-                               JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT]:
-                    # Use provided constraint or a reasonable default
-                    constraint = constraint_amount if constraint_amount is not None else 15000
+                # Create a principle choice with appropriate constraint value
+                if principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
+                    # Use floor constraint value (median floor)
                     choice = PrincipleChoice(
                         principle=principle,
-                        constraint_amount=constraint,
+                        constraint_amount=floor_constraint_value,
+                        certainty=CertaintyLevel.SURE
+                    )
+                elif principle == JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT:
+                    # Use range constraint value (median range)
+                    choice = PrincipleChoice(
+                        principle=principle,
+                        constraint_amount=range_constraint_value,
                         certainty=CertaintyLevel.SURE
                     )
                 else:
+                    # No constraint needed
                     choice = PrincipleChoice(
                         principle=principle,
                         certainty=CertaintyLevel.SURE
                     )
-                
+
                 # Apply this principle to the distributions
                 chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
                     distributions, choice, language_manager=None
                 )
-                
+
                 # Get income for the FIXED assigned class (not random)
                 income = chosen_distribution.get_income_by_class(assigned_class)
-                
+
                 # Calculate payoff: $1 for every $10,000 of income
                 earnings = round(income / 10000.0, 2)
-                
+
                 alternative_earnings[principle.value] = earnings
-                
+
             except Exception as e:
                 # If principle application fails, record as 0 earnings
                 alternative_earnings[principle.value] = 0.0
-        
+
         return alternative_earnings
     
     @staticmethod
@@ -627,8 +654,10 @@ class DistributionGenerator:
             header_row += f" {column_header} |"
         lines.append(header_row)
         
-        # Separator
-        separator = "|" + "--" * (len(distributions) + 1) + "|"
+        # Separator - create proper markdown table separator with dashes for each column
+        separator = "|"
+        for _ in range(len(distributions) + 1):  # +1 for income class column
+            separator += "------------|"
         lines.append(separator)
         
         # Income class rows using LanguageManager
