@@ -20,21 +20,28 @@ class TestModelProvider(unittest.TestCase):
     
     def test_detect_model_provider_openai(self):
         """Test detection of OpenAI models (no slash)."""
-        model, is_openrouter = detect_model_provider("gpt-4.1-mini")
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            model, provider = detect_model_provider("gpt-4.1-mini")
         self.assertEqual(model, "gpt-4.1-mini")
-        self.assertFalse(is_openrouter)
+        self.assertEqual(provider, "openai")
     
     def test_detect_model_provider_openrouter(self):
         """Test detection of OpenRouter models (with slash)."""
-        model, is_openrouter = detect_model_provider("google/gemini-2.5-flash")
+        model, provider = detect_model_provider("google/gemini-2.5-flash")
         self.assertEqual(model, "google/gemini-2.5-flash")
-        self.assertTrue(is_openrouter)
+        self.assertEqual(provider, "openrouter")
     
     def test_detect_model_provider_multiple_slashes(self):
         """Test detection with multiple slashes."""
-        model, is_openrouter = detect_model_provider("anthropic/claude-3-5-sonnet-20241022")
+        model, provider = detect_model_provider("anthropic/claude-3-5-sonnet-20241022")
         self.assertEqual(model, "anthropic/claude-3-5-sonnet-20241022")
-        self.assertTrue(is_openrouter)
+        self.assertEqual(provider, "openrouter")
+
+    def test_detect_model_provider_ollama_prefix(self):
+        """Test detection of Ollama models via explicit prefix."""
+        model, provider = detect_model_provider("ollama/llama3.2")
+        self.assertEqual(model, "llama3.2")
+        self.assertEqual(provider, "ollama")
     
     @patch('utils.model_provider.OpenAIChatCompletionsModel')
     @patch('utils.model_provider.get_openrouter_client')
@@ -56,9 +63,28 @@ class TestModelProvider(unittest.TestCase):
     
     def test_create_model_config_openai(self):
         """Test OpenAI model string passthrough."""
-        model_config = create_model_config("gpt-4.1-mini")
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            model_config = create_model_config("gpt-4.1-mini")
         self.assertEqual(model_config, "gpt-4.1-mini")
-    
+
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_ollama_client')
+    def test_create_model_config_ollama(self, mock_get_client, mock_openai_model):
+        """Test Ollama model creation via OpenAIChatCompletionsModel."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
+
+        model_config = create_model_config("ollama/llama3.2")
+
+        mock_get_client.assert_called_once()
+        mock_openai_model.assert_called_once_with(
+            model="llama3.2",
+            openai_client=mock_client
+        )
+        self.assertEqual(model_config, mock_instance)
+
     @patch('utils.model_provider.OpenAIChatCompletionsModel')
     @patch('utils.model_provider.get_openrouter_client')
     def test_create_model_config_openrouter_without_key(self, mock_get_client, mock_openai_model):
@@ -120,30 +146,45 @@ class TestModelProvider(unittest.TestCase):
     
     def test_get_model_provider_info_openai(self):
         """Test provider info for OpenAI models."""
-        info = get_model_provider_info("gpt-4.1-mini")
-        
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            info = get_model_provider_info("gpt-4.1-mini")
+
         expected = {
             "original_model": "gpt-4.1-mini",
             "processed_model": "gpt-4.1-mini",
             "is_openrouter": False,
-            "provider": "OpenAI",
+            "provider": "openai",
             "requires_env_var": "OPENAI_API_KEY"
         }
-        
+
         self.assertEqual(info, expected)
-    
+
     def test_get_model_provider_info_openrouter(self):
         """Test provider info for OpenRouter models."""
         info = get_model_provider_info("google/gemini-2.5-flash")
-        
+
         expected = {
             "original_model": "google/gemini-2.5-flash",
             "processed_model": "google/gemini-2.5-flash",
             "is_openrouter": True,
-            "provider": "OpenRouter",
+            "provider": "openrouter",
             "requires_env_var": "OPENROUTER_API_KEY"
         }
-        
+
+        self.assertEqual(info, expected)
+
+    def test_get_model_provider_info_ollama(self):
+        """Test provider info for Ollama models."""
+        info = get_model_provider_info("ollama/llama3.2")
+
+        expected = {
+            "original_model": "ollama/llama3.2",
+            "processed_model": "llama3.2",
+            "is_openrouter": False,
+            "provider": "ollama",
+            "requires_env_var": "OLLAMA_BASE_URL (optional)"
+        }
+
         self.assertEqual(info, expected)
     
     @patch('utils.model_provider.OpenAIChatCompletionsModel')
@@ -168,15 +209,14 @@ class TestModelProvider(unittest.TestCase):
     
     def test_edge_case_empty_model_string(self):
         """Test behavior with empty model string."""
-        model, is_openrouter = detect_model_provider("")
-        self.assertEqual(model, "")
-        self.assertFalse(is_openrouter)
-    
+        with self.assertRaises(ValueError):
+            detect_model_provider("")
+
     def test_edge_case_slash_only_model(self):
         """Test behavior with slash-only model string."""
-        model, is_openrouter = detect_model_provider("/")
+        model, provider = detect_model_provider("/")
         self.assertEqual(model, "/")
-        self.assertTrue(is_openrouter)
+        self.assertEqual(provider, "openrouter")
     
     @patch('utils.model_provider.OpenAIChatCompletionsModel')
     @patch('utils.model_provider.get_openrouter_client')

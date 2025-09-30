@@ -37,7 +37,7 @@ def test_provider_detection():
         # (model_string, expected_provider, should_fail)
         ("gemini-2.5-flash", "gemini", False),  # Requires GEMINI_API_KEY
         ("gemini-1.5-pro", "gemini", False),
-        ("gemma-2b", "gemini", False),
+        ("gemma-2b", "openrouter", False),
         ("gpt-4o", "openai", False),  # Requires OPENAI_API_KEY
         ("gpt-4o-mini", "openai", False),
         ("o1-preview", "openai", False),
@@ -46,6 +46,7 @@ def test_provider_detection():
         ("openai/gpt-4o", "openrouter", False),
         ("anthropic/claude-3", "openrouter", False),
         ("unknown-model", None, True),  # Should raise error
+        ("ollama/llama3.2", "ollama", False),
     ]
 
     for model_string, expected_provider, should_fail in test_cases:

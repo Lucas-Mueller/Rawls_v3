@@ -16,6 +16,7 @@ Memory update before voting decisions  --> Done
 Discussion hisortry bold in memory update call --> Done
 Round counter in post disucssion phase 2 is wrong --> Don
 Memory Update Call in phase 2; phase wrong, round wrong --> Done
+Ollama integration --> Done
 
 WIP
 post discussion phase 2, distribution communication to agent 

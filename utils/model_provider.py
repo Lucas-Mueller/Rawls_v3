@@ -12,6 +12,7 @@ from typing import Tuple, Optional, Union, List, Dict
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 from utils.openrouter_client import get_openrouter_client
 from agents.model_settings import ModelSettings
+from utils.ollama_client import get_ollama_client
 import os
 
 logger = logging.getLogger(__name__)
@@ -42,16 +43,28 @@ def detect_model_provider(model_string: str) -> Tuple[str, str]:
 
     Returns:
         Tuple of (processed_model_string, provider)
-        - provider can be: "openai", "gemini", or "openrouter"
+        - provider can be: "openai", "gemini", "openrouter", or "ollama"
 
     Raises:
         ValueError: If required API key is not available
     """
+    model_lower = model_string.lower()
+
+    # Rule 0: Ollama prefix handling (must be checked before generic slash rule)
+    if model_lower.startswith("ollama/"):
+        processed_model = model_string.split("/", 1)[1].strip()
+        if not processed_model:
+            raise ValueError(
+                "Ollama model string must include a model name after 'ollama/'.\n"
+                "Example: 'ollama/llama3.2'"
+            )
+        return processed_model, "ollama"
+
     # Rule 1: Explicit OpenRouter via "/"
     if "/" in model_string:
         return model_string, "openrouter"
 
-    model_lower = model_string.lower()
+    # Remaining rules operate on prefix checks without provider markers
 
     # Rule 2a: Gemma models - route to OpenRouter with warning
     if model_lower.startswith("gemma"):
@@ -94,8 +107,8 @@ def detect_model_provider(model_string: str) -> Tuple[str, str]:
         f"Unknown model '{model_string}'.\n"
         f"Solutions:\n"
         f"  1. Use explicit provider prefix (e.g., 'anthropic/{model_string}')\n"
-        f"  2. Check model name spelling\n"
-        f"  3. Use OpenRouter format with provider prefix"
+        f"  2. Use 'ollama/<model>' for local Ollama models (ensure the model is pulled)\n"
+        f"  3. Check model name spelling or use an OpenRouter provider prefix"
     )
 
 
@@ -129,7 +142,7 @@ def create_model_config(model_string: str, temperature: float = 0.7) -> Union[st
     Returns:
         Model configuration for the detected provider:
         - String for OpenAI models
-        - OpenAIChatCompletionsModel for OpenRouter and Gemini
+        - OpenAIChatCompletionsModel for OpenRouter, Gemini, and Ollama
 
     Raises:
         ValueError: If required API key is not available
@@ -146,6 +159,12 @@ def create_model_config(model_string: str, temperature: float = 0.7) -> Union[st
         return OpenAIChatCompletionsModel(
             model=processed_model,
             openai_client=get_gemini_client()
+        )
+    elif provider == "ollama":
+        logger.debug(f"Creating Ollama model config for: {processed_model}")
+        return OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_ollama_client()
         )
     elif provider == "openrouter":
         logger.debug(f"Creating OpenRouter model config for: {processed_model}")
@@ -194,7 +213,8 @@ def get_model_provider_info(model_string: str) -> dict:
         env_var_map = {
             "openai": "OPENAI_API_KEY",
             "gemini": "GEMINI_API_KEY",
-            "openrouter": "OPENROUTER_API_KEY"
+            "openrouter": "OPENROUTER_API_KEY",
+            "ollama": "OLLAMA_BASE_URL (optional)"
         }
 
         return {
@@ -233,9 +253,13 @@ async def create_model_config_with_temperature_detection(
         Tuple of (model_config, temperature_info)
     """
     from utils.dynamic_model_capabilities import test_temperature_support, supports_temperature_cached
-    
-    # Use legacy detector for backward compatibility
-    processed_model, is_openrouter = detect_model_provider_legacy(model_string)
+
+    try:
+        processed_model, provider = detect_model_provider(model_string)
+    except ValueError:
+        # Maintain legacy fallback behaviour: treat as OpenAI string
+        processed_model, provider = model_string, "openai"
+    is_openrouter = provider == "openrouter"
     
     # Check if we already know about this model's temperature support
     cached_support = supports_temperature_cached(model_string, temperature_cache)
@@ -252,20 +276,32 @@ async def create_model_config_with_temperature_detection(
         supports_temp, test_reason, test_exception = await test_temperature_support(model_string, temperature_cache)
         detection_method = "dynamic_test"
     else:
-        # Conservative fallback - assume temperature works for OpenAI models, not for others
-        supports_temp = not is_openrouter  # OpenAI models generally support temperature
+        # Conservative fallback - assume temperature works for non-OpenRouter providers
+        supports_temp = provider != "openrouter"
         detection_method = "conservative_fallback"
         test_reason = "Skipped dynamic testing, using conservative assumption"
         test_exception = None
     
     # Create model configuration
-    if is_openrouter:
+    if provider == "openrouter":
         model_config = OpenAIChatCompletionsModel(
-            model=_append_nitro_suffix(processed_model, is_openrouter),
+            model=_append_nitro_suffix(processed_model, True),
             openai_client=get_openrouter_client()
         )
+    elif provider == "gemini":
+        from utils.gemini_client import get_gemini_client
+
+        model_config = OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_gemini_client()
+        )
+    elif provider == "ollama":
+        model_config = OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_ollama_client()
+        )
     else:
-        model_config = model_string
+        model_config = processed_model
     
     # Create comprehensive temperature info
     temperature_info = {
@@ -323,9 +359,12 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
     Uses cache if available and known non-supporting models.
     """
     from utils.dynamic_model_capabilities import supports_temperature_cached
-    
-    # Use legacy detector for backward compatibility
-    processed_model, is_openrouter = detect_model_provider_legacy(model_string)
+
+    try:
+        processed_model, provider = detect_model_provider(model_string)
+    except ValueError:
+        processed_model, provider = model_string, "openai"
+    is_openrouter = provider == "openrouter"
     
     # Check cache first
     cached_support = supports_temperature_cached(model_string, temperature_cache)
@@ -346,13 +385,25 @@ def _create_conservative_model_config(model_string: str, temperature: float = 0.
             test_reason = "OpenAI models generally support temperature"
     
     # Create model configuration
-    if is_openrouter:
+    if provider == "openrouter":
         model_config = OpenAIChatCompletionsModel(
-            model=_append_nitro_suffix(processed_model, is_openrouter),
+            model=_append_nitro_suffix(processed_model, True),
             openai_client=get_openrouter_client()
         )
+    elif provider == "gemini":
+        from utils.gemini_client import get_gemini_client
+
+        model_config = OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_gemini_client()
+        )
+    elif provider == "ollama":
+        model_config = OpenAIChatCompletionsModel(
+            model=processed_model,
+            openai_client=get_ollama_client()
+        )
     else:
-        model_config = model_string
+        model_config = processed_model
     
     # Create temperature info
     temperature_info = {

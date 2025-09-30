@@ -56,3 +56,24 @@ RUN_LIVE_TESTS=0 python run_tests.py integration  # force-skip live suites
 Set `OPENAI_API_KEY` in your environment (or `.env`) to enable live component/integration runs; without it, the runner skips suites that require LLM access and explains how to re-enable them.
 
 For detailed information about the test acceleration system, see `docs/TEST_ACCELERATION_GUIDE.md`.
+
+## Using Local Ollama Models
+
+Ollama’s OpenAI-compatible endpoint is now supported via the `ollama/<model>` prefix. To try it out:
+
+1. Ensure the daemon is running and pull the target model:
+   ```bash
+   ollama serve &
+   ollama pull gemma3:1b
+   ```
+2. Optionally export overrides (defaults shown):
+   ```bash
+   export OLLAMA_BASE_URL="http://localhost:11434/v1"
+   export OLLAMA_API_KEY="ollama"
+   ```
+3. Run the sample configuration:
+   ```bash
+   python main.py config/sample_ollama_gemma3.yaml
+   ```
+
+All agents configured with `model: "ollama/gemma3:1b"` will now route through the local endpoint using the standard Agents SDK pipeline (streaming, structured output, tracing, etc.).

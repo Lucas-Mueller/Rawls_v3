@@ -7,10 +7,11 @@ System Requirements
 * **Python**: 3.11 or higher
 * **Operating System**: macOS, Linux, or Windows
 * **Memory**: 4GB RAM minimum, 8GB recommended
-* **API Keys**: 
+* **API Keys / Local Endpoints**: 
   
   - OpenAI API key (required for OpenAI models)
-  - OpenRouter API key (optional, for alternative model providers)
+  - OpenRouter API key (optional, for alternative hosted providers)
+  - Running Ollama instance (optional, for local models via its OpenAI-compatible API)
 
 Environment Setup
 -----------------
@@ -73,6 +74,8 @@ Environment Variables (Recommended)
 
    export OPENAI_API_KEY="your-openai-key-here"
    export OPENROUTER_API_KEY="your-openrouter-key-here"
+   export OLLAMA_BASE_URL="http://localhost:11434/v1"  # Optional, defaults to this value
+   export OLLAMA_API_KEY="ollama"                      # Optional sentinel when needed
 
 .env File (Alternative)
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,9 +86,11 @@ Create a ``.env`` file in the project root:
 
    OPENAI_API_KEY=your-openai-key-here
    OPENROUTER_API_KEY=your-openrouter-key-here
+   OLLAMA_BASE_URL=http://localhost:11434/v1
+   OLLAMA_API_KEY=ollama
 
 .. note::
-   API key handling follows the same pattern as ``Open_Router_Test.py`` - keys are retrieved using ``os.getenv()`` without strict validation. The system will work with whatever keys are available.
+   API key handling follows the same pattern as ``Open_Router_Test.py`` - keys are retrieved using ``os.getenv()`` without strict validation. The system will work with whatever keys are available. For Ollama, ensure ``ollama serve`` is running locally and the desired model has been pulled (e.g., ``ollama pull llama3.2``).
 
 Verification
 ------------
@@ -111,6 +116,14 @@ Verify everything works with a basic experiment:
    python main.py
 
 This will run the default experiment configuration and should complete successfully if your installation is correct.
+
+To exercise a local Ollama model instead, start the daemon, pull the target model (for example ``ollama pull gemma3:1b``), and launch the provided sample configuration:
+
+.. code-block:: bash
+
+   python main.py config/sample_ollama_gemma3.yaml
+
+Agents referencing ``model: "ollama/<model-name>"`` will automatically use the Ollama OpenAI-compatible endpoint.
 
 Docker Setup (Optional)
 ------------------------
