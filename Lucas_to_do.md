@@ -17,9 +17,19 @@ Discussion hisortry bold in memory update call --> Done
 Round counter in post disucssion phase 2 is wrong --> Don
 Memory Update Call in phase 2; phase wrong, round wrong --> Done
 Ollama integration --> Done
+post discussion phase 2, distribution communication to agent  --> Done
 
 WIP
-post discussion phase 2, distribution communication to agent 
+Dear Claude,
+I have three small issues in the prompt construction that I kindly ask you to fix for all three languages. Please first analyze the current implementation systematically.
+Then think on targeted solition  which are not overengineered. 
+Then fix the issues one by one for all languages. Work systematically. 
+Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
+Employ a systematic approach. Cretae a todo list. Here are the three issues:
+
+1. Issue: Discussion History in input and instruction prompt  (resaoning call) --> Target: Discussions History only in in input prompt (non bold)
+2. Issue: Discussion History in instruct prompt bold ??? (statement call) --> Target: Discussion History content not bold 
+3. Issue: Reasoning Prompt in instruct prompt bold ???  (statement call) --> Target: Reasoning content not bold 
 
 
 
