@@ -7,7 +7,7 @@ from typing import List, Callable, Awaitable
 from agents import Agent, Runner
 
 from models import (
-    ParticipantContext, Phase1Results, ApplicationResult, ExperimentPhase,
+    ParticipantContext, Phase1Results, ApplicationResult, ExperimentPhase, ExperimentStage,
     PrincipleRanking, PrincipleRankingResponse, PrincipleChoiceResponse,
     IncomeClass, JusticePrinciple, PrincipleChoice, CertaintyLevel
 )
@@ -64,7 +64,8 @@ class Phase1Manager:
             memory="",  # Start with empty memory - agent will manage their own memory
             round_number=0,
             phase=ExperimentPhase.PHASE_1,
-            memory_character_limit=agent_config.memory_character_limit
+            memory_character_limit=agent_config.memory_character_limit,
+            stage=None
         )
     
     def _log_info(self, message: str):
@@ -250,6 +251,7 @@ class Phase1Manager:
         
         # 1.1 Initial Principle Ranking
         context.round_number = 0
+        context.stage = ExperimentStage.INITIAL_RANKING
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Initial ranking", 0.1)
         initial_ranking, ranking_content = await self._step_1_1_initial_ranking(participant, context, agent_config, config)
@@ -271,10 +273,11 @@ class Phase1Manager:
             round_number=context.round_number,
             phase="phase_1"
         )
-        context = update_participant_context(context, new_round=context.round_number)
+        context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
         # 1.2 Detailed Explanation (informational only)
         context.round_number = -1  # Special round for learning
+        context.stage = ExperimentStage.PRINCIPLE_EXPLANATION
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Learning principles", 0.25)
         explanation_content = await self._step_1_2_detailed_explanation(participant, context, agent_config, config)
@@ -296,10 +299,11 @@ class Phase1Manager:
             round_number=context.round_number,
             phase="phase_1"
         )
-        context = update_participant_context(context, new_round=context.round_number)
+        context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
         # 1.2b Post-explanation ranking
         context.round_number = 0  # Reset to 0 for second ranking
+        context.stage = ExperimentStage.POST_EXPLANATION_RANKING
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Post-explanation ranking", 0.4)
         post_explanation_ranking, post_ranking_content = await self._step_1_2b_post_explanation_ranking(
@@ -323,12 +327,13 @@ class Phase1Manager:
             round_number=context.round_number,
             phase="phase_1"
         )
-        context = update_participant_context(context, new_round=context.round_number)
+        context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
         # 1.3 Repeated Application (4 rounds)
         application_results = []
         for round_num in range(1, 5):
             context.round_number = round_num
+            context.stage = ExperimentStage.APPLICATION
             
             if process_logger:
                 progress = 0.4 + (round_num * 0.1)  # 0.5, 0.6, 0.7, 0.8
@@ -373,7 +378,8 @@ class Phase1Manager:
             context = update_participant_context(
                 context,
                 balance_change=result.earnings,
-                new_round=round_num
+                new_round=round_num,
+                new_stage=context.stage
             )
             
             # Update memory with agent using new guidance style (now with correct bank balance)
@@ -389,6 +395,7 @@ class Phase1Manager:
         
         # 1.4 Final Ranking
         context.round_number = 5
+        context.stage = ExperimentStage.FINAL_RANKING
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Final ranking", 0.9)
         final_ranking, final_content = await self._step_1_4_final_ranking(participant, context, agent_config, config)
@@ -410,7 +417,7 @@ class Phase1Manager:
             round_number=context.round_number,
             phase="phase_1"
         )
-        context = update_participant_context(context, new_round=context.round_number)
+        context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
         if process_logger:
             process_logger.phase1_agent_progress(participant.name, "Completed", 1.0)

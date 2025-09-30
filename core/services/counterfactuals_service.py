@@ -15,7 +15,7 @@ from enum import Enum
 
 from models import (
     GroupDiscussionResult, PrincipleChoice, JusticePrinciple, IncomeClass,
-    PrincipleRanking, RankedPrinciple, CertaintyLevel, ParticipantContext
+    PrincipleRanking, RankedPrinciple, CertaintyLevel, ParticipantContext, ExperimentStage
 )
 from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
@@ -323,9 +323,9 @@ class CounterfactualsService:
                 enum_value = assigned_class.lower().replace(' ', '_')
             
             assigned_class_enum = IncomeClass(enum_value)
-            
+
             comprehensive_display = self._build_comprehensive_earnings_display(
-                participant_name, assigned_class_enum, distribution_set, consensus_result, lang_manager
+                participant_name, assigned_class_enum, distribution_set, consensus_result, lang_manager, final_earnings
             )
             result_parts.append(f"\n{comprehensive_display}")
             
@@ -383,21 +383,23 @@ class CounterfactualsService:
             # Fallback to current language manager
             return self.language_manager
     
-    def _build_comprehensive_earnings_display(self, participant_name: str, assigned_class_enum: IncomeClass, distribution_set, consensus_result: GroupDiscussionResult, lang_manager) -> str:
+    def _build_comprehensive_earnings_display(self, participant_name: str, assigned_class_enum: IncomeClass, distribution_set, consensus_result: GroupDiscussionResult, lang_manager, final_earnings: float = 0.0) -> str:
         """
         Build comprehensive earnings display for Phase 2 results using LanguageManager.
-        
+
         Uses DistributionGenerator.calculate_comprehensive_constraint_outcomes() to build
         complete display structure with distributions table and principle outcomes.
         Marks group's consensus choice with localized marker.
-        
+        For no-consensus scenarios, prepends a clear summary explaining random assignment.
+
         Args:
             participant_name: Name of the participant
             assigned_class_enum: Participant's assigned income class (IncomeClass enum)
             distribution_set: The distribution set used for Phase 2
             consensus_result: Result of group discussion with consensus info
             lang_manager: Language manager for localization
-            
+            final_earnings: Participant's final earnings (used for no-consensus summary)
+
         Returns:
             Formatted comprehensive earnings display string
         """
@@ -409,10 +411,25 @@ class CounterfactualsService:
                 lang_manager,
                 self._phase2_probabilities
             )
-            
+
             # Build display parts
             display_parts = []
-            
+
+            # Add no-consensus summary if consensus was not reached
+            if not consensus_result.consensus_reached:
+                no_consensus_header = lang_manager.get('comprehensive_earnings.no_consensus_summary_header')
+                no_consensus_explanation = lang_manager.get(
+                    'comprehensive_earnings.no_consensus_explanation',
+                    rounds=consensus_result.final_round
+                )
+                no_consensus_outcome = lang_manager.get(
+                    'comprehensive_earnings.no_consensus_outcome_line',
+                    class_name=comprehensive_data['class_display_name'],
+                    earnings=final_earnings
+                )
+
+                display_parts.extend([no_consensus_header, no_consensus_explanation, no_consensus_outcome, ""])
+
             # Add probabilities block (localized) if available
             try:
                 if self._phase2_probabilities is not None:
@@ -430,7 +447,7 @@ class CounterfactualsService:
             # Add distributions table (already localized)
             display_parts.append(comprehensive_data['distributions_table'])
             display_parts.append("")  # Empty line
-            
+
             # Add principle outcomes header - use Phase 2-specific template
             outcomes_header = lang_manager.get(
                 'comprehensive_earnings.phase2_outcomes_header',
@@ -591,7 +608,8 @@ class CounterfactualsService:
                 
                 # Update context bank balance with Phase 2 earnings FIRST
                 context.bank_balance += final_earnings
-                
+                context.stage = ExperimentStage.RESULTS
+
                 # Update participant memory with results (now with correct bank balance)
                 if self.memory_service:
                     try:
@@ -814,6 +832,7 @@ class CounterfactualsService:
         """
         try:
             # No memory update needed - context is pre-updated from deliver_results_and_update_memory
+            context.stage = ExperimentStage.FINAL_RANKING
 
             # Get final ranking using proven Phase 1 pattern
             final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")

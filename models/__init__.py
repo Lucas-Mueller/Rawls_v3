@@ -13,6 +13,7 @@ from .principle_types import (
 
 from .experiment_types import (
     ExperimentPhase,
+    ExperimentStage,
     IncomeClass,
     IncomeDistribution,
     DistributionSet,
@@ -64,6 +65,7 @@ __all__ = [
     
     # Experiment types
     "ExperimentPhase",
+    "ExperimentStage",
     "IncomeClass",
     "IncomeDistribution",
     "DistributionSet",

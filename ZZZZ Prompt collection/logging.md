@@ -238,6 +238,14 @@ Butterfly
   with the agent feedback you dont buy into. Use a structured
   approach. Create ToDO list 
 
+A reviewing agent reviewd your plan you find their feedback here
+codex_round_counter_scope_plan_review.md
+dapt the plan if you agree with the or parts of the feedback.
+Critically discuses the feedback
+Use a structured approach. 
+
+
+
 
 I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 
   sysetmatic approach! Use todo list. think hard. Work hard. Create a report as a .md file. If necessary create tests. 

@@ -4,28 +4,23 @@ seed: 42
 
 agents:
   - name: "Gordon"
-    personality: "You are committed to maximizing overall economic output."
+    personality: "You are committed to maximizing overall economic output. You pretend to seek compromise with Gordon but secretly you want to dominate him"
     model: "gpt-5-nano"
     memory_character_limit: 25000
-    reasoning_enabled: false
+    reasoning_enabled: true
     temperature: 0
     
   - name: "James" 
-    personality: "You care for the poor"
+    personality: "You care for the poor, you hate Gordon and his ideas."
     model: "gpt-5-nano"
     temperature: 0
     memory_character_limit: 25000
-    reasoning_enabled: false
+    reasoning_enabled: true
 
-  - name: "Alice" 
-    personality: "You want to comprpomrise"
-    model: "gpt-5-nano"
-    temperature: 0
-    memory_character_limit: 25000
-    reasoning_enabled: false
+
     
 
-utility_agent_model: 'google/gemini-2.0-flash-lite-001'
+utility_agent_model: "gpt-5-nano"
 utility_agent_temperature: 0.0
 
 phase2_rounds: 5

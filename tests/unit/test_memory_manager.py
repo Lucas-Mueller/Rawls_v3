@@ -482,6 +482,8 @@ class TestMemoryManagerIntegration(unittest.TestCase):
             mock_context.memory = "Previous"
             mock_context.memory_character_limit = 100
             mock_context.bank_balance = 50.0
+            mock_context.round_number = 1
+            mock_context.phase = ExperimentPhase.PHASE_1
             
             # Create mock language manager
             mock_language_manager = Mock()
@@ -515,6 +517,8 @@ class TestMemoryManagerIntegration(unittest.TestCase):
             mock_context.memory = "Previous memory"
             mock_context.memory_character_limit = 1000
             mock_context.bank_balance = 100.0
+            mock_context.round_number = 1
+            mock_context.phase = ExperimentPhase.PHASE_1
             
             # Create mock language manager with template selection
             mock_language_manager = Mock()
@@ -530,15 +534,15 @@ class TestMemoryManagerIntegration(unittest.TestCase):
                 )
 
                 # Verify that _create_memory_update_prompt was called with the interaction_type
-                mock_create_prompt.assert_called_once_with(
-                    "Previous memory",
-                    "Round content",
-                    "narrative",  # default guidance style
-                    mock_language_manager,
-                    "statement",  # interaction_type should be passed through
-                    None,
-                    None,
-                )
+                mock_create_prompt.assert_called_once()
+                args, kwargs = mock_create_prompt.call_args
+                self.assertEqual(args[0], "Previous memory")
+                self.assertEqual(args[1], "Round content")
+                self.assertEqual(args[2], "narrative")
+                self.assertIs(args[3], mock_language_manager)
+                self.assertEqual(args[4], "statement")
+                self.assertEqual(args[5], mock_context.round_number)
+                self.assertEqual(args[6], "phase_1")
         
         # Run the async test
         self.loop.run_until_complete(run_test())
@@ -558,6 +562,8 @@ class TestMemoryManagerIntegration(unittest.TestCase):
             mock_context.memory = "Previous memory"
             mock_context.memory_character_limit = 1000
             mock_context.bank_balance = 100.0
+            mock_context.round_number = 1
+            mock_context.phase = ExperimentPhase.PHASE_1
             
             # Create mock language manager
             mock_language_manager = Mock()
@@ -582,15 +588,15 @@ class TestMemoryManagerIntegration(unittest.TestCase):
                             )
 
                             # Verify parameters passed to template selection
-                            mock_create_prompt.assert_called_once_with(
-                                "Previous memory",
-                                "Round content",
-                                guidance_style,
-                                mock_language_manager,
-                                interaction_type,
-                                None,
-                                None,
-                            )
+                            mock_create_prompt.assert_called_once()
+                            args, kwargs = mock_create_prompt.call_args
+                            self.assertEqual(args[0], "Previous memory")
+                            self.assertEqual(args[1], "Round content")
+                            self.assertEqual(args[2], guidance_style)
+                            self.assertIs(args[3], mock_language_manager)
+                            self.assertEqual(args[4], interaction_type)
+                            self.assertEqual(args[5], mock_context.round_number)
+                            self.assertEqual(args[6], "phase_1")
         
         # Run the async test
         self.loop.run_until_complete(run_test())

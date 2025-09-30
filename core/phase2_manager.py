@@ -8,7 +8,7 @@ from agents import Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
-    ExperimentPhase, Phase1Results
+    ExperimentPhase, Phase1Results, ExperimentStage
 )
 from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
@@ -303,7 +303,8 @@ class Phase2Manager:
                 memory=validated_memory,  # VALIDATED MEMORY FROM PHASE 1
                 round_number=1,  # Start Phase 2 at round 1
                 phase=ExperimentPhase.PHASE_2,
-                memory_character_limit=agent_config.memory_character_limit
+                memory_character_limit=agent_config.memory_character_limit,
+                stage=ExperimentStage.DISCUSSION
             )
             
             phase2_contexts.append(phase2_context)
@@ -317,6 +318,7 @@ class Phase2Manager:
         """Process a single participant's statement with error handling."""
         # Update context with current round
         context.round_number = round_num
+        context.stage = ExperimentStage.DISCUSSION
         
         # Log statement request
         if process_logger:
@@ -451,7 +453,7 @@ class Phase2Manager:
             discussion_history=discussion_state.public_history
         )
         # Preserve discussion history in updated context
-        updated_ctx = update_participant_context(context, new_round=round_num)
+        updated_ctx = update_participant_context(context, new_round=round_num, new_stage=context.stage)
         updated_ctx.discussion_history = context.discussion_history
         return updated_ctx
     
@@ -468,6 +470,7 @@ class Phase2Manager:
             
             try:
                 recent_statement = participant_recent_statements.get(participant.name, "")
+                context.stage = ExperimentStage.VOTING
                 recent_reasoning = participant_recent_reasoning.get(participant.name, "")
                 # Ensure instruction prompt includes up-to-date discussion transcript for vote prompting
                 context.discussion_history = discussion_state.public_history
@@ -542,6 +545,8 @@ class Phase2Manager:
                             
                             # Defensive consensus result return
                             if hasattr(discussion_state, '_consensus_result') and discussion_state._consensus_result:
+                                for ctx in contexts:
+                                    ctx.stage = ExperimentStage.VOTING
                                 return discussion_state._consensus_result
                             elif hasattr(discussion_state, 'last_vote_result') and discussion_state.last_vote_result and discussion_state.last_vote_result.consensus_reached:
                                 # Create fallback consensus result
@@ -554,6 +559,8 @@ class Phase2Manager:
                                     discussion_history=discussion_state.public_history,
                                     vote_history=discussion_state.vote_history
                                 )
+                                for ctx in contexts:
+                                    ctx.stage = ExperimentStage.VOTING
                                 return fallback_result
                             else:
                                 self._log_warning("⚠️ Consensus detected but no valid result available for return")
@@ -619,6 +626,9 @@ class Phase2Manager:
             
             return defensive_result
         
+        for ctx in contexts:
+            if ctx.stage == ExperimentStage.VOTING:
+                ctx.stage = ExperimentStage.DISCUSSION
         return None  # No consensus reached
     
     async def _run_group_discussion(
@@ -739,6 +749,7 @@ class Phase2Manager:
                     # Update context for participants without statements (fallback cases)
                     contexts[participant_idx].round_number = round_num
                     contexts[participant_idx].discussion_history = discussion_state.public_history
+                    contexts[participant_idx].stage = ExperimentStage.DISCUSSION
 
             self._log_info(f"Completed symmetric memory updates for round {round_num}")
 

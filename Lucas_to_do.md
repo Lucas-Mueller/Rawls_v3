@@ -16,7 +16,7 @@ Memory update before voting decisions  --> Done
 
 WIP
 Round counter in post disucssion phase 2 is wrong --> WIP
-Memory Update Call in phase 2, phase wrong, round wrong
+Memory Update Call in phase 2; phase wrong, round wrong ???
 Principle description end of phase 2 wehn no concsensus wasreached --> WIP 
 
 
@@ -29,9 +29,6 @@ Backlog
 
 Reproducability Test 
 Testing Suite Update
-
-
-
 Review complete run through English --> WIP 
 Review complete run through Mandarin / Spanish
 

@@ -77,6 +77,7 @@ class MockParticipantContext:
         self.current_round_number = 1
         self.allow_vote_tool = True
         self.role_description = f"Participant {name} in justice experiment"
+        self.stage = None
 
 
 class MockLanguageManager:
