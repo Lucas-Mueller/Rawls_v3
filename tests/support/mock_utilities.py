@@ -72,7 +72,6 @@ class MockParticipantContext:
         self.income_class = IncomeClass.MEDIUM
         self.interaction_type: Optional[str] = None
         self.internal_reasoning = ""
-        self.discussion_history = ""
         self.memory_character_limit = 8000
         self.current_round_number = 1
         self.allow_vote_tool = True

@@ -139,14 +139,16 @@ class DiscussionService:
         Returns:
             Formatted internal reasoning prompt
 
-        Note: Markdown stripping now happens at source (when adding statements), so no
-        stripping needed here.
+        Note: DEFENSIVE stripping applied even though stripping happens at source,
+        to protect against edge cases, old data, or direct assignments to public_history.
         """
         language_manager = self.language_manager
 
         # Use full prompt with Phase 2 explanation for first round only
         if round_num == 1:
             history_value = discussion_state.public_history if discussion_state.public_history and discussion_state.public_history.strip() else self._get_localized_message("no_previous_discussion_placeholder")
+            # DEFENSIVE: Strip markdown even though it should be clean
+            history_value = self._strip_markdown_emphasis(history_value)
             return language_manager.get(
                 "prompts.phase2_internal_reasoning",
                 discussion_history=history_value,
@@ -661,11 +663,14 @@ class DiscussionService:
         if len(discussion_state.public_history) > self.settings.public_history_max_length:
             # Keep the most recent 75% of content to provide buffer
             keep_length = int(self.settings.public_history_max_length * 0.75)
-            
+
             # Add marker to indicate truncation and keep recent discussion
-            truncated_history = self._get_localized_message("system_messages.discussion.truncation_marker") + "\n" + discussion_state.public_history[-keep_length:]
+            recent_history = discussion_state.public_history[-keep_length:]
+            # DEFENSIVE: Strip markdown when truncating to ensure clean history
+            recent_history = self._strip_markdown_emphasis(recent_history)
+            truncated_history = self._get_localized_message("system_messages.discussion.truncation_marker") + "\n" + recent_history
             discussion_state.public_history = truncated_history
-            
+
             # Log the truncation for debugging
             self._log_info(f"Discussion history truncated: kept {keep_length} of {len(discussion_state.public_history)} characters")
     

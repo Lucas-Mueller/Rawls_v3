@@ -691,11 +691,13 @@ class LanguageManager:
         in format_context_info to avoid duplication. This method only formats the
         discussion transcript.
 
-        Note: Markdown stripping now happens at source (when adding statements), so no
-        stripping needed here.
+        Note: DEFENSIVE stripping applied here even though stripping happens at source,
+        to protect against edge cases, old data, or direct assignments to public_history.
         """
         # Transcript section only - header is added separately by discussion_header_section
         transcript = discussion_history if (discussion_history and discussion_history.strip()) else self.get("no_previous_discussion_placeholder")
+        # DEFENSIVE: Strip markdown even though it should be clean
+        transcript = self._strip_markdown_emphasis(transcript)
         history_section = self.get(
             "context_discussion_history_section_format",
             discussion_history=transcript

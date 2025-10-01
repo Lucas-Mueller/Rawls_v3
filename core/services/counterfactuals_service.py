@@ -922,7 +922,6 @@ class CounterfactualsService:
             context.interaction_type = None
             context.round_number = None
             context.internal_reasoning = ""
-            context.discussion_history = None
             
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
             text_response = result.final_output
@@ -978,7 +977,6 @@ class CounterfactualsService:
             context.interaction_type = None
             context.round_number = None
             context.internal_reasoning = ""
-            context.discussion_history = None
 
             # Always get initial response from participant
             result = await Runner.run(participant.agent, final_ranking_prompt, context=context)

@@ -319,19 +319,19 @@ class Phase2Manager:
         # Update context with current round
         context.round_number = round_num
         context.stage = ExperimentStage.DISCUSSION
-        
+
         # Log statement request
         if process_logger:
             process_logger.phase2_agent_speaking(participant.name, round_num)
-        
+
         self._log_info(f"=== REQUESTING STATEMENT FROM {participant.name} ===")
         self._log_info(f"Round {round_num}, Speaking position {speaking_order_position + 1}")
-        
+
         # Get participant statement with intelligent retry support
         start_time = time.time()
         participant_names = [p.name for p in self.participants]
-        # Ensure instruction prompt includes up-to-date discussion transcript
-        context.discussion_history = discussion_state.public_history
+        # Set current public_history in config for instruction generation
+        self.config._current_public_history = discussion_state.public_history
 
         # Use intelligent retry if enabled (following EXACT A1/A2 pattern)
         if self.config.enable_intelligent_retries:
@@ -452,9 +452,8 @@ class Phase2Manager:
             include_internal_reasoning=include_reasoning,
             discussion_history=discussion_state.public_history
         )
-        # Preserve discussion history in updated context
+        # Return updated context
         updated_ctx = update_participant_context(context, new_round=round_num, new_stage=context.stage)
-        updated_ctx.discussion_history = context.discussion_history
         return updated_ctx
     
     async def _attempt_end_of_round_voting(
@@ -472,8 +471,8 @@ class Phase2Manager:
                 recent_statement = participant_recent_statements.get(participant.name, "")
                 context.stage = ExperimentStage.VOTING
                 recent_reasoning = participant_recent_reasoning.get(participant.name, "")
-                # Ensure instruction prompt includes up-to-date discussion transcript for vote prompting
-                context.discussion_history = discussion_state.public_history
+                # Set current public_history in config for instruction generation
+                self.config._current_public_history = discussion_state.public_history
                 wants_vote = await self.voting_service.prompt_for_vote_initiation(
                     participant=participant,
                     context=context,
@@ -496,8 +495,8 @@ class Phase2Manager:
                         self._log_warning(f"Error logging vote initiation for {participant.name}: {str(e)}")
                 
                 # Update memory with vote decision
-                # Keep instruction transcript current before memory update and any subsequent prompts
-                contexts[participant_idx].discussion_history = discussion_state.public_history
+                # Keep public history current in config before memory update
+                self.config._current_public_history = discussion_state.public_history
                 contexts[participant_idx].memory = await self.memory_service.update_vote_initiation_decision_memory(
                     agent=participant,
                     context=contexts[participant_idx],
@@ -732,11 +731,11 @@ class Phase2Manager:
 
             # Post-round symmetric memory update phase
             self._log_info(f"Starting post-round memory updates for round {round_num} with complete context")
+            # Set current public history once for all memory updates
+            self.config._current_public_history = discussion_state.public_history
+
             for participant_idx, participant in enumerate(self.participants):
                 if participant.name in participant_recent_statements:
-                    # Ensure context has complete discussion history before memory update
-                    contexts[participant_idx].discussion_history = discussion_state.public_history
-
                     # Update memory with complete round context
                     contexts[participant_idx] = await self._update_participant_memory_and_context(
                         participant, contexts[participant_idx],
@@ -748,7 +747,6 @@ class Phase2Manager:
                 else:
                     # Update context for participants without statements (fallback cases)
                     contexts[participant_idx].round_number = round_num
-                    contexts[participant_idx].discussion_history = discussion_state.public_history
                     contexts[participant_idx].stage = ExperimentStage.DISCUSSION
 
             self._log_info(f"Completed symmetric memory updates for round {round_num}")

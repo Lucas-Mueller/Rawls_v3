@@ -285,11 +285,13 @@ def _generate_dynamic_instructions(
         phase2_participant_names = participant_names  # Store for context header
 
         if stage_key == ExperimentStage.DISCUSSION.value:
+            # Get public_history from experiment_config transient field (set by phase2_manager before prompting)
+            public_history = getattr(experiment_config, '_current_public_history', '') if experiment_config else ''
             phase_instructions = language_manager.format_phase2_discussion_instructions(
                 round_number=context.round_number,
                 max_rounds=max_rounds,
                 participant_names=participant_names,
-                discussion_history=getattr(context, 'discussion_history', '') or ''
+                discussion_history=public_history
             )
         elif stage_key:
             phase_instructions = language_manager.get_context_stage_instruction(
@@ -298,11 +300,13 @@ def _generate_dynamic_instructions(
                 max_rounds=max_rounds
             )
         else:
+            # Get public_history from experiment_config transient field (set by phase2_manager before prompting)
+            public_history = getattr(experiment_config, '_current_public_history', '') if experiment_config else ''
             phase_instructions = language_manager.format_phase2_discussion_instructions(
                 round_number=context.round_number,
                 max_rounds=max_rounds,
                 participant_names=participant_names,
-                discussion_history=getattr(context, 'discussion_history', '') or ''
+                discussion_history=public_history
             )
     else:
         if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:
@@ -360,7 +364,7 @@ def update_participant_context(
     new_stage: ExperimentStage | None = None
 ) -> ParticipantContext:
     """Update participant context with new information (memory handled separately)."""
-    
+
     # Create updated context
     updated_context = ParticipantContext(
         name=context.name,
@@ -372,8 +376,7 @@ def update_participant_context(
         memory_character_limit=context.memory_character_limit,
         interaction_type=context.interaction_type,  # Preserve interaction_type for tool availability
         internal_reasoning=context.internal_reasoning,
-        discussion_history=getattr(context, 'discussion_history', ''),
         stage=new_stage if new_stage is not None else context.stage
     )
-    
+
     return updated_context
