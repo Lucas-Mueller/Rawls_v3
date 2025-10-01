@@ -270,7 +270,7 @@
   "context_phase2_discussion_header": "小组讨论 - 第{round_number}轮，共{max_rounds}轮",
   "context_group_composition_format": "参与者：{participants}",
   "context_discussion_header_section": "\n小组讨论 - 第 {round_number} 轮，共 {max_rounds} 轮\n\n参与者：{participants}\n",
-  "context_discussion_history_section_format": "=== 讨论历史 ===\n{discussion_history}\n==================",
+  "context_discussion_history_section_format": "--- 讨论历史 ---\n{discussion_history}\n------------------",
   "no_previous_discussion_placeholder": "目前没有先前的讨论。",
   "memory_outcomes": {
     "completed_initial_ranking": "完成正义原则初始排名。",

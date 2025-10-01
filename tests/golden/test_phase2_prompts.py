@@ -11,7 +11,7 @@ from unittest.mock import Mock
 from core.services.discussion_service import DiscussionService
 from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState
-from utils.language_manager import LanguageManager
+from utils.language_manager import LanguageManager, SupportedLanguage
 
 
 class TestPhase2PromptGolden:
@@ -194,10 +194,10 @@ class TestPhase2PromptGolden:
         """Golden test for English discussion prompt with internal reasoning included."""
         language_manager = self.create_mock_language_manager(self.english_translations)
         service = DiscussionService(language_manager)
-        
+
         discussion_state = self.create_discussion_state("Short history")
         internal_reasoning = "I need to consider fairness while protecting my interests."
-        
+
         prompt = service.build_discussion_prompt(
             discussion_state=discussion_state,
             round_num=1,
@@ -222,8 +222,34 @@ class TestPhase2PromptGolden:
             "================================\n\n"
             "Now provide your public statement:"
         )
-        
+
         assert prompt == expected
+
+    def test_discussion_history_section_uses_neutral_formatting(self):
+        """Ensure discussion history section avoids markdown emphasis delimiters."""
+        manager = LanguageManager()
+        manager.set_language(SupportedLanguage.ENGLISH)
+
+        history = "Round 1 / Speaker: Alice Statement: **Bold idea**"
+        section = manager.format_phase2_discussion_instructions(
+            round_number=1,
+            max_rounds=3,
+            participant_names=["Alice", "Bob"],
+            discussion_history=history,
+        )
+
+        lines = section.splitlines()
+        assert lines[0] == "--- DISCUSSION HISTORY ---"
+        assert "===" not in section
+        assert "**" not in section
+        assert lines[-1] == "--------------------------"
+
+        # All transcript lines should be indented to render as code block
+        transcript_lines = lines[1:-1]
+        assert transcript_lines, "Expected transcript content between headers"
+        for line in transcript_lines:
+            if line.strip():
+                assert line.startswith("    "), f"Line not indented: {line!r}"
     
     def test_group_composition_formatting_golden(self):
         """Golden test for group composition formatting across different participant counts."""

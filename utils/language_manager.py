@@ -698,6 +698,14 @@ class LanguageManager:
         transcript = discussion_history if (discussion_history and discussion_history.strip()) else self.get("no_previous_discussion_placeholder")
         # DEFENSIVE: Strip markdown even though it should be clean
         transcript = self._strip_markdown_emphasis(transcript)
+
+        # Display as indented block to avoid bold styling in renderer
+        transcript_lines = transcript.splitlines() or [""]
+        transcript = "\n".join(
+            f"    {line}" if line else "    "
+            for line in transcript_lines
+        )
+
         history_section = self.get(
             "context_discussion_history_section_format",
             discussion_history=transcript

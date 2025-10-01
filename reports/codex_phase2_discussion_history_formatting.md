@@ -51,19 +51,19 @@ PY
 Output (abridged):
 
 ```
-=== DISCUSSION HISTORY ===
+--- DISCUSSION HISTORY ---
 
-Round 1 / Speaker: Alice Statement: Hello team
-Round 1 / Speaker: Bob Statement: Let's choose floor
+    Round 1 / Speaker: Alice Statement: Hello team
+    Round 1 / Speaker: Bob Statement: Let's choose floor
 
-==========================
+--------------------------
 ```
 
-The transcript contains zero `**` markers; emphasis stripping works as designed. Memory sections that appear non-bold on the CLI also use the same `=== ... ===` framing, confirming the data itself is consistent.
+The transcript contains zero `**` markers; emphasis stripping works as designed. Memory sections that appear non-bold on the CLI continue to use distinct headers, but the history block now avoids delimiter patterns that trigger bold styling.
 
 ## Why The UI Shows Bold
 - The Codex CLI (via OpenAI Agents SDK) renders agent context with rich/Markdown highlighting.
-- Lines wrapped in `===` are treated as section headers and displayed with stronger typography.
+- Lines wrapped in `===` are treated as section headers and displayed with stronger typography—swapping to dashes removes that styling from the history block.
 - Reasoning and statement prompts include the discussion transcript block, so the renderer applies the bold styling there.
 - Memory update and other prompts omit the transcript entirely, explaining the visual asymmetry despite identical underlying formatting.
 
@@ -75,6 +75,5 @@ The transcript contains zero `**` markers; emphasis stripping works as designed.
 
 ## Recommendations
 1. **Keep current sanitization:** No code change required to prevent Markdown leaks; all pathways already strip emphasis.
-2. **Optional display tweak:** If the bold styling is undesirable, adjust `context_discussion_history_section_format` (e.g., replace `===` delimiters with `---` or plain labels) to avoid the renderer’s auto-highlighting.
+2. **Optional display tweak:** Already implemented by replacing `===` delimiters with `---` in `context_discussion_history_section_format`, eliminating the renderer’s auto-highlighting.
 3. **Document renderer behavior:** Note in developer docs that Codex CLI stylizes certain delimiter patterns, to avoid future confusion during prompt reviews.
-

@@ -270,7 +270,7 @@
   "context_phase2_discussion_header": "DISCUSIÓN EN GRUPO - Ronda {round_number} de {max_rounds}",
   "context_group_composition_format": "Participantes: {participants}",
   "context_discussion_header_section": "\nDiscusión Grupal - Ronda {round_number} de {max_rounds}\n\nParticipantes: {participants}\n",
-  "context_discussion_history_section_format": "=== HISTORIAL DE DISCUSIÓN ===\n{discussion_history}\n================================",
+  "context_discussion_history_section_format": "--- HISTORIAL DE DISCUSIÓN ---\n{discussion_history}\n--------------------------------",
   "no_previous_discussion_placeholder": "No hay discusión previa.",
   "memory_outcomes": {
     "completed_initial_ranking": "Clasificación inicial completada de los principios de justicia.",
