@@ -18,6 +18,8 @@ Round counter in post disucssion phase 2 is wrong --> Don
 Memory Update Call in phase 2; phase wrong, round wrong --> Done
 Ollama integration --> Done
 post discussion phase 2, distribution communication to agent  --> Done
+Issue: Reasoning Prompt content, not header, in instruct prompt bold ???  (statement call) --> Target: Reasoning content not bold  --> Done, I guess...
+
 
 WIP
 Dear Codex,
@@ -28,7 +30,6 @@ Write clean, simplistic but effective code. Be detail oriented and thorough. Don
 Employ a systematic approach.  Here are the two issues:
 
 1. Issue: Discussion History content, not header, in instruct prompt bold ??? (statement call) --> Target: Discussion History content not bold --> still there 
-2. Issue: Reasoning Prompt content, not header, in instruct prompt bold ???  (statement call) --> Target: Reasoning content not bold 
 
 
 

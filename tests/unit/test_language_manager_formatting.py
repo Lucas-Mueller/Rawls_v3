@@ -1,19 +1,29 @@
 """Tests for LanguageManager formatting sanitization."""
 
 from utils.language_manager import LanguageManager, SupportedLanguage
+from models.experiment_types import GroupDiscussionState
 
 
-def test_format_phase2_discussion_instructions_strips_markdown_emphasis() -> None:
+def test_format_phase2_discussion_instructions_with_clean_history() -> None:
+    """Test that discussion instructions work correctly with clean history (stripping happens at source now)."""
     manager = LanguageManager()
     manager.set_language(SupportedLanguage.ENGLISH)
 
-    history_with_markup = "**Round 1 summary**\n__Key point__"
+    # Create discussion state and add statements with bold markers
+    state = GroupDiscussionState(round_number=1)
+    state.add_statement("Alice", "**Round 1 summary**", manager)
+    state.add_statement("Bob", "__Key point__", manager)
 
+    # Verify stripping happened at source
+    assert "**" not in state.public_history
+    assert "__" not in state.public_history
+
+    # Verify formatting works with clean history
     instructions = manager.format_phase2_discussion_instructions(
         round_number=1,
         max_rounds=3,
         participant_names=["Alice", "Bob"],
-        discussion_history=history_with_markup,
+        discussion_history=state.public_history,
     )
 
     assert "**" not in instructions

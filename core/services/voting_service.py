@@ -116,23 +116,9 @@ class VotingService:
         
         # Select appropriate prompt based on available context
         has_statement = agent_recent_statement and agent_recent_statement.strip()
-        has_reasoning = internal_reasoning and internal_reasoning.strip()
-        
-        if has_statement and has_reasoning:
-            # Both statement and reasoning available - use combined prompt
-            vote_prompt = language_manager.get(
-                "prompts.vote_initiation_with_statement_and_reasoning_prompt",
-                agent_recent_statement=agent_recent_statement,
-                internal_reasoning=internal_reasoning
-            )
-        elif has_reasoning:
-            # Only reasoning available - use reasoning-only prompt
-            vote_prompt = language_manager.get(
-                "prompts.vote_initiation_with_reasoning_prompt",
-                internal_reasoning=internal_reasoning
-            )
-        elif has_statement:
-            # Only statement available - use existing statement prompt
+
+        if has_statement:
+            # Provide the recent statement for context; reasoning already appears in the instruction prompt
             vote_prompt = language_manager.get(
                 "prompts.vote_initiation_with_statement_prompt",
                 agent_recent_statement=agent_recent_statement

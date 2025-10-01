@@ -6,6 +6,7 @@ with multilingual support and language-aware validation.
 """
 
 import asyncio
+import re
 from typing import List, Optional, Protocol, Tuple, Any, Callable, Awaitable
 from agents import Runner
 from config.phase2_settings import Phase2Settings
@@ -92,6 +93,15 @@ class DiscussionService:
             self._log_warning(f"Missing translation key: {key} - {str(e)}")
             # Return English fallback or key name
             return f"[MISSING: {key}]"
+
+    @staticmethod
+    def _strip_markdown_emphasis(text: str) -> str:
+        """Remove Markdown bold/italic markers for cleaner prompts."""
+        if not text:
+            return text
+
+        pattern = re.compile(r"(\*\*|__)(.+?)(\1)", flags=re.DOTALL)
+        return pattern.sub(r"\2", text)
     
     def build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 
                                max_rounds: int, participant_names: List[str],
@@ -116,26 +126,30 @@ class DiscussionService:
             "prompts.phase2_discussion_short_prompt"
         )
     
-    def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 
+    def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int,
                                       max_rounds: int) -> str:
         """
         Build prompt for internal reasoning before public statement.
-        
+
         Args:
             discussion_state: Current discussion state with history
             round_num: Current round number (1-based)
             max_rounds: Maximum number of rounds
-            
+
         Returns:
             Formatted internal reasoning prompt
+
+        Note: Markdown stripping now happens at source (when adding statements), so no
+        stripping needed here.
         """
         language_manager = self.language_manager
-        
+
         # Use full prompt with Phase 2 explanation for first round only
         if round_num == 1:
+            history_value = discussion_state.public_history if discussion_state.public_history and discussion_state.public_history.strip() else self._get_localized_message("no_previous_discussion_placeholder")
             return language_manager.get(
                 "prompts.phase2_internal_reasoning",
-                discussion_history=discussion_state.public_history,
+                discussion_history=history_value,
                 round_number=round_num,
                 max_rounds=max_rounds
             )

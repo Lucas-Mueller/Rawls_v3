@@ -158,12 +158,21 @@ class GroupDiscussionState(BaseModel):
     experiment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     valid_participants: Optional[List[str]] = None
     # CONSENSUS CLEANUP: Removed current_round_preferences - preference consensus disabled
-    
+
     # Complex voting fields
     active_vote_in_progress: bool = False
     last_vote_result: Optional[VoteResult] = None
     vote_triggered: bool = False  # Track if voting has been initiated (prevents reminder messages)
-    
+
+    @staticmethod
+    def _strip_markdown_emphasis(text: str) -> str:
+        """Remove Markdown bold/italic markers for clean history storage."""
+        if not text:
+            return text
+        import re
+        pattern = re.compile(r"(\*\*|__)(.+?)(\1)", flags=re.DOTALL)
+        return pattern.sub(r"\2", text)
+
     def add_statement(self, participant_name: str, statement: str, language_manager=None):
         """Add statement to public history with participant validation and round number formatting."""
         # Validate participant if valid_participants is set
@@ -172,14 +181,17 @@ class GroupDiscussionState(BaseModel):
                 f"Invalid participant '{participant_name}' not in configured agents: {self.valid_participants}. "
                 f"Experiment ID: {self.experiment_id}"
             )
-        
+
+        # Strip markdown emphasis from statement before storing
+        clean_statement = self._strip_markdown_emphasis(statement)
+
         statement_obj = DiscussionStatement(
             participant_name=participant_name,
-            statement=statement,
+            statement=clean_statement,
             round_number=self.round_number
         )
         self.statements.append(statement_obj)
-        
+
         # Format statement with round number if language manager is available
         if language_manager:
             try:
@@ -187,15 +199,15 @@ class GroupDiscussionState(BaseModel):
                     "discussion_format.round_speaker_format",
                     round_number=self.round_number,
                     speaker_name=participant_name,
-                    statement=statement
+                    statement=clean_statement
                 )
                 self.public_history += f"\n{formatted_statement}"
             except Exception:
                 # Fallback to simple format if translation key is missing or other error
-                self.public_history += f"\n{participant_name}: {statement}"
+                self.public_history += f"\n{participant_name}: {clean_statement}"
         else:
             # Fallback to simple format when no language manager provided
-            self.public_history += f"\n{participant_name}: {statement}"
+            self.public_history += f"\n{participant_name}: {clean_statement}"
     
     def add_vote_result(self, vote_result: VoteResult, language_manager=None):
         """Add vote result to public history."""

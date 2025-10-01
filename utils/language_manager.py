@@ -685,40 +685,22 @@ class LanguageManager:
         participant_names: Optional[List[str]],
         discussion_history: str,
     ) -> str:
-        """Format the Phase 2 instruction block including group composition and transcript.
+        """Format the Phase 2 discussion history section only.
 
-        The actual discussion transcript should be presented in the instruction layer, not
-        the input prompt. This method composes a localized header, optional group composition,
-        and a transcript section.
+        The header and participant composition are now handled by discussion_header_section
+        in format_context_info to avoid duplication. This method only formats the
+        discussion transcript.
+
+        Note: Markdown stripping now happens at source (when adding statements), so no
+        stripping needed here.
         """
-        # Compose group composition string if names are available
-        group_text = ""
-        if participant_names:
-            if len(participant_names) == 1:
-                participants = participant_names[0]
-            else:
-                participants = ", ".join(participant_names[:-1]) + f" and {participant_names[-1]}"
-            group_text = self.get(
-                "context_group_composition_format",
-                participants=participants
-            )
-        # Header
-        header = self.get(
-            "context_phase2_discussion_header",
-            round_number=round_number,
-            max_rounds=max_rounds
-        )
-        # Transcript section
+        # Transcript section only - header is added separately by discussion_header_section
         transcript = discussion_history if (discussion_history and discussion_history.strip()) else self.get("no_previous_discussion_placeholder")
-        transcript = self._strip_markdown_emphasis(transcript)
         history_section = self.get(
             "context_discussion_history_section_format",
             discussion_history=transcript
         )
-        # Compose final block
-        if group_text:
-            return f"{group_text}\n\n{header}\n\n{history_section}"
-        return f"{header}\n\n{history_section}"
+        return history_section
     
     def get_principle_list_formatted(self, list_type: str = "detailed") -> str:
         """
