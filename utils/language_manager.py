@@ -9,6 +9,7 @@ import json
 import os
 import logging
 import random
+import re
 from typing import Dict, Any, Optional, List
 from enum import Enum
 
@@ -487,8 +488,9 @@ class LanguageManager:
         # Format internal reasoning section if available
         internal_reasoning_section = ""
         if internal_reasoning and internal_reasoning.strip():
+            sanitized_reasoning = self._strip_markdown_emphasis(internal_reasoning)
             internal_reasoning_section = self.get("prompts.internal_reasoning_context_format",
-                                                 internal_reasoning=internal_reasoning)
+                                                 internal_reasoning=sanitized_reasoning)
 
         # Format discussion header section if in discussion stage
         discussion_header_section = ""
@@ -607,10 +609,19 @@ class LanguageManager:
                        items=items_list,
                        last=participant_names[-1])
 
+    @staticmethod
+    def _strip_markdown_emphasis(text: str) -> str:
+        """Remove Markdown bold/italic markers to ensure plain text rendering."""
+        if not text:
+            return text
+
+        pattern = re.compile(r"(\*\*|__)(.+?)(\1)", flags=re.DOTALL)
+        return pattern.sub(r"\2", text)
+
     def format_memory_section(self, memory: str, display_mode: str = "full", context_type: str = "general") -> str:
         """
         Format the memory section display.
-        
+
         Args:
             memory: The memory content to format
             display_mode: Display mode ("full", "compact", "adaptive")
@@ -699,6 +710,7 @@ class LanguageManager:
         )
         # Transcript section
         transcript = discussion_history if (discussion_history and discussion_history.strip()) else self.get("no_previous_discussion_placeholder")
+        transcript = self._strip_markdown_emphasis(transcript)
         history_section = self.get(
             "context_discussion_history_section_format",
             discussion_history=transcript

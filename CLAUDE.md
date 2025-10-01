@@ -88,14 +88,14 @@ Phase 2 behavior is controlled through `Phase2Settings` which includes:
 
 ### Running Experiments
 ```bash
-# Basic experiment with default config
-python main.py
+# Run with a configuration file (required)
+python main.py config/fast.yaml
 
-# Custom configuration
-python main.py config/custom_config.yaml
+# Specify output path
+python main.py config/fast.yaml results/my_experiment.json
 
-# Custom config with output path
-python main.py config/custom_config.yaml results/my_experiment.json
+# Note: There is no default_config.yaml - you must specify a config file
+# Use config/fast.yaml for quick testing or create your own
 ```
 
 ### Testing
@@ -216,11 +216,16 @@ python test_selective_memory_updates.py
 
 ### Batch Experiment Execution
 ```bash
-# Run all condition 1 experiments from hypothesis testing directory
-python run_condition_1_experiments.py
-```
+# Hypothesis testing framework provides utilities for batch execution
+# See hypothesis_testing/utils_hypothesis_testing/runner.py for batch execution utilities
+# Experiment configurations organized by hypothesis in hypothesis_testing/ directory:
+# - hypothesis_1/: 33 different experimental conditions
+# - hypothesis_2/: Cultural variations (American, Chinese)
+# - hypothesis_3/: Income inequality variations (low, medium, high)
+# - hypothesis_6/: Additional experimental conditions
 
-This script automatically runs all YAML configurations in sequence and saves results to organized directories with descriptive names.
+# Custom batch scripts can leverage utils/experiment_runner.py for automation
+```
 
 ### Environment Setup
 ```bash
@@ -292,6 +297,24 @@ The framework supports multiple LLM providers with intelligent detection:
 - **OpenAI Models**: Native API for `gpt-*`, `o1-*`, `o3-*` models
 - **Google Gemini**: Native API for `gemini-*`, `gemma-*` models
 - **OpenRouter**: Universal proxy for any model using `provider/model` format
+- **Ollama**: Local models via OpenAI-compatible API using `ollama/<model>` prefix
+
+### Using Ollama (Local Models)
+```bash
+# 1. Start Ollama daemon and pull model
+ollama serve &
+ollama pull gemma3:1b
+
+# 2. Optional: Override defaults
+export OLLAMA_BASE_URL="http://localhost:11434/v1"  # Default
+export OLLAMA_API_KEY="ollama"                      # Default
+
+# 3. Configure agent with ollama/ prefix
+# In your config YAML: model: "ollama/gemma3:1b"
+
+# 4. Run experiment
+python main.py config/sample_ollama_gemma3.yaml
+```
 
 See `GEMINI_INTEGRATION.md` for detailed Gemini setup and usage.
 
@@ -402,24 +425,30 @@ The enhanced test runner provides mode-based execution optimized for different d
 ## Configuration Examples
 
 Common configurations are in `config/`:
-- `default_config.yaml`: Standard two-agent setup
-- `fast_config.yaml`: Reduced rounds for quick testing (5 rounds, fixed typo)
-- `test_ultra_fast.yaml`: **NEW** - Ultra-optimized for testing (2 rounds, reasoning disabled, 75% API reduction)
-- Language-specific configs for Spanish/Mandarin experiments
+- `fast.yaml`: Quick testing configuration (5 rounds) - recommended starting point
+- `sample_ollama_gemma3.yaml`: Example Ollama local model configuration
+- `test_gemini.yaml`: Example Google Gemini configuration
+- `test_mixed_providers.yaml`: Example mixing different model providers
+- `gpt_5_disagree.yaml`: Multi-agent disagreement scenario
+- `ollama.yaml`: General Ollama configuration example
 
-### **Test-Optimized Configurations (NEW)**
+### **Test-Optimized Configurations**
 - `config/test_ultra_fast.yaml`: Maximum speed optimization
   - 2 rounds (vs 10), gpt-4o-mini model, reasoning disabled
   - Single language, deterministic settings, reduced memory limits
   - Expected 75% API call reduction for testing scenarios
+- `config/test_gpt_utility.yaml`: GPT-based utility agent testing
+- `config/test_retry_*.yaml`: Language-specific retry behavior testing (English, Spanish, Mandarin)
 
 ## Project Structure
 
 ### Hypothesis Testing Framework
 The `hypothesis_testing/` directory contains organized experimental conditions:
 - `hypothesis_1/`: 33 different experimental conditions
-- `hypothesis_2/`: Cultural variations (American, Chinese) with 34+ conditions each
-- `hypothesis_3/`: Income inequality variations (low, medium, high) with 34+ conditions each
+- `hypothesis_2/`: Cultural variations (American, Chinese)
+- `hypothesis_3/`: Income inequality variations (low, medium, high)
+- `hypothesis_6/`: Additional experimental conditions
+- `utils_hypothesis_testing/`: Shared utilities including `runner.py` for batch execution
 
 ### Specialized Components
 
