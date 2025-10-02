@@ -429,7 +429,8 @@ class LanguageManager:
                            internal_reasoning: str = "",
                            stage: Optional[Any] = None,
                            max_rounds: Optional[int] = None,
-                           participant_names: Optional[List[str]] = None) -> str:
+                           participant_names: Optional[List[str]] = None,
+                           stage_header: str = "") -> str:
         """
         Format the main context information display.
 
@@ -447,6 +448,7 @@ class LanguageManager:
             stage: Optional ExperimentStage for conditional formatting
             max_rounds: Optional maximum rounds for discussion header
             participant_names: Optional participant names for discussion header
+            stage_header: Optional localized stage status line displayed ahead of instructions
 
         Returns:
             Formatted context information string
@@ -523,7 +525,8 @@ class LanguageManager:
                        experiment_explanation=experiment_explanation,
                        personality=personality,
                        phase_instructions=phase_instructions,
-                       language_instruction=language_instruction)
+                       language_instruction=language_instruction,
+                       stage_header=stage_header)
     
     def format_memory_context(self, name: str, bank_balance: float, personality: str,
                              role_description: str = None, phase=None, round_number: int = 0,

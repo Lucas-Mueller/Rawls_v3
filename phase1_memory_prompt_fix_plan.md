@@ -1,181 +1,188 @@
-# Phase 1 Memory Prompt Fix Plan
+# Phase 1 Memory Prompt Fix Plan (REVISED)
 
 ## Problem Statement
 
-The Phase 1 memory update prompts contain inaccurate instructions that reference non-existent context and provide confusing guidance to agents **during education/ranking phases**.
+Phase 1 memory update prompts contain text that makes false promises about outcomes during education/ranking rounds where no outcomes exist yet.
 
-### Specific Issues
+### Specific Issue
 
-**Issue 1: Reference to "recent activity" that doesn't exist**
-- The prompts state: "Besides your memory and your recent activity you will receive the outcome of your choice..."
-- **Problem**: During Phase 1 education/ranking rounds, agents have NO recent activity with outcomes
-- This creates confusion as agents are told to consider activity that hasn't occurred
+**Problematic text in current templates:**
+```
+Besides your memory and your recent activity you will receive the outcome of your choice
+which includes the payoff you received, your class assignment and the payoffs you would
+have received under each principle. Please analyze and incorporate this information into
+your updated memory.
+```
 
-**Issue 2: Instruction to analyze information not yet provided**
-- The prompts state: "Please analyze and incorporate this information into your updated memory."
-- **Problem**: This instruction appears BEFORE agents receive any outcomes during education/ranking
-- Agents are being told to analyze information they haven't received yet
+**Why this is wrong:**
+- During Phase 1 education/ranking rounds (rounds -1, 0, 5), agents receive NO outcomes
+- The text promises "payoff", "class assignment", and "counterfactual payoffs" that don't exist
+- This creates confusion and sets false expectations
 
-### Where This Problem Does vs Doesn't Occur
+### Where This Occurs
 
-**Phase 1 stages where the text is WRONG (no outcomes exist):**
-1. Initial ranking (round 0) - just ranking principles
-2. Detailed explanation (round -1) - learning about principles
-3. Post-explanation ranking (round 0) - ranking after learning
-4. Final ranking (round 5) - ranking after all application rounds
+**Phase 1 rounds where the text is misleading:**
+1. Round -1: Detailed explanation (learning about principles)
+2. Round 0: Initial and post-explanation rankings
+3. Round 5: Final ranking
 
-**Phase 1 stages where the text is CORRECT (outcomes exist):**
-- Application rounds 1-4 - agents make choices, receive class assignments and payoffs, see counterfactuals
+**Phase 1 rounds where outcomes DO exist:**
+- Rounds 1-4: Application rounds with actual payoffs and counterfactuals
 
 ### Root Cause
 
-The memory manager (`utils/memory_manager.py`) currently uses the SAME templates for all Phase 1 memory updates, without distinguishing between education/ranking rounds (no outcomes) and application rounds (with outcomes).
+The templates make **context-specific promises** but are used in **all Phase 1 contexts**. The problem isn't template selection - it's that the templates reference outcomes that don't always exist.
 
-## Files Affected
+## Solution: Context-Neutral Rewording
 
-All three translation files must be updated:
+### Approach
+
+**Rewrite the problematic text to be context-neutral** - truthful in ALL scenarios without promising non-existent outcomes.
+
+**Replace with:**
+```
+Review the information provided below alongside your current memory. Focus on incorporating
+insights that might influence your choices about justice principles or help in group
+discussions.
+```
+
+### Why This Works
+
+✅ **Context-neutral**: Works equally well for education AND application rounds
+✅ **Truthful**: Makes no false promises about outcomes
+✅ **Instructional**: Still provides clear guidance on what to do
+✅ **Zero code changes**: Pure template modification
+✅ **Simple**: Just edit text, no new logic or templates
+
+## Files to Modify
+
+All three translation files require the same 4 template edits:
+
 1. `translations/english_prompts.json`
 2. `translations/spanish_prompts.json`
 3. `translations/mandarin_prompts.json`
 
-## Solution Overview
+## Templates to Edit
 
-Create **new memory update templates** specifically for Phase 1 education/ranking rounds that exclude the problematic text about outcomes. Keep existing templates for Phase 1 application rounds where the text is correct.
+### 4 Templates per Language (12 total edits)
 
-### Approach
+1. **`prompts.memory_memory_update_prompt`** - Structured style
+2. **`prompts.memory_memory_update_prompt_no_recent_activity`** - Structured, no recent activity
+3. **`prompts.memory_narrative_update_prompt`** - Narrative style
+4. **`prompts.memory_narrative_update_prompt_no_recent_activity`** - Narrative, no recent activity
 
-1. **Create new prompt templates** for Phase 1 education (4 per language = 12 total new prompts)
-2. **Update memory manager** to detect Phase 1 education vs application rounds and select appropriate templates
-3. **Keep existing templates** unchanged for Phase 1 application rounds
+**Note:** The `_no_recent_activity` variants are used in Phase 2 discussion interactions, but we update them for consistency.
 
-### Text to Remove (Only in New Education Templates)
+## Detailed Text Changes
 
-For each language, the NEW education templates will exclude TWO specific text segments:
+### English
 
-#### English
-**Segment 1:**
+**Current text to REMOVE:**
 ```
-Besides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle.
-```
-
-**Segment 2:**
-```
-Please analyze and incorporate this information into your updated memory.
+Besides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.
 ```
 
-#### Spanish
-**Segment 1:**
+**Replacement text to ADD:**
 ```
-Ademas de tu memoria y tu actividad reciente, recibirás el resultado de tu elección, que incluye el pago que recibiste, tu asignación de clase y los pagos que habrías recibido según cada principio.
-```
-
-**Segment 2:**
-```
-Analiza e incorpora esta información a tu memoria actualizada.
+Review the information provided below alongside your current memory. Focus on incorporating insights that might influence your choices about justice principles or help in group discussions.
 ```
 
-#### Mandarin
-**Segment 1:**
+**Keep this existing text UNCHANGED:**
 ```
-除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。
-```
-
-**Segment 2:**
-```
-请分析这些信息，并将其纳入你的最新记忆。
+Focus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory
 ```
 
-### New Prompt Keys to Create
+### Spanish
 
-Each language file needs 4 NEW prompt keys for Phase 1 education/ranking rounds:
+**Current text to REMOVE:**
+```
+Ademas de tu memoria y tu actividad reciente, recibirás el resultado de tu elección, que incluye el pago que recibiste, tu asignación de clase y los pagos que habrías recibido según cada principio. Analiza e incorpora esta información a tu memoria actualizada.
+```
 
-**New Phase 1 Education Templates (4 per language):**
-1. `memory_memory_update_prompt_phase1_education` - Structured style, education rounds
-2. `memory_memory_update_prompt_no_recent_activity_phase1_education` - Structured style, no recent activity variant
-3. `memory_narrative_update_prompt_phase1_education` - Narrative style, education rounds
-4. `memory_narrative_update_prompt_no_recent_activity_phase1_education` - Narrative style, no recent activity variant
+**Replacement text to ADD:**
+```
+Revisa la información proporcionada a continuación junto con tu memoria actual. Concéntrate en incorporar ideas que puedan influir en tus elecciones sobre los principios de justicia o ayudarte en las discusiones de grupo.
+```
 
-**Total new prompts: 12 (4 prompts × 3 languages)**
+### Mandarin
 
-### Existing Prompts to Keep Unchanged
+**Current text to REMOVE:**
+```
+除了你的记忆和最近的活动，你还会收到你选择的结果，其中包括你得到的回报、你的班级任务以及你在每个原则下会得到的回报。请分析这些信息，并将其纳入你的最新记忆。
+```
 
-The following existing prompts remain unchanged and continue to be used for Phase 1 **application rounds**:
-- `memory_memory_update_prompt` - Used during application rounds 1-4
-- `memory_memory_update_prompt_no_recent_activity`
-- `memory_narrative_update_prompt`
-- `memory_narrative_update_prompt_no_recent_activity`
+**Replacement text to ADD:**
+```
+将下面提供的信息与你当前的记忆一起审查。专注于纳入可能影响你对公正原则的选择或帮助你进行小组讨论的见解。
+```
+
+## Implementation Steps
+
+### Step 1: Edit English Translations
+
+Edit `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/translations/english_prompts.json`:
+
+1. Find `memory_memory_update_prompt` (around line 90)
+2. Replace the problematic text with the new text
+3. Repeat for the other 3 templates
+4. Verify JSON syntax is valid
+
+### Step 2: Edit Spanish Translations
+
+Edit `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/translations/spanish_prompts.json`:
+
+1. Find `memory_memory_update_prompt` (around line 157)
+2. Replace the problematic Spanish text with the new Spanish text
+3. Repeat for the other 3 templates
+4. Verify JSON syntax is valid
+
+### Step 3: Edit Mandarin Translations
+
+Edit `/Users/lucasmuller/Desktop/Githubg/Rawls_v3/translations/mandarin_prompts.json`:
+
+1. Find `memory_memory_update_prompt` (around line 105)
+2. Replace the problematic Mandarin text with the new Mandarin text
+3. Repeat for the other 3 templates
+4. Verify JSON syntax is valid
+
+### Step 4: Validation
+
+1. **JSON validation**: Run `python -c "import json; json.load(open('translations/english_prompts.json'))"` for each file
+2. **Text review**: Manually verify one edited template per language
+3. **Search verification**: Grep for the old problematic text to ensure it's all removed
+4. **Template count**: Verify exactly 4 templates were edited per language (12 total edits)
+
+### Step 5: Testing (Recommended)
+
+1. Run a quick Phase 1 experiment with `config/fast.yaml`
+2. Check agent memory update logs to verify prompts look correct
+3. Verify no references to non-existent outcomes in education rounds
+4. Verify application rounds still work correctly
 
 ## Expected Outcome
 
 After these changes:
-- **Phase 1 education/ranking rounds**: Memory prompts will NOT reference non-existent outcomes or recent activity
-- **Phase 1 application rounds**: Memory prompts will KEEP the existing text about outcomes (correct behavior)
-- Agents will receive contextually appropriate memory update instructions based on whether outcomes exist
-- The memory manager will intelligently route to education vs application templates
 
-## Implementation Steps
+- ✅ **Education rounds (0, -1, 5)**: Prompts no longer promise non-existent outcomes
+- ✅ **Application rounds (1-4)**: Prompts still provide helpful guidance about incorporating outcomes
+- ✅ **No code changes**: Zero modifications to `utils/memory_manager.py`
+- ✅ **No new templates**: Same 4 templates per language, just improved wording
+- ✅ **Maintainability**: Single source of truth for each template
 
-### Step 1: Create New Education Templates in Translation Files
+## Rationale
 
-**For each of the 3 language files, add 4 new prompt keys:**
+This solution was chosen after thorough review and discussion because it:
 
-1. **Edit `translations/english_prompts.json`**
-   - Add `memory_memory_update_prompt_phase1_education` (copy from `memory_memory_update_prompt`, remove 2 segments)
-   - Add `memory_memory_update_prompt_no_recent_activity_phase1_education` (copy from `memory_memory_update_prompt_no_recent_activity`, remove 2 segments)
-   - Add `memory_narrative_update_prompt_phase1_education` (copy from `memory_narrative_update_prompt`, remove 2 segments)
-   - Add `memory_narrative_update_prompt_no_recent_activity_phase1_education` (copy from `memory_narrative_update_prompt_no_recent_activity`, remove 2 segments)
-   - Verify JSON formatting remains valid
-
-2. **Edit `translations/spanish_prompts.json`**
-   - Add same 4 new prompt keys with Spanish text (remove 2 segments from each)
-   - Verify JSON formatting remains valid
-
-3. **Edit `translations/mandarin_prompts.json`**
-   - Add same 4 new prompt keys with Mandarin text (remove 2 segments from each)
-   - Verify JSON formatting remains valid
-
-### Step 2: Update Memory Manager Template Selection Logic
-
-**Edit `utils/memory_manager.py`:**
-
-Add logic to `_create_memory_update_prompt()` method (around line 280) to detect Phase 1 education rounds:
-
-```python
-# Check if this is Phase 1 education/ranking (not application)
-is_phase1_education = (
-    phase == "phase_1" and
-    round_number in [-1, 0, 5]  # Education rounds: explanation, rankings
-)
-
-# Choose base prompt template based on memory guidance style and context
-if is_phase1_education:
-    # Phase 1 education uses templates without outcome references
-    if guidance_style == "narrative":
-        base_prompt_key = "prompts.memory_narrative_update_prompt_phase1_education"
-    else:  # structured
-        base_prompt_key = "prompts.memory_memory_update_prompt_phase1_education"
-elif is_first_round_phase2:
-    # Existing Phase 2 first round logic...
-else:
-    # Existing regular template logic (includes Phase 1 application rounds 1-4)
-```
-
-### Step 3: Validation
-
-1. **JSON validation**: Ensure all translation files have valid JSON syntax
-2. **Prompt review**: Check one education template per language to confirm correct text removal
-3. **Template coverage**: Verify all 4 combinations are created (structured/narrative × with/without recent activity)
-4. **Code review**: Ensure memory manager logic correctly routes education vs application rounds
-
-### Step 4: Testing (Optional but Recommended)
-
-Run a quick Phase 1 experiment and check memory update logs to verify:
-- Education rounds (0, -1, 5) use new templates WITHOUT outcome text
-- Application rounds (1-4) use existing templates WITH outcome text
+1. **Fixes the root problem**: Templates no longer make false promises
+2. **Preserves value**: Instructional guidance remains intact
+3. **Maximizes simplicity**: Zero code changes, just text rewording
+4. **Minimizes maintenance**: No new templates to maintain
+5. **Works universally**: Context-neutral language suits all scenarios
 
 ## Notes
 
-- **Do NOT modify existing templates** - they are correct for Phase 1 application rounds and all Phase 2 scenarios
-- The new templates are ONLY for Phase 1 education/ranking rounds where no outcomes/payoffs exist yet
-- Memory manager change is minimal - just add one new condition to existing template selection logic
-- The "_no_recent_activity" variants are for Phase 2 discussion interactions, but we create them for Phase 1 education for consistency
+- **Do NOT create new templates** - just edit existing ones
+- **Do NOT modify memory_manager.py** - no code changes needed
+- **Keep the second paragraph** about focusing on patterns/outcomes unchanged
+- **Translation quality**: The Spanish and Mandarin text should be reviewed by native speakers if possible
+- **Backward compatible**: This is a pure improvement with no breaking changes

@@ -270,6 +270,12 @@ def _generate_dynamic_instructions(
     # Initialize variables for Phase 2 context header
     phase2_max_rounds = None
     phase2_participant_names = None
+    stage_header = ""
+
+    # Start with baseline instructions derived from phase/round context
+    phase_instructions = _get_phase_specific_instructions_translated(
+        context.phase, context.round_number, language_manager, experiment_config
+    )
 
     if context.phase == ExperimentPhase.PHASE_2:
         max_rounds = experiment_config.phase2_rounds if experiment_config else 5
@@ -283,6 +289,13 @@ def _generate_dynamic_instructions(
         except Exception:
             participant_names = []
         phase2_participant_names = participant_names  # Store for context header
+
+        if stage_key:
+            stage_header = language_manager.get_context_stage_instruction(
+                stage_key,
+                round_number=context.round_number,
+                max_rounds=max_rounds
+            )
 
         if stage_key == ExperimentStage.DISCUSSION.value:
             # Phase 2 discussion REQUIRES pre-formatted context header (explicit data flow)
@@ -300,11 +313,8 @@ def _generate_dynamic_instructions(
             # Use pre-formatted header (explicit data flow, no side channel)
             phase_instructions = context.formatted_context_header
         elif stage_key:
-            phase_instructions = language_manager.get_context_stage_instruction(
-                stage_key,
-                round_number=context.round_number,
-                max_rounds=max_rounds
-            )
+            # Other Phase 2 sub-stages use generic fallback instructions to avoid duplicating status lines
+            phase_instructions = language_manager.get("prompts.fallback_default_phase_instructions")
         else:
             # Phase 2 without explicit stage - should use formatted_context_header if available
             if hasattr(context, 'formatted_context_header') and context.formatted_context_header is not None:
@@ -316,19 +326,20 @@ def _generate_dynamic_instructions(
                     f"Phase2Manager must set context.stage or context.formatted_context_header."
                 )
     else:
-        if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:
-            phase_instructions = language_manager.get_phase1_instructions(context.round_number)
-        elif stage_key:
-            phase_instructions = language_manager.get_context_stage_instruction(
+        if stage_key:
+            stage_header = language_manager.get_context_stage_instruction(
                 stage_key,
                 round_number=context.round_number
             )
+
+        if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:
+            phase_instructions = language_manager.get_phase1_instructions(context.round_number)
         else:
-            phase_instructions = _get_phase_specific_instructions_translated(
-                context.phase, context.round_number, language_manager, experiment_config
-            )
-    
+            phase_instructions = language_manager.get_phase1_instructions(context.round_number)
+
     # Format everything using language manager with config-aware explanation inclusion
+    stage_header_formatted = f"{stage_header}\n" if stage_header else ""
+
     return language_manager.format_context_info(
         name=context.name,
         role_description=context.role_description,
@@ -342,7 +353,8 @@ def _generate_dynamic_instructions(
         internal_reasoning=getattr(context, 'internal_reasoning', ''),
         stage=stage,
         max_rounds=phase2_max_rounds,
-        participant_names=phase2_participant_names
+        participant_names=phase2_participant_names,
+        stage_header=stage_header_formatted
     )
 
 
