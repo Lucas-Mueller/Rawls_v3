@@ -231,7 +231,8 @@
     "outcome": "Outcome:",
     "feedback_received": "Feedback received:",
     "improved_response": "Improved response:",
-    "payoff_notification_header": "=== PAYOFF NOTIFICATION ==="
+    "payoff_notification_header": "=== PAYOFF NOTIFICATION ===",
+    "retry_feedback": "Retry feedback:"
   },
   "context_phase2_discussion_header": "GROUP DISCUSSION - Round {round_number} of {max_rounds}",
   "context_group_composition_format": "Participants: {participants}",

@@ -1,6 +1,6 @@
 {
   "experiment_title": "Justice Principle Experiment",
-  "experiment_description": "Multi-language experiment for studying distributive justice preferences",
+  "experiment_description": "Experimento multilingüe para estudiar preferencias sobre justicia distributiva",
   "experiment_author": "Research Team",
   "experiment_version": "3.0",
   "supported_languages": [
@@ -246,6 +246,11 @@
     "two_stage_principle_content_unclear": "Elección de principio poco clara (intento {attempt}/{max_attempts}). Por favor responde con el número de tu principio preferido: 1, 2, 3, o 4.",
     "timeout_retry": "El tiempo de respuesta expiró. Por favor intenta de nuevo."
   },
+  "retry_prompts": {
+    "retry_needed_intro": "Déjame intentar proporcionar una mejor respuesta.",
+    "feedback_header": "Comentarios sobre la respuesta anterior:",
+    "original_request": "Por favor responde a la solicitud original:"
+  },
   "discussion_format": {
     "round_speaker_format": "Ronda {round_number} / Participante: {speaker_name} Declaración: {statement}"
   },
@@ -267,7 +272,8 @@
     "distribution_assignment": "Distribución: {number}",
     "your_payoff": "Su recompensa (ya en su cuenta bancaria):",
     "outcome": "Resultado:",
-    "payoff_notification_header": "=== NOTIFICACIÓN DE RECOMPENSA ==="
+    "payoff_notification_header": "=== NOTIFICACIÓN DE RECOMPENSA ===",
+    "retry_feedback": "Comentarios de reintento:"
   },
   "context_phase2_discussion_header": "DISCUSIÓN EN GRUPO - Ronda {round_number} de {max_rounds}",
   "context_group_composition_format": "Participantes: {participants}",

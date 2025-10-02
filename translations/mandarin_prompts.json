@@ -1,6 +1,6 @@
 {
   "experiment_title": "Justice Principle Experiment",
-  "experiment_description": "Multi-language experiment for studying distributive justice preferences",
+  "experiment_description": "研究分配正义偏好的多语言实验",
   "experiment_author": "Research Team",
   "experiment_version": "3.0",
   "supported_languages": [
@@ -95,7 +95,7 @@
     "two_stage_amount_specification": "秘密投票 - 第2步共2步\n\n你选择了{principle_name}。\n\n此原则要求你指定约束金额（美元）。此金额将与其他参与者的金额进行比较以确定是否达成共识。\n\n要达成共识，所有参与者必须选择：\n- 相同的原则编号和\n- 相同的约束金额（如适用）\n\n重要：输入完整的收入美元，而不是支付美元。不要按1美元兑10,000美元的支付率进行缩放。\n\n请指定你的约束金额为整数美元金额：",
     "phase1_initial_ranking_prompt": "这是您第一次为这四项正义原则排序：\n\n{master_principle_descriptions}\n\n请根据你的初步理解，将原则从最佳（1）到最差（4）排序。\n\n回答格式：\n请按以下格式组织你的回答：\n1. [您的最佳选择]\n2. [您的第二选择]\n3. [您的第三选择]\n4. [您的最差选择]\n\n整体确定性：[很不确定/不确定/无意见/确定/很确定]\n\n重要：您必须提供所有4个原则的编号排序，不能只给出一个选择。\n\n请提供您的排序。",
     "distribution_distributions_table_header": "收入分配：\n\n",
-    "distribution_distributions_table_column_header": "| 收入类别1 | Dist.2 | Dist.3 | Dist.4 |\n",
+    "distribution_distributions_table_column_header": "| 收入类别 | 分配 1 | 分配 2 | 分配 3 | 分配 4 |\n",
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
     "phase2_default_constraint_specification": "未说明",
     "phase2_favored_principle_unspecified": "未说明",
@@ -246,6 +246,11 @@
     "two_stage_principle_content_unclear": "原则选择不清楚（尝试{attempt}/{max_attempts}）。请回答你偏爱的原则编号：1、2、3或4。",
     "timeout_retry": "响应超时。请重试。"
   },
+  "retry_prompts": {
+    "retry_needed_intro": "让我尝试提供更好的回答。",
+    "feedback_header": "对先前回复的反馈：",
+    "original_request": "请回答原始请求："
+  },
   "discussion_format": {
     "round_speaker_format": "第{round_number}轮 / 发言者：{speaker_name} 陈述：{statement}"
   },
@@ -267,7 +272,8 @@
     "distribution_assignment": "分配：{number}",
     "your_payoff": "您的收益（已存入您的银行账户）：",
     "outcome": "结果：",
-    "payoff_notification_header": "=== 收益通知 ==="
+    "payoff_notification_header": "=== 收益通知 ===",
+    "retry_feedback": "重试反馈："
   },
   "context_phase2_discussion_header": "小组讨论 - 第{round_number}轮，共{max_rounds}轮",
   "context_group_composition_format": "参与者：{participants}",
