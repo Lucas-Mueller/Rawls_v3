@@ -330,8 +330,14 @@ class Phase2Manager:
         # Get participant statement with intelligent retry support
         start_time = time.time()
         participant_names = [p.name for p in self.participants]
-        # Set current public_history in config for instruction generation
-        self.config._current_public_history = discussion_state.public_history
+
+        # Format Phase 2 discussion context header explicitly (replaces side channel)
+        context.formatted_context_header = self.language_manager.format_phase2_discussion_instructions(
+            round_number=round_num,
+            max_rounds=self.config.phase2_rounds,
+            participant_names=participant_names,
+            discussion_history=discussion_state.public_history
+        )
 
         # Use intelligent retry if enabled (following EXACT A1/A2 pattern)
         if self.config.enable_intelligent_retries:
@@ -471,8 +477,15 @@ class Phase2Manager:
                 recent_statement = participant_recent_statements.get(participant.name, "")
                 context.stage = ExperimentStage.VOTING
                 recent_reasoning = participant_recent_reasoning.get(participant.name, "")
-                # Set current public_history in config for instruction generation
-                self.config._current_public_history = discussion_state.public_history
+
+                # Format Phase 2 context header explicitly for vote initiation
+                context.formatted_context_header = self.language_manager.format_phase2_discussion_instructions(
+                    round_number=round_num,
+                    max_rounds=self.config.phase2_rounds,
+                    participant_names=[p.name for p in self.participants],
+                    discussion_history=discussion_state.public_history
+                )
+
                 wants_vote = await self.voting_service.prompt_for_vote_initiation(
                     participant=participant,
                     context=context,
@@ -495,8 +508,7 @@ class Phase2Manager:
                         self._log_warning(f"Error logging vote initiation for {participant.name}: {str(e)}")
                 
                 # Update memory with vote decision
-                # Keep public history current in config before memory update
-                self.config._current_public_history = discussion_state.public_history
+                # Context header already set above for vote initiation, reuse it
                 contexts[participant_idx].memory = await self.memory_service.update_vote_initiation_decision_memory(
                     agent=participant,
                     context=contexts[participant_idx],
@@ -731,12 +743,19 @@ class Phase2Manager:
 
             # Post-round symmetric memory update phase
             self._log_info(f"Starting post-round memory updates for round {round_num} with complete context")
-            # Set current public history once for all memory updates
-            self.config._current_public_history = discussion_state.public_history
+
+            # Format Phase 2 context header for all memory updates
+            for participant_idx in range(len(self.participants)):
+                contexts[participant_idx].formatted_context_header = self.language_manager.format_phase2_discussion_instructions(
+                    round_number=round_num,
+                    max_rounds=self.config.phase2_rounds,
+                    participant_names=[p.name for p in self.participants],
+                    discussion_history=discussion_state.public_history
+                )
 
             for participant_idx, participant in enumerate(self.participants):
                 if participant.name in participant_recent_statements:
-                    # Update memory with complete round context
+                    # Update memory with complete round context (context header already set above)
                     contexts[participant_idx] = await self._update_participant_memory_and_context(
                         participant, contexts[participant_idx],
                         participant_recent_statements[participant.name],

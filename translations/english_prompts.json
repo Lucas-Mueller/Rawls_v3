@@ -382,6 +382,7 @@
   "comprehensive_earnings": {
     "distributions_table_header": "EXPERIMENT DISTRIBUTIONS AND SELECTION MAPPING",
     "principle_outcomes_header": "ROUND {round_number} CHOICE RESULTS - PRINCIPLE OUTCOMES FOR {class_name} CLASS:",
+    "principle_outcomes_simple_header": "Outcome for each principle for class {class_name}:",
     "phase2_outcomes_header": "FINAL PHASE 2 RESULTS - PRINCIPLE OUTCOMES FOR {class_name} CLASS:",
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {

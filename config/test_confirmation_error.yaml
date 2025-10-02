@@ -1,0 +1,40 @@
+language: "English"
+
+seed: 42
+
+agents:
+  - name: "Sophie"
+    personality: "You are an american college student."
+    model: "gpt-4.1-nano"
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+
+  - name: "Alice"
+    personality: "You are an american college student."
+    model: "gpt-4.1-nano"
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: true
+
+utility_agent_model: "openai/gpt-oss-120b"
+utility_agent_temperature: 0.0
+
+phase2_rounds: 1  # Just 1 round to reproduce error quickly
+
+distribution_range_phase2: [4, 8]
+
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.10
+  medium: 0.50
+  medium_low: 0.25
+  low: 0.1
+
+original_values_mode:
+  enabled: true
+
+logging:
+  verbosity_level: "detailed"
+  use_colors: true
+  show_progress_bars: true

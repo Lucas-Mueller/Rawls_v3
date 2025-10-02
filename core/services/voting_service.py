@@ -269,7 +269,7 @@ class VotingService:
                 # Get confirmation response from participant with timeout
                 try:
                     confirmation_timeout = self.settings.confirmation_timeout_seconds
-                    # Note: public_history accessed via config._current_public_history in instruction generation
+                    # Note: public_history provided via context.formatted_context_header (set by Phase2Manager)
                     context.interaction_type = "vote_confirmation"
                     
                     result = await asyncio.wait_for(
@@ -310,7 +310,27 @@ class VotingService:
                     discussion_state.public_history += f"\n{self._get_localized_message('system_messages.voting.confirmation_tag')} {participant.name}: Declined (timeout)"
                     
                 except Exception as e:
-                    self._log_warning(f"Error during confirmation from {participant.name}: {str(e)}")
+                    # ENHANCED ERROR LOGGING FOR DEBUGGING (FORCE PRINT TO STDOUT)
+                    import traceback
+                    print("\n" + "=" * 70)
+                    print(f"🔴 VOTING CONFIRMATION ERROR DETECTED")
+                    print("=" * 70)
+                    print(f"ERROR during confirmation from {participant.name}:")
+                    print(f"  Exception type: {type(e).__name__}")
+                    print(f"  Exception message: {str(e)}")
+                    print(f"  Context.stage: {context.stage}")
+                    print(f"  Context.phase: {context.phase}")
+                    print(f"  Context.allow_vote_tool: {context.allow_vote_tool}")
+                    print(f"  Context.formatted_context_header exists: {hasattr(context, 'formatted_context_header')}")
+                    print(f"  Context.formatted_context_header is None: {getattr(context, 'formatted_context_header', 'N/A') is None}")
+                    print(f"  Context.interaction_type: {context.interaction_type}")
+                    print(f"\n📋 STACK TRACE:")
+                    print(traceback.format_exc())
+                    print("=" * 70 + "\n")
+
+                    # Also log via logger if available
+                    self._log_warning(f"ERROR during confirmation from {participant.name}: {type(e).__name__}: {str(e)}")
+
                     confirmations.append({
                         'participant': participant.name,
                         'response': f"(error: {str(e)[:50]})",

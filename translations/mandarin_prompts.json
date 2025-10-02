@@ -391,6 +391,7 @@
   "comprehensive_earnings": {
     "distributions_table_header": "实验分配和选择映射",
     "principle_outcomes_header": "第{round_number}轮选择结果 - {class_name}类别的原则结果：",
+    "principle_outcomes_simple_header": "每个原则对{class_name}类的结果：",
     "phase2_outcomes_header": "第2阶段最终结果 - {class_name}类别的原则结果：",
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {

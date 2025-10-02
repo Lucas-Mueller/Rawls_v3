@@ -620,13 +620,19 @@ class Phase1Manager:
             probabilities
         )
 
-        # Build complete earnings display using LanguageManager (avoid duplicating the table)
+        # Build simplified earnings display with basic info followed by outcomes
         earnings_display_parts = []
 
-        # SURGICAL ADDITION: Build summary section BEFORE comprehensive display
-        summary_parts = []
+        # Check if original values mode was used for situation/multiplier line
+        original_values_mode = getattr(config, 'original_values_mode', None)
+        is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
+        original_situation = None
+        if is_original_values:
+            # Map round numbers to situations A, B, C, D
+            situation_map = {1: "A", 2: "B", 3: "C", 4: "D"}
+            original_situation = situation_map.get(round_num, "Unknown")
 
-        # Find agent's choice in outcomes
+        # Get localized principle name
         agent_outcome = None
         for outcome in comprehensive_data['outcomes']:
             if (outcome['principle_key'] == parsed_choice.principle.value and
@@ -634,43 +640,39 @@ class Phase1Manager:
                 agent_outcome = outcome
                 break
 
-        if agent_outcome:
-            # Choice summary header
-            summary_parts.append(self.language_manager.get('comprehensive_earnings.choice_summary_header'))
+        principle_name_localized = agent_outcome['principle_name'] if agent_outcome else parsed_choice.principle.value
 
-            # Choice summary line
-            constraint_display = f" (${parsed_choice.constraint_amount:,})" if parsed_choice.constraint_amount else ""
-            choice_summary = self.language_manager.get(
-                'comprehensive_earnings.choice_summary_line',
-                principle_name=agent_outcome['principle_name'],
-                constraint_display=constraint_display
-            )
-            summary_parts.append(choice_summary)
+        # Add constraint display if applicable
+        if parsed_choice.constraint_amount is not None:
+            principle_name_localized += f" (${parsed_choice.constraint_amount:,})"
 
-            # Outcome line
-            choice_outcome = self.language_manager.get(
-                'comprehensive_earnings.choice_outcome_line',
-                distribution=self.language_manager.get('distributions.distribution_label',
-                                                     number=agent_outcome['distribution_index'] + 1),
-                class_name=comprehensive_data['class_display_name'],
-                income=self.language_manager.get('constraint_formatting.currency_format',
-                                               amount=agent_outcome['agent_income']),
-                earnings=self.language_manager.get('constraint_formatting.currency_format',
-                                                 amount=agent_outcome['agent_earnings'])
-            )
-            summary_parts.append(choice_outcome)
+        # Build payoff notification header
+        payoff_header = self.language_manager.get('memory_field_labels.payoff_notification_header')
+        earnings_display_parts.append(payoff_header)
 
-            # Add empty line separator
-            summary_parts.append("")
+        # Add chosen principle
+        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.chosen_principle')} {principle_name_localized}")
 
-        # Prepend summary to earnings_display_parts (BEFORE existing comprehensive display)
-        earnings_display_parts.extend(summary_parts)
+        # Add assigned class
+        class_name_localized = comprehensive_data['class_display_name']
+        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.assigned_class')} {class_name_localized}")
 
-        # Add principle outcomes header with localized class name and round number
+        # Add situation or multiplier
+        if is_original_values and original_situation:
+            earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.original_values_situation')} {original_situation}")
+        else:
+            earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}")
+
+        # Add payoff
+        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}")
+
+        # Add empty line before outcomes
+        earnings_display_parts.append("")
+
+        # Add simplified principle outcomes header
         principle_outcomes_header = self.language_manager.get(
-            'comprehensive_earnings.principle_outcomes_header',
-            round_number=round_num,
-            class_name=comprehensive_data['class_display_name']
+            'comprehensive_earnings.principle_outcomes_simple_header',
+            class_name=class_name_localized
         )
         earnings_display_parts.append(principle_outcomes_header)
 
@@ -695,44 +697,15 @@ class Phase1Manager:
 
         # Join all parts
         earnings_display = "\n".join(earnings_display_parts)
-        
-        # Check if original values mode was used
-        original_values_mode = getattr(config, 'original_values_mode', None)
-        is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
-        original_situation = None
-        if is_original_values:
-            # Map round numbers to situations A, B, C, D
-            situation_map = {1: "A", 2: "B", 3: "C", 4: "D"}
-            original_situation = situation_map.get(round_num, "Unknown")
-        
-        # Create complete round content with full counterfactual information
+
+        # Create simplified round content with prompt, response, and payoff notification
         language_manager = self.language_manager
         round_content = f"""{language_manager.get('memory_field_labels.prompt')} {application_prompt}
 {language_manager.get('memory_field_labels.your_response')} {text_response}
-{language_manager.get('memory_field_labels.chosen_principle')} {parsed_choice.principle.value}"""
-        
-        # Add constraint info if relevant
-        if parsed_choice.constraint_amount is not None:
-            round_content += f"\n{language_manager.get('memory_field_labels.constraint_amount')} {parsed_choice.constraint_amount}"
-        
-        # Add assigned class info
-        round_content += f"\n{language_manager.get('memory_field_labels.assigned_class')} {language_manager.get(f'common.income_classes.{assigned_class.value}')}"
-        
-        # Add distribution context
-        if is_original_values and original_situation:
-            round_content += f"\n{language_manager.get('memory_field_labels.original_values_situation')} {original_situation}"
-        else:
-            round_content += f"\n{language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
-        
-        # Add explicit payoff line
-        round_content += f"\n{language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}"
-        
-        # Add comprehensive earnings display with conditional header
-        if earnings_display:
-            payoff_header = language_manager.get('memory_field_labels.payoff_notification_header')
-            round_content += f"\n\n{payoff_header}\n{earnings_display}"
-        
-        round_content += f"\n{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"
+
+{earnings_display}
+
+{language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"""
         
         return application_result, round_content
     

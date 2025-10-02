@@ -285,14 +285,20 @@ def _generate_dynamic_instructions(
         phase2_participant_names = participant_names  # Store for context header
 
         if stage_key == ExperimentStage.DISCUSSION.value:
-            # Get public_history from experiment_config transient field (set by phase2_manager before prompting)
-            public_history = getattr(experiment_config, '_current_public_history', '') if experiment_config else ''
-            phase_instructions = language_manager.format_phase2_discussion_instructions(
-                round_number=context.round_number,
-                max_rounds=max_rounds,
-                participant_names=participant_names,
-                discussion_history=public_history
-            )
+            # Phase 2 discussion REQUIRES pre-formatted context header (explicit data flow)
+            if not hasattr(context, 'formatted_context_header'):
+                raise ValueError(
+                    f"Phase 2 discussion context for {context.name} missing 'formatted_context_header' field. "
+                    f"Upgrade ParticipantContext model to include this field."
+                )
+            if context.formatted_context_header is None:
+                raise ValueError(
+                    f"Phase 2 discussion context for {context.name} has formatted_context_header=None. "
+                    f"Phase2Manager must set this field before calling Runner. "
+                    f"Current round: {context.round_number}"
+                )
+            # Use pre-formatted header (explicit data flow, no side channel)
+            phase_instructions = context.formatted_context_header
         elif stage_key:
             phase_instructions = language_manager.get_context_stage_instruction(
                 stage_key,
@@ -300,14 +306,15 @@ def _generate_dynamic_instructions(
                 max_rounds=max_rounds
             )
         else:
-            # Get public_history from experiment_config transient field (set by phase2_manager before prompting)
-            public_history = getattr(experiment_config, '_current_public_history', '') if experiment_config else ''
-            phase_instructions = language_manager.format_phase2_discussion_instructions(
-                round_number=context.round_number,
-                max_rounds=max_rounds,
-                participant_names=participant_names,
-                discussion_history=public_history
-            )
+            # Phase 2 without explicit stage - should use formatted_context_header if available
+            if hasattr(context, 'formatted_context_header') and context.formatted_context_header is not None:
+                phase_instructions = context.formatted_context_header
+            else:
+                # Fallback: This shouldn't happen in normal Phase 2 flow
+                raise ValueError(
+                    f"Phase 2 context for {context.name} has no stage key and no formatted_context_header. "
+                    f"Phase2Manager must set context.stage or context.formatted_context_header."
+                )
     else:
         if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:
             phase_instructions = language_manager.get_phase1_instructions(context.round_number)
@@ -376,7 +383,9 @@ def update_participant_context(
         memory_character_limit=context.memory_character_limit,
         interaction_type=context.interaction_type,  # Preserve interaction_type for tool availability
         internal_reasoning=context.internal_reasoning,
-        stage=new_stage if new_stage is not None else context.stage
+        stage=new_stage if new_stage is not None else context.stage,
+        formatted_context_header=getattr(context, 'formatted_context_header', None),  # Preserve formatted header
+        allow_vote_tool=getattr(context, 'allow_vote_tool', True)  # Preserve vote tool setting
     )
 
     return updated_context

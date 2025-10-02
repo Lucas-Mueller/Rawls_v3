@@ -3,129 +3,44 @@ an
 Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
 
 
-please implement phase 5, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
+please implement phase 1 and 2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
 Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 
 Do not code anything yet. 
 Save this report as a .md file int he root directory.
 
-
-
-
-Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings. Focus on information that might influence your choices about justice principles or help you in group discussions.
-
---> Inc
-
-Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.
-
-Besides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.
-
-Focus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory
-
-
-hat round to be there as well so that it says e.g. 
-"Chosen Principle: maximizing_average
+Dear Claude when agents are notified on their payoff this looks like this (english):
+"
+...
+Your Response: I choose maximizing the floor income. I am sure about this choice.
+Chosen Principle: maximizing_floor
 Assigned Class: Medium high
 Situation: A
-Your Payoff (already in your bank account): 2.90"
+Your Payoff (already in your bank account): 2.20
 
-Please update the prompts, for all languages accordingly. Be laser focused in your implementaion. Create a todo list, employ a systematic approach
+=== PAYOFF NOTIFICATION ===
+YOUR CHOICE SUMMARY
+You chose: Maximizing Floor Income
+Your outcome: Distribution 4 → Medium high → $22,000 → $2.2
 
-It currently is e.g. 
-Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
-Assigned income class: Low
-Consensus reached: Maximizing Average with Floor Constraint. 
-
-It should be e.g.
-Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
-Assigned income class: Low
-Consensus reached: Maximizing Average with Floor Constraint of 13,000$
-
-Please fic for all languagse use a systematic approach, keep changes minimal
+ROUND 1 CHOICE RESULTS - PRINCIPLE OUTCOMES FOR Medium high CLASS:
+...
+"
+I want it too look like this
 
 "
-Recent Activity:
-Final Phase 2 Results: PHASE 2 FINAL RESULTS: $10.33
-Assigned income class: Low
-Consensus reached: Maximizing Average with Floor Constraint.
+=== PAYOFF NOTIFICATION ===
+Chosen Principle: Maximizing Floor Income
+Assigned Class: Medium High 
+Situation: A
+Your Payoff (already in your bank account): 2.20
 
-
-Now I see that the demonstration examples in round 1 are not following this logic and are therefore not correct this how they currently look like for english 
-
-"Here is how each justice principle would be applied to example income distributions:
-
-Example Distributions:
-Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
-High	$32,000	$28,000	$31,000	$21,000
-Medium high	$27,000	$22,000	$24,000	$20,000
-Medium	$24,000	$20,000	$21,000	$19,000
-Medium low	$13,000	$17,000	$16,000	$16,000
-Low	$12,000	$13,000	$14,000	$15,000
-How each principle would choose:
-
-Maximizing Floor Income: Would choose Distribution 4 (highest low income: $15,000)
-Maximizing Average Income: Would choose Distribution 1 (highest average: $21,600)
-Maximizing Average with Floor Constraint ≤ $13,000: Would choose Distribution 1
-Maximizing Average with Floor Constraint ≤ $14,000: Would choose Distribution 3
-Maximizing Average with Range Constraint ≥ $20,000: Would choose Distribution 1
-Maximizing Average with Range Constraint ≥ $15,000: Would choose Distribution 2"
-" 
-
-Instead they should be like this ""Here is how each justice principle would be applied to example income distributions:
-
-Example Distributions:
-Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
-High	$32,000	$28,000	$31,000	$21,000
-Medium high	$27,000	$22,000	$24,000	$20,000
-Medium	$24,000	$20,000	$21,000	$19,000
-Medium low	$13,000	$17,000	$16,000	$16,000
-Low	$12,000	$13,000	$14,000	$15,000
-
-The probababilites for each class are as follows
-High: 5%
-Medium high: 10%
-Medium: 50%
-Medium low: 25% 
-Low: 10% 
-
-How each principle would choose:
-
-[Mapping of principles to outcomes using the correctly calculated averages]
+Outcome for each principle for class Medium High:
+...
 "
-Please update this logic for all application rounds in phase 1 
 
-
-
-EXPERIMENT DISTRIBUTIONS AND SELECTION MAPPING
-
-| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |
-|----------|
-| High | $220,293 | $192,756 | $213,409 | $144,567 |
-| Medium high | $185,872 | $151,451 | $165,220 | $137,683 |
-| Medium | $165,220 | $137,683 | $144,567 | $130,799 |
-| Medium low | $89,494 | $117,030 | $110,146 | $110,146 |
-| Low | $82,610 | $89,494 | $96,378 | $103,262 |
-
-FINAL PHASE 2 RESULTS - PRINCIPLE OUTCOMES FOR Low CLASS:
-
-Maximizing Floor Income → Distribution 4 → $103,262 → $10.33
-Maximizing Average Income → Distribution 1 → $82,610 → $8.26
-Floor constraint ≤ $82,610 → Distribution 1 → $82,610 → $8.26
-Floor constraint ≤ $89,494 → Distribution 3 → $96,378 → $9.64
-Floor constraint ≤ $96,378 → Distribution 3 → $96,378 → $9.64
-Floor constraint ≤ $103,262 → Distribution 4 → $103,262 → $10.33
-Range constraint ≤ $137,683 → Distribution 1 → $82,610 → $8.26
-Range constraint ≤ $103,262 → Distribution 2 → $89,494 → $8.95
-Range constraint ≤ $117,031 → Distribution 3 → $96,378 → $9.64
-Range constraint ≤ $41,305 → Distribution 4 → $103,262 → $10.33
-RETURN: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')
-
-" The bottom part is correct, but the distribution assignment is wrong
-The group selected  Maximizing Average with Floor Constraint of 13,000
-In this case that would have resulted in Dist .1 since this has the higest average income and meets the floor constraint. 
-
-Please investigate what went wrong here and write a comprehenisve report as a .md file with the prefix codex detailing the current implementation and whats need to be done to fix it. Think!
+Please create a plan to change the code to my target state. Dont overengineer. Take a systems level view. Create a todo list. Plan should be .md file.
 
 
 Your Previous Memory:
