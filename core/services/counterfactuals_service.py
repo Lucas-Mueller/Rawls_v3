@@ -151,7 +151,8 @@ class CounterfactualsService:
             self._phase2_probabilities = getattr(config, 'income_class_probabilities', None)
             # Generate new distribution set for Phase 2 payoffs
             distribution_set = DistributionGenerator.generate_dynamic_distribution(
-                config.distribution_range_phase2
+                config.distribution_range_phase2,
+                random_gen=self.seed_manager.random if self.seed_manager else None
             )
 
             payoffs = {}
@@ -1164,4 +1165,3 @@ class CounterfactualsService:
             self.logger.info(f"Updated {participant.name} memory with retry experience via MemoryManager fallback")
         except Exception as e:
             self.logger.warning(f"MemoryManager fallback also failed for {participant.name}: {e}")
-

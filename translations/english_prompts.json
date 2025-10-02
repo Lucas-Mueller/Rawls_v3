@@ -145,25 +145,25 @@
     "phase1_distributions_intro": "Here are some example distributions to help you understand:",
     "statement_validation_classification": "Analyze this discussion statement that failed validation:\n\nStatement: '{statement}'\nMinimum required length: {min_length} characters\nActual length: {actual_length} characters\nLanguage: {language}\nContext: {context}\n\nClassify why this statement failed validation. Respond with exactly one of these classifications:\n- EMPTY_RESPONSE: if the statement is empty or contains only whitespace\n- TOO_SHORT: if the statement is below minimum length but has some content\n- MINIMAL_CONTENT: if the statement meets length requirements but lacks substantive discussion content\n\nClassification:",
     "context_stage_prompts": {
-      "initial_ranking": "Phase 1 – Initial ranking. Provide your preference ordering as instructed.",
-      "principle_explanation": "Phase 1 – Principle explanation. Review the guidance and absorb the information provided.",
-      "post_explanation_ranking": "Phase 1 – Post-explanation ranking. Update your ordering based on what you learned.",
-      "application": "Phase 1 – Demonstration round. Apply the principle to the current distributions.",
-      "discussion": "Phase 2 – Group discussion. Contribute to the shared dialogue this round.",
-      "voting": "Phase 2 – Voting stage. Decide whether to initiate or participate in voting.",
-      "results": "Phase 2 – Results review. Examine the outcomes delivered below.",
-      "final_ranking": "Phase 2 – Final ranking. Provide your concluding ordering of the principles."
+      "initial_ranking": "Phase 1 – Initial ranking.",
+      "principle_explanation": "Phase 1 – Principle explanation.",
+      "post_explanation_ranking": "Phase 1 – Post-explanation ranking.",
+      "application": "Phase 1 – Demonstration round.",
+      "discussion": "Phase 2 – Group discussion.",
+      "voting": "Phase 2 – Voting stage.",
+      "results": "Phase 2 – Results review.",
+      "final_ranking": "Phase 2 – Final ranking."
     }
   },
   "context_stage_prompts": {
-    "initial_ranking": "Phase 1 – Initial ranking. Provide your preference ordering as instructed.",
-    "principle_explanation": "Phase 1 – Principle explanation. Review the guidance and absorb the information provided.",
-    "post_explanation_ranking": "Phase 1 – Post-explanation ranking. Update your ordering based on what you learned.",
-    "application": "Phase 1 – Demonstration round. Apply the principle to the current distributions.",
-    "discussion": "Phase 2 – Group discussion. Contribute to the shared dialogue this round.",
-    "voting": "Phase 2 – Voting stage. Decide whether to initiate or participate in voting.",
-    "results": "Phase 2 – Results review. Examine the outcomes delivered below.",
-    "final_ranking": "Phase 2 – Final ranking. Provide your concluding ordering of the principles."
+    "initial_ranking": "Phase 1 – Initial ranking.",
+    "principle_explanation": "Phase 1 – Principle explanation.",
+    "post_explanation_ranking": "Phase 1 – Post-explanation ranking.",
+    "application": "Phase 1 – Demonstration round.",
+    "discussion": "Phase 2 – Group discussion.",
+    "voting": "Phase 2 – Voting stage.",
+    "results": "Phase 2 – Results review.",
+    "final_ranking": "Phase 2 – Final ranking."
   },
   "statement_validation_feedback": {
     "too_short": {

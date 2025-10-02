@@ -2,15 +2,35 @@
 Seed management for experiment reproducibility.
 Provides centralized control over all randomness in the experiment system.
 """
+import json
 import random
 import hashlib
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from config import ExperimentConfiguration
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_for_seed(value: Any) -> str:
+    """Serialize arbitrary values into a stable string for seed hashing."""
+    if value is None:
+        return "None"
+    if hasattr(value, "model_dump"):
+        try:
+            return json.dumps(value.model_dump(), sort_keys=True)
+        except Exception:
+            return str(value)
+    if isinstance(value, dict):
+        try:
+            return json.dumps(value, sort_keys=True)
+        except Exception:
+            return str(value)
+    if isinstance(value, (list, tuple, set)):
+        return "[" + ",".join(_serialize_for_seed(item) for item in value) + "]"
+    return str(value)
 
 
 class SeedManager:
@@ -104,43 +124,66 @@ class SeedManager:
             Positive 32-bit integer seed
         """
         # Collect configuration elements that affect experiment behavior
-        seed_components = [
+        raw_components = [
             # Basic experiment structure
             len(config.agents),
             config.phase2_rounds,
             config.language,
-            
+
             # Agent configurations
-            str(sorted([agent.name for agent in config.agents])),
-            str(sorted([agent.model for agent in config.agents])),
-            str(sorted([agent.personality for agent in config.agents])),
-            str(sorted([agent.temperature for agent in config.agents])),
-            str(sorted([agent.reasoning_enabled for agent in config.agents])),
-            
+            sorted([agent.name for agent in config.agents]),
+            sorted([agent.model for agent in config.agents]),
+            sorted([agent.personality for agent in config.agents]),
+            sorted([agent.temperature for agent in config.agents]),
+            sorted([agent.reasoning_enabled for agent in config.agents]),
+
             # Distribution settings
-            str(config.distribution_range_phase1) if hasattr(config, 'distribution_range_phase1') else "default_phase1",
-            str(config.distribution_range_phase2) if hasattr(config, 'distribution_range_phase2') else "default_phase2",
-            
+            getattr(config, 'distribution_range_phase1', None),
+            getattr(config, 'distribution_range_phase2', None),
+
             # Utility agent
             config.utility_agent_model,
             getattr(config, 'utility_agent_temperature', 0.0),
-            
+
             # Income class probabilities if present
-            str(config.income_class_probabilities) if hasattr(config, 'income_class_probabilities') else "default_probs",
-            
+            config.income_class_probabilities,
+
             # Original values mode if present
-            str(getattr(config, 'original_values_mode', {})),
+            getattr(config, 'original_values_mode', None),
+
+            # Speaking order configuration
+            getattr(config, 'randomize_speaking_order', None),
+            getattr(config, 'speaking_order_strategy', None),
+
+            # Memory and retry configuration
+            getattr(config, 'memory_guidance_style', None),
+            getattr(config, 'include_experiment_explanation_each_turn', None),
+            getattr(config, 'phase2_include_internal_reasoning_in_memory', None),
+            getattr(config, 'selective_memory_updates', None),
+            getattr(config, 'memory_update_threshold', None),
+            getattr(config, 'batch_simple_events', None),
+            getattr(config, 'enable_intelligent_retries', None),
+            getattr(config, 'enable_progressive_guidance', None),
+            getattr(config, 'memory_update_on_retry', None),
+            getattr(config, 'max_participant_retries', None),
+            getattr(config, 'retry_feedback_detail', None),
+
+            # Phase 2 specific settings
+            getattr(config, 'phase2_settings', None),
+
+            # Logging configuration
+            getattr(config, 'logging', None),
         ]
-        
+
         # Create deterministic hash from components
-        config_string = "|".join(str(component) for component in seed_components)
+        config_string = "|".join(_serialize_for_seed(component) for component in raw_components)
         config_hash = hashlib.sha256(config_string.encode('utf-8')).hexdigest()
         
         # Convert hash to positive 32-bit integer
         seed = int(config_hash[:8], 16) % (2**31)  # Use first 8 hex chars, ensure positive
         
         logger.info(f"Generated seed {seed} from configuration hash")
-        logger.debug(f"Configuration components used for seed: {len(seed_components)} elements")
+        logger.debug(f"Configuration components used for seed: {len(raw_components)} elements")
         
         return seed
     

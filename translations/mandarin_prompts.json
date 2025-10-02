@@ -195,14 +195,14 @@
     "fallback_default_phase_instructions": "本阶段/本轮没有具体说明。",
     "phase1_distributions_intro": "以下是一些示例分配，帮助您理解：",
     "context_stage_prompts": {
-      "initial_ranking": "Phase 1 – Initial ranking. Provide your preference ordering as instructed.",
-      "principle_explanation": "Phase 1 – Principle explanation. Review the guidance and absorb the information provided.",
-      "post_explanation_ranking": "Phase 1 – Post-explanation ranking. Update your ordering based on what you learned.",
-      "application": "Phase 1 – Demonstration round. Apply the principle to the current distributions.",
-      "discussion": "Phase 2 – Group discussion. Contribute to the shared dialogue this round.",
-      "voting": "Phase 2 – Voting stage. Decide whether to initiate or participate in voting.",
-      "results": "Phase 2 – Results review. Examine the outcomes delivered below.",
-      "final_ranking": "Phase 2 – Final ranking. Provide your concluding ordering of the principles."
+      "initial_ranking": "阶段1 – 初始排名。",
+      "principle_explanation": "阶段1 – 原则说明。",
+      "post_explanation_ranking": "阶段1 – 说明后排名。",
+      "application": "阶段1 – 演示轮。",
+      "discussion": "阶段2 – 小组讨论。",
+      "voting": "阶段2 – 投票阶段。",
+      "results": "阶段2 – 结果审查。",
+      "final_ranking": "阶段2 – 最终排名。"
     }
   },
   "results": {

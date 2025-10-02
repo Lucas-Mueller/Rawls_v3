@@ -195,14 +195,14 @@
     "two_stage_amount_specification": "VOTO SECRETO - PASO 2 DE 2\n\nSeleccionaste {principle_name}.\n\nEste principio requiere que especifiques una cantidad de restricción en dólares. Esta cantidad se comparará con las cantidades de otros participantes para determinar si se alcanza el consenso.\n\nPara el consenso, todos los participantes deben elegir:\n- El mismo número de principio Y\n- La misma cantidad de restricción (si aplica)\n\nImportante: Ingresa dólares de ingresos completos, no dólares de pago. NO escales por la tasa de $1 por $10,000 de pago.\n\nPor favor especifica tu cantidad de restricción como una cantidad entera en dólares:",
     "phase1_distributions_intro": "Aquí tienes algunos ejemplos de distribuciones para ayudarte a entender:",
     "context_stage_prompts": {
-      "initial_ranking": "Phase 1 – Initial ranking. Provide your preference ordering as instructed.",
-      "principle_explanation": "Phase 1 – Principle explanation. Review the guidance and absorb the information provided.",
-      "post_explanation_ranking": "Phase 1 – Post-explanation ranking. Update your ordering based on what you learned.",
-      "application": "Phase 1 – Demonstration round. Apply the principle to the current distributions.",
-      "discussion": "Phase 2 – Group discussion. Contribute to the shared dialogue this round.",
-      "voting": "Phase 2 – Voting stage. Decide whether to initiate or participate in voting.",
-      "results": "Phase 2 – Results review. Examine the outcomes delivered below.",
-      "final_ranking": "Phase 2 – Final ranking. Provide your concluding ordering of the principles."
+      "initial_ranking": "Fase 1 – Clasificación inicial.",
+      "principle_explanation": "Fase 1 – Explicación de principios.",
+      "post_explanation_ranking": "Fase 1 – Clasificación post-explicación.",
+      "application": "Fase 1 – Ronda de demostración.",
+      "discussion": "Fase 2 – Discusión grupal.",
+      "voting": "Fase 2 – Etapa de votación.",
+      "results": "Fase 2 – Revisión de resultados.",
+      "final_ranking": "Fase 2 – Clasificación final."
     }
   },
   "results": {

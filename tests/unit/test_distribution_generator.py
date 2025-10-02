@@ -1,6 +1,7 @@
 """
 Unit tests for distribution generation system.
 """
+import random
 import unittest
 from core.distribution_generator import DistributionGenerator
 from models import IncomeDistribution, JusticePrinciple, PrincipleChoice, CertaintyLevel
@@ -128,6 +129,21 @@ class TestDistributionGenerator(unittest.TestCase):
         # Should contain income values
         self.assertIn("$32,000", table)
         self.assertIn("$28,000", table)
+
+    def test_alternative_earnings_respect_seed(self):
+        """Ensure alternative earnings use provided random generator deterministically."""
+        distributions = DistributionGenerator.BASE_DISTRIBUTIONS
+        rng_one = random.Random(99)
+        rng_two = random.Random(99)
+
+        earnings_one = DistributionGenerator.calculate_alternative_earnings(
+            distributions, random_gen=rng_one
+        )
+        earnings_two = DistributionGenerator.calculate_alternative_earnings(
+            distributions, random_gen=rng_two
+        )
+
+        self.assertEqual(earnings_one, earnings_two)
 
 
 if __name__ == '__main__':

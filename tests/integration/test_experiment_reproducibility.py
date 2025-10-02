@@ -97,12 +97,18 @@ class TestExperimentReproducibility(unittest.TestCase):
         """Test that distribution generation is reproducible."""
         from core.distribution_generator import DistributionGenerator
         
-        # Test distribution generation with same seed
-        SeedManager.set_experiment_seed(42)
-        dist_set1 = DistributionGenerator.generate_dynamic_distribution((0.5, 2.0))
-        
-        SeedManager.set_experiment_seed(42)
-        dist_set2 = DistributionGenerator.generate_dynamic_distribution((0.5, 2.0))
+        # Test distribution generation with same seed using experiment-scoped RNG
+        manager_one = SeedManager()
+        manager_one.set_seed(42)
+        dist_set1 = DistributionGenerator.generate_dynamic_distribution(
+            (0.5, 2.0), random_gen=manager_one.random
+        )
+
+        manager_two = SeedManager()
+        manager_two.set_seed(42)
+        dist_set2 = DistributionGenerator.generate_dynamic_distribution(
+            (0.5, 2.0), random_gen=manager_two.random
+        )
         
         # Should be identical
         self.assertEqual(dist_set1.multiplier, dist_set2.multiplier)
@@ -145,18 +151,30 @@ class TestExperimentReproducibility(unittest.TestCase):
         # The seed should be determined from config
         expected_seed = config.get_effective_seed()
         
-        # Create mock to capture seed initialization
-        import unittest.mock
-        with unittest.mock.patch.object(SeedManager, 'set_experiment_seed') as mock_set_seed:
-            # Note: We can't easily test full experiment without API keys
-            # So we just test the seed initialization part
-            
-            # This would normally be called in run_complete_experiment
-            effective_seed = SeedManager.initialize_reproducibility(config)
-            
-            # Verify seed was set
-            mock_set_seed.assert_called_once_with(expected_seed)
-            self.assertEqual(effective_seed, expected_seed)
+        # Instance-based seeding should match expected seed
+        actual_seed = manager.seed_manager.initialize_from_config(config)
+        self.assertEqual(actual_seed, expected_seed)
+        self.assertEqual(manager.seed_manager.current_seed, expected_seed)
+
+    def test_distribution_generator_respects_seed_manager_random(self):
+        """Distribution generator should be reproducible via SeedManager RNG."""
+        from core.distribution_generator import DistributionGenerator
+
+        seed_manager = SeedManager()
+        seed_manager.set_seed(123)
+        first = DistributionGenerator.generate_dynamic_distribution(
+            (0.5, 2.0), random_gen=seed_manager.random
+        )
+
+        # Reset seed and ensure result matches
+        seed_manager.set_seed(123)
+        second = DistributionGenerator.generate_dynamic_distribution(
+            (0.5, 2.0), random_gen=seed_manager.random
+        )
+
+        self.assertEqual(first.multiplier, second.multiplier)
+        for dist_one, dist_two in zip(first.distributions, second.distributions):
+            self.assertEqual(dist_one.model_dump(), dist_two.model_dump())
     
     @unittest.skipIf(
         not os.getenv('OPENAI_API_KEY') and not os.getenv('OPENROUTER_API_KEY'),

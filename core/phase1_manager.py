@@ -351,7 +351,8 @@ class Phase1Manager:
             else:
                 # Generate dynamic distribution (existing behavior)
                 distribution_set = DistributionGenerator.generate_dynamic_distribution(
-                    config.distribution_range_phase1
+                    config.distribution_range_phase1,
+                    random_gen=self.seed_manager.random
                 )
             
             result, round_content = await self._step_1_3_principle_application(
@@ -599,7 +600,8 @@ class Phase1Manager:
         
         # Keep old alternative earnings for compatibility with data model
         alternative_earnings = DistributionGenerator.calculate_alternative_earnings(
-            distribution_set.distributions
+            distribution_set.distributions,
+            random_gen=self.seed_manager.random
         )
         
         application_result = ApplicationResult(
