@@ -19,25 +19,21 @@ Memory Update Call in phase 2; phase wrong, round wrong --> Done
 Ollama integration --> Done
 post discussion phase 2, distribution communication to agent  --> Done
 Issue: Reasoning Prompt content, not header, in instruct prompt bold ???  (statement call) --> Target: Reasoning content not bold  --> Done, I guess...
+1. Issue: Discussion History content, not header, in instruct prompt bold ??? (statement call) --> Target: Discussion History content not bold --> Done
+Wrong > in floor range --> Done
+Principle description end of phase 2 wehn no concsensus wasreached --> Done
 
 
 WIP
-Dear Codex,
-I have two small issues in the prompt construction in phase 2, that I kindly ask you to fix for all three languages. Please first analyze the current implementation systematically.
-Then think on targeted solition  which are not overengineered. 
-Then fix the issues one by one for all languages. Work systematically. 
-Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
-Employ a systematic approach.  Here are the two issues:
-
-1. Issue: Discussion History content, not header, in instruct prompt bold ??? (statement call) --> Target: Discussion History content not bold --> still there 
+These denominators in instruct prompt  "Phase 1 – Initial ranking." 
 
 
 
 
 Check if problem still there
 Investigate why so many runs failed --> Probably fixed --> Test needed
-Wrong > in floor range --> Check required
-Principle description end of phase 2 wehn no concsensus wasreached --> WIP 
+
+
 
 Backlog
 Reproducability Test

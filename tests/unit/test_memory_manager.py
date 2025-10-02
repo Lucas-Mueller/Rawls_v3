@@ -181,9 +181,9 @@ class TestMemoryManager(unittest.TestCase):
             # Should be compressed instead of failing
             self.assertIn("[Memory compressed due to length limit]", result)
             self.assertEqual(self.mock_agent.update_memory.call_count, 1)
-        
+
         asyncio.run(run_test())
-    
+
     def test_prompt_agent_for_memory_update_exception_then_success(self):
         """Test memory update with exception, then success."""
         async def run_test():
@@ -209,7 +209,64 @@ class TestMemoryManager(unittest.TestCase):
             self.assertEqual(self.mock_agent.update_memory.call_count, 2)
         
         asyncio.run(run_test())
-    
+
+    def test_compress_memory_with_utility_agent_truncation_respects_target(self):
+        """Utility-agent fallback should clamp output to the target length."""
+        async def run_test():
+            utility_agent = Mock()
+            utility_agent.parser_agent = Mock()
+
+            language_manager = Mock()
+            language_manager.get.return_value = "Compression prompt"
+
+            # Utility agent returns content longer than target to trigger fallback
+            oversized_output = "X" * 120
+            mock_result = Mock()
+            mock_result.final_output = oversized_output
+
+            with patch(
+                "experiment_agents.utility_agent.run_without_tracing",
+                new=AsyncMock(return_value=mock_result)
+            ):
+                compressed = await MemoryManager._compress_memory_with_utility_agent(
+                    utility_agent,
+                    memory_content="Y" * 150,
+                    target_length=40,
+                    language_manager=language_manager,
+                    agent_name="TestAgent"
+                )
+
+            self.assertLessEqual(len(compressed), 40)
+            self.assertIn("[Memory", compressed)
+
+        asyncio.run(run_test())
+
+    def test_compress_memory_with_utility_agent_exception_respects_target(self):
+        """Exception fallback should also respect the target length."""
+        async def run_test():
+            utility_agent = Mock()
+            utility_agent.parser_agent = Mock()
+
+            language_manager = Mock()
+            language_manager.get.return_value = "Compression prompt"
+
+            with patch(
+                "experiment_agents.utility_agent.run_without_tracing",
+                new=AsyncMock(side_effect=Exception("fail"))
+            ):
+                compressed = await MemoryManager._compress_memory_with_utility_agent(
+                    utility_agent,
+                    memory_content="Y" * 150,
+                    target_length=40,
+                    language_manager=language_manager,
+                    agent_name="TestAgent"
+                )
+
+            self.assertLessEqual(len(compressed), 40)
+            self.assertIn("[Memory", compressed)
+
+        asyncio.run(run_test())
+
     def test_prompt_agent_for_memory_update_persistent_exception(self):
         """Test memory update with persistent exceptions."""
         async def run_test():

@@ -3,7 +3,8 @@ Phase 1 manager for individual participant familiarization.
 """
 import asyncio
 import logging
-from typing import List, Callable, Awaitable
+import random
+from typing import Dict, List, Callable, Awaitable
 from agents import Agent, Runner
 
 from models import (
@@ -32,12 +33,16 @@ class Phase1Manager:
         self.error_handler = error_handler
         self.seed_manager = seed_manager or SeedManager()
         self.logger = None  # Will be set in run_phase1
+        self._participant_rngs: Dict[str, random.Random] = {}
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
 
         # Set logger instance for use in helper methods
         self.logger = logger
+
+        # Ensure each participant has a deterministic RNG derived from the experiment seed
+        self._build_participant_rngs(config)
 
         # Log language information for test validation
         if process_logger and self.language_manager:
@@ -48,13 +53,24 @@ class Phase1Manager:
         for i, participant in enumerate(self.participants):
             agent_config = config.agents[i]
             context = self._create_initial_participant_context(agent_config)
+            participant_rng = self._participant_rngs.get(agent_config.name)
+            if participant_rng is None:
+                raise ValueError(f"Missing RNG for participant {agent_config.name}. Ensure _build_participant_rngs is called before scheduling tasks.")
             task = asyncio.create_task(
-                self._run_single_participant_phase1(participant, context, config, agent_config, logger, process_logger)
+                self._run_single_participant_phase1(
+                    participant,
+                    context,
+                    config,
+                    agent_config,
+                    participant_rng,
+                    logger,
+                    process_logger
+                )
             )
             tasks.append(task)
-        
+
         return await asyncio.gather(*tasks)
-    
+
     def _create_initial_participant_context(self, agent_config: AgentConfiguration) -> ParticipantContext:
         """Create initial context for a participant."""
         return ParticipantContext(
@@ -77,6 +93,22 @@ class Phase1Manager:
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
+
+    def _build_participant_rngs(self, config: ExperimentConfiguration) -> None:
+        """Create a deterministic RNG for each participant derived from the experiment seed."""
+        if self._participant_rngs:
+            return
+
+        base_seed = self.seed_manager.current_seed
+        if base_seed is None:
+            base_seed = config.get_effective_seed()
+
+        rngs: Dict[str, random.Random] = {}
+        for index, agent_cfg in enumerate(config.agents):
+            derived_seed = (base_seed + index + 1) % (2**31)
+            rngs[agent_cfg.name] = random.Random(derived_seed)
+
+        self._participant_rngs = rngs
 
     async def _execute_ranking_with_retry(
         self,
@@ -244,6 +276,7 @@ class Phase1Manager:
         context: ParticipantContext,
         config: ExperimentConfiguration,
         agent_config: AgentConfiguration,
+        participant_rng: random.Random,
         logger: AgentCentricLogger = None,
         process_logger=None
     ) -> Phase1Results:
@@ -352,11 +385,17 @@ class Phase1Manager:
                 # Generate dynamic distribution (existing behavior)
                 distribution_set = DistributionGenerator.generate_dynamic_distribution(
                     config.distribution_range_phase1,
-                    random_gen=self.seed_manager.random
+                    random_gen=participant_rng
                 )
             
             result, round_content = await self._step_1_3_principle_application(
-                participant, context, distribution_set, round_num, agent_config, config
+                participant,
+                context,
+                distribution_set,
+                round_num,
+                agent_config,
+                config,
+                participant_rng
             )
             application_results.append(result)
             
@@ -478,7 +517,8 @@ class Phase1Manager:
         distribution_set,
         round_num: int,
         agent_config: AgentConfiguration,
-        config: ExperimentConfiguration
+        config: ExperimentConfiguration,
+        participant_rng: random.Random
     ) -> tuple[ApplicationResult, str]:
         """Step 1.3: Single round of principle application."""
         
@@ -582,13 +622,17 @@ class Phase1Manager:
         )
         
         # Calculate payoff and income class assignment
-        assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities, random_gen=self.seed_manager.random)
+        assigned_class, earnings = DistributionGenerator.calculate_payoff(
+            chosen_distribution,
+            probabilities,
+            random_gen=participant_rng
+        )
         
         # Calculate alternative earnings by principle (not just distribution)
         alternative_earnings_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
-            distribution_set.distributions, 
+            distribution_set.distributions,
             parsed_choice.constraint_amount if parsed_choice.constraint_amount else None,
-            random_gen=self.seed_manager.random
+            random_gen=participant_rng
         )
         
         # CRITICAL: Calculate what participant would have earned under each principle with SAME class assignment
@@ -601,7 +645,7 @@ class Phase1Manager:
         # Keep old alternative earnings for compatibility with data model
         alternative_earnings = DistributionGenerator.calculate_alternative_earnings(
             distribution_set.distributions,
-            random_gen=self.seed_manager.random
+            random_gen=participant_rng
         )
         
         application_result = ApplicationResult(

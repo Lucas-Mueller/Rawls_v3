@@ -5,16 +5,16 @@ seed: 42
 agents:
   - name: "Sophie"
     personality: "You are an american college student."
-    model: "ollama/gemma3:1b"
-    memory_character_limit: 2500
+    model: "gpt-4.1"
+    memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "Alice" 
     personality: "You are an american college student."
-    model:  "ollama/gemma3:1b"
+    model:  "gpt-4.1"
     temperature: 0
-    memory_character_limit: 2500
+    memory_character_limit: 25000
     reasoning_enabled: true
 
     
@@ -22,7 +22,7 @@ agents:
 utility_agent_model: "openai/gpt-oss-120b"
 utility_agent_temperature: 0.0
 
-phase2_rounds: 2
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
@@ -38,6 +38,6 @@ original_values_mode:
   enabled: true                 
 
 logging:
-  verbosity_level: "debug"  # or minimal, detailed, debug
+  verbosity_level: "detailed"  # or minimal, detailed, debug
   use_colors: true
   show_progress_bars: true

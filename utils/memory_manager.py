@@ -368,6 +368,29 @@ class MemoryManager:
             return current_memory
 
     @staticmethod
+    def _apply_truncation_with_suffix(content: str, target_length: int, suffix: str) -> str:
+        """Truncate content to target length while preserving a suffix message."""
+        if target_length <= 0:
+            return ""
+
+        suffix = suffix or ""
+        suffix_length = len(suffix)
+
+        if target_length <= suffix_length:
+            # Not enough room for content; return the prefix of the suffix
+            return suffix[:target_length]
+
+        allowed = target_length - suffix_length
+        truncated_content = content[:allowed]
+        result = truncated_content + suffix
+
+        # Safety net to ensure we never exceed the target length
+        if len(result) > target_length:
+            result = result[:target_length]
+
+        return result
+
+    @staticmethod
     async def _compress_memory_with_utility_agent(
         utility_agent,
         memory_content: str,
@@ -412,11 +435,21 @@ class MemoryManager:
             else:
                 # Compression didn't achieve target - do basic truncation as fallback
                 logger.warning(f"Utility agent compression insufficient ({len(compressed_memory)} > {target_length}), using truncation fallback")
-                truncated_memory = compressed_memory[:target_length - 50] + "\n[Memory compressed and truncated due to length limit]"
+                suffix = "\n[Memory compressed and truncated due to length limit]"
+                truncated_memory = MemoryManager._apply_truncation_with_suffix(
+                    compressed_memory,
+                    target_length,
+                    suffix
+                )
                 return truncated_memory
                 
         except Exception as e:
             logger.error(f"Utility agent compression failed for {agent_name}: {e}")
             # Fallback to basic truncation
-            truncated_memory = memory_content[:target_length - 50] + "\n[Memory compressed due to length limit]"
+            suffix = "\n[Memory compressed due to length limit]"
+            truncated_memory = MemoryManager._apply_truncation_with_suffix(
+                memory_content,
+                target_length,
+                suffix
+            )
             return truncated_memory

@@ -4,7 +4,8 @@
 This document tracks the randomness and seeding surface of the Frohlich Experiment. It summarises what is now deterministically controlled by the experiment-scoped RNG, notes the fixes applied in this pass, and flags any remaining watchpoints.
 
 ## Current Status (✅ deterministic)
-- **Dynamic distributions** – Both Phase 1 and Phase 2 now pass the experiment `SeedManager.random` into `DistributionGenerator.generate_dynamic_distribution()` (`core/phase1_manager.py`, `core/services/counterfactuals_service.py`). The multiplier and derived income tables repeat exactly for a fixed seed.
+- **Dynamic distributions** – Phase 2 continues to pass the experiment `SeedManager.random` into `DistributionGenerator.generate_dynamic_distribution()` (`core/services/counterfactuals_service.py`), keeping multipliers stable for a fixed seed.
+- **Phase 1 parallelism** – Each participant uses a dedicated RNG derived from the experiment seed (`core/phase1_manager.py`), so asynchronous scheduling no longer affects demonstration distributions or earnings.
 - **Phase 1 alternative earnings** – `DistributionGenerator.calculate_alternative_earnings()` now receives the seeded RNG, keeping the "fresh draw" what-if earnings aligned with the run seed.
 - **Counterfactual transparency** – Because the distribution set is deterministic, all Phase 2 counterfactual tables, explanations, and payoff assignments are reproducible.
 - **Configuration hash** – `SeedManager.generate_seed_from_config()` incorporates speaking-order flags, selective memory knobs, retry settings, Phase 2 settings, and logging options so distinct experiment configurations map to distinct seeds.
