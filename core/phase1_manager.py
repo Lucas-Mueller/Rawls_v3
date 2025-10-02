@@ -704,10 +704,29 @@ class Phase1Manager:
         earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.assigned_class')} {class_name_localized}")
 
         # Add situation or multiplier
-        if is_original_values and original_situation:
-            earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.original_values_situation')} {original_situation}")
+        distribution_display = None
+        if agent_outcome and 'distribution_index' in agent_outcome:
+            distribution_number = agent_outcome['distribution_index'] + 1
+            distribution_display = self.language_manager.get(
+                'memory_field_labels.distribution_assignment',
+                number=distribution_number
+            )
+
+        if is_original_values:
+            if distribution_display:
+                earnings_display_parts.append(distribution_display)
+            elif original_situation:
+                earnings_display_parts.append(
+                    f"{self.language_manager.get('memory_field_labels.original_values_situation')} {original_situation}"
+                )
+            else:
+                earnings_display_parts.append(
+                    f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
+                )
         else:
-            earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}")
+            earnings_display_parts.append(
+                f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
+            )
 
         # Add payoff
         earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}")

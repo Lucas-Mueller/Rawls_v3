@@ -190,3 +190,23 @@ Range constraint ≤ $24,000 → Distribution 3 → $29,000 → $2.9
 Range constraint ≤ $12,000 → Distribution 4 → $22,000 → $2.2 Outcome: Applied chosen justice principle in demonstration Round 1." 
 
 Plese think on how to imrpove it without changing the code significantly. I want to make it as easy as possible for the agent to understand what happened and the consequnces of their choice. Important I dont want to nudge them. 
+
+Change the prompt for memory update from
+"
+Return your complete updated memory incorporating insights from the recent activity.
+Your memory is given to you in every interaction and gives you your knowledge on yourself and the experiment. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment. Return the complete memory.
+" 
+to
+"
+Return your complete updated memory incorporating insights from the recent activity.
+Your memory is given to you in every interaction and gives you your knowledge on yourself and the experiment. 
+
+Do not include your name, personality or bank account since they are given to you in every interaction.
+
+Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment. Return the complete memory.
+"
+
+for all languages. 
+
+Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Do not overegineer
+Employ a systematic approach. Cretae a todo list.

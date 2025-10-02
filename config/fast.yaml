@@ -38,6 +38,6 @@ original_values_mode:
   enabled: true                 
 
 logging:
-  verbosity_level: "detailed"  # or minimal, detailed, debug
+  verbosity_level: "debug"  # or minimal, detailed, debug
   use_colors: true
   show_progress_bars: true

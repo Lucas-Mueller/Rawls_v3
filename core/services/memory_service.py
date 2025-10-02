@@ -232,9 +232,10 @@ class MemoryService:
         """
         # Build memory content with discussion history and recent reasoning
         if discussion_history:
-            # Include discussion history (header provided by translation files)
-            round_content = f"{discussion_history}\n\n"
-            
+            # Add localized header to discussion history
+            history_header = self._get_localized_message("memory_discussion_history_header")
+            round_content = f"{history_header}\n{discussion_history}\n\n"
+
             # Add recent reasoning if available
             if include_internal_reasoning and internal_reasoning:
                 reasoning_text = self._get_localized_message(

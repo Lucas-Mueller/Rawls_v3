@@ -143,6 +143,7 @@ class ParticipantContext(BaseModel):
                     "Set by Phase2Manager before Runner calls to make data flow explicit. "
                     "Required for Phase 2 discussion stage (ParticipantAgent will raise error if None)."
     )
+    first_memory_update: bool = Field(default=True, description="Track if this is the first memory update to show experiment explanation only once")
 
 
 class DiscussionStatement(BaseModel):

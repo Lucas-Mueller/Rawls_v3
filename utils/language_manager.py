@@ -220,7 +220,11 @@ class LanguageManager:
     def get_experiment_explanation(self) -> str:
         """Get the main experiment explanation."""
         return self.get("prompts.experiment_explanation")
-    
+
+    def get_initial_experiment_explanation(self) -> str:
+        """Get the initial/detailed experiment explanation shown before first memory update."""
+        return self.get("prompts.initial_experiment_explanation")
+
     def _generate_randomized_example(self) -> str:
         """
         Generate a randomized ranking example using the configured seed.
@@ -470,8 +474,15 @@ class LanguageManager:
                 # If config says always include, use the explanation
                 # If config says don't include each turn, only include on first turn per phase
                 include_explanation = (experiment_config.include_experiment_explanation_each_turn or is_first_turn)
-        
-        experiment_explanation = self.get_experiment_explanation() if include_explanation else ""
+
+        # Use detailed initial explanation on first turn, brief explanation thereafter
+        if include_explanation:
+            if is_first_turn:
+                experiment_explanation = self.get_initial_experiment_explanation()
+            else:
+                experiment_explanation = self.get_experiment_explanation()
+        else:
+            experiment_explanation = ""
         language_instruction = self.get("prompts.language_instruction")
 
         # Localize common phase names when possible (e.g., "Phase 1" → localized)
@@ -702,13 +713,7 @@ class LanguageManager:
         # DEFENSIVE: Strip markdown even though it should be clean
         transcript = self._strip_markdown_emphasis(transcript)
 
-        # Display as indented block to avoid bold styling in renderer
-        transcript_lines = transcript.splitlines() or [""]
-        transcript = "\n".join(
-            f"    {line}" if line else "    "
-            for line in transcript_lines
-        )
-
+        # Format with template (blank line before closing delimiter prevents bold rendering)
         history_section = self.get(
             "context_discussion_history_section_format",
             discussion_history=transcript

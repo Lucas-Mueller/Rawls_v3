@@ -130,7 +130,8 @@ class MemoryManager:
                     language_manager,
                     interaction_type,
                     prompt_round_number,
-                    effective_phase_value
+                    effective_phase_value,
+                    context
                 )
                 
                 # Get updated memory from agent with accurate phase/round metadata
@@ -151,10 +152,16 @@ class MemoryManager:
                     # Memory is within normal limits
                     if attempt > 0:
                         logger.info(f"Memory update succeeded for {agent.name} after {attempt + 1} attempts")
+                    # Mark that experiment explanation has been shown
+                    if context is not None:
+                        context.first_memory_update = False
                     return updated_memory
                 elif memory_length <= tolerance_limit:
                     # Memory exceeds base limit but within tolerance - allow it
                     logger.info(f"Memory for {agent.name} exceeds base limit ({memory_length} > {char_limit}) but within tolerance ({tolerance_limit})")
+                    # Mark that experiment explanation has been shown
+                    if context is not None:
+                        context.first_memory_update = False
                     return updated_memory
                 else:
                     # Memory exceeds 15% tolerance - compress using utility agent
@@ -175,6 +182,9 @@ class MemoryManager:
                     )
                     
                     logger.info(f"Memory compressed for {agent.name}: {memory_length} -> {len(compressed_memory)} characters")
+                    # Mark that experiment explanation has been shown
+                    if context is not None:
+                        context.first_memory_update = False
                     return compressed_memory
                     
             except MemoryError:
@@ -230,7 +240,7 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None, round_number: int = None, phase: str = None) -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None, round_number: int = None, phase: str = None, context: "ParticipantContext" = None) -> str:
         """
         Create context-aware memory update prompt that prevents activity duplication.
         
@@ -316,10 +326,17 @@ class MemoryManager:
             # These interactions benefit from explicit "Recent Activity" sections
             prompt_key = base_prompt_key
         
+        # Conditionally include experiment explanation based on first_memory_update flag
+        # Only show explanation on first memory update, then empty string for subsequent updates
+        experiment_explanation = ""
+        if context is not None and context.first_memory_update:
+            experiment_explanation = language_manager.get("prompts.experiment_explanation")
+
         return language_manager.get(
             prompt_key,
             current_memory=current_memory if current_memory.strip() else language_manager.get("prompts.memory_empty_memory_placeholder"),
-            round_content=round_content
+            round_content=round_content,
+            experiment_explanation=experiment_explanation
         )
     
     @staticmethod

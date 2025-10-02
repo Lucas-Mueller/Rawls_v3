@@ -58,3 +58,26 @@ Quo vadis?
    ```
    Format: "My ballot choice is maximizing average with floor constraint with a floor constraint of $15,000"
    ```
+
+
+
+“Return your complete updated memory incorporating insights from the recent activity. 
+Your memory is given to you in every interaction and gives you your knowledge on yourself and the experiment. Strucutre your memory as it fits you best. You are given your previous memory and recent activity of the experiment. Return the complete memory. 
+
+Your Previous Memory:
+{current_memory}
+
+You are participating in an experiment studying principles of justice and income distribution.
+
+The experiment has two main phases:
+
+PHASE 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.
+
+PHASE 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group’s chosen principle will then be applied to determine everyone’s final earnings.
+
+Throughout the experiment, engage thoughtfully with the principles and other participants.
+
+Recent Activity:
+{round_content}
+
+RETURN: Your complete updated memory (not incremental changes or prefixes like ‘Memory update:’)”
