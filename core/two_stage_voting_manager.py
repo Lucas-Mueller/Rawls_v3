@@ -315,9 +315,16 @@ class TwoStageVotingManager:
         stage = "principle_selection"
         
         try:
+            # Get round information from context
+            round_number = context.round_number
+            max_rounds = self.settings.phase2_rounds if hasattr(self.settings, 'phase2_rounds') else 10
+
             # Use enhanced language manager method for two-stage prompts
             logger.debug(f"Attempting to get two-stage principle selection prompt for participant {participant.name}")
-            base_prompt = self.language_manager.get_two_stage_principle_selection_prompt()
+            base_prompt = self.language_manager.get_two_stage_principle_selection_prompt(
+                round_number=round_number,
+                max_rounds=max_rounds
+            )
             logger.debug(f"Successfully retrieved two-stage principle selection prompt")
         except Exception as e:
             logger.error(f"Failed to get two-stage principle prompt for {participant.name}: {e}")

@@ -406,11 +406,12 @@
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {
       "assigned_principle": " ← SU PRINCIPIO ASIGNADO",
-      "group_choice": " ← LA ELECCIÓN DE SU GRUPO"
+      "group_choice": " ← LA ELECCIÓN DE SU GRUPO",
+      "random_assignment": " ← ASIGNACIÓN ALEATORIA"
     },
-    "no_consensus_summary_header": "**NO SE ALCANZÓ CONSENSO**",
+    "no_consensus_status": "No se alcanzó consenso: Asignación aleatoria aplicada",
     "no_consensus_explanation": "Su grupo no pudo ponerse de acuerdo sobre un principio de justicia después de {rounds} rondas de discusión. Los ingresos fueron asignados aleatoriamente entre todos los participantes.",
-    "no_consensus_outcome_line": "Su asignación aleatoria: clase {class_name} y Distribución {distribution_num} → ${earnings:.2f} ingresos",
+    "no_consensus_outcome_line": "Su asignación aleatoria: clase {class_name} y Distribución {distribution_num} → ${earnings:.2f} ingresos.",
     "constraint_analysis_header": "Resultados del Análisis de Restricción:",
     "outcome_summary": "Resumen de resultados bajo diferentes restricciones:",
     "selected_distribution": "Distribución Seleccionada:",

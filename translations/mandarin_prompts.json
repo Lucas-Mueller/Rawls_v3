@@ -406,11 +406,12 @@
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {
       "assigned_principle": " ← 您的指定原则",
-      "group_choice": " ← 您组的选择"
+      "group_choice": " ← 您组的选择",
+      "random_assignment": " ← 随机分配"
     },
-    "no_consensus_summary_header": "**未达成共识**",
+    "no_consensus_status": "未达成共识：应用随机分配",
     "no_consensus_explanation": "经过{rounds}轮讨论后，您的小组未能就正义原则达成一致。收入在所有参与者之间随机分配。",
-    "no_consensus_outcome_line": "您的随机分配：{class_name}类别和分配{distribution_num} → ${earnings:.2f}收入",
+    "no_consensus_outcome_line": "您的随机分配：{class_name}类别和分配{distribution_num} → ${earnings:.2f}收入。",
     "constraint_analysis_header": "约束分析结果：",
     "outcome_summary": "不同约束下的结果总结：",
     "selected_distribution": "选择的分配：",

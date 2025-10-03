@@ -371,8 +371,7 @@ class CounterfactualsService:
             class_assignment = lang_manager.get('results.assigned_income_class', class_name=assigned_class_label)
             result_parts.append(class_assignment)
             
-            # Consensus information - only show for consensus case
-            # (no-consensus message is shown in comprehensive display to avoid duplication)
+            # Consensus or no-consensus status line
             if consensus_result.consensus_reached and consensus_result.agreed_principle:
                 # Get localized principle name using slug-based approach
                 principle_slug = consensus_result.agreed_principle.principle.value
@@ -391,6 +390,10 @@ class CounterfactualsService:
                         principle_name=principle_name
                     )
                 result_parts.append(consensus_msg + ".")
+            else:
+                # No consensus - use parallel status format
+                no_consensus_msg = lang_manager.get('comprehensive_earnings.no_consensus_status')
+                result_parts.append(no_consensus_msg + ".")
             
             # Add comprehensive earnings display
             # Convert string assigned_class to IncomeClass enum
@@ -494,24 +497,6 @@ class CounterfactualsService:
             # Build display parts
             display_parts = []
 
-            # Add no-consensus summary if consensus was not reached
-            if not consensus_result.consensus_reached:
-                no_consensus_header = lang_manager.get('comprehensive_earnings.no_consensus_summary_header')
-                no_consensus_explanation = lang_manager.get(
-                    'comprehensive_earnings.no_consensus_explanation',
-                    rounds=consensus_result.final_round
-                )
-                # Get the distribution number that was randomly assigned to this participant
-                distribution_num = self._assigned_distributions.get(participant_name, 1)  # Default to 1 if not found
-                no_consensus_outcome = lang_manager.get(
-                    'comprehensive_earnings.no_consensus_outcome_line',
-                    class_name=comprehensive_data['class_display_name'],
-                    distribution_num=distribution_num,
-                    earnings=final_earnings
-                )
-
-                display_parts.extend([no_consensus_header, no_consensus_explanation, no_consensus_outcome, ""])
-
             # Add probabilities block (localized) if available
             try:
                 if self._phase2_probabilities is not None:
@@ -537,21 +522,32 @@ class CounterfactualsService:
             )
             display_parts.append(outcomes_header)
             
-            # Determine group choice for marking
+            # Determine group choice or random assignment for marking
             group_choice_principle = None
             group_choice_constraint = None
-            
+            random_distribution_num = None
+
             if consensus_result.consensus_reached and consensus_result.agreed_principle:
                 group_choice_principle = consensus_result.agreed_principle.principle.value
                 group_choice_constraint = consensus_result.agreed_principle.constraint_amount
-            
-            # Add all outcomes with proper group choice marking
+            else:
+                # No consensus - mark random assignment
+                random_distribution_num = self._assigned_distributions.get(participant_name, 1)
+
+            # Add all outcomes with proper marking
             for outcome in comprehensive_data['outcomes']:
-                # Determine if this outcome matches the group choice
+                # Determine if this outcome should be marked
                 choice_marker = ""
-                if group_choice_principle == outcome['principle_key']:
-                    if outcome['constraint_amount'] is None or outcome['constraint_amount'] == group_choice_constraint:
-                        choice_marker = lang_manager.get('comprehensive_earnings.markers.group_choice')
+                if consensus_result.consensus_reached:
+                    # Mark group choice for consensus
+                    if group_choice_principle == outcome['principle_key']:
+                        if outcome['constraint_amount'] is None or outcome['constraint_amount'] == group_choice_constraint:
+                            choice_marker = lang_manager.get('comprehensive_earnings.markers.group_choice')
+                else:
+                    # Mark random assignment for no-consensus
+                    if random_distribution_num == outcome['distribution_index'] + 1:
+                        choice_marker = lang_manager.get('comprehensive_earnings.markers.random_assignment')
+                        random_distribution_num = None  # Only mark first match
                 
                 # Format outcome line using LanguageManager
                 outcome_line = lang_manager.get(

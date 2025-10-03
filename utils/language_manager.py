@@ -807,9 +807,11 @@ class LanguageManager:
     
     # Two-Stage Voting Support Methods
     
-    def get_two_stage_principle_selection_prompt(self) -> str:
+    def get_two_stage_principle_selection_prompt(self, round_number: int, max_rounds: int) -> str:
         """Get the principle selection prompt for two-stage voting."""
-        return self.get("prompts.two_stage_principle_selection")
+        return self.get("prompts.two_stage_principle_selection",
+                       round_number=round_number,
+                       max_rounds=max_rounds)
     
     def get_two_stage_amount_specification_prompt(self, principle_name: str) -> str:
         """

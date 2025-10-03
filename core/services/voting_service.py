@@ -101,19 +101,23 @@ class VotingService:
     ) -> bool:
         """
         Prompt participant for vote initiation decision with retry logic.
-        
+
         Args:
             participant: The participant agent to prompt
             context: The participant's context
             agent_recent_statement: Agent's recent statement for consistency (optional)
             internal_reasoning: Agent's internal reasoning to include in prompt (optional)
             max_retries: Maximum number of retry attempts for invalid responses
-            
+
         Returns:
             True if agent wants to vote, False otherwise
         """
         language_manager = self.language_manager
-        
+
+        # Get round information from context
+        round_number = getattr(context, 'current_round_number', 1)
+        max_rounds = self.settings.phase2_rounds if hasattr(self.settings, 'phase2_rounds') else 10
+
         # Select appropriate prompt based on available context
         has_statement = agent_recent_statement and agent_recent_statement.strip()
 
@@ -121,11 +125,17 @@ class VotingService:
             # Provide the recent statement for context; reasoning already appears in the instruction prompt
             vote_prompt = language_manager.get(
                 "prompts.vote_initiation_with_statement_prompt",
-                agent_recent_statement=agent_recent_statement
+                agent_recent_statement=agent_recent_statement,
+                round_number=round_number,
+                max_rounds=max_rounds
             )
         else:
             # No additional context - use basic prompt
-            vote_prompt = language_manager.get("prompts.vote_initiation_prompt")
+            vote_prompt = language_manager.get(
+                "prompts.vote_initiation_prompt",
+                round_number=round_number,
+                max_rounds=max_rounds
+            )
         
         # Enhanced timeout specifically for vote prompts (use full statement timeout for long-response LLMs)
         vote_prompt_timeout = self.settings.statement_timeout_seconds

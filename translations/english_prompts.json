@@ -392,11 +392,12 @@
     "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
     "markers": {
       "assigned_principle": " ← YOUR ASSIGNED PRINCIPLE",
-      "group_choice": " ← YOUR GROUP'S CHOICE"
+      "group_choice": " ← YOUR GROUP'S CHOICE",
+      "random_assignment": " ← RANDOM ASSIGNMENT"
     },
-    "no_consensus_summary_header": "**NO CONSENSUS REACHED**",
+    "no_consensus_status": "No consensus reached: Random assignment applied",
     "no_consensus_explanation": "Your group could not agree on a justice principle after {rounds} rounds of discussion. Earnings were randomly assigned among all participants.",
-    "no_consensus_outcome_line": "Your random assignment: {class_name} class and Distribution {distribution_num} → ${earnings:.2f} earnings",
+    "no_consensus_outcome_line": "Your random assignment: {class_name} class and Distribution {distribution_num} → ${earnings:.2f} earnings.",
     "constraint_analysis_header": "Constraint Analysis Results:",
     "outcome_summary": "Summary of outcomes under different constraints:",
     "selected_distribution": "Selected Distribution:",

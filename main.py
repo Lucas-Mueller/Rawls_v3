@@ -150,19 +150,19 @@ async def main():
         # Display trace link if available
         trace_id = experiment_manager.get_trace_id()
         if trace_id:
-            # Remove 'trace_' prefix if present for proper URL format
-            clean_trace_id = trace_id[6:] if trace_id.startswith('trace_') else trace_id
-            # Use Observability UI path
-            trace_url = f"https://platform.openai.com/observability/traces/{clean_trace_id}"
+            # Ensure trace_id has trace_ prefix for proper URL format
+            full_trace_id = trace_id if trace_id.startswith('trace_') else f'trace_{trace_id}'
+            # Use correct logs/trace URL path
+            trace_url = f"https://platform.openai.com/logs/trace?trace_id={full_trace_id}"
             experiment_summary['trace_url'] = trace_url
-            
+
             # Check if OPENAI_API_KEY is set and show trace in detailed/debug modes
             import os
             if verbosity_level in ["detailed", "debug"]:
                 if os.getenv('OPENAI_API_KEY'):
                     process_logger.log_debug(f"Trace: {trace_url}")
                 else:
-                    process_logger.log_debug(f"Trace ID: {clean_trace_id} (API key not set)")
+                    process_logger.log_debug(f"Trace ID: {full_trace_id} (API key not set)")
         
         # Show experiment completion
         process_logger.experiment_completed(experiment_summary)

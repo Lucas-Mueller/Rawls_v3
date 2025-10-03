@@ -8,6 +8,7 @@ the VotingService produces identical prompts to the original Phase2Manager.
 
 import pytest
 import asyncio
+from string import Formatter
 from unittest.mock import Mock, patch
 from core.services.voting_service import VotingService
 from config.phase2_settings import Phase2Settings
@@ -31,9 +32,12 @@ class TestVotingServicePromptGolden:
                 "Respond with 1 for Yes or 0 for No."
             ),
             "prompts.utility_voting_confirmation_request": (
-                "A participant has proposed to initiate formal voting based on this statement:\n"
-                "'{initiation_statement}'\n\n"
-                "Do you agree to participate in formal voting? Respond with 1 for Yes or 0 for No."
+                "{initiator_name} has requested to vote on the justice principles.\n\n"
+                "Do you agree to participate in a voting session now?\n\n"
+                "Respond with exactly one number:\n"
+                "- Reply 1 if you want to vote now\n"
+                "- Reply 0 if you want to continue discussion\n\n"
+                "Your response will be visible to all participants."
             ),
             "voting_prompts.retry_instruction": (
                 "Please provide a clear response: 1 for Yes (initiate voting) or 0 for No (continue discussion)."
@@ -64,9 +68,12 @@ class TestVotingServicePromptGolden:
                 "Responda con 1 para Sí o 0 para No."
             ),
             "prompts.utility_voting_confirmation_request": (
-                "Un participante ha propuesto iniciar votación formal basándose en esta declaración:\n"
-                "'{initiation_statement}'\n\n"
-                "¿Está de acuerdo en participar en votación formal? Responda con 1 para Sí o 0 para No."
+                "{initiator_name} ha solicitado votar sobre los principios de justicia.\n\n"
+                "¿Está de acuerdo en participar en una sesión de votación ahora?\n\n"
+                "Responda con exactamente un número:\n"
+                "- Responda 1 si quiere votar ahora\n"
+                "- Responda 0 si quiere continuar la discusión\n\n"
+                "Su respuesta será visible para todos los participantes."
             ),
             "voting_prompts.retry_instruction": (
                 "Por favor proporcione una respuesta clara: 1 para Sí (iniciar votación) o 0 para No (continuar discusión)."
@@ -97,9 +104,12 @@ class TestVotingServicePromptGolden:
                 "请回答1表示是，0表示否。"
             ),
             "prompts.utility_voting_confirmation_request": (
-                "一位参与者基于以下声明提议发起正式投票：\n"
-                "'{initiation_statement}'\n\n"
-                "您同意参加正式投票吗？请回答1表示是，0表示否。"
+                "{initiator_name} 请求对公正原则进行投票。\n\n"
+                "现在请确认你的选择：\n"
+                "- 回答 1：是的，我确认开始正式投票\n"
+                "- 回答 0：不，我需要更多讨论时间\n\n"
+                "请只回答数字：1 或 0\n"
+                "你的回答将对所有参与者可见。"
             ),
             "voting_prompts.retry_instruction": (
                 "请提供明确回答：1表示是（发起投票）或0表示否（继续讨论）。"
@@ -237,42 +247,51 @@ class TestVotingServicePromptGolden:
         
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
-            initiation_statement="I think we should vote on principle A"
+            initiator_name="Sophie"
         )
         expected = (
-            "A participant has proposed to initiate formal voting based on this statement:\n"
-            "'I think we should vote on principle A'\n\n"
-            "Do you agree to participate in formal voting? Respond with 1 for Yes or 0 for No."
+            "Sophie has requested to vote on the justice principles.\n\n"
+            "Do you agree to participate in a voting session now?\n\n"
+            "Respond with exactly one number:\n"
+            "- Reply 1 if you want to vote now\n"
+            "- Reply 0 if you want to continue discussion\n\n"
+            "Your response will be visible to all participants."
         )
         assert result == expected
-    
+
     def test_spanish_confirmation_request_golden(self):
         """Golden test for Spanish confirmation request prompt."""
         service = self.create_voting_service(self.spanish_translations)
         
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
-            initiation_statement="Creo que deberíamos votar por el principio A"
+            initiator_name="María"
         )
         expected = (
-            "Un participante ha propuesto iniciar votación formal basándose en esta declaración:\n"
-            "'Creo que deberíamos votar por el principio A'\n\n"
-            "¿Está de acuerdo en participar en votación formal? Responda con 1 para Sí o 0 para No."
+            "María ha solicitado votar sobre los principios de justicia.\n\n"
+            "¿Está de acuerdo en participar en una sesión de votación ahora?\n\n"
+            "Responda con exactamente un número:\n"
+            "- Responda 1 si quiere votar ahora\n"
+            "- Responda 0 si quiere continuar la discusión\n\n"
+            "Su respuesta será visible para todos los participantes."
         )
         assert result == expected
-    
+
     def test_chinese_confirmation_request_golden(self):
         """Golden test for Chinese confirmation request prompt."""
         service = self.create_voting_service(self.chinese_translations)
         
         result = service._get_localized_message(
             "prompts.utility_voting_confirmation_request",
-            initiation_statement="我认为我们应该就原则A进行投票"
+            initiator_name="苏菲"
         )
         expected = (
-            "一位参与者基于以下声明提议发起正式投票：\n"
-            "'我认为我们应该就原则A进行投票'\n\n"
-            "您同意参加正式投票吗？请回答1表示是，0表示否。"
+            "苏菲 请求对公正原则进行投票。\n\n"
+            "现在请确认你的选择：\n"
+            "- 回答 1：是的，我确认开始正式投票\n"
+            "- 回答 0：不，我需要更多讨论时间\n\n"
+            "请只回答数字：1 或 0\n"
+            "你的回答将对所有参与者可见。"
         )
         assert result == expected
     
@@ -428,7 +447,7 @@ class TestVotingServicePromptGolden:
         # Test that all language versions expect the same parameters
         test_cases = [
             ("prompts.vote_initiation_with_statement_prompt", {"agent_recent_statement": "test"}),
-            ("prompts.utility_voting_confirmation_request", {"initiation_statement": "test"}),
+            ("prompts.utility_voting_confirmation_request", {"initiator_name": "test"}),
             ("voting_results.consensus_reached", {"principle_name": "test"}),
             ("voting_results.consensus_with_constraint", {"principle_name": "test", "constraint_amount": 1000}),
             ("system_messages.voting.voting_declined", {"declined_participants": "test"})
@@ -440,9 +459,22 @@ class TestVotingServicePromptGolden:
             ("chinese", self.chinese_translations)
         ]
         
+        formatter = Formatter()
+
         for key, params in test_cases:
             for lang_name, translations in languages:
                 if key in translations:
+                    template = translations[key]
+                    placeholders = {
+                        field_name for _, field_name, _, _ in formatter.parse(template)
+                        if field_name
+                    }
+                    expected_placeholders = set(params.keys())
+                    assert placeholders == expected_placeholders, (
+                        f"Placeholder mismatch for {key} in {lang_name}: "
+                        f"expected {expected_placeholders}, found {placeholders}"
+                    )
+
                     service = self.create_voting_service(translations)
                     # Should not raise KeyError for missing parameters
                     result = service._get_localized_message(key, **params)
