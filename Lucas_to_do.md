@@ -36,9 +36,12 @@ Investigate why so many runs failed --> Probably fixed --> Test needed
 
 
 Backlog
-Reproducability Test
-Review complete run through English --> WIP 
-Review complete run through Mandarin / Spanish
+
+voting round message in ballot is false "Voting Decision Point - Round 1 of 10" 
+
+
+
+
 
 Prepare Repo for Release 
 --> Documentation
