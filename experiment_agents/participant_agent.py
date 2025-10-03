@@ -354,7 +354,8 @@ def _generate_dynamic_instructions(
         stage=stage,
         max_rounds=phase2_max_rounds,
         participant_names=phase2_participant_names,
-        stage_header=stage_header_formatted
+        stage_header=stage_header_formatted,
+        interaction_type=getattr(context, 'interaction_type', None)
     )
 
 

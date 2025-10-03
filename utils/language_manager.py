@@ -434,7 +434,8 @@ class LanguageManager:
                            stage: Optional[Any] = None,
                            max_rounds: Optional[int] = None,
                            participant_names: Optional[List[str]] = None,
-                           stage_header: str = "") -> str:
+                           stage_header: str = "",
+                           interaction_type: Optional[str] = None) -> str:
         """
         Format the main context information display.
 
@@ -516,20 +517,25 @@ class LanguageManager:
             internal_reasoning_section = self.get("prompts.internal_reasoning_context_format",
                                                  internal_reasoning=sanitized_reasoning)
 
-        # Format discussion header section if in discussion stage
+        # Format discussion or voting header section based on context
         discussion_header_section = ""
         if stage and max_rounds and participant_names:
             # Import ExperimentStage dynamically to avoid circular imports
             from models.experiment_types import ExperimentStage
 
-            if stage == ExperimentStage.DISCUSSION:
+            # Check if we're in a voting interaction (vote_prompt, vote_confirmation, ballot)
+            is_voting = interaction_type in ("vote_prompt", "vote_confirmation", "ballot")
+
+            if stage == ExperimentStage.DISCUSSION or is_voting:
                 # Format participant list using language-aware method
                 participant_list = self.format_participant_list(participant_names)
 
                 # Only add header if we have valid data
                 if participant_list and round_number:
+                    # Use voting header for voting interactions, discussion header otherwise
+                    header_key = "context_voting_header_section" if is_voting else "context_discussion_header_section"
                     discussion_header_section = self.get(
-                        "context_discussion_header_section",
+                        header_key,
                         round_number=round_number,
                         max_rounds=max_rounds,
                         participants=participant_list
