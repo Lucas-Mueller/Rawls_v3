@@ -84,7 +84,8 @@ class Phase2Manager:
             settings=self.settings,
             logger=logger,
             memory_service=self.memory_service,
-            agent_logger=self.agent_logger
+            agent_logger=self.agent_logger,
+            phase2_rounds=self.config.phase2_rounds if self.config else 10
         )
         
         self.counterfactuals_service = CounterfactualsService(
@@ -483,7 +484,8 @@ class Phase2Manager:
                     round_number=round_num,
                     max_rounds=self.config.phase2_rounds,
                     participant_names=[p.name for p in self.participants],
-                    discussion_history=discussion_state.public_history
+                    discussion_history=discussion_state.public_history,
+                    agent_recent_statement=recent_statement
                 )
 
                 wants_vote = await self.voting_service.prompt_for_vote_initiation(

@@ -281,6 +281,7 @@
   "context_voting_header_section": "\nSesión de Votación - Ronda {round_number} de {max_rounds}\n\nParticipantes: {participants}\n",
   "context_discussion_history_section_format": "--- HISTORIAL DE DISCUSIÓN ---\n{discussion_history}\n\n--------------------------------",
   "memory_discussion_history_header": "=== HISTORIAL DE DISCUSIÓN ===",
+  "experiment_explanation_header": "=== DESCRIPCIÓN DEL EXPERIMENTO ===",
   "no_previous_discussion_placeholder": "No hay discusión previa.",
   "memory_outcomes": {
     "completed_initial_ranking": "Clasificación inicial completada de los principios de justicia.",

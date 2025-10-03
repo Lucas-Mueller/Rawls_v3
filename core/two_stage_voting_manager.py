@@ -82,10 +82,10 @@ class TwoStageVotingManager:
     - Stage 2: Amount specification for constraint principles (positive integers)
     """
     
-    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None):
+    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None, phase2_rounds: int = 10):
         """
         Initialize the two-stage voting manager.
-        
+
         Args:
             participants: List of ParticipantAgent objects
             language_manager: LanguageManager instance for multilingual support
@@ -93,6 +93,7 @@ class TwoStageVotingManager:
             settings: Phase2Settings instance with voting configuration
             error_handler: ExperimentErrorHandler instance for error handling
             utility_agent: UtilityAgent instance for memory compression
+            phase2_rounds: Maximum number of Phase 2 rounds (from ExperimentConfiguration)
         """
         self.participants = participants
         self.language_manager = language_manager
@@ -102,6 +103,8 @@ class TwoStageVotingManager:
         self.utility_agent = utility_agent
         # Optional MemoryService for writing simple voting-related memory events
         self.memory_service = memory_service
+        # Store phase2_rounds from ExperimentConfiguration
+        self.phase2_rounds = phase2_rounds
         
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
@@ -317,7 +320,7 @@ class TwoStageVotingManager:
         try:
             # Get round information from context
             round_number = context.round_number
-            max_rounds = self.settings.phase2_rounds if hasattr(self.settings, 'phase2_rounds') else 10
+            max_rounds = self.phase2_rounds
 
             # Use enhanced language manager method for two-stage prompts
             logger.debug(f"Attempting to get two-stage principle selection prompt for participant {participant.name}")

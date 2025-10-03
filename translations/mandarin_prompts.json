@@ -281,6 +281,7 @@
   "context_voting_header_section": "\n投票会议 - 第 {round_number} 轮，共 {max_rounds} 轮\n\n参与者：{participants}\n",
   "context_discussion_history_section_format": "--- 讨论历史 ---\n{discussion_history}\n\n------------------",
   "memory_discussion_history_header": "=== 讨论历史 ===",
+  "experiment_explanation_header": "=== 实验概述 ===",
   "no_previous_discussion_placeholder": "目前没有先前的讨论。",
   "memory_outcomes": {
     "completed_initial_ranking": "完成正义原则初始排名。",

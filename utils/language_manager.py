@@ -715,6 +715,7 @@ class LanguageManager:
         max_rounds: int,
         participant_names: Optional[List[str]],
         discussion_history: str,
+        agent_recent_statement: Optional[str] = None
     ) -> str:
         """Format the Phase 2 discussion history section only.
 
@@ -735,6 +736,11 @@ class LanguageManager:
             "context_discussion_history_section_format",
             discussion_history=transcript
         )
+
+        # Append agent's recent statement if provided
+        if agent_recent_statement and agent_recent_statement.strip():
+            history_section += f"\n\nYour most recent statement:\n\"{agent_recent_statement}\""
+
         return history_section
     
     def get_principle_list_formatted(self, list_type: str = "detailed") -> str:

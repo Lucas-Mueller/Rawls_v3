@@ -240,6 +240,7 @@
   "context_voting_header_section": "\nVoting Session - Round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
   "context_discussion_history_section_format": "--- DISCUSSION HISTORY ---\n{discussion_history}\n\n--------------------------",
   "memory_discussion_history_header": "=== DISCUSSION HISTORY ===",
+  "experiment_explanation_header": "=== EXPERIMENT OVERVIEW ===",
   "no_previous_discussion_placeholder": "No previous discussion.",
   "memory_outcomes": {
     "completed_initial_ranking": "Completed initial ranking of justice principles.",

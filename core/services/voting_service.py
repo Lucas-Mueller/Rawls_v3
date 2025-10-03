@@ -50,12 +50,13 @@ class VotingService:
     for clean separation of concerns and testability.
     """
     
-    def __init__(self, language_manager: LanguageProvider, utility_agent: UtilityProvider, 
+    def __init__(self, language_manager: LanguageProvider, utility_agent: UtilityProvider,
                  settings: Optional[Phase2Settings] = None, logger: Optional[Logger] = None,
-                 memory_service: Optional[object] = None, agent_logger: Optional[object] = None):
+                 memory_service: Optional[object] = None, agent_logger: Optional[object] = None,
+                 phase2_rounds: int = 10):
         """
         Initialize voting service.
-        
+
         Args:
             language_manager: For localized message retrieval
             utility_agent: For numerical agreement detection
@@ -63,6 +64,7 @@ class VotingService:
             logger: For logging info and warnings (optional)
             memory_service: For recording simple voting events (optional)
             agent_logger: For agent-centric logging (optional)
+            phase2_rounds: Maximum number of Phase 2 rounds (from ExperimentConfiguration)
         """
         self.language_manager = language_manager
         self.utility_agent = utility_agent
@@ -72,6 +74,8 @@ class VotingService:
         self.memory_service = memory_service
         # Optional agent-centric logger for detailed voting analytics
         self.agent_logger = agent_logger
+        # Store phase2_rounds from ExperimentConfiguration
+        self.phase2_rounds = phase2_rounds
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger is available."""
@@ -412,7 +416,8 @@ class VotingService:
             settings=self.settings,
             error_handler=error_handler,
             utility_agent=utility_agent,
-            memory_service=self.memory_service
+            memory_service=self.memory_service,
+            phase2_rounds=self.phase2_rounds
         )
         
         # Conduct structured two-stage voting process
