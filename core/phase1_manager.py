@@ -4,7 +4,7 @@ Phase 1 manager for individual participant familiarization.
 import asyncio
 import logging
 import random
-from typing import Dict, List, Callable, Awaitable
+from typing import Dict, List, Callable, Awaitable, Any, Optional
 from agents import Agent, Runner
 
 from models import (
@@ -15,10 +15,10 @@ from models import (
 from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
-from utils.memory_manager import MemoryManager
 from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
 from utils.seed_manager import SeedManager
 from utils.parsing_errors import ParsingError, detect_parsing_failure_type, create_parsing_error
+from utils.selective_memory_manager import MemoryEventType
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,8 @@ class Phase1Manager:
         self.seed_manager = seed_manager or SeedManager()
         self.logger = None  # Will be set in run_phase1
         self._participant_rngs: Dict[str, random.Random] = {}
+        self.memory_service = None
+        self._memory_service_initialized = False
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
@@ -43,6 +45,9 @@ class Phase1Manager:
 
         # Ensure each participant has a deterministic RNG derived from the experiment seed
         self._build_participant_rngs(config)
+
+        # Initialize consolidated memory service so Phase 1 uses the same pipeline as Phase 2
+        self._ensure_memory_service(config)
 
         # Log language information for test validation
         if process_logger and self.language_manager:
@@ -88,11 +93,66 @@ class Phase1Manager:
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.info(message)
-    
+
     def _log_warning(self, message: str):
         """Safe logging helper."""
         if self.logger and hasattr(self.logger, 'debug_logger'):
             self.logger.debug_logger.warning(message)
+
+    # MemoryService-compatible logger interface
+    def info(self, message: str) -> None:
+        self._log_info(message)
+
+    def warning(self, message: str) -> None:
+        self._log_warning(message)
+
+    def debug(self, message: str) -> None:
+        if self.logger and hasattr(self.logger, 'debug_logger'):
+            self.logger.debug_logger.debug(message)
+
+    def _build_phase1_metadata(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        task: str,
+        extra: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Create consistent metadata for Phase 1 memory updates."""
+        stage_value = context.stage.value if context.stage is not None else None
+        metadata: Dict[str, Any] = {
+            'phase': 'Phase 1',
+            'participant_name': participant.name,
+            'round_number': context.round_number,
+            'stage': stage_value,
+            'task': task
+        }
+
+        if extra:
+            metadata.update({k: v for k, v in extra.items() if v is not None})
+
+        return metadata
+
+    def _ensure_memory_service(self, config: ExperimentConfiguration) -> None:
+        """Initialize MemoryService once Phase 1 configuration is available."""
+        if self._memory_service_initialized and self.memory_service is not None:
+            return
+
+        from core.services import MemoryService
+        from config.phase2_settings import Phase2Settings
+
+        settings = getattr(config, 'phase2_settings', None)
+        if settings is None:
+            settings = Phase2Settings.get_default()
+
+        self.memory_service = MemoryService(
+            language_manager=self.language_manager,
+            utility_agent=self.utility_agent,
+            settings=settings,
+            logger=self,
+            config=config
+        )
+
+        self._memory_service_initialized = True
 
     def _build_participant_rngs(self, config: ExperimentConfiguration) -> None:
         """Create a deterministic RNG for each participant derived from the experiment seed."""
@@ -240,18 +300,26 @@ class Phase1Manager:
             retry_memory_content = f"""{language_manager.get('memory_field_labels.retry_feedback') if hasattr(language_manager, 'retry_prompts') else 'Retry feedback:'} {feedback}
 {language_manager.get('memory_field_labels.your_response') if hasattr(language_manager, 'retry_prompts') else 'My retry response:'} {retry_response}"""
 
-            # Use existing memory guidance style from config
-            memory_guidance_style = config.memory_guidance_style if config else "narrative"
-            updated_memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, retry_memory_content,
-                memory_guidance_style=memory_guidance_style,
-                language_manager=self.language_manager,
-                error_handler=self.error_handler,
-                utility_agent=self.utility_agent,
-                round_number=context.round_number,
-                phase="phase_1"
+            self._ensure_memory_service(config)
+            metadata = self._build_phase1_metadata(
+                participant,
+                context,
+                task="retry_feedback",
+                extra={
+                    'retry_type': 'intelligent_retry',
+                    'has_feedback': bool(feedback)
+                }
             )
-            context.memory = updated_memory
+
+            context.memory = await self.memory_service.update_memory_selective(
+                agent=participant,
+                context=context,
+                content=retry_memory_content,
+                event_type=MemoryEventType.PHASE1_RETRY,
+                event_metadata=metadata,
+                config=config,
+                error_handler=self.error_handler
+            )
             self._log_info(f"Updated {participant.name} memory with retry experience")
         except Exception as e:
             self._log_warning(f"Failed to update memory with retry experience for {participant.name}: {e}")
@@ -281,6 +349,8 @@ class Phase1Manager:
         process_logger=None
     ) -> Phase1Results:
         """Run complete Phase 1 for a single participant."""
+
+        self._ensure_memory_service(config)
         
         # 1.1 Initial Principle Ranking
         context.round_number = 0
@@ -299,12 +369,19 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent using new guidance style
-        memory_guidance_style = config.memory_guidance_style if config else "narrative"
-        context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
-            round_number=context.round_number,
-            phase="phase_1"
+        ranking_metadata = self._build_phase1_metadata(
+            participant,
+            context,
+            task="initial_ranking"
+        )
+        context.memory = await self.memory_service.update_memory_selective(
+            agent=participant,
+            context=context,
+            content=ranking_content,
+            event_type=MemoryEventType.PHASE1_RANKING,
+            event_metadata=ranking_metadata,
+            config=config,
+            error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
@@ -325,12 +402,19 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent using new guidance style
-        memory_guidance_style = config.memory_guidance_style if config else "narrative"
-        context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, explanation_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
-            round_number=context.round_number,
-            phase="phase_1"
+        explanation_metadata = self._build_phase1_metadata(
+            participant,
+            context,
+            task="detailed_explanation"
+        )
+        context.memory = await self.memory_service.update_memory_selective(
+            agent=participant,
+            context=context,
+            content=explanation_content,
+            event_type=MemoryEventType.PHASE1_EXPLANATION,
+            event_metadata=explanation_metadata,
+            config=config,
+            error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
@@ -353,12 +437,19 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent using new guidance style
-        memory_guidance_style = config.memory_guidance_style if config else "narrative"
-        context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, post_ranking_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
-            round_number=context.round_number,
-            phase="phase_1"
+        post_ranking_metadata = self._build_phase1_metadata(
+            participant,
+            context,
+            task="post_explanation_ranking"
+        )
+        context.memory = await self.memory_service.update_memory_selective(
+            agent=participant,
+            context=context,
+            content=post_ranking_content,
+            event_type=MemoryEventType.PHASE1_RANKING,
+            event_metadata=post_ranking_metadata,
+            config=config,
+            error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
@@ -422,15 +513,27 @@ class Phase1Manager:
                 new_stage=context.stage
             )
             
-            # Update memory with agent using new guidance style (now with correct bank balance)
-            from config import ExperimentConfiguration
-            config_obj: ExperimentConfiguration = config
-            memory_guidance_style = config_obj.memory_guidance_style if config_obj else "narrative"
-            
-            context.memory = await MemoryManager.prompt_agent_for_memory_update(
-                participant, context, round_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
-                round_number=context.round_number,
-                phase="phase_1"
+            application_metadata = self._build_phase1_metadata(
+                participant,
+                context,
+                task="principle_application",
+                extra={
+                    'application_round': round_num,
+                    'principle': result.principle_choice.principle.value,
+                    'constraint': result.principle_choice.constraint_amount,
+                    'assigned_class': result.assigned_income_class.value,
+                    'earnings': result.earnings
+                }
+            )
+
+            context.memory = await self.memory_service.update_memory_selective(
+                agent=participant,
+                context=context,
+                content=round_content,
+                event_type=MemoryEventType.PRINCIPLE_APPLICATION,
+                event_metadata=application_metadata,
+                config=config,
+                error_handler=self.error_handler
             )
         
         # 1.4 Final Ranking
@@ -450,12 +553,19 @@ class Phase1Manager:
                 balance_before
             )
         
-        # Update memory with agent using new guidance style
-        memory_guidance_style = config.memory_guidance_style if config else "narrative"
-        context.memory = await MemoryManager.prompt_agent_for_memory_update(
-            participant, context, final_content, memory_guidance_style=memory_guidance_style, language_manager=self.language_manager, error_handler=self.error_handler, utility_agent=self.utility_agent,
-            round_number=context.round_number,
-            phase="phase_1"
+        final_ranking_metadata = self._build_phase1_metadata(
+            participant,
+            context,
+            task="final_ranking"
+        )
+        context.memory = await self.memory_service.update_memory_selective(
+            agent=participant,
+            context=context,
+            content=final_content,
+            event_type=MemoryEventType.PHASE1_RANKING,
+            event_metadata=final_ranking_metadata,
+            config=config,
+            error_handler=self.error_handler
         )
         context = update_participant_context(context, new_round=context.round_number, new_stage=context.stage)
         
@@ -521,6 +631,8 @@ class Phase1Manager:
         participant_rng: random.Random
     ) -> tuple[ApplicationResult, str]:
         """Step 1.3: Single round of principle application."""
+
+        self._ensure_memory_service(config)
         
         application_prompt = self._build_application_prompt(distribution_set, round_num, config)
         
@@ -529,7 +641,6 @@ class Phase1Manager:
         text_response = result.final_output
         
         # Parse using enhanced utility agent with retry logic
-        print(f"DEBUG: Principle choice response to parse: {repr(text_response)}")
 
         if config.enable_intelligent_retries:
             # Create retry callback that handles participant re-prompting (exact A1 pattern)
@@ -588,14 +699,21 @@ class Phase1Manager:
             # Update memory with constraint re-prompt experience
             try:
                 retry_memory_content = f"Constraint re-prompt: {retry_prompt}\nMy response: {retry_text}"
-                updated_memory = await participant.update_memory(
-                    retry_memory_content, 
-                    context.bank_balance,
-                    phase=context.phase,
-                    round_number=context.round_number,
-                    role_description=context.role_description
+                metadata = self._build_phase1_metadata(
+                    participant,
+                    context,
+                    task="constraint_retry",
+                    extra={'retry_index': retry_count + 1}
                 )
-                context.memory = updated_memory
+                context.memory = await self.memory_service.update_memory_selective(
+                    agent=participant,
+                    context=context,
+                    content=retry_memory_content,
+                    event_type=MemoryEventType.PHASE1_RETRY,
+                    event_metadata=metadata,
+                    config=config,
+                    error_handler=self.error_handler
+                )
                 self._log_info(f"Updated {participant.name} memory after constraint retry {retry_count + 1}")
             except Exception as e:
                 self._log_warning(f"Failed to update memory after constraint retry for {participant.name}: {e}")

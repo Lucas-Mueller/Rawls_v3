@@ -44,6 +44,9 @@ class MemoryEventType(Enum):
     PHASE_TRANSITION = "phase_transition"
     FINAL_RESULTS = "final_results"
     PRINCIPLE_APPLICATION = "principle_application"
+    PHASE1_RANKING = "phase1_ranking"
+    PHASE1_EXPLANATION = "phase1_explanation"
+    PHASE1_RETRY = "phase1_retry"
     UNKNOWN = "unknown"
 
 
@@ -66,7 +69,10 @@ class SelectiveMemoryManager:
         MemoryEventType.DISCUSSION_STATEMENT,
         MemoryEventType.PHASE_TRANSITION,
         MemoryEventType.FINAL_RESULTS,
-        MemoryEventType.PRINCIPLE_APPLICATION
+        MemoryEventType.PRINCIPLE_APPLICATION,
+        MemoryEventType.PHASE1_RANKING,
+        MemoryEventType.PHASE1_EXPLANATION,
+        MemoryEventType.PHASE1_RETRY
     }
     
     @staticmethod
@@ -158,6 +164,15 @@ class SelectiveMemoryManager:
                 return MemoryEventType.BALLOT_SELECTION
             if metadata.get("is_amount_specification"):
                 return MemoryEventType.AMOUNT_SPECIFICATION
+
+            if metadata.get("phase") == "Phase 1":
+                task = metadata.get("task")
+                if task in {"initial_ranking", "post_explanation_ranking", "final_ranking"}:
+                    return MemoryEventType.PHASE1_RANKING
+                if task in {"detailed_explanation"}:
+                    return MemoryEventType.PHASE1_EXPLANATION
+                if task in {"retry_feedback", "constraint_retry"}:
+                    return MemoryEventType.PHASE1_RETRY
         
         # Pattern-based classification
         

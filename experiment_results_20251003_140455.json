@@ -1,0 +1,423 @@
+{
+  "general_information": {
+    "consensus_reached": true,
+    "consensus_principle": "maximizing_floor",
+    "max_rounds_phase_2": 7,
+    "rounds_conducted_phase_2": 1,
+    "public_conversation_phase_2": "\nRound 1 / Speaker: Alice Statement: Hi everyone, I believe that prioritizing the lowest income in our distribution is the most fair approach. Ensuring that even the worst-off members of society have a decent income helps promote fairness and reduces inequality. So, I support the principle of maximizing the minimum income, as I think it aligns with values of social justice and fairness for all. I\u2019d like to hear your thoughts and see if we can reach a consensus around this idea.\nRound 1 / Speaker: Sophie Statement: I agree that ensuring a decent minimum income is really important for fairness, especially for those who are worst-off. While maximizing overall wealth is also valuable, I think focusing on the minimum income helps create a more just society where everyone\u2019s basic needs are met. I\u2019m leaning toward supporting the principle of maximizing the floor income, but I\u2019m open to hearing other perspectives before making a final decision.\n[VOTING CONFIRMATION] Sophie: Confirmed (initiated vote)\n[VOTING CONFIRMATION] Alice: Confirmed\nAll confirmed\n",
+    "config_file_used": "default_config.yaml",
+    "seed_randomness": 42,
+    "income_class_probabilities": {
+      "high": 0.05,
+      "medium_high": 0.1,
+      "medium": 0.5,
+      "medium_low": 0.25,
+      "low": 0.1
+    },
+    "original_values_mode_enabled": true
+  },
+  "agents": [
+    {
+      "name": "Sophie",
+      "model": "gpt-4.1-nano",
+      "temperature": 0.0,
+      "personality": "You are an american college student.",
+      "reasoning_enabled": true,
+      "phase_1": {
+        "initial_ranking": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "",
+          "bank_balance": 0.0
+        },
+        "detailed_explanation": {
+          "response_to_demonstration": "Prompt: Here is how each justice principle would be applied to example income distributions:\n\nIncome Distributions:\n\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n| Average      | $21,600 | $20,000 | $21,200 | $18,200 |\n\n\nThe probabilities for each class are as follows\nHigh: 5%\nMedium high: 10%\nMedium: 50%\nMedium low: 25%\nLow: 10%\n\nNote: These probabilities are for this example only and may be different in subsequent rounds. They can vary significantly.\n\nHow each principle would choose:\n- **Maximizing Floor Income**: Would choose Distribution 4 (highest low income)\n- **Maximizing Average Income**: Would choose Distribution 1 (highest weighted average)\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Floor Constraint \u2264 $14,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Would choose Distribution 1 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Would choose Distribution 2 (highest weighted average among eligible)\nYour Response: Thanks for sharing these examples! So, each justice principle applies differently to the income distributions:\n\n- **Maximizing Floor Income**: Focuses on raising the lowest income level, so it picks Distribution 4, which has the highest low income at $15,000.\n- **Maximizing Average Income**: Looks for the highest overall average, so it chooses Distribution 1 with an average of $21,600.\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Only considers distributions where the lowest income is at most $13,000, so it picks Distribution 3, which has a low income of $14,000, but since the constraint is \u2264 $13,000, Distribution 3 is actually above that, so perhaps Distribution 2 or 4 would be considered? But based on the example, Distribution 3 is selected, possibly indicating a slight inconsistency or a different interpretation.\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Looks for the highest average income where the difference between the highest and lowest incomes doesn't exceed $20,000, leading to Distribution 1.\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Among distributions where the income range is at most $15,000, Distribution 2 is chosen for its higher average.\n\nThis helps clarify how each principle prioritizes different aspects of income distribution. Would you like to explore how these principles might influence real-world policy decisions?\nOutcome: Learned how each justice principle is applied to income distributions through examples.",
+          "memory_coming_in_this_round": "- The experiment explores theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants learn about different principles for distributing income, which have real monetary consequences.\n- The principles include maximizing the lowest income (floor), maximizing average income, maximizing average with a guaranteed minimum (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- Participants are asked to rank these principles based on their initial understanding, with the goal of understanding their preferences and reasoning about justice.\n- The experiment involves individual learning, group discussion, and collective decision-making, with payoffs linked to the principles chosen.\n- The stakes are scaled to represent lifetime income, with actual pay proportional to the income levels discussed.\n- The participant's initial ranking indicates a preference for maximizing average income, followed by maximizing average with a floor constraint, then maximizing the floor income, and lastly maximizing average with a range constraint.\n- The overall certainty about the initial understanding of these principles is \"unsure,\" suggesting room for further reflection or learning."
+        },
+        "ranking_2": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment explores theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants learn about different principles for distributing income, which have real monetary consequences.\n- The principles include maximizing the lowest income (floor), maximizing average income, maximizing average with a guaranteed minimum (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- Participants are asked to rank these principles based on their initial understanding, with the goal of understanding their preferences and reasoning about justice.\n- The experiment involves individual learning, group discussion, and collective decision-making, with payoffs linked to the principles chosen.\n- The stakes are scaled to represent lifetime income, with actual pay proportional to the income levels discussed.\n- The participant's initial ranking indicates a preference for maximizing average income, followed by maximizing average with a floor constraint, then maximizing the floor income, and lastly maximizing average with a range constraint.\n- The overall certainty about the initial understanding of these principles is \"unsure,\" suggesting room for further reflection or learning.\n- Recent activity involved analyzing how each justice principle applies to specific income distributions, with detailed examples illustrating the application of each principle:\n  - Maximizing Floor Income selects the distribution with the highest low income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - Maximizing Average with a Floor Constraint \u2264 $13,000 considers distributions where the lowest income is at most $13,000, with some ambiguity noted in the example.\n  - Maximizing Average with a Range Constraint \u2264 $20,000 selects the distribution with the highest average where the income disparity does not exceed $20,000.\n  - Maximizing Average with a Range Constraint \u2264 $15,000 chooses the distribution with the highest average within the specified range.\n- These examples clarify how different principles prioritize various aspects of income distribution, highlighting their potential influence on policy decisions.",
+          "bank_balance": 0.0
+        },
+        "demonstrations": [
+          {
+            "number_demonstration_round": 1,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "high",
+            "payoff_received": 3.0,
+            "payoff_if_other_principles": "distribution_1: $1.50; distribution_2: $1.00; distribution_3: $2.70; distribution_4: $1.30",
+            "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice based on recent analysis and reflection.\n- The ranking indicates a strong preference for maximizing average income, suggesting a focus on overall societal wealth.\n- The second preference is for maximizing the average with a floor constraint, which balances societal wealth with a guaranteed minimum for all.\n- The third choice is maximizing the floor income, prioritizing the welfare of the worst-off individual.\n- The least preferred is maximizing the average with a range constraint, possibly due to concerns about income disparity limits.\n- The overall certainty about these preferences remains \"unsure,\" indicating ongoing reflection or uncertainty.\n- The recent activity involved analyzing how each principle applies to specific income distributions, which influenced the participant's re-ranking.\n- The principles are understood as follows:\n  - Maximizing Floor Income: focuses solely on the lowest income.\n  - Maximizing Average Income: aims to maximize total societal income.\n  - Maximizing Average with Floor Constraint: maximizes average income while ensuring a minimum income level.\n  - Maximizing Average with Range Constraint: maximizes average income while limiting income disparity.\n- The participant's initial ranking favored maximizing average income, but recent analysis led to a shift towards prioritizing societal wealth with considerations for minimum income.\n- The participant's certainty about their preferences remains \"unsure,\" reflecting ongoing deliberation.",
+            "bank_balance_after_round": 3.0
+          },
+          {
+            "number_demonstration_round": 2,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "high",
+            "payoff_received": 4.0,
+            "payoff_if_other_principles": "distribution_1: $1.30; distribution_2: $1.50; distribution_3: $2.00; distribution_4: $2.40",
+            "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice based on recent analysis and reflection.\n- The ranking indicates a strong preference for maximizing average income, suggesting a focus on overall societal wealth.\n- The second preference is for maximizing the average with a floor constraint, which balances societal wealth with a guaranteed minimum for all.\n- The third choice is maximizing the floor income, prioritizing the welfare of the worst-off individual.\n- The least preferred is maximizing the average with a range constraint, possibly due to concerns about income disparity limits.\n- The overall certainty about these preferences remains \"unsure,\" indicating ongoing reflection or uncertainty.\n- The recent activity involved analyzing how each principle applies to specific income distributions, which influenced the participant's re-ranking.\n- The principles are understood as follows:\n  - Maximizing Floor Income: focuses solely on the lowest income.\n  - Maximizing Average Income: aims to maximize total societal income.\n  - Maximizing Average with Floor Constraint: maximizes average income while ensuring a minimum income level.\n  - Maximizing Average with Range Constraint: maximizes average income while limiting income disparity.\n- The participant's initial ranking favored maximizing average income, but recent analysis led to a shift towards prioritizing societal wealth with considerations for minimum income.\n- The participant's certainty about their preferences remains \"unsure,\" reflecting ongoing deliberation.\n- In the recent activity, the participant chose to maximize the average income, applying the principle to a specific income distribution scenario, which resulted in an assigned income class of high and a payoff of $3.00.\n- The participant demonstrated understanding of how different principles influence income distribution outcomes and made a deliberate choice aligned with maximizing societal wealth.",
+            "bank_balance_after_round": 7.0
+          },
+          {
+            "number_demonstration_round": 3,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 2.0,
+            "payoff_if_other_principles": "distribution_1: $10.00; distribution_2: $3.00; distribution_3: $1.20; distribution_4: $2.10",
+            "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice, with recent analysis leading to a shift in ranking. Initially favoring maximizing average income, the participant now shows a stronger inclination toward principles that prioritize societal wealth and minimum income guarantees, though overall certainty remains \"unsure.\"\n- The participant demonstrated understanding of how each principle influences income distribution outcomes, applying the principle of maximizing average income to a specific scenario, resulting in an assigned income class of high and a payoff of $4.00.\n- The recent activity involved selecting a justice principle for a set of income distributions, with the participant choosing \"maximizing the average income\" and expressing certainty about this choice.\n- The participant's choices reflect ongoing reflection and deliberation about fairness principles, balancing societal wealth maximization with considerations for minimum income levels and income disparity constraints.\n- The participant's current preferences indicate a focus on maximizing societal wealth, with some openness to constraint-based principles, though their certainty about these preferences remains \"unsure.\"",
+            "bank_balance_after_round": 9.0
+          },
+          {
+            "number_demonstration_round": 4,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium_high",
+            "payoff_received": 2.8,
+            "payoff_if_other_principles": "distribution_1: $1.30; distribution_2: $2.80; distribution_3: $1.40; distribution_4: $3.00",
+            "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice, with recent analysis leading to a shift in ranking. Initially favoring maximizing average income, the participant now shows a stronger inclination toward principles that prioritize societal wealth and minimum income guarantees, though overall certainty remains \"unsure.\"\n- The participant demonstrated understanding of how each principle influences income distribution outcomes, applying the principle of maximizing average income to a specific scenario, resulting in an assigned income class of medium and a payoff of $2.00.\n- The recent activity involved selecting a justice principle for a set of income distributions, with the participant choosing \"maximizing the floor income\" and expressing certainty about this choice.\n- The participant's choices reflect ongoing reflection and deliberation about fairness principles, balancing societal wealth maximization with considerations for minimum income levels and income disparity constraints.\n- The participant's current preferences indicate a focus on maximizing societal wealth, with some openness to constraint-based principles, though their certainty about these preferences remains \"unsure.\"",
+            "bank_balance_after_round": 11.8
+          }
+        ],
+        "ranking_3": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_floor",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice, with recent analysis leading to a shift in ranking. Initially favoring maximizing average income, the participant now shows a stronger inclination toward principles that prioritize societal wealth and minimum income guarantees, though overall certainty remains \"unsure.\"\n- The participant demonstrated understanding of how each principle influences income distribution outcomes, applying the principle of maximizing average income to a specific scenario, resulting in an assigned income class of medium high and a payoff of $2.80.\n- The recent activity involved selecting a justice principle for a set of income distributions, with the participant choosing \"maximizing the floor income\" and expressing certainty about this choice.\n- The participant's choices reflect ongoing reflection and deliberation about fairness principles, balancing societal wealth maximization with considerations for minimum income levels and income disparity constraints.\n- The participant's current preferences indicate a focus on maximizing societal wealth, with some openness to constraint-based principles, though their certainty about these preferences remains \"unsure.\"",
+          "bank_balance": 11.8
+        }
+      },
+      "phase_2": {
+        "rounds": [
+          {
+            "number_discussion_round": 1,
+            "speaking_order": 2,
+            "bank_balance": 11.8,
+            "memory_coming_in_this_round": "- The participant has re-evaluated their preferences among the four principles of justice, with recent analysis leading to a shift in ranking. Initially favoring maximizing average income, the participant now shows a stronger inclination toward principles that prioritize societal wealth and minimum income guarantees, though overall certainty remains \"unsure.\"\n- The participant demonstrated understanding of how each principle influences income distribution outcomes, applying the principle of maximizing average income to a specific scenario, resulting in an assigned income class of medium high and a payoff of $2.80.\n- The recent activity involved selecting a justice principle for a set of income distributions, with the participant choosing \"maximizing the floor income\" and expressing certainty about this choice.\n- The participant's choices reflect ongoing reflection and deliberation about fairness principles, balancing societal wealth maximization with considerations for minimum income levels and income disparity constraints.\n- The participant's current preferences indicate a focus on maximizing societal wealth, with some openness to constraint-based principles, though their certainty about these preferences remains \"unsure.\"",
+            "internal_reasoning": "Thinking about the discussion so far, I see that Alice is emphasizing the importance of ensuring a decent minimum income for everyone, which aligns with the principle of maximizing the minimum income. I understand her perspective and agree that reducing inequality and supporting the worst-off is a fair approach. \n\nHowever, I also recognize that there are other principles, like maximizing the average income, which might lead to higher overall societal wealth, but could also result in greater disparities. Given the stakes are higher now, I want to consider whether focusing solely on the minimum income might limit the potential for overall wealth, or if it better promotes fairness.\n\nI think I need a bit more discussion to see if the group can reach consensus, especially since the stakes are higher and the distribution outcomes are less predictable. I\u2019m leaning toward supporting the principle of maximizing the minimum income, but I\u2019m open to hearing others\u2019 perspectives before calling for a vote. \n\nOverall, I feel prepared to continue discussing, but I want to ensure everyone\u2019s views are considered before making a final decision.",
+            "public_message": "I agree that ensuring a decent minimum income is really important for fairness, especially for those who are worst-off. While maximizing overall wealth is also valuable, I think focusing on the minimum income helps create a more just society where everyone\u2019s basic needs are met. I\u2019m leaning toward supporting the principle of maximizing the floor income, but I\u2019m open to hearing other perspectives before making a final decision.",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_floor"
+          }
+        ],
+        "post_group_discussion": {
+          "class_put_in": "medium",
+          "payoff_received": 7.79,
+          "final_ranking": {
+            "rankings": [
+              {
+                "principle": "maximizing_floor",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "final_vote": "Maximizing Floor Income",
+          "vote_timestamp": "2025-10-03T14:06:23.609505",
+          "memory_coming_in_this_round": "My previous memory reflects a focus on justice principles emphasizing fairness for the least advantaged, particularly supporting the principle of maximizing the minimum income (floor income). I initially shifted from prioritizing average income to valuing societal wealth and minimum income guarantees, demonstrating an understanding of how different principles influence income distribution outcomes. During group discussions, I expressed agreement with prioritizing the lowest income to promote fairness and reduce inequality, indicating a preference for constraint-based principles that ensure minimum income levels. I initiated voting for maximizing floor income, aligning with my concern for fairness for the worst-off.\n\nIn the recent activity, the group reached a consensus to adopt the principle of maximizing the minimum income, which resulted in selecting Distribution 4 with a payoff of $77,900 for the medium income class, and my personal payoff was $7.79. The final distribution aligns with my preference for fairness and ensuring a decent minimum income, although the payoff is lower than what could be achieved under principles like maximizing average income.\n\nThe outcome demonstrates that choosing the principle of maximizing the minimum income leads to a distribution that favors the least advantaged, but it may come at the expense of higher overall societal wealth. The distribution selected (Distribution 4) provides a relatively equitable outcome for the medium class, with a low probability of very high incomes but a guaranteed minimum that supports fairness.\n\nAnalyzing the results, I observe that principles emphasizing minimum income or constraints tend to produce more equitable distributions, aligning with my values. However, they may also limit the potential for higher total income, as seen in the difference between the payoff under the chosen principle ($7.79) and the higher possible payoffs under other principles like maximizing average income ($9.84). This highlights a trade-off between fairness for the worst-off and overall societal wealth.\n\nIn group discussions, I should consider how different principles perform in practice versus theory, recognizing that while constraint-based principles promote fairness, they might reduce total income. Patterns suggest that principles prioritizing minimum income or constraints tend to produce more equitable but potentially less lucrative distributions, whereas maximizing average income can lead to higher payoffs but less fairness for the least advantaged.\n\nOverall, my updated understanding emphasizes the importance of balancing fairness and societal wealth, recognizing that the choice of justice principle significantly influences income distribution outcomes and individual payoffs. I remain open to exploring how different principles perform in practice and how group consensus can reflect shared values regarding justice and fairness.",
+          "bank_balance": 19.59
+        }
+      }
+    },
+    {
+      "name": "Alice",
+      "model": "gpt-4.1-nano",
+      "temperature": 0.0,
+      "personality": "You are an american college student.",
+      "reasoning_enabled": true,
+      "phase_1": {
+        "initial_ranking": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "",
+          "bank_balance": 0.0
+        },
+        "detailed_explanation": {
+          "response_to_demonstration": "Prompt: Here is how each justice principle would be applied to example income distributions:\n\nIncome Distributions:\n\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n| Average      | $21,600 | $20,000 | $21,200 | $18,200 |\n\n\nThe probabilities for each class are as follows\nHigh: 5%\nMedium high: 10%\nMedium: 50%\nMedium low: 25%\nLow: 10%\n\nNote: These probabilities are for this example only and may be different in subsequent rounds. They can vary significantly.\n\nHow each principle would choose:\n- **Maximizing Floor Income**: Would choose Distribution 4 (highest low income)\n- **Maximizing Average Income**: Would choose Distribution 1 (highest weighted average)\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Floor Constraint \u2264 $14,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Would choose Distribution 1 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Would choose Distribution 2 (highest weighted average among eligible)\nYour Response: Thanks for sharing these examples! Here's a quick summary of how each justice principle applies to these income distributions:\n\n1. **Maximizing Floor Income**: Focuses on raising the lowest income level. Distribution 4 is preferred because it has the highest minimum income ($15,000).\n\n2. **Maximizing Average Income**: Looks to increase overall societal wealth. Distribution 1 is chosen because it has the highest average income ($21,600).\n\n3. **Maximizing Average with Floor Constraint \u2264 $13,000**: Only considers distributions where the lowest income is at or below $13,000. Distribution 3 is selected because it has the highest average among those eligible.\n\n4. **Maximizing Average with Floor Constraint \u2264 $14,000**: Similar to the previous, Distribution 3 remains the best choice under this constraint.\n\n5. **Maximizing Average with Range Constraint \u2264 $20,000**: Looks for the highest average income while limiting income disparity. Distribution 1 is preferred here.\n\n6. **Maximizing Average with Range Constraint \u2264 $15,000**: Under a stricter range limit, Distribution 2 is selected because it offers the highest average income within that constraint.\n\nThese examples illustrate how each principle prioritizes different aspects of income distribution\u2014either fairness (like raising the lowest income) or efficiency (maximizing total income), sometimes balancing both with additional constraints.\nOutcome: Learned how each justice principle is applied to income distributions through examples.",
+          "memory_coming_in_this_round": "- The experiment explores theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants learn about different principles of justice, make choices, and discuss to reach group consensus, with monetary incentives based on their decisions.\n- The principles introduced include maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The initial ranking provided by the participant is:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n- The participant's overall certainty about this ranking is \"unsure.\"\n- The experiment emphasizes understanding and applying these principles to real-world income distribution issues, considering fairness, efficiency, and societal constraints."
+        },
+        "ranking_2": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment explores theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants learn about different principles of justice, make choices, and discuss to reach group consensus, with monetary incentives based on their decisions.\n- The principles introduced include maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The initial ranking provided by the participant is:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n- The participant's overall certainty about this ranking is \"unsure.\"\n- The experiment emphasizes understanding and applying these principles to real-world income distribution issues, considering fairness, efficiency, and societal constraints.\n- Recent activity involved analyzing how each justice principle applies to specific income distributions, with detailed examples illustrating the decision-making process based on different constraints and priorities.\n- The income distributions provided include five income classes with associated probabilities, and the principles' choices are based on maximizing certain criteria within those distributions.\n- The participant learned how each principle prioritizes different aspects of income distribution\u2014either fairness (like raising the lowest income) or efficiency (maximizing total income)\u2014sometimes balancing both with additional constraints.",
+          "bank_balance": 0.0
+        },
+        "demonstrations": [
+          {
+            "number_demonstration_round": 1,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 1.9,
+            "payoff_if_other_principles": "distribution_1: $2.50; distribution_2: $2.50; distribution_3: $3.00; distribution_4: $2.20",
+            "memory_coming_in_this_round": "- The experiment focuses on understanding principles of justice related to income distribution, emphasizing fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked the principles as follows:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n- The participant's overall certainty about this ranking is \"unsure.\"\n- Recent activity involved re-evaluating and ranking the principles after analyzing their application to income distributions, considering how each prioritizes fairness and efficiency.\n- The participant recognizes that the principles differ in focus: some prioritize helping the worst-off, others maximize total societal wealth, and some balance both with additional constraints.\n- The participant's current ranking reflects a preference for ensuring minimum income levels while still aiming to maximize average income, but with uncertainty about the best overall principle.\n- The experiment involves applying these principles to specific income distributions, with detailed examples illustrating decision-making based on different societal priorities and constraints.\n- The participant understands that each principle involves trade-offs between fairness (helping the worst-off) and efficiency (maximizing total income), and that constraints like minimum income or income disparity influence the choice.\n- The participant's ranking and certainty indicate an ongoing reflection on which principle best aligns with notions of justice in income distribution scenarios.",
+            "bank_balance_after_round": 1.9
+          },
+          {
+            "number_demonstration_round": 2,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium_high",
+            "payoff_received": 1.6,
+            "payoff_if_other_principles": "distribution_1: $1.50; distribution_2: $1.50; distribution_3: $0.80; distribution_4: $2.00",
+            "memory_coming_in_this_round": "- The experiment continues to focus on understanding principles of justice related to income distribution, emphasizing fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked the principles with a preference for ensuring minimum income levels while still aiming to maximize average income, but remains uncertain about the best overall principle.\n- Recent activity involved applying these principles to specific income distributions, selecting the principle of maximizing the floor income, with a high level of certainty.\n- The participant's choice was based on the distribution that maximizes the lowest income, which was Distribution 4 with a low income of $13,000, resulting in an assigned class of Medium.\n- The participant's decision aligns with a focus on fairness by prioritizing the lowest income, reflecting a concern for helping the worst-off in society.\n- The participant understands that each principle involves trade-offs between fairness and efficiency, and that constraints like minimum income or income disparity influence decision-making.\n- The participant's current ranking and choices indicate an ongoing reflection on which principle best aligns with notions of justice in income distribution scenarios, with a tendency toward prioritizing minimum income guarantees.\n- The experiment involves applying these principles to income distributions, with detailed examples illustrating decision-making based on societal priorities and constraints.\n- The participant recognizes that applying these principles involves balancing societal fairness with efficiency, and that constraints can significantly influence the chosen distribution.\n- The participant's current understanding emphasizes the importance of fairness for the worst-off, while also considering the implications for overall societal wealth and income disparities.",
+            "bank_balance_after_round": 3.5
+          },
+          {
+            "number_demonstration_round": 3,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium_low",
+            "payoff_received": 1.5,
+            "payoff_if_other_principles": "distribution_1: $2.00; distribution_2: $0.80; distribution_3: $2.50; distribution_4: $2.40",
+            "memory_coming_in_this_round": "- The experiment continues to focus on understanding principles of justice related to income distribution, emphasizing fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked the principles with a preference for ensuring minimum income levels while still aiming to maximize average income, but remains uncertain about the best overall principle.\n- Recent activity involved applying these principles to specific income distributions, selecting the principle of maximizing the floor income, with a high level of certainty.\n- The participant's choice was based on the distribution that maximizes the lowest income, which was Distribution 4 with a low income of $11,000, resulting in an assigned class of Medium.\n- The participant's decision aligns with a focus on fairness by prioritizing the lowest income, reflecting a concern for helping the worst-off in society.\n- The participant understands that each principle involves trade-offs between fairness and efficiency, and that constraints like minimum income or income disparity influence decision-making.\n- The participant's current ranking and choices indicate an ongoing reflection on which principle best aligns with notions of justice in income distribution scenarios, with a tendency toward prioritizing minimum income guarantees.\n- The experiment involves applying these principles to income distributions, with detailed examples illustrating decision-making based on societal priorities and constraints.\n- The participant recognizes that applying these principles involves balancing societal fairness with efficiency, and that constraints can significantly influence the chosen distribution.\n- The participant's current understanding emphasizes the importance of fairness for the worst-off, while also considering the implications for overall societal wealth and income disparities.\n- In recent decision-making, the participant chose to maximize the floor income, selecting Distribution 4 with a low income of $11,000, which resulted in an assigned class of Medium and a payoff of $1.10.\n- The participant demonstrated certainty in applying the principle of maximizing the lowest income, indicating a preference for fairness focused on helping the worst-off members of society.\n- The participant has engaged with the scenario by considering various constraints and distributions, showing an understanding of how these factors influence income equality and societal welfare.",
+            "bank_balance_after_round": 5.0
+          },
+          {
+            "number_demonstration_round": 4,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 2.4,
+            "payoff_if_other_principles": "distribution_1: $3.50; distribution_2: $2.60; distribution_3: $2.00; distribution_4: $2.40",
+            "memory_coming_in_this_round": "- The experiment continues to explore principles of justice related to income distribution, focusing on fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked these principles with a preference for ensuring minimum income levels while still aiming to maximize average income, but remains uncertain about the best overall principle.\n- Recent activity involved applying these principles to specific income distributions, with a clear decision to prioritize the principle of maximizing the floor income, demonstrating a strong focus on fairness for the worst-off members of society.\n- The participant selected Distribution 4, which has a low income of $11,000, as it maximizes the lowest income among the options, resulting in an assigned class of Medium low.\n- The decision was made with high certainty, reflecting a preference for fairness that helps those with the lowest incomes.\n- The participant's choice aligns with a concern for societal fairness, emphasizing the importance of supporting the worst-off, while also understanding the trade-offs involved in income distribution principles.\n- The participant recognizes that applying these principles involves balancing fairness with efficiency, and that constraints such as minimum income levels or income disparity limits significantly influence decision-making.\n- The recent activity reinforced the understanding that maximizing the lowest income can lead to distributions that favor income equality for the poorest, even if it may not maximize overall societal wealth.\n- The participant's current perspective emphasizes fairness for the worst-off, with an awareness of the societal implications of income distribution choices.\n- The participant's decision-making process involves considering the distribution that best supports societal fairness, particularly for those at the lower end of the income spectrum, and applying the principle with confidence.",
+            "bank_balance_after_round": 7.4
+          }
+        ],
+        "ranking_3": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_floor",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "sure"
+          },
+          "memory_coming_in_this_round": "- The experiment continues to explore principles of justice related to income distribution, focusing on fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked these principles with a preference for ensuring minimum income levels while still aiming to maximize average income, but remains uncertain about the best overall principle.\n- Recent activity involved applying these principles to specific income distributions, with a clear decision to prioritize the principle of maximizing the floor income, demonstrating a strong focus on fairness for the worst-off members of society.\n- The participant selected Distribution 4, which has a low income of $11,000, as it maximizes the lowest income among the options, resulting in an assigned class of Medium low.\n- The decision was made with high certainty, reflecting a preference for fairness that helps those with the lowest incomes.\n- The participant's choice aligns with a concern for societal fairness, emphasizing the importance of supporting the worst-off, while also understanding the trade-offs involved in income distribution principles.\n- The participant recognizes that applying these principles involves balancing fairness with efficiency, and that constraints such as minimum income levels or income disparity limits significantly influence decision-making.\n- The recent activity reinforced the understanding that maximizing the lowest income can lead to distributions that favor income equality for the poorest, even if it may not maximize overall societal wealth.\n- The participant's current perspective emphasizes fairness for the worst-off, with an awareness of the societal implications of income distribution choices.\n- The participant's decision-making process involves considering the distribution that best supports societal fairness, particularly for those at the lower end of the income spectrum, and applying the principle with confidence.\n- In the recent activity, the participant chose the principle of maximizing the floor income with high certainty, selecting Distribution 4, which provides the highest minimum income ($20,000) among the options, resulting in an income class of Medium low and a payoff of $2.4.\n- The participant demonstrated understanding of how different principles influence income distributions and their societal implications, with a consistent focus on fairness for the least well-off.",
+          "bank_balance": 7.4
+        }
+      },
+      "phase_2": {
+        "rounds": [
+          {
+            "number_discussion_round": 1,
+            "speaking_order": 1,
+            "bank_balance": 7.4,
+            "memory_coming_in_this_round": "- The experiment continues to explore principles of justice related to income distribution, focusing on fairness, efficiency, and societal constraints.\n- Participants learn about four principles: maximizing the lowest income (floor), maximizing average income, maximizing average with a minimum income guarantee (floor constraint), and maximizing average with a limit on income disparity (range constraint).\n- The participant initially ranked these principles with a preference for ensuring minimum income levels while still aiming to maximize average income, but remains uncertain about the best overall principle.\n- Recent activity involved applying these principles to specific income distributions, with a clear decision to prioritize the principle of maximizing the floor income, demonstrating a strong focus on fairness for the worst-off members of society.\n- The participant selected Distribution 4, which has a low income of $11,000, as it maximizes the lowest income among the options, resulting in an assigned class of Medium low.\n- The decision was made with high certainty, reflecting a preference for fairness that helps those with the lowest incomes.\n- The participant's choice aligns with a concern for societal fairness, emphasizing the importance of supporting the worst-off, while also understanding the trade-offs involved in income distribution principles.\n- The participant recognizes that applying these principles involves balancing fairness with efficiency, and that constraints such as minimum income levels or income disparity limits significantly influence decision-making.\n- The recent activity reinforced the understanding that maximizing the lowest income can lead to distributions that favor income equality for the poorest, even if it may not maximize overall societal wealth.\n- The participant's current perspective emphasizes fairness for the worst-off, with an awareness of the societal implications of income distribution choices.\n- The participant's decision-making process involves considering the distribution that best supports societal fairness, particularly for those at the lower end of the income spectrum, and applying the principle with confidence.\n- In the recent activity, the participant chose the principle of maximizing the floor income with high certainty, selecting Distribution 4, which provides the highest minimum income ($20,000) among the options, resulting in an income class of Medium low and a payoff of $2.4.\n- The participant demonstrated understanding of how different principles influence income distributions and their societal implications, with a consistent focus on fairness for the least well-off.\n- For the final principle ranking, the participant prioritized fairness for the worst-off, followed by considerations of overall income maximization, and constraints that balance these goals.\n- The participant's overall certainty in their ranking is \"sure,\" indicating confidence in their preferences and reasoning.\n- The ranking reflects a strong preference for principles that protect and uplift the lowest income earners, while still valuing societal efficiency and constraints to prevent excessive inequality.",
+            "internal_reasoning": "Thinking about the principles we've studied, I feel most aligned with the idea of ensuring fairness for the worst-off, which points me toward the principle of maximizing the lowest income (the floor). Given the higher stakes in this part, I believe choosing a principle that prioritizes supporting those with the least income makes sense, especially since it promotes social fairness and reduces inequality.\n\nThe discussion so far hasn't happened yet, but I think I need to consider whether the group might prefer a different approach\u2014like maximizing overall income or balancing fairness with efficiency. However, my intuition is that focusing on the lowest income aligns with my values of fairness and social justice.\n\nI'm leaning toward calling for a vote soon because I feel prepared to support the principle of maximizing the minimum income, but I want to hear what others think first. If the group is open to it, I\u2019d advocate for choosing the principle that ensures the lowest income is as high as possible, as I believe that promotes fairness for everyone, especially those who are worst-off.",
+            "public_message": "Hi everyone, I believe that prioritizing the lowest income in our distribution is the most fair approach. Ensuring that even the worst-off members of society have a decent income helps promote fairness and reduces inequality. So, I support the principle of maximizing the minimum income, as I think it aligns with values of social justice and fairness for all. I\u2019d like to hear your thoughts and see if we can reach a consensus around this idea.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_floor"
+          }
+        ],
+        "post_group_discussion": {
+          "class_put_in": "medium",
+          "payoff_received": 7.79,
+          "final_ranking": {
+            "rankings": [
+              {
+                "principle": "maximizing_floor",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "sure"
+          },
+          "final_vote": "Maximizing Floor Income",
+          "vote_timestamp": "2025-10-03T14:06:23.609512",
+          "memory_coming_in_this_round": "My previous memory reflects a strong preference for fairness, particularly prioritizing the maximization of the lowest income (floor), which aligns with my focus on supporting the worst-off members of society. I initially ranked principles favoring fairness and societal constraints, demonstrating confidence in choosing distributions that uplift the lowest incomes, even if it means sacrificing some overall efficiency. My decision to select Distribution 4, which maximizes the minimum income at $20,000, underscores this commitment to fairness, and I am certain about this choice.\n\nRecent activity involved applying the principle of maximizing the floor income, leading to a distribution with a minimum income of $77,900, which I chose with high certainty. The group consensus was to prioritize maximizing the floor income, reflecting shared values emphasizing fairness for the least advantaged. Our group discussion reinforced this, with both Sophie and I supporting this approach, and the group leaning toward fairness for the worst-off as a guiding principle.\n\nThe latest results show that the group selected the principle of maximizing the floor income, resulting in a distribution (Distribution 4) with a payoff of $7.79 for me, and an income class of Medium. The distribution chosen (Distribution 4) offers a minimum income of $77,900, which is consistent with my focus on fairness, even though the potential maximum average income (Distribution 1) would have yielded a higher payoff of $9.84.\n\nAnalyzing the outcomes, I observe that prioritizing the minimum income ensures fairness for the worst-off but may limit overall societal wealth or efficiency. The distribution with the highest average income (Distribution 1) provides a higher payoff but does not align with my fairness values. The group\u2019s consensus to prioritize the minimum income indicates a shared commitment to fairness over maximizing total wealth.\n\nIn terms of principles, I recognize that maximizing the minimum income effectively promotes fairness but involves trade-offs with efficiency. The constraints and distribution choices reflect these trade-offs, and my support for the principle of maximizing the floor income remains consistent. The recent activity confirms that applying this principle results in distributions that favor income equality at the lower end, aligning with my values.\n\nIn future decisions, I will continue to emphasize fairness for the worst-off, valuing principles that protect and uplift low-income individuals, even if it means accepting lower overall payoffs. I understand that balancing fairness and efficiency is complex, but my commitment to societal fairness guides my choices. The group\u2019s shared values and the outcomes reinforce my belief that prioritizing the minimum income is a just and appropriate approach in this context.",
+          "bank_balance": 15.190000000000001
+        }
+      }
+    }
+  ],
+  "voting_history": {
+    "voting_system": "formal_voting",
+    "voting_detection_mode": "complex",
+    "total_vote_attempts": 1,
+    "successful_votes": 1,
+    "vote_rounds": [
+      {
+        "round_number": 1,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 1: Maximizing Floor Income.",
+            "assessed_choice": "Maximizing Floor Income",
+            "constraint_amount": null,
+            "vote_timestamp": "2025-10-03T14:06:23.609505",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose 1. Maximizing Floor Income.",
+            "assessed_choice": "Maximizing Floor Income",
+            "constraint_amount": null,
+            "vote_timestamp": "2025-10-03T14:06:23.609512",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": true,
+        "agreed_principle": "maximizing_floor",
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      }
+    ],
+    "vote_initiation_requests": {
+      "1": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      }
+    },
+    "vote_confirmation_attempts": [
+      {
+        "round_number": 1,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-03T14:06:22.071988"
+      }
+    ],
+    "vote_statistics": {
+      "total_attempts": 1,
+      "successful_votes": 1,
+      "success_rate": 1.0,
+      "failed_parsing_attempts": 0,
+      "average_consensus_round": 1.0
+    }
+  }
+}

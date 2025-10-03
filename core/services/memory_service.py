@@ -171,7 +171,7 @@ class MemoryService:
                     limit = getattr(context, 'memory_character_limit', None)
                     if not limit and hasattr(agent, 'config'):
                         limit = getattr(agent.config, 'memory_character_limit', None)
-                    
+
                     if limit and isinstance(updated_memory, str):
                         threshold = int(0.9 * int(limit))
                         if len(updated_memory) > threshold:
@@ -194,7 +194,11 @@ class MemoryService:
                 self.logger.warning(
                     f"Post-append compression skipped due to error for {agent.name}: {compress_err}"
                 )
-            
+
+            # Append memory end marker
+            marker = self._get_localized_message("memory.memory_end_marker")
+            updated_memory = f"{updated_memory}\n\n{marker}"
+
             self.logger.debug(f"Memory update successful for {agent.name}: {event_type}")
             return updated_memory
             

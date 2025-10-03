@@ -571,11 +571,13 @@ class DistributionGenerator:
                 )
                 agent_income = best_dist.get_income_by_class(assigned_class)
                 
-                # Use LanguageManager for constraint formatting
-                principle_name = language_manager.get(
+                # Use LanguageManager for constraint formatting with full principle name
+                base_principle_name = language_manager.get('common.principle_names.maximizing_average_floor_constraint')
+                constraint_label = language_manager.get(
                     'constraint_formatting.floor_constraint',
                     amount=language_manager.get('constraint_formatting.currency_format', amount=floor_value)
                 )
+                principle_name = f"{base_principle_name} {constraint_label}"
                 
                 outcomes.append({
                     'principle_key': 'maximizing_average_floor_constraint', 
@@ -606,11 +608,13 @@ class DistributionGenerator:
                 )
                 agent_income = best_dist.get_income_by_class(assigned_class)
                 
-                # Use LanguageManager for constraint formatting
-                principle_name = language_manager.get(
+                # Use LanguageManager for constraint formatting with full principle name
+                base_principle_name = language_manager.get('common.principle_names.maximizing_average_range_constraint')
+                constraint_label = language_manager.get(
                     'constraint_formatting.range_constraint',
                     amount=language_manager.get('constraint_formatting.currency_format', amount=range_value)
                 )
+                principle_name = f"{base_principle_name} {constraint_label}"
                 
                 outcomes.append({
                     'principle_key': 'maximizing_average_range_constraint',
@@ -625,7 +629,7 @@ class DistributionGenerator:
         
         # Generate distributions table using LanguageManager
         distributions_table = DistributionGenerator._format_distributions_table_comprehensive(
-            distributions, language_manager
+            distributions, language_manager, probabilities
         )
         
         # Get localized class display name
@@ -637,9 +641,9 @@ class DistributionGenerator:
             'class_display_name': class_display_name
         }
     
-    @staticmethod 
-    def _format_distributions_table_comprehensive(distributions: List[IncomeDistribution], language_manager) -> str:
-        """Format distributions table using LanguageManager for all text."""
+    @staticmethod
+    def _format_distributions_table_comprehensive(distributions: List[IncomeDistribution], language_manager, probabilities: Optional[IncomeClassProbabilities] = None) -> str:
+        """Format distributions table using LanguageManager for all text with optional weighted averages."""
         
         lines = []
         
@@ -665,11 +669,20 @@ class DistributionGenerator:
         for class_key in income_class_keys:
             class_name = language_manager.get(f'common.income_classes.{class_key}')
             row = f"| {class_name} |"
-            
+
             for dist in distributions:
                 income = getattr(dist, class_key)
                 formatted_income = language_manager.get('constraint_formatting.currency_format', amount=income)
                 row += f" {formatted_income} |"
             lines.append(row)
-        
+
+        # Add average row (weighted if probabilities provided)
+        avg_label = language_manager.get('distributions.average_row_label')
+        row = f"| {avg_label} |"
+        for dist in distributions:
+            avg = dist.get_average_income(probabilities)
+            formatted_avg = language_manager.get('constraint_formatting.currency_format', amount=int(round(avg)))
+            row += f" {formatted_avg} |"
+        lines.append(row)
+
         return "\n".join(lines)

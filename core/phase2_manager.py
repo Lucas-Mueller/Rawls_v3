@@ -772,9 +772,21 @@ class Phase2Manager:
 
             self._log_info(f"Completed symmetric memory updates for round {round_num}")
 
+            # Calculate rounds remaining
+            rounds_remaining = config.phase2_rounds - round_num
+
+            # Insert countdown message when there are exactly 2 rounds left
+            if rounds_remaining == 2:
+                countdown_msg = self.language_manager.get(
+                    "system_messages.discussion.rounds_remaining",
+                    rounds_remaining=rounds_remaining
+                )
+                discussion_state.public_history += f"\n{countdown_msg}"
+                self._log_info(f"Added round countdown message: {rounds_remaining} rounds remaining")
+
             # Try to initiate voting at end of round
             consensus_result = await self._attempt_end_of_round_voting(
-                round_num, contexts, participant_recent_statements, 
+                round_num, contexts, participant_recent_statements,
                 participant_recent_reasoning, discussion_state, process_logger
             )
             if consensus_result:
