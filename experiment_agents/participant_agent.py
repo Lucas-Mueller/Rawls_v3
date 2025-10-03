@@ -384,6 +384,11 @@ def update_participant_context(
 ) -> ParticipantContext:
     """Update participant context with new information (memory handled separately)."""
 
+    # Preserve first_memory_update flag unless phase explicitly changes
+    first_memory_update = getattr(context, 'first_memory_update', True)
+    if new_phase is not None and new_phase != context.phase:
+        first_memory_update = True
+
     # Create updated context
     updated_context = ParticipantContext(
         name=context.name,
@@ -397,7 +402,8 @@ def update_participant_context(
         internal_reasoning=context.internal_reasoning,
         stage=new_stage if new_stage is not None else context.stage,
         formatted_context_header=getattr(context, 'formatted_context_header', None),  # Preserve formatted header
-        allow_vote_tool=getattr(context, 'allow_vote_tool', True)  # Preserve vote tool setting
+        allow_vote_tool=getattr(context, 'allow_vote_tool', True),  # Preserve vote tool setting
+        first_memory_update=first_memory_update
     )
 
     return updated_context

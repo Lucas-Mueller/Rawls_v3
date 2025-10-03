@@ -475,14 +475,25 @@ class LanguageManager:
                 # If config says don't include each turn, only include on first turn per phase
                 include_explanation = (experiment_config.include_experiment_explanation_each_turn or is_first_turn)
 
-        # Use detailed initial explanation on first turn, brief explanation thereafter
-        if include_explanation:
+        # Special handling for Phase 1 memory updates: detailed explanation only on first, then nothing
+        # For all other interactions: keep existing behavior (detailed on first, brief thereafter)
+        is_phase1_memory_update = (role_description == "MemoryUpdate" and phase == "Phase 1")
+
+        if is_phase1_memory_update:
+            # Phase 1 memory updates: long explanation on first, short reminder afterwards
             if is_first_turn:
                 experiment_explanation = self.get_initial_experiment_explanation()
             else:
                 experiment_explanation = self.get_experiment_explanation()
         else:
-            experiment_explanation = ""
+            # All other interactions: existing behavior
+            if include_explanation:
+                if is_first_turn:
+                    experiment_explanation = self.get_initial_experiment_explanation()
+                else:
+                    experiment_explanation = self.get_experiment_explanation()
+            else:
+                experiment_explanation = ""
         language_instruction = self.get("prompts.language_instruction")
 
         # Localize common phase names when possible (e.g., "Phase 1" → localized)

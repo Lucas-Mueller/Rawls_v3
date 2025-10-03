@@ -327,10 +327,18 @@ class MemoryManager:
             prompt_key = base_prompt_key
         
         # Conditionally include experiment explanation based on first_memory_update flag
-        # Only show explanation on first memory update, then empty string for subsequent updates
         experiment_explanation = ""
-        if context is not None and context.first_memory_update:
-            experiment_explanation = language_manager.get("prompts.experiment_explanation")
+        if context is not None:
+            if phase == "phase_1":
+                if context.first_memory_update:
+                    # First Phase 1 memory update gets the full initial experiment explanation
+                    experiment_explanation = language_manager.get("prompts.initial_experiment_explanation")
+                else:
+                    # Subsequent Phase 1 memory updates receive the shorter reminder
+                    experiment_explanation = language_manager.get("prompts.experiment_explanation")
+            elif context.first_memory_update:
+                # Preserve previous behavior for other phases (e.g., Phase 2)
+                experiment_explanation = language_manager.get("prompts.experiment_explanation")
 
         return language_manager.get(
             prompt_key,

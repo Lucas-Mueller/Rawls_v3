@@ -210,3 +210,34 @@ for all languages.
 
 Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Do not overegineer
 Employ a systematic approach. Cretae a todo list.
+
+
+In the first prompt of the experiment the agent is given a long explanation which is this one
+
+"This experiment deals with the question: "What is a just distribution of income?" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into three parts.
+
+In the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. You will have 1 hour for the first part. In this part you will be given a series of questions. These questions are merely to ensure that you have learned the concepts which are being used in the experiment. If you do not answer the questions correctly, then you are to go back to review the material and correct wrong answers. Once you have mastered the material, you can go on to make choices for which you will be paid. If you do not learn the material in a reasonable amount of time, you will not be able to earn as much money as possible since you must finish the first part of the experiment in 1 hour. But you should have plenty of time to finish this part of the experiment. Everyone will go on to the second part either after 1 hour or after everyone has finished Part I, whichever occurs first.
+
+In the second part, you will all be asked, as a group, to discuss notions of justice. After the discussion, you will be asked to reach a group decision on which principle of justice you like best. Your pay for Part II of the experiment will be based on the principle which the group chooses.
+
+Throughout the experiment, we shall scale all examples and choices so that the monies can be thought of as average lifetime incomes. We then refer to these stakes as incomes. In Part I your actual stakes are equal to $1 for every $10,000 of income listed in the text."
+
+In the subsequent calls in Phase 1 where the memory is updated the agent receives a short explanation
+precisely this one
+
+"You are participating in an experiment studying principles of justice and income distribution.
+
+The experiment has two main phases:
+
+PHASE 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.
+
+PHASE 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings." 
+
+I want it to change so that it has this structure
+1. Call to Agent --> long explanation 
+2. i) Memory update call to Agent --> long explantion
+3. all other Memory update calls in phase 1 --> short explanation
+--> Please create a plan to update the phase 1 logic to reflect this desired structure. 
+Do it for all languase
+Create a sysetematic plan as a .md file in the root directory. 
+Hint: The language keys already exist in all language files
