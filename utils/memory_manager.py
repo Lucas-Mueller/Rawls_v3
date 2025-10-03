@@ -26,6 +26,7 @@ from utils.error_handling import (
 )
 
 from models import ExperimentPhase
+from models.experiment_types import ExperimentStage
 
 if TYPE_CHECKING:
     from experiment_agents.participant_agent import ParticipantAgent
@@ -326,18 +327,24 @@ class MemoryManager:
             # These interactions benefit from explicit "Recent Activity" sections
             prompt_key = base_prompt_key
         
-        # Conditionally include experiment explanation based on first_memory_update flag
+        # Conditionally include experiment explanation based on phase and context
         experiment_explanation = ""
         if context is not None:
             if phase == "phase_1":
+                # Phase 1 logic unchanged
                 if context.first_memory_update:
                     # First Phase 1 memory update gets the full initial experiment explanation
                     experiment_explanation = language_manager.get("prompts.initial_experiment_explanation")
                 else:
                     # Subsequent Phase 1 memory updates receive the shorter reminder
                     experiment_explanation = language_manager.get("prompts.experiment_explanation")
+            elif phase == "phase_2" and not context.first_memory_update:
+                # Phase 2: Include explanation for discussion stages, exclude final ranking
+                if (context.stage == ExperimentStage.DISCUSSION and
+                    interaction_type in {"internal_reasoning", "statement"}):
+                    experiment_explanation = language_manager.get("prompts.experiment_explanation")
             elif context.first_memory_update:
-                # Preserve previous behavior for other phases (e.g., Phase 2)
+                # Preserve existing behavior for first memory update in other phases
                 experiment_explanation = language_manager.get("prompts.experiment_explanation")
 
         return language_manager.get(

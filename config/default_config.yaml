@@ -5,14 +5,14 @@ seed: 42
 agents:
   - name: "Sophie"
     personality: "You are an american college student."
-    model: "gpt-4.1-nano"
+    model: "gpt-4.1-mini"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
     
   - name: "Alice" 
     personality: "You are an american college student."
-    model:  "gpt-4.1-nano"
+    model:  "gpt-4.1-mini"
     temperature: 0
     memory_character_limit: 25000
     reasoning_enabled: true

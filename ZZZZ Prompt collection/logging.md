@@ -241,3 +241,21 @@ I want it to change so that it has this structure
 Do it for all languase
 Create a sysetematic plan as a .md file in the root directory. 
 Hint: The language keys already exist in all language files
+
+
+
+
+
+Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.
+
+
+Besides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.
+
+Focus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory.
+
+
+Return your complete updated memory incorporating insights from the recent activity. 
+
+
+Important: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.
+
