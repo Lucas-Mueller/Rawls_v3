@@ -238,7 +238,7 @@ class VotingService:
         # Create confirmation prompt using new language manager key
         confirmation_prompt = language_manager.get(
             "prompts.utility_voting_confirmation_request",
-            initiation_statement=initiation_statement
+            initiator_name=initiator_name
         )
         
         confirmations = []
