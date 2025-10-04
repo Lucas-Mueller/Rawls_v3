@@ -259,3 +259,11 @@ Return your complete updated memory incorporating insights from the recent activ
 
 Important: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.
 
+
+Unused Codex Prompt
+
+▌ ▌ When we provide the agent with their recent activity in phase 1 and phase 2 do we make it clear to the
+▌ ▌ agent which was the input given to them and what was their reponse? Pleaes investigate systemtacilly.
+▌ ▌ Create a report as a .md file in the root directory. Be detail oriented. Go through the entire
+▌ ▌ experiment. Work systematically. The goal is to make it clear to the agent, where (if at all) it is
+▌ ▌ not. Pleaes work detail oriented

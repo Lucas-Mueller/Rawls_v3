@@ -199,6 +199,12 @@ python -m pytest tests/unit/ --tb=short
 # Component and live tests enforce coverage across english, spanish, mandarin
 # Set LANGUAGE_REPORT_PATH environment variable for detailed language test reporting
 
+# Pytest markers (configured in pytest.ini)
+python -m pytest -m "not slow"        # Skip slow tests
+python -m pytest -m "unit"            # Run only unit tests
+python -m pytest -m "integration"     # Run only integration tests
+python -m pytest -m "live"            # Run only live endpoint tests
+
 # Standalone issue-specific test scripts (located in project root)
 python test_compromise_forgetting_issue.py
 python test_dynamic_tool_logging.py
@@ -274,9 +280,11 @@ The project includes comprehensive Sphinx documentation with GitHub Pages deploy
 
 ### Code Quality
 The project does not have dedicated linting commands configured. When working on the codebase:
-- Follow existing code style and patterns
+- Follow existing code style and patterns (PEP 8, four-space indents, explicit type hints)
+- Use `snake_case` for modules/functions, `PascalCase` for classes, `UPPER_CASE` for constants
 - Run the test suite to ensure changes don't break functionality
 - Use the import test in `run_tests.py` to verify module integrity
+- See `AGENTS.md` for detailed repository guidelines and commit conventions
 
 #### Testing Requirements for API Access
 - **OPENAI_API_KEY** required for live tests and some component/integration tests
@@ -316,7 +324,7 @@ export OLLAMA_API_KEY="ollama"                      # Default
 python main.py config/sample_ollama_gemma3.yaml
 ```
 
-See `GEMINI_INTEGRATION.md` for detailed Gemini setup and usage.
+See `GEMINI.md` for detailed Gemini setup and usage.
 
 ## Voting System
 
