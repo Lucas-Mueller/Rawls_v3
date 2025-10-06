@@ -17,6 +17,7 @@ agents:
     memory_character_limit: 25000
     reasoning_enabled: true
 
+include_experiment_explanation: false
     
 
 utility_agent_model: "openai/gpt-oss-120b"

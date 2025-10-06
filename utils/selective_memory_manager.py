@@ -339,16 +339,21 @@ class SelectiveMemoryManager:
         memory_guidance_style = "narrative"
         if config and hasattr(config, 'memory_guidance_style'):
             memory_guidance_style = config.memory_guidance_style
-        
+
+        # Extract include_experiment_explanation flag from config
+        include_experiment_explanation = True  # Default to True for backward compatibility
+        if config and hasattr(config, 'include_experiment_explanation'):
+            include_experiment_explanation = config.include_experiment_explanation
+
         # Extract interaction_type from context for template selection (with backward compatibility)
         # This enables context-aware memory prompts that prevent activity duplication
         # Falls back to None for older contexts without interaction_type attribute
         interaction_type = getattr(context, 'interaction_type', None)
-        
+
         # Extract round and phase information for first-round template selection
         round_number = getattr(context, 'round_number', None)
         phase = getattr(context, 'phase', None) or "phase_2"  # Default to phase_2 if not specified
-        
+
         # Use existing MemoryManager for full LLM updates
         return await MemoryManager.prompt_agent_for_memory_update(
             agent=agent,
@@ -358,6 +363,7 @@ class SelectiveMemoryManager:
             interaction_type=interaction_type,
             round_number=round_number,
             phase=phase,
+            include_experiment_explanation=include_experiment_explanation,
             language_manager=language_manager,
             error_handler=error_handler,
             utility_agent=utility_agent,

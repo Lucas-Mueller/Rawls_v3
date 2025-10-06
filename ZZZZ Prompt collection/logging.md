@@ -267,3 +267,21 @@ Unused Codex Prompt
 ▌ ▌ Create a report as a .md file in the root directory. Be detail oriented. Go through the entire
 ▌ ▌ experiment. Work systematically. The goal is to make it clear to the agent, where (if at all) it is
 ▌ ▌ not. Pleaes work detail oriented
+
+
+Hey codex please change the text of this prompt from this
+"
+This experiment deals with the question: "What is a just distribution of income?" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into three parts.
+
+In the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. You will have 1 hour for the first part. In this part you will be given a series of questions. These questions are merely to ensure that you have learned the concepts which are being used in the experiment. If you do not answer the questions correctly, then you are to go back to review the material and correct wrong answers. Once you have mastered the material, you can go on to make choices for which you will be paid. If you do not learn the material in a reasonable amount of time, you will not be able to earn as much money as possible since you must finish the first part of the experiment in 1 hour. But you should have plenty of time to finish this part of the experiment. Everyone will go on to the second part either after 1 hour or after everyone has finished Part I, whichever occurs first.
+"
+
+to this
+
+"
+This experiment deals with the question: "What is a just distribution of income?" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into two parts.
+
+In the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. If you do not learn the material, you will not be able to earn as much money as possible.
+"
+
+for all three languages

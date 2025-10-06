@@ -46,7 +46,7 @@ class MemoryManager:
     )
     async def prompt_agent_for_memory_update(
         agent: "ParticipantAgent",
-        context: "ParticipantContext", 
+        context: "ParticipantContext",
         round_content: str,
         max_retries: int = 5,
         memory_guidance_style: str = "narrative",
@@ -55,7 +55,8 @@ class MemoryManager:
         utility_agent=None,
         interaction_type: str = None,
         round_number: int = None,
-        phase: str = None
+        phase: str = None,
+        include_experiment_explanation: bool = True
     ) -> str:
         """
         Prompt agent to update their memory based on round content with context-aware template selection.
@@ -132,7 +133,8 @@ class MemoryManager:
                     interaction_type,
                     prompt_round_number,
                     effective_phase_value,
-                    context
+                    context,
+                    include_experiment_explanation
                 )
                 
                 # Get updated memory from agent with accurate phase/round metadata
@@ -241,7 +243,7 @@ class MemoryManager:
         return length <= limit, length
     
     @staticmethod
-    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None, round_number: int = None, phase: str = None, context: "ParticipantContext" = None) -> str:
+    def _create_memory_update_prompt(current_memory: str, round_content: str, guidance_style: str = "narrative", language_manager=None, interaction_type: str = None, round_number: int = None, phase: str = None, context: "ParticipantContext" = None, include_experiment_explanation: bool = True) -> str:
         """
         Create context-aware memory update prompt that prevents activity duplication.
         
@@ -327,9 +329,9 @@ class MemoryManager:
             # These interactions benefit from explicit "Recent Activity" sections
             prompt_key = base_prompt_key
         
-        # Conditionally include experiment explanation based on phase and context
+        # Conditionally include experiment explanation based on phase, context, and config
         experiment_explanation = ""
-        if context is not None:
+        if include_experiment_explanation and context is not None:
             if phase == "phase_1":
                 # Phase 1 logic unchanged
                 if context.first_memory_update:

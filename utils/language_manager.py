@@ -471,7 +471,13 @@ class LanguageManager:
         # Determine whether to include experiment explanation
         include_explanation = True  # Default behavior
         if experiment_config:
-            if hasattr(experiment_config, 'include_experiment_explanation_each_turn'):
+            # First check the master switch - if disabled, skip explanation entirely
+            if hasattr(experiment_config, 'include_experiment_explanation'):
+                if not experiment_config.include_experiment_explanation:
+                    include_explanation = False
+
+            # If master switch allows, check per-turn settings
+            if include_explanation and hasattr(experiment_config, 'include_experiment_explanation_each_turn'):
                 # If config says always include, use the explanation
                 # If config says don't include each turn, only include on first turn per phase
                 include_explanation = (experiment_config.include_experiment_explanation_each_turn or is_first_turn)
@@ -482,10 +488,13 @@ class LanguageManager:
 
         if is_phase1_memory_update:
             # Phase 1 memory updates: long explanation on first, short reminder afterwards
-            if is_first_turn:
-                experiment_explanation = self.get_initial_experiment_explanation()
+            if include_explanation:
+                if is_first_turn:
+                    experiment_explanation = self.get_initial_experiment_explanation()
+                else:
+                    experiment_explanation = self.get_experiment_explanation()
             else:
-                experiment_explanation = self.get_experiment_explanation()
+                experiment_explanation = ""
         else:
             # All other interactions: existing behavior
             if include_explanation:

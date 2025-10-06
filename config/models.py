@@ -86,6 +86,7 @@ class ExperimentConfiguration(BaseModel):
     
     # Memory optimization config options
     memory_guidance_style: str = Field("structured", description="Memory guidance style: 'narrative' or 'structured'")
+    include_experiment_explanation: bool = Field(True, description="Whether to include experiment explanation in prompts")
     include_experiment_explanation_each_turn: bool = Field(False, description="Whether to include experiment explanation on every turn (default: only first turn per phase)")
     phase2_include_internal_reasoning_in_memory: bool = Field(False, description="Whether to include internal reasoning in Phase 2 memory updates")
     
