@@ -22,7 +22,7 @@ Issue: Reasoning Prompt content, not header, in instruct prompt bold ???  (state
 1. Issue: Discussion History content, not header, in instruct prompt bold ??? (statement call) --> Target: Discussion History content not bold --> Done
 Wrong > in floor range --> Done
 Principle description end of phase 2 wehn no concsensus wasreached --> Done
-
+voting round message in ballot is false "Voting Decision Point - Round 1 of 10" 
 
 WIP
 These denominators in instruct prompt  "Phase 1 – Initial ranking." 
@@ -37,7 +37,7 @@ Investigate why so many runs failed --> Probably fixed --> Test needed
 
 Backlog
 
-voting round message in ballot is false "Voting Decision Point - Round 1 of 10" 
+
 
 
 
