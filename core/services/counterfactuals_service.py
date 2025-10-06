@@ -341,11 +341,11 @@ class CounterfactualsService:
         lang_manager: LanguageProvider
     ) -> str:
         """
-        Build Phase 2 results with comprehensive earnings display.
-        
-        Build detailed Phase 2 results with comprehensive earnings display
-        that includes distributions table and principle outcomes.
-        
+        Build Phase 2 results using explicit causal narrative format.
+
+        Routes to either consensus or no-consensus results builder based on
+        discussion outcome.
+
         Args:
             participant_name: Name of the participant
             final_earnings: Participant's final earnings
@@ -354,69 +354,30 @@ class CounterfactualsService:
             consensus_result: Result of group discussion
             distribution_set: The distribution set used for Phase 2
             lang_manager: Language manager for participant-specific localization
-            
+
         Returns:
-            Formatted results string with comprehensive earnings display
+            Formatted results string with explicit causal narrative
         """
-        try:
-            # Build header and assignment info
-            result_parts = []
-            
-            # Phase 2 header
-            phase2_header = lang_manager.get('results.phase2_header')
-            result_parts.append(f"{phase2_header}: ${final_earnings:.2f}")
-            
-            # Income class assignment
-            assigned_class_label = lang_manager.get(f"common.income_classes.{assigned_class}")
-            class_assignment = lang_manager.get('results.assigned_income_class', class_name=assigned_class_label)
-            result_parts.append(class_assignment)
-            
-            # Consensus or no-consensus status line
-            if consensus_result.consensus_reached and consensus_result.agreed_principle:
-                # Get localized principle name using slug-based approach
-                principle_slug = consensus_result.agreed_principle.principle.value
-                principle_name = lang_manager.get(f"common.principle_names.{principle_slug}")
-
-                # Use constraint template if constraint amount exists
-                if consensus_result.agreed_principle.constraint_amount is not None:
-                    consensus_msg = lang_manager.get(
-                        "voting_results.consensus_with_constraint",
-                        principle_name=principle_name,
-                        constraint_amount=consensus_result.agreed_principle.constraint_amount
-                    )
-                else:
-                    consensus_msg = lang_manager.get(
-                        "voting_results.consensus_reached",
-                        principle_name=principle_name
-                    )
-                result_parts.append(consensus_msg + ".")
-            else:
-                # No consensus - use parallel status format
-                no_consensus_msg = lang_manager.get('comprehensive_earnings.no_consensus_status')
-                result_parts.append(no_consensus_msg + ".")
-            
-            # Add comprehensive earnings display
-            # Convert string assigned_class to IncomeClass enum
-            if assigned_class.startswith('IncomeClass.'):
-                # Handle enum string representation like 'IncomeClass.high'
-                enum_value = assigned_class.split('.')[1].lower()
-            else:
-                # Handle direct value like 'high' or 'MEDIUM HIGH' 
-                enum_value = assigned_class.lower().replace(' ', '_')
-            
-            assigned_class_enum = IncomeClass(enum_value)
-
-            comprehensive_display = self._build_comprehensive_earnings_display(
-                participant_name, assigned_class_enum, distribution_set, consensus_result, lang_manager, final_earnings
+        if consensus_result.consensus_reached and consensus_result.agreed_principle:
+            return self._build_consensus_results(
+                participant_name,
+                final_earnings,
+                assigned_class,
+                alternative_earnings,
+                consensus_result,
+                distribution_set,
+                lang_manager
             )
-            result_parts.append(f"\n{comprehensive_display}")
-            
-            return "\n".join(result_parts)
-            
-        except Exception as e:
-            self.logger.warning(f"Failed to build detailed results for {participant_name}: {e}")
-            # Fallback to basic format
-            return f"Phase 2 results: ${final_earnings:.2f}. Income class: {assigned_class}."
+        else:
+            return self._build_no_consensus_results(
+                participant_name,
+                final_earnings,
+                assigned_class,
+                alternative_earnings,
+                consensus_result,
+                distribution_set,
+                lang_manager
+            )
     
     def _get_participant_language_manager(self, participant: "ParticipantAgent"):
         """
@@ -569,11 +530,11 @@ class CounterfactualsService:
     def _build_consensus_info(self, discussion_result: GroupDiscussionResult, lang_manager) -> str:
         """
         Build consensus information text based on discussion result.
-        
+
         Args:
             discussion_result: Result of group discussion
             lang_manager: Language manager for localization
-            
+
         Returns:
             Formatted consensus information string
         """
@@ -582,25 +543,25 @@ class CounterfactualsService:
                 # Get localized principle name
                 principle_key = discussion_result.agreed_principle.principle.value
                 principle_name = lang_manager.get(f"common.principle_names.{principle_key}")
-                
+
                 # Check if there's a constraint amount
                 if discussion_result.agreed_principle.constraint_amount is not None:
                     constraint_amount = discussion_result.agreed_principle.constraint_amount
                     consensus_msg = lang_manager.get(
-                        "voting_results.consensus_with_constraint", 
+                        "voting_results.consensus_with_constraint",
                         principle_name=principle_name,
                         constraint_amount=constraint_amount
                     )
                 else:
                     consensus_msg = lang_manager.get(
-                        "voting_results.consensus_reached", 
+                        "voting_results.consensus_reached",
                         principle_name=principle_name
                     )
                 return consensus_msg
             else:
                 # No consensus reached
                 return lang_manager.get("phase2_no_consensus")
-                
+
         except Exception as e:
             self.logger.warning(f"Failed to build consensus info: {e}")
             # Fallback message
@@ -608,6 +569,509 @@ class CounterfactualsService:
                 return "Consensus was reached on a justice principle."
             else:
                 return "No consensus was reached. Earnings were randomly assigned."
+
+    def _format_difference(self, diff: float, lang_manager: LanguageProvider) -> str:
+        """
+        Format earnings difference for counterfactual display.
+
+        Args:
+            diff: Difference in earnings (counterfactual - actual)
+            lang_manager: Language manager for localization
+
+        Returns:
+            Formatted difference string
+        """
+        if abs(diff) < 0.01:  # Account for floating point precision
+            return lang_manager.get("results_explicit.difference_same")
+        elif diff > 0:
+            return lang_manager.get("results_explicit.difference_positive", diff=f"{diff:.2f}")
+        else:
+            return lang_manager.get("results_explicit.difference_negative", diff=f"{diff:.2f}")
+
+    def _build_counterfactual_outcomes(
+        self,
+        assigned_class_enum: IncomeClass,
+        distribution_set,
+        alternative_earnings: Dict[str, float],
+        consensus_result: GroupDiscussionResult,
+        participant_name: str,
+        final_earnings: float,
+        lang_manager: LanguageProvider
+    ) -> str:
+        """
+        Build counterfactual outcomes section with grouped constraints.
+
+        Returns formatted string with:
+        - Simple principles (1 line each with difference)
+        - Constraint principles (parent + multiple indented children with differences)
+        - Appropriate marker (chosen principle or random assignment)
+
+        Args:
+            assigned_class_enum: Participant's assigned income class
+            distribution_set: The distribution set used for Phase 2
+            alternative_earnings: Alternative earnings under each principle
+            consensus_result: Result of group discussion
+            participant_name: Name of the participant
+            final_earnings: Participant's final earnings
+            lang_manager: Language manager for localization
+
+        Returns:
+            Formatted counterfactual outcomes string
+        """
+        try:
+            from core.distribution_generator import DistributionGenerator
+
+            # Get comprehensive outcomes (all constraint variations)
+            comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
+                distribution_set.distributions,
+                assigned_class_enum,
+                lang_manager,
+                self._phase2_probabilities
+            )
+
+            # Determine what should be marked
+            chosen_principle = None
+            chosen_constraint = None
+            random_dist_num = None
+
+            if consensus_result.consensus_reached and consensus_result.agreed_principle:
+                chosen_principle = consensus_result.agreed_principle.principle.value
+                chosen_constraint = consensus_result.agreed_principle.constraint_amount
+            else:
+                random_dist_num = self._assigned_distributions.get(participant_name)
+
+            # Group outcomes by principle_key
+            grouped = {}
+            for outcome in comprehensive_data['outcomes']:
+                key = outcome['principle_key']
+                if key not in grouped:
+                    grouped[key] = []
+                grouped[key].append(outcome)
+
+            result_lines = []
+
+            # 1. Maximizing Floor (simple principle)
+            if 'maximizing_floor' in grouped:
+                for outcome in grouped['maximizing_floor']:
+                    dist_num = outcome['distribution_index'] + 1
+                    earnings = outcome['agent_earnings']
+                    income = outcome['agent_income']
+                    principle_name = lang_manager.get("common.principle_names.maximizing_floor")
+
+                    diff = earnings - final_earnings
+                    diff_text = self._format_difference(diff, lang_manager)
+
+                    marker = ""
+                    if consensus_result.consensus_reached and chosen_principle == 'maximizing_floor':
+                        marker = lang_manager.get("results_explicit.marker_chosen")
+                    elif not consensus_result.consensus_reached and dist_num == random_dist_num:
+                        marker = lang_manager.get("results_explicit.marker_random")
+                        random_dist_num = None
+
+                    if marker:
+                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    else:
+                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
+                        result_lines.append(f"  ({diff_text})")
+
+            # 2. Maximizing Average (simple principle)
+            if 'maximizing_average' in grouped:
+                for outcome in grouped['maximizing_average']:
+                    dist_num = outcome['distribution_index'] + 1
+                    earnings = outcome['agent_earnings']
+                    income = outcome['agent_income']
+                    principle_name = lang_manager.get("common.principle_names.maximizing_average")
+
+                    diff = earnings - final_earnings
+                    diff_text = self._format_difference(diff, lang_manager)
+
+                    marker = ""
+                    if consensus_result.consensus_reached and chosen_principle == 'maximizing_average':
+                        marker = lang_manager.get("results_explicit.marker_chosen")
+                    elif not consensus_result.consensus_reached and dist_num == random_dist_num:
+                        marker = lang_manager.get("results_explicit.marker_random")
+                        random_dist_num = None
+
+                    if marker:
+                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    else:
+                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
+                        result_lines.append(f"  ({diff_text})")
+
+            # 3. Floor Constraint (grouped with multiple children)
+            if 'maximizing_average_floor_constraint' in grouped:
+                result_lines.append("")
+                parent_name = lang_manager.get("common.principle_names.maximizing_average_floor_constraint")
+                result_lines.append(f"- {parent_name}:")
+
+                for outcome in grouped['maximizing_average_floor_constraint']:
+                    dist_num = outcome['distribution_index'] + 1
+                    earnings = outcome['agent_earnings']
+                    income = outcome['agent_income']
+                    constraint_amt = outcome['constraint_amount']
+
+                    floor_label = lang_manager.get("results_explicit.floor_constraint_label", amount=f"{constraint_amt:,}")
+                    diff = earnings - final_earnings
+                    diff_text = self._format_difference(diff, lang_manager)
+
+                    marker = ""
+                    if consensus_result.consensus_reached and chosen_principle == 'maximizing_average_floor_constraint' and chosen_constraint == constraint_amt:
+                        marker = lang_manager.get("results_explicit.marker_chosen")
+                    elif not consensus_result.consensus_reached and dist_num == random_dist_num:
+                        marker = lang_manager.get("results_explicit.marker_random")
+                        random_dist_num = None
+
+                    if marker:
+                        result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    else:
+                        result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
+                        result_lines.append(f"    ({diff_text})")
+
+            # 4. Range Constraint (grouped with multiple children)
+            if 'maximizing_average_range_constraint' in grouped:
+                result_lines.append("")
+                parent_name = lang_manager.get("common.principle_names.maximizing_average_range_constraint")
+                result_lines.append(f"- {parent_name}:")
+
+                for outcome in grouped['maximizing_average_range_constraint']:
+                    dist_num = outcome['distribution_index'] + 1
+                    earnings = outcome['agent_earnings']
+                    income = outcome['agent_income']
+                    constraint_amt = outcome['constraint_amount']
+
+                    range_label = lang_manager.get("results_explicit.range_constraint_label", amount=f"{constraint_amt:,}")
+                    diff = earnings - final_earnings
+                    diff_text = self._format_difference(diff, lang_manager)
+
+                    marker = ""
+                    if consensus_result.consensus_reached and chosen_principle == 'maximizing_average_range_constraint' and chosen_constraint == constraint_amt:
+                        marker = lang_manager.get("results_explicit.marker_chosen")
+                    elif not consensus_result.consensus_reached and dist_num == random_dist_num:
+                        marker = lang_manager.get("results_explicit.marker_random")
+                        random_dist_num = None
+
+                    if marker:
+                        result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    else:
+                        result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
+                        result_lines.append(f"    ({diff_text})")
+
+            return "\n".join(result_lines)
+
+        except Exception as e:
+            self.logger.warning(f"Failed to build counterfactual outcomes: {e}")
+            return "Counterfactual analysis unavailable."
+
+    def _build_consensus_results(
+        self,
+        participant_name: str,
+        final_earnings: float,
+        assigned_class: str,
+        alternative_earnings: Dict[str, float],
+        consensus_result: GroupDiscussionResult,
+        distribution_set,
+        lang_manager: LanguageProvider
+    ) -> str:
+        """
+        Build results for consensus scenario using explicit causal narrative format.
+
+        Args:
+            participant_name: Name of the participant
+            final_earnings: Participant's final earnings
+            assigned_class: Income class assigned to participant
+            alternative_earnings: Alternative earnings under each principle
+            consensus_result: Result of group discussion
+            distribution_set: The distribution set used for Phase 2
+            lang_manager: Language manager for localization
+
+        Returns:
+            Formatted results string for consensus scenario
+        """
+        try:
+            result_parts = []
+
+            # Convert assigned_class to enum
+            if assigned_class.startswith('IncomeClass.'):
+                enum_value = assigned_class.split('.')[1].lower()
+            else:
+                enum_value = assigned_class.lower().replace(' ', '_')
+            assigned_class_enum = IncomeClass(enum_value)
+
+            # Get principle name and constraint
+            principle_slug = consensus_result.agreed_principle.principle.value
+            principle_name = lang_manager.get(f"common.principle_names.{principle_slug}")
+
+            constraint_text = ""
+            if consensus_result.agreed_principle.constraint_amount is not None:
+                constraint_amount = consensus_result.agreed_principle.constraint_amount
+                if principle_slug == 'maximizing_average_floor_constraint':
+                    constraint_label = lang_manager.get("results_explicit.floor_constraint_label", amount=f"{constraint_amount:,}")
+                else:
+                    constraint_label = lang_manager.get("results_explicit.range_constraint_label", amount=f"{constraint_amount:,}")
+                constraint_text = f" {constraint_label}"
+
+            # 1. Principle applied
+            principle_applied = lang_manager.get(
+                "results_explicit.principle_applied_consensus",
+                principle_name=principle_name,
+                constraint=constraint_text
+            )
+            result_parts.append(principle_applied)
+            result_parts.append("")
+
+            # 2. Class probabilities
+            if self._phase2_probabilities is not None:
+                prob_header = lang_manager.get("results_explicit.probabilities_header")
+                result_parts.append(prob_header)
+                class_keys = ['high', 'medium_high', 'medium', 'medium_low', 'low']
+                for key in class_keys:
+                    cls_name = lang_manager.get(f'common.income_classes.{key}')
+                    p = getattr(self._phase2_probabilities, key)
+                    result_parts.append(f"- {cls_name}: {p*100:.0f}%")
+                result_parts.append("")
+
+            # 3. Assignment statement
+            class_label = lang_manager.get(f"common.income_classes.{assigned_class_enum.value}")
+            assignment = lang_manager.get("results_explicit.assignment_statement", class_name=class_label)
+            result_parts.append(assignment)
+            result_parts.append("")
+
+            # 4. Distributions table
+            distributions_header = lang_manager.get("results_explicit.distributions_header")
+            result_parts.append(distributions_header)
+            result_parts.append("")
+
+            # Build distributions table
+            from core.distribution_generator import DistributionGenerator
+            table_lines = []
+            table_lines.append("| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |")
+            table_lines.append("|--------------|---------|---------|---------|---------|")
+
+            class_order = [IncomeClass.HIGH, IncomeClass.MEDIUM_HIGH, IncomeClass.MEDIUM,
+                          IncomeClass.MEDIUM_LOW, IncomeClass.LOW]
+            for cls in class_order:
+                cls_label = lang_manager.get(f"common.income_classes.{cls.value}")
+                row = [cls_label]
+                for dist in distribution_set.distributions:
+                    income = dist.get_income_by_class(cls)
+                    row.append(f"${income:,}")
+                table_lines.append("| " + " | ".join(row) + " |")
+
+            result_parts.extend(table_lines)
+            result_parts.append("")
+
+            # 5. Causal narrative
+            # Determine which distribution was selected
+            from models.principle_types import PrincipleChoice, CertaintyLevel
+            chosen_dist, _ = DistributionGenerator.apply_principle_to_distributions(
+                distribution_set.distributions,
+                consensus_result.agreed_principle,
+                self._phase2_probabilities,
+                None
+            )
+            dist_num = distribution_set.distributions.index(chosen_dist) + 1
+            income = chosen_dist.get_income_by_class(assigned_class_enum)
+
+            causal_narrative = lang_manager.get(
+                "results_explicit.causal_narrative_consensus",
+                principle_name=principle_name,
+                constraint=constraint_text,
+                dist_num=dist_num,
+                class_name=class_label,
+                income=f"{income:,}",
+                earnings=f"{final_earnings:.2f}"
+            )
+            result_parts.append(causal_narrative)
+            result_parts.append("")
+
+            # 6. Counterfactual analysis
+            counterfactual_header = lang_manager.get("results_explicit.counterfactual_header")
+            result_parts.append(counterfactual_header)
+
+            counterfactual_purpose = lang_manager.get(
+                "results_explicit.counterfactual_purpose_consensus",
+                class_name=class_label
+            )
+            result_parts.append(counterfactual_purpose)
+            result_parts.append("")
+
+            # 7. Outcomes header
+            outcomes_header = lang_manager.get(
+                "results_explicit.outcomes_header",
+                class_name=class_label
+            )
+            result_parts.append(outcomes_header)
+            result_parts.append("")
+
+            # 8. Counterfactual outcomes
+            counterfactual_outcomes = self._build_counterfactual_outcomes(
+                assigned_class_enum,
+                distribution_set,
+                alternative_earnings,
+                consensus_result,
+                participant_name,
+                final_earnings,
+                lang_manager
+            )
+            result_parts.append(counterfactual_outcomes)
+            result_parts.append("")
+
+            # 9. Veil of ignorance reminder
+            veil_header = lang_manager.get("results_explicit.veil_reminder_header")
+            result_parts.append(veil_header)
+
+            veil_reminder = lang_manager.get("results_explicit.veil_reminder_consensus")
+            result_parts.append(veil_reminder)
+
+            return "\n".join(result_parts)
+
+        except Exception as e:
+            self.logger.warning(f"Failed to build consensus results for {participant_name}: {e}")
+            # Fallback to basic format
+            return f"Phase 2 results: ${final_earnings:.2f}. Income class: {assigned_class}."
+
+    def _build_no_consensus_results(
+        self,
+        participant_name: str,
+        final_earnings: float,
+        assigned_class: str,
+        alternative_earnings: Dict[str, float],
+        consensus_result: GroupDiscussionResult,
+        distribution_set,
+        lang_manager: LanguageProvider
+    ) -> str:
+        """
+        Build results for no-consensus scenario using explicit causal narrative format.
+
+        Args:
+            participant_name: Name of the participant
+            final_earnings: Participant's final earnings
+            assigned_class: Income class assigned to participant
+            alternative_earnings: Alternative earnings under each principle
+            consensus_result: Result of group discussion
+            distribution_set: The distribution set used for Phase 2
+            lang_manager: Language manager for localization
+
+        Returns:
+            Formatted results string for no-consensus scenario
+        """
+        try:
+            result_parts = []
+
+            # Convert assigned_class to enum
+            if assigned_class.startswith('IncomeClass.'):
+                enum_value = assigned_class.split('.')[1].lower()
+            else:
+                enum_value = assigned_class.lower().replace(' ', '_')
+            assigned_class_enum = IncomeClass(enum_value)
+
+            # 1. Principle applied (no consensus)
+            principle_applied = lang_manager.get("results_explicit.principle_applied_no_consensus")
+            result_parts.append(principle_applied)
+            result_parts.append("")
+
+            # 2. Class probabilities
+            if self._phase2_probabilities is not None:
+                prob_header = lang_manager.get("results_explicit.probabilities_header")
+                result_parts.append(prob_header)
+                class_keys = ['high', 'medium_high', 'medium', 'medium_low', 'low']
+                for key in class_keys:
+                    cls_name = lang_manager.get(f'common.income_classes.{key}')
+                    p = getattr(self._phase2_probabilities, key)
+                    result_parts.append(f"- {cls_name}: {p*100:.0f}%")
+                result_parts.append("")
+
+            # 3. Assignment statement
+            class_label = lang_manager.get(f"common.income_classes.{assigned_class_enum.value}")
+            assignment = lang_manager.get("results_explicit.assignment_statement", class_name=class_label)
+            result_parts.append(assignment)
+            result_parts.append("")
+
+            # 4. Distributions table
+            distributions_header = lang_manager.get("results_explicit.distributions_header")
+            result_parts.append(distributions_header)
+            result_parts.append("")
+
+            # Build distributions table
+            table_lines = []
+            table_lines.append("| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |")
+            table_lines.append("|--------------|---------|---------|---------|---------|")
+
+            class_order = [IncomeClass.HIGH, IncomeClass.MEDIUM_HIGH, IncomeClass.MEDIUM,
+                          IncomeClass.MEDIUM_LOW, IncomeClass.LOW]
+            for cls in class_order:
+                cls_label = lang_manager.get(f"common.income_classes.{cls.value}")
+                row = [cls_label]
+                for dist in distribution_set.distributions:
+                    income = dist.get_income_by_class(cls)
+                    row.append(f"${income:,}")
+                table_lines.append("| " + " | ".join(row) + " |")
+
+            result_parts.extend(table_lines)
+            result_parts.append("")
+
+            # 5. Causal narrative (no consensus)
+            dist_num = self._assigned_distributions.get(participant_name, 1)
+
+            # Get the actual distribution and income for this participant
+            random_dist = distribution_set.distributions[dist_num - 1]
+            income = random_dist.get_income_by_class(assigned_class_enum)
+
+            causal_narrative = lang_manager.get(
+                "results_explicit.causal_narrative_no_consensus",
+                dist_num=dist_num,
+                class_name=class_label,
+                income=f"{income:,}",
+                earnings=f"{final_earnings:.2f}"
+            )
+            result_parts.append(causal_narrative)
+            result_parts.append("")
+
+            # 6. Counterfactual analysis
+            counterfactual_header = lang_manager.get("results_explicit.counterfactual_header")
+            result_parts.append(counterfactual_header)
+
+            counterfactual_purpose = lang_manager.get(
+                "results_explicit.counterfactual_purpose_no_consensus",
+                class_name=class_label
+            )
+            result_parts.append(counterfactual_purpose)
+            result_parts.append("")
+
+            # 7. Outcomes header
+            outcomes_header = lang_manager.get(
+                "results_explicit.outcomes_header",
+                class_name=class_label
+            )
+            result_parts.append(outcomes_header)
+            result_parts.append("")
+
+            # 8. Counterfactual outcomes
+            counterfactual_outcomes = self._build_counterfactual_outcomes(
+                assigned_class_enum,
+                distribution_set,
+                alternative_earnings,
+                consensus_result,
+                participant_name,
+                final_earnings,
+                lang_manager
+            )
+            result_parts.append(counterfactual_outcomes)
+            result_parts.append("")
+
+            # 9. Veil of ignorance reminder (no consensus version)
+            veil_header = lang_manager.get("results_explicit.veil_reminder_header")
+            result_parts.append(veil_header)
+
+            veil_reminder = lang_manager.get("results_explicit.veil_reminder_no_consensus")
+            result_parts.append(veil_reminder)
+
+            return "\n".join(result_parts)
+
+        except Exception as e:
+            self.logger.warning(f"Failed to build no-consensus results for {participant_name}: {e}")
+            # Fallback to basic format
+            return f"Phase 2 results: ${final_earnings:.2f}. Income class: {assigned_class}."
     
     async def deliver_results_and_update_memory(
         self,

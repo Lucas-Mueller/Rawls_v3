@@ -124,17 +124,6 @@ class MemoryManager:
                         agent, context.memory, context.bank_balance, context.memory_character_limit, language_manager
                     )
 
-                # Remove any trailing "--- Memory End ---" marker before creating the prompt
-                # This prevents the LLM from seeing and potentially copying the marker into the new memory
-                if memory_to_use and language_manager:
-                    try:
-                        marker = language_manager.get("memory.memory_end_marker")
-                        memory_to_use = memory_to_use.rstrip()
-                        if memory_to_use.endswith(marker):
-                            memory_to_use = memory_to_use[:-len(marker)].rstrip()
-                    except Exception as e:
-                        logger.warning(f"Could not retrieve memory end marker for removal: {e}")
-
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
                     memory_to_use,

@@ -465,5 +465,28 @@
       "instruction": "Please provide a complete response ranking the justice principles.",
       "example": "Example: 1. Your top choice, 2. Second choice, 3. Third choice, 4. Last choice"
     }
+  },
+  "results_explicit": {
+    "principle_applied_consensus": "Principle applied: Your group reached consensus on {principle_name}{constraint}",
+    "principle_applied_no_consensus": "Principle applied: Your group did not reach consensus on a justice principle",
+    "probabilities_header": "The probabilities for each income class are:",
+    "assignment_statement": "You were assigned to the income class {class_name}",
+    "distributions_header": "These were the Experiment Distributions:",
+    "causal_narrative_consensus": "The principle your group reached consensus on was {principle_name}{constraint} which resulted in Distribution {dist_num}. You were assigned to the income class {class_name}, resulting in a yearly income of ${income} (which converts to a payoff of ${earnings} at the rate of $1 per $10,000 income).",
+    "causal_narrative_no_consensus": "Because the group did not reach consensus, you were randomly assigned to Distribution {dist_num}. You were assigned to the income class {class_name}, resulting in a yearly income of ${income} (which converts to a payoff of ${earnings} at the rate of $1 per $10,000 income).",
+    "counterfactual_header": "COUNTERFACTUAL ANALYSIS:",
+    "counterfactual_purpose_consensus": "The section below shows what you would have earned under each principle, assuming you had the same income class assignment ({class_name}).",
+    "counterfactual_purpose_no_consensus": "The section below shows what you would have earned if the group HAD reached consensus on each principle, assuming you had the same income class assignment ({class_name}).",
+    "outcomes_header": "Final Phase 2 Results - Principle Outcomes for {class_name} Class:",
+    "veil_reminder_header": "IMPORTANT FOR RANKING:",
+    "veil_reminder_consensus": "Your income class was assigned randomly AFTER the group chose the principle. When evaluating which principle is most just, consider what you would have preferred BEFORE knowing your class assignment (from behind the \"veil of ignorance\").",
+    "veil_reminder_no_consensus": "Your income class was assigned randomly, and since no consensus was reached, your distribution was also randomly assigned. When evaluating which principle is most just, consider which principle you would have preferred the group to choose from behind the \"veil of ignorance\" (before knowing your position).",
+    "difference_same": "Difference: same",
+    "difference_positive": "Difference: +${diff}",
+    "difference_negative": "Difference: ${diff}",
+    "marker_chosen": " ← YOUR CHOSEN PRINCIPLE",
+    "marker_random": " ← YOUR RANDOM ASSIGNMENT",
+    "floor_constraint_label": "Floor constraint ${amount}",
+    "range_constraint_label": "Range constraint ${amount}"
   }
 }

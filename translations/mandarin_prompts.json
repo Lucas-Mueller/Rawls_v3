@@ -474,5 +474,28 @@
       "instruction": "请提供完整的回复，对正义原则进行排序。",
       "example": "例子：1. 您的首选，2. 第二选择，3. 第三选择，4. 最后选择"
     }
+  },
+  "results_explicit": {
+    "principle_applied_consensus": "应用的原则：您的小组就{principle_name}{constraint}达成了共识",
+    "principle_applied_no_consensus": "应用的原则：您的小组未能就正义原则达成共识",
+    "probabilities_header": "每个收入阶层的概率为：",
+    "assignment_statement": "您被分配到收入阶层{class_name}",
+    "distributions_header": "这些是实验分配方案：",
+    "causal_narrative_consensus": "您的小组达成共识的原则是{principle_name}{constraint}，这导致选择了分配方案{dist_num}。您被分配到收入阶层{class_name}，年收入为${income}（按每$10,000收入$1的比率转换为报酬${earnings}）。",
+    "causal_narrative_no_consensus": "由于小组未能达成共识，您被随机分配到分配方案{dist_num}。您被分配到收入阶层{class_name}，年收入为${income}（按每$10,000收入$1的比率转换为报酬${earnings}）。",
+    "counterfactual_header": "反事实分析：",
+    "counterfactual_purpose_consensus": "以下部分显示在假设您拥有相同收入阶层分配（{class_name}）的情况下，您在每个原则下本应获得的收益。",
+    "counterfactual_purpose_no_consensus": "以下部分显示如果小组已就每个原则达成共识，在假设您拥有相同收入阶层分配（{class_name}）的情况下，您本应获得的收益。",
+    "outcomes_header": "第二阶段最终结果 - {class_name}阶层的原则结果：",
+    "veil_reminder_header": "排序的重要提示：",
+    "veil_reminder_consensus": "您的收入阶层是在小组选择原则之后随机分配的。在评估哪个原则最公正时，请考虑在知道您的阶层分配之前(从\\\"无知之幕\\\"背后)您会更喜欢什么。",
+    "veil_reminder_no_consensus": "您的收入阶层是随机分配的，由于未达成共识，您的分配方案也是随机分配的。在评估哪个原则最公正时，请考虑从\\\"无知之幕\\\"背后(在了解您的位置之前)您希望小组选择哪个原则。",
+    "difference_same": "差异：相同",
+    "difference_positive": "差异：+${diff}",
+    "difference_negative": "差异：${diff}",
+    "marker_chosen": " ← 您选择的原则",
+    "marker_random": " ← 您的随机分配",
+    "floor_constraint_label": "最低收入约束 ${amount}",
+    "range_constraint_label": "范围约束 ${amount}"
   }
 }

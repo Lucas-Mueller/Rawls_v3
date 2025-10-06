@@ -474,5 +474,28 @@
       "instruction": "Por favor, proporciona una respuesta completa clasificando los principios de justicia.",
       "example": "Ejemplo: 1. Tu primera opción, 2. Segunda opción, 3. Tercera opción, 4. Última opción"
     }
+  },
+  "results_explicit": {
+    "principle_applied_consensus": "Principio aplicado: Su grupo llegó a un consenso sobre {principle_name}{constraint}",
+    "principle_applied_no_consensus": "Principio aplicado: Su grupo no llegó a un consenso sobre un principio de justicia",
+    "probabilities_header": "Las probabilidades para cada clase de ingresos son:",
+    "assignment_statement": "Se le asignó a la clase de ingresos {class_name}",
+    "distributions_header": "Estas fueron las Distribuciones del Experimento:",
+    "causal_narrative_consensus": "El principio sobre el que su grupo llegó a consenso fue {principle_name}{constraint}, lo que resultó en la Distribución {dist_num}. Se le asignó a la clase de ingresos {class_name}, resultando en un ingreso anual de ${income} (que se convierte en un pago de ${earnings} a razón de $1 por cada $10,000 de ingreso).",
+    "causal_narrative_no_consensus": "Debido a que el grupo no llegó a consenso, se le asignó aleatoriamente a la Distribución {dist_num}. Se le asignó a la clase de ingresos {class_name}, resultando en un ingreso anual de ${income} (que se convierte en un pago de ${earnings} a razón de $1 por cada $10,000 de ingreso).",
+    "counterfactual_header": "ANÁLISIS CONTRAFACTUAL:",
+    "counterfactual_purpose_consensus": "La sección a continuación muestra lo que habría ganado bajo cada principio, asumiendo que tuvo la misma asignación de clase de ingresos ({class_name}).",
+    "counterfactual_purpose_no_consensus": "La sección a continuación muestra lo que habría ganado si el grupo HUBIERA llegado a consenso sobre cada principio, asumiendo que tuvo la misma asignación de clase de ingresos ({class_name}).",
+    "outcomes_header": "Resultados Finales de la Fase 2 - Resultados de Principios para la Clase {class_name}:",
+    "veil_reminder_header": "IMPORTANTE PARA LA CLASIFICACIÓN:",
+    "veil_reminder_consensus": "Su clase de ingresos se asignó aleatoriamente DESPUÉS de que el grupo eligiera el principio. Al evaluar qué principio es más justo, considere qué habría preferido ANTES de conocer su asignación de clase (desde detrás del \"velo de ignorancia\").",
+    "veil_reminder_no_consensus": "Su clase de ingresos se asignó aleatoriamente, y como no se alcanzó consenso, su distribución también se asignó aleatoriamente. Al evaluar qué principio es más justo, considere qué principio habría preferido que el grupo eligiera desde detrás del \"velo de ignorancia\" (antes de conocer su posición).",
+    "difference_same": "Diferencia: igual",
+    "difference_positive": "Diferencia: +${diff}",
+    "difference_negative": "Diferencia: ${diff}",
+    "marker_chosen": " ← SU PRINCIPIO ELEGIDO",
+    "marker_random": " ← SU ASIGNACIÓN ALEATORIA",
+    "floor_constraint_label": "Restricción mínima ${amount}",
+    "range_constraint_label": "Restricción de rango ${amount}"
   }
 }
