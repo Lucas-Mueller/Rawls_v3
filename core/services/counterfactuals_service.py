@@ -658,9 +658,6 @@ class CounterfactualsService:
                     income = outcome['agent_income']
                     principle_name = lang_manager.get("common.principle_names.maximizing_floor")
 
-                    diff = earnings - final_earnings
-                    diff_text = self._format_difference(diff, lang_manager)
-
                     marker = ""
                     if consensus_result.consensus_reached and chosen_principle == 'maximizing_floor':
                         marker = lang_manager.get("results_explicit.marker_chosen")
@@ -668,11 +665,7 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    if marker:
-                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
-                    else:
-                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
-                        result_lines.append(f"  ({diff_text})")
+                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
 
             # 2. Maximizing Average (simple principle)
             if 'maximizing_average' in grouped:
@@ -682,9 +675,6 @@ class CounterfactualsService:
                     income = outcome['agent_income']
                     principle_name = lang_manager.get("common.principle_names.maximizing_average")
 
-                    diff = earnings - final_earnings
-                    diff_text = self._format_difference(diff, lang_manager)
-
                     marker = ""
                     if consensus_result.consensus_reached and chosen_principle == 'maximizing_average':
                         marker = lang_manager.get("results_explicit.marker_chosen")
@@ -692,11 +682,7 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    if marker:
-                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
-                    else:
-                        result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
-                        result_lines.append(f"  ({diff_text})")
+                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
 
             # 3. Floor Constraint (grouped with multiple children)
             if 'maximizing_average_floor_constraint' in grouped:
@@ -711,8 +697,6 @@ class CounterfactualsService:
                     constraint_amt = outcome['constraint_amount']
 
                     floor_label = lang_manager.get("results_explicit.floor_constraint_label", amount=f"{constraint_amt:,}")
-                    diff = earnings - final_earnings
-                    diff_text = self._format_difference(diff, lang_manager)
 
                     marker = ""
                     if consensus_result.consensus_reached and chosen_principle == 'maximizing_average_floor_constraint' and chosen_constraint == constraint_amt:
@@ -721,11 +705,7 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    if marker:
-                        result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
-                    else:
-                        result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
-                        result_lines.append(f"    ({diff_text})")
+                    result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
 
             # 4. Range Constraint (grouped with multiple children)
             if 'maximizing_average_range_constraint' in grouped:
@@ -740,8 +720,6 @@ class CounterfactualsService:
                     constraint_amt = outcome['constraint_amount']
 
                     range_label = lang_manager.get("results_explicit.range_constraint_label", amount=f"{constraint_amt:,}")
-                    diff = earnings - final_earnings
-                    diff_text = self._format_difference(diff, lang_manager)
 
                     marker = ""
                     if consensus_result.consensus_reached and chosen_principle == 'maximizing_average_range_constraint' and chosen_constraint == constraint_amt:
@@ -750,11 +728,7 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    if marker:
-                        result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
-                    else:
-                        result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}")
-                        result_lines.append(f"    ({diff_text})")
+                    result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
 
             return "\n".join(result_lines)
 
@@ -856,6 +830,14 @@ class CounterfactualsService:
                     income = dist.get_income_by_class(cls)
                     row.append(f"${income:,}")
                 table_lines.append("| " + " | ".join(row) + " |")
+
+            # Add average row
+            average_label = lang_manager.get("common.average_label", default="Average")
+            avg_row = [average_label]
+            for dist in distribution_set.distributions:
+                avg_income = dist.get_average_income(self._phase2_probabilities)
+                avg_row.append(f"${avg_income:,.0f}")
+            table_lines.append("| " + " | ".join(avg_row) + " |")
 
             result_parts.extend(table_lines)
             result_parts.append("")
@@ -1006,6 +988,14 @@ class CounterfactualsService:
                     income = dist.get_income_by_class(cls)
                     row.append(f"${income:,}")
                 table_lines.append("| " + " | ".join(row) + " |")
+
+            # Add average row
+            average_label = lang_manager.get("common.average_label", default="Average")
+            avg_row = [average_label]
+            for dist in distribution_set.distributions:
+                avg_income = dist.get_average_income(self._phase2_probabilities)
+                avg_row.append(f"${avg_income:,.0f}")
+            table_lines.append("| " + " | ".join(avg_row) + " |")
 
             result_parts.extend(table_lines)
             result_parts.append("")

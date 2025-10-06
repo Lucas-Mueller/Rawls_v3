@@ -750,6 +750,7 @@ class Phase1Manager:
         alternative_earnings_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
             distribution_set.distributions,
             parsed_choice.constraint_amount if parsed_choice.constraint_amount else None,
+            probabilities,
             random_gen=participant_rng
         )
         
@@ -757,12 +758,14 @@ class Phase1Manager:
         alternative_earnings_same_class = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
             distribution_set.distributions,
             assigned_class,
-            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None
+            parsed_choice.constraint_amount if parsed_choice.constraint_amount else None,
+            probabilities
         )
         
         # Keep old alternative earnings for compatibility with data model
         alternative_earnings = DistributionGenerator.calculate_alternative_earnings(
             distribution_set.distributions,
+            probabilities,
             random_gen=participant_rng
         )
         
@@ -784,102 +787,17 @@ class Phase1Manager:
             probabilities
         )
 
-        # Build simplified earnings display with basic info followed by outcomes
-        earnings_display_parts = []
-
-        # Check if original values mode was used for situation/multiplier line
-        original_values_mode = getattr(config, 'original_values_mode', None)
-        is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
-        original_situation = None
-        if is_original_values:
-            # Map round numbers to situations A, B, C, D
-            situation_map = {1: "A", 2: "B", 3: "C", 4: "D"}
-            original_situation = situation_map.get(round_num, "Unknown")
-
-        # Get localized principle name
-        agent_outcome = None
-        for outcome in comprehensive_data['outcomes']:
-            if (outcome['principle_key'] == parsed_choice.principle.value and
-                outcome.get('constraint_amount') == parsed_choice.constraint_amount):
-                agent_outcome = outcome
-                break
-
-        principle_name_localized = agent_outcome['principle_name'] if agent_outcome else parsed_choice.principle.value
-
-        # Add constraint display if applicable
-        if parsed_choice.constraint_amount is not None:
-            principle_name_localized += f" (${parsed_choice.constraint_amount:,})"
-
-        # Build payoff notification header
-        payoff_header = self.language_manager.get('memory_field_labels.payoff_notification_header')
-        earnings_display_parts.append(payoff_header)
-
-        # Add chosen principle
-        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.chosen_principle')} {principle_name_localized}")
-
-        # Add assigned class
-        class_name_localized = comprehensive_data['class_display_name']
-        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.assigned_class')} {class_name_localized}")
-
-        # Add situation or multiplier
-        distribution_display = None
-        if agent_outcome and 'distribution_index' in agent_outcome:
-            distribution_number = agent_outcome['distribution_index'] + 1
-            distribution_display = self.language_manager.get(
-                'memory_field_labels.distribution_assignment',
-                number=distribution_number
-            )
-
-        if is_original_values:
-            if distribution_display:
-                earnings_display_parts.append(distribution_display)
-            elif original_situation:
-                earnings_display_parts.append(
-                    f"{self.language_manager.get('memory_field_labels.original_values_situation')} {original_situation}"
-                )
-            else:
-                earnings_display_parts.append(
-                    f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
-                )
-        else:
-            earnings_display_parts.append(
-                f"{self.language_manager.get('memory_field_labels.distribution_multiplier')} {distribution_set.multiplier:.2f}"
-            )
-
-        # Add payoff
-        earnings_display_parts.append(f"{self.language_manager.get('memory_field_labels.your_payoff')} {earnings:.2f}")
-
-        # Add empty line before outcomes
-        earnings_display_parts.append("")
-
-        # Add simplified principle outcomes header
-        principle_outcomes_header = self.language_manager.get(
-            'comprehensive_earnings.principle_outcomes_simple_header',
-            class_name=class_name_localized
+        # Build Phase 1 round results using explicit causal narrative format
+        earnings_display = self._build_phase1_round_results(
+            round_num=round_num,
+            parsed_choice=parsed_choice,
+            assigned_class=assigned_class,
+            earnings=earnings,
+            distribution_set=distribution_set,
+            comprehensive_data=comprehensive_data,
+            probabilities=probabilities,
+            config=config
         )
-        earnings_display_parts.append(principle_outcomes_header)
-
-        # Add all outcomes with proper choice marking
-        for outcome in comprehensive_data['outcomes']:
-            # Determine if this outcome matches the agent's choice
-            choice_marker = ""
-            if outcome['principle_key'] == parsed_choice.principle.value:
-                if parsed_choice.constraint_amount is None or outcome['constraint_amount'] == parsed_choice.constraint_amount:
-                    choice_marker = self.language_manager.get('comprehensive_earnings.markers.assigned_principle')
-            
-            # Format outcome line using LanguageManager
-            outcome_line = self.language_manager.get(
-                'comprehensive_earnings.outcome_line',
-                principle_name=outcome['principle_name'],
-                distribution=self.language_manager.get('distributions.distribution_label', number=outcome['distribution_index'] + 1),
-                income=self.language_manager.get('constraint_formatting.currency_format', amount=outcome['agent_income']),
-                earnings=self.language_manager.get('constraint_formatting.currency_format', amount=outcome['agent_earnings']),
-                marker=choice_marker
-            )
-            earnings_display_parts.append(outcome_line)
-
-        # Join all parts
-        earnings_display = "\n".join(earnings_display_parts)
 
         # Create simplified round content with prompt, response, and payoff notification
         language_manager = self.language_manager
@@ -891,7 +809,275 @@ class Phase1Manager:
 {language_manager.get('memory_field_labels.outcome')} {language_manager.get('memory_outcomes.applied_principle_round', round_number=round_num)}"""
         
         return application_result, round_content
-    
+
+    def _build_grouped_counterfactual_outcomes(
+        self,
+        comprehensive_data: Dict[str, Any],
+        chosen_principle: str,
+        chosen_constraint: Optional[int],
+        final_earnings: float
+    ) -> str:
+        """
+        Build grouped counterfactual outcomes with indentation.
+
+        Reusable helper that groups constraint variations under parent principles.
+        Similar to Phase 2 logic but adapted for Phase 1 context.
+
+        Args:
+            comprehensive_data: Comprehensive outcomes from calculate_comprehensive_constraint_outcomes
+            chosen_principle: The principle_key that was chosen
+            chosen_constraint: The constraint amount if applicable
+            final_earnings: Agent's final earnings for difference calculation
+
+        Returns:
+            Formatted string with grouped outcomes
+        """
+        # Group outcomes by principle_key
+        grouped = {}
+        for outcome in comprehensive_data['outcomes']:
+            key = outcome['principle_key']
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(outcome)
+
+        result_lines = []
+        lang_manager = self.language_manager
+
+        # 1. Maximizing Floor (simple principle)
+        if 'maximizing_floor' in grouped:
+            for outcome in grouped['maximizing_floor']:
+                dist_num = outcome['distribution_index'] + 1
+                earnings = outcome['agent_earnings']
+                income = outcome['agent_income']
+                principle_name = lang_manager.get("common.principle_names.maximizing_floor")
+
+                marker = ""
+                if chosen_principle == 'maximizing_floor':
+                    marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
+
+                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+
+        # 2. Maximizing Average (simple principle)
+        if 'maximizing_average' in grouped:
+            for outcome in grouped['maximizing_average']:
+                dist_num = outcome['distribution_index'] + 1
+                earnings = outcome['agent_earnings']
+                income = outcome['agent_income']
+                principle_name = lang_manager.get("common.principle_names.maximizing_average")
+
+                marker = ""
+                if chosen_principle == 'maximizing_average':
+                    marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
+
+                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+
+        # 3. Floor Constraint (grouped with multiple children)
+        if 'maximizing_average_floor_constraint' in grouped:
+            result_lines.append("")
+            parent_name = lang_manager.get("common.principle_names.maximizing_average_floor_constraint")
+            result_lines.append(f"- {parent_name}:")
+
+            for outcome in grouped['maximizing_average_floor_constraint']:
+                dist_num = outcome['distribution_index'] + 1
+                earnings = outcome['agent_earnings']
+                income = outcome['agent_income']
+                constraint_amt = outcome['constraint_amount']
+
+                floor_label = lang_manager.get("results_explicit.floor_constraint_label", amount=f"{constraint_amt:,}")
+
+                marker = ""
+                if chosen_principle == 'maximizing_average_floor_constraint' and chosen_constraint == constraint_amt:
+                    marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
+
+                result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+
+        # 4. Range Constraint (grouped with multiple children)
+        if 'maximizing_average_range_constraint' in grouped:
+            result_lines.append("")
+            parent_name = lang_manager.get("common.principle_names.maximizing_average_range_constraint")
+            result_lines.append(f"- {parent_name}:")
+
+            for outcome in grouped['maximizing_average_range_constraint']:
+                dist_num = outcome['distribution_index'] + 1
+                earnings = outcome['agent_earnings']
+                income = outcome['agent_income']
+                constraint_amt = outcome['constraint_amount']
+
+                range_label = lang_manager.get("results_explicit.range_constraint_label", amount=f"{constraint_amt:,}")
+
+                marker = ""
+                if chosen_principle == 'maximizing_average_range_constraint' and chosen_constraint == constraint_amt:
+                    marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
+
+                result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+
+        return "\n".join(result_lines)
+
+    def _build_phase1_round_results(
+        self,
+        round_num: int,
+        parsed_choice,
+        assigned_class: 'IncomeClass',
+        earnings: float,
+        distribution_set,
+        comprehensive_data: Dict[str, Any],
+        probabilities,
+        config: ExperimentConfiguration
+    ) -> str:
+        """
+        Build Phase 1 round results using explicit causal narrative format.
+
+        Similar to Phase 2 format but adapted for single-round context.
+        Includes distributions table, class probabilities, explicit causality,
+        and grouped counterfactual outcomes.
+
+        Args:
+            round_num: Round number (1-4)
+            parsed_choice: PrincipleChoice that was selected
+            assigned_class: IncomeClass enum that was assigned
+            earnings: Final earnings amount
+            distribution_set: The distribution set used
+            comprehensive_data: Comprehensive outcomes data
+            probabilities: Income class probabilities
+            config: Experiment configuration
+
+        Returns:
+            Formatted results string with explicit causal narrative
+        """
+        result_parts = []
+        lang_manager = self.language_manager
+
+        # Check if original values mode for compatibility
+        original_values_mode = getattr(config, 'original_values_mode', None)
+        is_original_values = original_values_mode and original_values_mode.enabled if original_values_mode else False
+
+        # Get localized principle name and constraint text
+        agent_outcome = None
+        for outcome in comprehensive_data['outcomes']:
+            if (outcome['principle_key'] == parsed_choice.principle.value and
+                outcome.get('constraint_amount') == parsed_choice.constraint_amount):
+                agent_outcome = outcome
+                break
+
+        principle_name = agent_outcome['principle_name'] if agent_outcome else parsed_choice.principle.value
+        constraint_text = ""
+        if parsed_choice.constraint_amount is not None:
+            principle_slug = parsed_choice.principle.value
+            if principle_slug == 'maximizing_average_floor_constraint':
+                constraint_label = lang_manager.get("results_explicit.floor_constraint_label", amount=f"{parsed_choice.constraint_amount:,}")
+            else:
+                constraint_label = lang_manager.get("results_explicit.range_constraint_label", amount=f"{parsed_choice.constraint_amount:,}")
+            constraint_text = f" {constraint_label}"
+
+        # 1. Round header
+        round_header = lang_manager.get("results_phase1.round_header", round_num=round_num)
+        result_parts.append(round_header)
+        result_parts.append("")
+
+        # 2. Principle chosen statement
+        principle_chosen = lang_manager.get(
+            "results_phase1.principle_chosen",
+            principle_name=principle_name,
+            constraint=constraint_text
+        )
+        result_parts.append(principle_chosen)
+        result_parts.append("")
+
+        # 3. Class probabilities
+        prob_header = lang_manager.get("results_phase1.probabilities_header")
+        result_parts.append(prob_header)
+        class_keys = ['high', 'medium_high', 'medium', 'medium_low', 'low']
+        for key in class_keys:
+            cls_name = lang_manager.get(f'common.income_classes.{key}')
+            p = getattr(probabilities, key)
+            result_parts.append(f"- {cls_name}: {p*100:.0f}%")
+        result_parts.append("")
+
+        # 4. Class assignment (Note: user changed this to "randomly assigned")
+        class_label = comprehensive_data['class_display_name']
+        assignment = lang_manager.get("results_phase1.assignment_statement", class_name=class_label)
+        result_parts.append(assignment)
+        result_parts.append("")
+
+        # 5. Distributions table
+        distributions_header = lang_manager.get("results_phase1.distributions_header", round_num=round_num)
+        result_parts.append(distributions_header)
+        result_parts.append("")
+
+        # Build distributions table
+        table_lines = []
+        table_lines.append("| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |")
+        table_lines.append("|--------------|---------|---------|---------|---------|")
+
+        class_order = [IncomeClass.HIGH, IncomeClass.MEDIUM_HIGH, IncomeClass.MEDIUM, IncomeClass.MEDIUM_LOW, IncomeClass.LOW]
+        for cls in class_order:
+            cls_label = lang_manager.get(f"common.income_classes.{cls.value}")
+            row = [cls_label]
+            for dist in distribution_set.distributions:
+                income = dist.get_income_by_class(cls)
+                row.append(f"${income:,}")
+            table_lines.append("| " + " | ".join(row) + " |")
+
+        # Add average row
+        average_label = lang_manager.get("common.average_label", default="Average")
+        avg_row = [average_label]
+        for dist in distribution_set.distributions:
+            avg_income = dist.get_average_income(probabilities)
+            avg_row.append(f"${avg_income:,.0f}")
+        table_lines.append("| " + " | ".join(avg_row) + " |")
+
+        result_parts.extend(table_lines)
+        result_parts.append("")
+
+        # 6. Causal narrative
+        # Determine which distribution was selected
+        dist_num = agent_outcome['distribution_index'] + 1 if agent_outcome else 1
+        income = agent_outcome['agent_income'] if agent_outcome else 0
+
+        causal_narrative = lang_manager.get(
+            "results_phase1.causal_narrative",
+            principle_name=principle_name,
+            constraint=constraint_text,
+            dist_num=dist_num,
+            class_name=class_label,
+            income=f"{income:,}",
+            earnings=f"{earnings:.2f}"
+        )
+        result_parts.append(causal_narrative)
+        result_parts.append("")
+
+        # 7. Counterfactual analysis header
+        counterfactual_header = lang_manager.get("results_phase1.counterfactual_header")
+        result_parts.append(counterfactual_header)
+
+        # 8. Counterfactual purpose
+        counterfactual_purpose = lang_manager.get(
+            "results_phase1.counterfactual_purpose",
+            class_name=class_label
+        )
+        result_parts.append(counterfactual_purpose)
+        result_parts.append("")
+
+        # 9. Outcomes header
+        outcomes_header = lang_manager.get(
+            "results_phase1.outcomes_header",
+            round_num=round_num,
+            class_name=class_label
+        )
+        result_parts.append(outcomes_header)
+        result_parts.append("")
+
+        # 10. Grouped counterfactual outcomes
+        grouped_outcomes = self._build_grouped_counterfactual_outcomes(
+            comprehensive_data,
+            parsed_choice.principle.value,
+            parsed_choice.constraint_amount,
+            earnings
+        )
+        result_parts.append(grouped_outcomes)
+
+        return "\n".join(result_parts)
+
     async def _step_1_2b_post_explanation_ranking(
         self,
         participant: ParticipantAgent,

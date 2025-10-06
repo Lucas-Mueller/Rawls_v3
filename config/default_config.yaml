@@ -7,7 +7,7 @@ agents:
     personality: "You are an american college student."
     model: "gpt-4.1-nano"
     memory_character_limit: 25000
-    reasoning_enabled: true
+    reasoning_enabled: false
     temperature: 0
     
   - name: "Alice" 
@@ -15,7 +15,7 @@ agents:
     model:  "gpt-4.1-nano"
     temperature: 0
     memory_character_limit: 25000
-    reasoning_enabled: true
+    reasoning_enabled: false
 
     
 

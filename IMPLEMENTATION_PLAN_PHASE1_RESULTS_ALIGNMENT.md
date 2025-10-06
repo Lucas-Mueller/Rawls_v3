@@ -59,7 +59,7 @@ The probabilities for each income class are:
 - Medium low: 20%
 - Low: 10%
 
-You were assigned to the income class Medium high
+You were randomly assigned to the income class Medium high
 
 These were the Round X Distributions:
 

@@ -4,7 +4,8 @@ Unit tests for distribution generation system.
 import random
 import unittest
 from core.distribution_generator import DistributionGenerator
-from models import IncomeDistribution, JusticePrinciple, PrincipleChoice, CertaintyLevel
+from models import IncomeDistribution, JusticePrinciple, PrincipleChoice, CertaintyLevel, IncomeClass
+from models.experiment_types import IncomeClassProbabilities
 from utils.language_manager import LanguageManager
 
 
@@ -137,13 +138,69 @@ class TestDistributionGenerator(unittest.TestCase):
         rng_two = random.Random(99)
 
         earnings_one = DistributionGenerator.calculate_alternative_earnings(
-            distributions, random_gen=rng_one
+            distributions,
+            random_gen=rng_one
         )
         earnings_two = DistributionGenerator.calculate_alternative_earnings(
-            distributions, random_gen=rng_two
+            distributions,
+            random_gen=rng_two
         )
 
         self.assertEqual(earnings_one, earnings_two)
+
+    def test_weighted_alternative_earnings_respect_probabilities(self):
+        """Weighted alternative earnings should reflect provided class probabilities."""
+        distributions = [
+            IncomeDistribution(high=40000, medium_high=35000, medium=30000, medium_low=25000, low=10000),
+            IncomeDistribution(high=42000, medium_high=36000, medium=30000, medium_low=25000, low=20000)
+        ]
+        probs = IncomeClassProbabilities(high=0.0, medium_high=0.0, medium=0.0, medium_low=0.0, low=1.0)
+
+        earnings = DistributionGenerator.calculate_alternative_earnings(
+            distributions,
+            probabilities=probs,
+            random_gen=random.Random(7)
+        )
+
+        self.assertEqual(earnings['distribution_1'], 1.0)
+        self.assertEqual(earnings['distribution_2'], 2.0)
+
+    def test_weighted_principle_counterfactuals_use_probabilities(self):
+        """Counterfactual principle earnings should choose weighted-optimal distributions."""
+        distributions = [
+            IncomeDistribution(high=50000, medium_high=40000, medium=30000, medium_low=20000, low=20000),
+            IncomeDistribution(high=60000, medium_high=55000, medium=45000, medium_low=30000, low=10000)
+        ]
+        probs = IncomeClassProbabilities(high=0.0, medium_high=0.0, medium=0.0, medium_low=0.0, low=1.0)
+
+        weighted_same_class = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+            distributions,
+            IncomeClass.LOW,
+            probabilities=probs
+        )
+        unweighted_same_class = DistributionGenerator.calculate_alternative_earnings_by_principle_fixed_class(
+            distributions,
+            IncomeClass.LOW
+        )
+
+        self.assertEqual(
+            weighted_same_class[JusticePrinciple.MAXIMIZING_AVERAGE.value],
+            2.0
+        )
+        self.assertEqual(
+            unweighted_same_class[JusticePrinciple.MAXIMIZING_AVERAGE.value],
+            1.0
+        )
+
+        weighted_by_principle = DistributionGenerator.calculate_alternative_earnings_by_principle(
+            distributions,
+            probabilities=probs,
+            random_gen=random.Random(11)
+        )
+        self.assertEqual(
+            weighted_by_principle[JusticePrinciple.MAXIMIZING_AVERAGE.value],
+            2.0
+        )
 
 
 if __name__ == '__main__':

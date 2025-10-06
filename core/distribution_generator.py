@@ -271,37 +271,48 @@ class DistributionGenerator:
         return assigned_class, payoff
     
     @staticmethod
-    def calculate_alternative_earnings(distributions: List[IncomeDistribution], random_gen: random.Random = None) -> dict:
+    def calculate_alternative_earnings(
+        distributions: List[IncomeDistribution],
+        probabilities: Optional[IncomeClassProbabilities] = None,
+        random_gen: random.Random = None
+    ) -> dict:
         """Calculate what participant would have earned under each distribution.
-        
+
         Args:
             distributions: List of distributions to calculate earnings for
+            probabilities: Optional weighted probabilities for income class assignment
             random_gen: Random generator to use (defaults to global random)
         """
         alternative_earnings = {}
-        
+
         for i, dist in enumerate(distributions):
             # For each distribution, randomly assign class and calculate earnings
-            assigned_class, earnings = DistributionGenerator.calculate_payoff(dist, random_gen=random_gen)
+            assigned_class, earnings = DistributionGenerator.calculate_payoff(
+                dist,
+                probabilities,
+                random_gen=random_gen
+            )
             alternative_earnings[f"distribution_{i+1}"] = earnings
-        
+
         return alternative_earnings
-    
+
     @staticmethod
     def calculate_alternative_earnings_by_principle(
         distributions: List[IncomeDistribution], 
         constraint_amount: Optional[int] = None,
+        probabilities: Optional[IncomeClassProbabilities] = None,
         random_gen: random.Random = None
     ) -> dict:
         """Calculate what participant would have earned under each principle choice.
-        
+
         Args:
             distributions: List of distributions to apply principles to
             constraint_amount: Optional constraint amount for constrained principles
+            probabilities: Optional weighted probabilities for distribution selection and payoff
             random_gen: Random generator to use (defaults to global random)
         """
         from models.principle_types import JusticePrinciple, PrincipleChoice, CertaintyLevel
-        
+
         alternative_earnings = {}
         
         # Define all four principles
@@ -332,13 +343,20 @@ class DistributionGenerator:
                 
                 # Apply this principle to the distributions
                 chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice, language_manager=None
+                    distributions,
+                    choice,
+                    probabilities,
+                    language_manager=None
                 )
-                
+
                 # Calculate what they would have earned with this principle
-                assigned_class, earnings = DistributionGenerator.calculate_payoff(chosen_distribution, probabilities=None, random_gen=random_gen)
+                assigned_class, earnings = DistributionGenerator.calculate_payoff(
+                    chosen_distribution,
+                    probabilities,
+                    random_gen=random_gen
+                )
                 alternative_earnings[principle.value] = earnings
-                
+
             except Exception as e:
                 # If principle application fails, record as 0 earnings
                 alternative_earnings[principle.value] = 0.0
@@ -349,7 +367,8 @@ class DistributionGenerator:
     def calculate_alternative_earnings_by_principle_fixed_class(
         distributions: List[IncomeDistribution],
         assigned_class: IncomeClass,
-        constraint_amount: Optional[int] = None
+        constraint_amount: Optional[int] = None,
+        probabilities: Optional[IncomeClassProbabilities] = None
     ) -> dict:
         """
         Calculate what participant would have earned under each principle with FIXED class assignment.
@@ -411,7 +430,10 @@ class DistributionGenerator:
 
                 # Apply this principle to the distributions
                 chosen_distribution, _ = DistributionGenerator.apply_principle_to_distributions(
-                    distributions, choice, language_manager=None
+                    distributions,
+                    choice,
+                    probabilities,
+                    language_manager=None
                 )
 
                 # Get income for the FIXED assigned class (not random)

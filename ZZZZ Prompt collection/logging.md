@@ -3,7 +3,7 @@ an
 Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
 
 
-please implement phase 1 and 2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes
+please implement phase 1 and 2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
 Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 
@@ -354,3 +354,70 @@ Return: Your complete updated memory (not incremental changes or prefixes like '
 "
 
 Pleae update the plan with my idea, and give feedback on it! 
+
+
+
+Group Discussion - Round 2 of 7 (Internal Reasoning)
+
+Before making your public statement, consider internally:
+
+What is your current position on which justice principle the group should adopt?
+What are the current positions of the other participants? 
+What are the key arguments in the discussion so far? 
+If a vote has been conducted, analyze its outcome. 
+Where do you agree or disagree with the other participants?
+Strategically think how you want to contribute to the discussion and steer it towards your preferneces. 
+Remember if no consensus is reached, no principle will be adopted. Instead payoffs will be assigned complelty at random following no particular principle. 
+Think whether you want to intiate/participate in a vote this round, remember you can trigger a vote once per round and a failed vote has no negative consequences.
+
+Important: Your internal reasoning from your previous round will be overwritten by your reponse to this prompt. If you want to keep anything from it, please include it in your response.
+
+Provide your internal reasoning (this will not be shared with other participants).
+
+
+
+Group Discussion - Round 2 of 7 (Internal Reasoning)
+
+Before making your public statement, consider internally:
+
+1. Situational Analysis:
+
+What is your current preferred justice principle and the core reasons for it?
+
+What are the stated positions of the other participants? Based on their arguments, what do you infer are their underlying interests or motivations?
+
+What are the key arguments and proposals on the table so far?
+
+If a vote was conducted, what was the outcome and what does it reveal about current alliances or preferences?
+
+Where are the main points of agreement and disagreement in the group?
+
+2. Strategic Planning for This Round:
+
+What is your primary goal for this round? (e.g., persuade a specific person, test support for an idea, block a rival proposal).
+
+How will you contribute to the discussion to steer it towards your preferences? What key points will you make?
+
+Who are your potential allies on this issue? What specific language could you use to win them over or form a voting bloc?
+
+Are there any small concessions you are willing to offer to build consensus without compromising your core objective?
+
+3. Voting Strategy:
+
+Does it make sense to initiate a vote this round? Why or why not? (Remember you can trigger a vote once, and a failed vote has no negative consequences).
+
+How does your plan for this round fit into your overall strategy for the remaining rounds?
+
+Important Reminders:
+
+If no consensus is reached by the end of the last round (round {max_rounds}), payoffs will be assigned completely at random.
+
+Your internal reasoning from your previous round will be overwritten by your response to this prompt. If you want to keep any part of it, include it below.
+
+Provide your internal reasoning (this will not be shared with other participants).
+
+
+
+If you,  as  a group,  do  not  adopt  any principle,  then  we  will  select 
+one  of the  income  distributions  at  random  for you  as  a  group. 
+That  choice  of income  distribution  will  conform  to no  particular characteristics. 
