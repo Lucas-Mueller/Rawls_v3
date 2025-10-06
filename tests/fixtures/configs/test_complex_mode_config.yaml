@@ -1,0 +1,35 @@
+language: "English" 
+
+agents:
+  - name: "Charlie"
+    personality: "You are Charlie, a decisive participant."
+    model: 'gpt-4.1-mini'
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+    
+  - name: "Diana" 
+    personality: "You are Diana, a collaborative participant."
+    model: 'gpt-4.1-mini'
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: false
+
+utility_agent_model: 'gpt-4.1-mini'
+utility_agent_temperature: 0.0
+
+# Testing complex mode
+
+phase2_rounds: 2  # Short test
+distribution_range_phase2: [4, 8]
+
+# Income class assignment probabilities
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.10
+  medium: 0.50
+  medium_low: 0.25
+  low: 0.10
+
+original_values_mode:
+  enabled: false

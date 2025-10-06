@@ -12,7 +12,7 @@ import random
 import yaml
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 from dotenv import load_dotenv
 
 # For Jupyter notebook compatibility
@@ -39,21 +39,23 @@ def generate_random_config(
     utility_model: str = "gpt-4.1-mini",
     language: str = "English",
     distribution_range_phase1: List[float] = [0.5, 2.0],
-    distribution_range_phase2: List[float] = [0.5, 2.0]
+    distribution_range_phase2: List[float] = [0.5, 2.0],
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """Generate a random configuration for the Frohlich Experiment."""
-    
+    rng = random.Random(seed) if seed is not None else random
+
     agents = []
     for i in range(num_agents):
         agent_name = f"Agent_{i + 1}"
         
         if isinstance(models, list):
-            selected_model = random.choice(models)
+            selected_model = rng.choice(models)
         else:
             selected_model = models
         
         if isinstance(temperature, tuple) and len(temperature) == 2:
-            selected_temp = round(random.uniform(temperature[0], temperature[1]), 2)
+            selected_temp = round(rng.uniform(temperature[0], temperature[1]), 2)
         else:
             selected_temp = float(temperature)
         

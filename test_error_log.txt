@@ -1,0 +1,103 @@
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 7cdcff16
+Participants: 2
+Language: English
+Max Phase 2 rounds: 1
+Configuration file: test_confirmation_error.yaml
+Started at: 09:42:34
+
+🤖 Initializing Agents...
+  ✅ Sophie (gpt-4.1-nano) [0.0s]
+  ✅ Alice (gpt-4.1-nano) [0.0s]
+
+✨ All agents ready in 3.0s
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 2 participants...
+
+  Sophie: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Alice: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Sophie: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+  Alice: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+  Alice: Post-explanation ranking [████████░░░░░░░░░░░░] 40.0%
+  Sophie: Post-explanation ranking [████████░░░░░░░░░░░░] 40.0%
+  Alice: Application round 1 [██████████░░░░░░░░░░] 50.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am sure about this choice.'
+  Sophie: Application round 1 [██████████░░░░░░░░░░] 50.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am unsure about this choice.'
+  Alice: Application round 2 [████████████░░░░░░░░] 60.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am sure about this choice.'
+  Sophie: Application round 2 [████████████░░░░░░░░] 60.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the average income. I am sure about this choice.'
+  Alice: Application round 3 [██████████████░░░░░░] 70.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am sure about this choice.'
+  Alice: Application round 4 [████████████████░░░░] 80.0%
+  Sophie: Application round 3 [██████████████░░░░░░] 70.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the average income. I am sure about this choice.'
+DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am sure about this choice.'
+  Alice: Final ranking [██████████████████░░] 90.0%
+  Sophie: Application round 4 [████████████████░░░░] 80.0%
+DEBUG: Principle choice response to parse: 'I choose maximizing the average income. I am sure about this choice.'
+  Sophie: Final ranking [██████████████████░░] 90.0%
+  Alice: Completed [████████████████████] 100.0%
+  Sophie: Completed [████████████████████] 100.0%
+
+🎯 Phase 1 Complete - Duration: 1m 11s
+  Sophie: $9.50 earned
+  Alice: $8.20 earned
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 1 rounds)...
+
+🗣️  Round 1 (1/1)
+   Speaking order: Sophie → Alice
+   💭 Sophie is thinking...
+   ✅ Sophie responded (501 chars) [3.3s]
+   💭 Alice is thinking...
+   ✅ Alice responded (386 chars) [4.5s]
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete - 33.3s
+
+🏁 Phase 2 Complete without consensus - Duration: 55.2s
+   Rounds conducted: 1
+   Final earnings:
+     Sophie: $5.49
+     Alice: $9.15
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 2m 9s
+Consensus: ❌ Not reached
+Errors: None
+Results saved: test_error_output.json
+🔗 Trace: https://platform.openai.com/observability/traces/1b28d34e19764fd58ff0ef54c52e8595
+
+
+Frohlich Experiment Results (ID: 7cdcff16-8a49-41c1-ba34-43b97b7e032d)
+Completed in 126.94 seconds
+
+PHASE 1 RESULTS:
+  Sophie: $9.50 (Initial pref: maximizing_average, Final pref: maximizing_average)
+  Alice: $8.20 (Initial pref: maximizing_average, Final pref: maximizing_floor)
+  Average Phase 1 earnings: $8.85
+
+PHASE 2 RESULTS:
+  No consensus reached after 1 rounds
+  Payoffs randomly assigned
+  Phase 2 earnings:
+    Sophie: $5.49
+    Alice: $9.15
+  Average Phase 2 earnings: $7.32
+
+TOTAL EARNINGS:
+  Alice: $17.35
+  Sophie: $14.99
+
+HIGHEST EARNER: Alice with $17.35

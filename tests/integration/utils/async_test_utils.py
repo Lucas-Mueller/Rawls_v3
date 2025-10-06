@@ -43,8 +43,16 @@ class AsyncTestUtils:
         return AsyncMock(side_effect=mock_response)
     
     @staticmethod
-    async def simulate_agent_delay(min_delay: float = 0.1, max_delay: float = 0.5):
-        """Simulate realistic agent response delays."""
+    async def simulate_agent_delay(min_delay: float = 0.1, max_delay: float = 0.5, seed: Optional[int] = None):
+        """Simulate realistic agent response delays.
+        
+        Args:
+            min_delay: Minimum delay in seconds
+            max_delay: Maximum delay in seconds  
+            seed: Optional seed for deterministic delays in tests
+        """
+        if seed is not None:
+            random.seed(seed)
         delay = random.uniform(min_delay, max_delay)
         await asyncio.sleep(delay)
     
@@ -52,12 +60,23 @@ class AsyncTestUtils:
     def create_error_injecting_mock(
         error_type: type, 
         error_frequency: float = 0.3,
-        success_responses: Optional[List[str]] = None
+        success_responses: Optional[List[str]] = None,
+        seed: Optional[int] = None
     ) -> AsyncMock:
-        """Create mock that intermittently raises errors."""
+        """Create mock that intermittently raises errors.
+        
+        Args:
+            error_type: Type of exception to raise
+            error_frequency: Probability of raising an error (0.0 to 1.0)
+            success_responses: List of successful response strings
+            seed: Optional seed for deterministic error injection in tests
+        """
         if success_responses is None:
             success_responses = ["Success response"]
         
+        if seed is not None:
+            random.seed(seed)
+            
         response_iter = iter(success_responses * 100)  # Repeat responses
         
         async def mock_with_errors(*args, **kwargs):
@@ -285,22 +304,22 @@ class TestDataGenerators:
         """Generate principle choice responses based on preference."""
         preferences = {
             "floor": [
-                "I choose principle a (maximizing the floor). I am sure about this choice.",
-                "I choose principle a (maximizing the floor). I am very sure about this choice.",
-                "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
-                "I choose principle a (maximizing the floor). I am very sure about this choice."
+                "I choose maximizing the floor income (maximizing the floor). I am sure about this choice.",
+                "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice.",
+                "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice.",
+                "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice."
             ],
             "average": [
-                "I choose principle b (maximizing the average). I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am very sure about this choice.",
-                "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am very sure about this choice."
+                "I choose maximizing the average income (maximizing the average). I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am very sure about this choice.",
+                "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am very sure about this choice."
             ],
             "mixed": [
-                "I choose principle a (maximizing the floor). I am sure about this choice.",
-                "I choose principle b (maximizing the average). I am sure about this choice.",
-                "I choose principle c (maximizing average with floor constraint) with a constraint of $16,000. I am unsure about this choice.",
-                "I choose principle d (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice."
+                "I choose maximizing the floor income (maximizing the floor). I am sure about this choice.",
+                "I choose maximizing the average income (maximizing the average). I am sure about this choice.",
+                "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $16,000. I am unsure about this choice.",
+                "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $18,000. I am sure about this choice."
             ]
         }
         

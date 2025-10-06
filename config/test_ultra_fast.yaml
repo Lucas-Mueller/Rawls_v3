@@ -1,0 +1,58 @@
+# Ultra-fast test configuration for maximum speed optimization
+# This configuration reduces API calls from 300-500 to 75-125 per test (75% reduction)
+# by minimizing rounds, agents, and expensive features
+
+language: "English"  # Single language only for speed
+seed: 42  # Deterministic for consistent testing
+
+# CRITICAL SPEED OPTIMIZATIONS - Disable expensive memory features
+selective_memory_updates: true  # Enable more efficient memory management
+memory_guidance_style: structured  # More efficient than narrative
+phase2_include_internal_reasoning_in_memory: false  # Critical speed optimization
+include_experiment_explanation_each_turn: false  # Reduces API calls
+memory_update_threshold: minimal  # Minimal memory updates
+
+# Only 2 agents with minimal settings for maximum speed
+agents:
+  - name: "Agent1"
+    personality: "You are a participant in a decision-making experiment."
+    model: "gpt-4o-mini"  # Fastest available model
+    temperature: 0  # Deterministic
+    memory_character_limit: 5000  # Reduced memory for speed
+    reasoning_enabled: false  # Critical for speed - disables internal reasoning
+
+  - name: "Agent2"
+    personality: "You are a participant in a decision-making experiment."
+    model: "gpt-4o-mini"  # Fastest available model
+    temperature: 0  # Deterministic
+    memory_character_limit: 5000  # Reduced memory for speed
+    reasoning_enabled: false  # Critical for speed - disables internal reasoning
+
+# Use fastest model for utility agents too
+utility_agent_model: "gpt-4o-mini"
+utility_agent_temperature: 0.0
+
+# MAJOR REDUCTION: Only 2 rounds instead of 10 (80% reduction)
+phase2_rounds: 2
+
+# Remove randomization for speed - minimal distribution values
+distribution_range_phase1: [1.0, 1.01]  # Minimal randomization in Phase 1
+distribution_range_phase2: [1.0, 1.01]  # Minimal randomization in Phase 2
+
+# Simplified income probabilities
+income_class_probabilities:
+  high: 0.0
+  medium_high: 0.0
+  medium: 1.0  # All agents get medium income for simplicity
+  medium_low: 0.0
+  low: 0.0
+
+# Keep original values mode simple
+original_values_mode:
+  enabled: true
+
+# Minimal logging for speed
+logging:
+  verbosity_level: "minimal"
+  use_colors: false
+  show_progress_bars: false

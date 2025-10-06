@@ -4,7 +4,7 @@ Unit tests for model provider utilities.
 import unittest
 from unittest.mock import patch, MagicMock
 import os
-from agents.extensions.models.litellm_model import LitellmModel
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 
 from utils.model_provider import (
     detect_model_provider,
@@ -12,6 +12,7 @@ from utils.model_provider import (
     validate_environment_for_models,
     get_model_provider_info
 )
+from utils.openrouter_client import get_openrouter_client
 from config.models import AgentConfiguration
 
 
@@ -19,55 +20,88 @@ class TestModelProvider(unittest.TestCase):
     
     def test_detect_model_provider_openai(self):
         """Test detection of OpenAI models (no slash)."""
-        model, is_litellm = detect_model_provider("gpt-4.1-mini")
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            model, provider = detect_model_provider("gpt-4.1-mini")
         self.assertEqual(model, "gpt-4.1-mini")
-        self.assertFalse(is_litellm)
+        self.assertEqual(provider, "openai")
     
     def test_detect_model_provider_openrouter(self):
         """Test detection of OpenRouter models (with slash)."""
-        model, is_litellm = detect_model_provider("google/gemini-2.5-flash")
-        self.assertEqual(model, "openrouter/google/gemini-2.5-flash")
-        self.assertTrue(is_litellm)
+        model, provider = detect_model_provider("google/gemini-2.5-flash")
+        self.assertEqual(model, "google/gemini-2.5-flash")
+        self.assertEqual(provider, "openrouter")
     
     def test_detect_model_provider_multiple_slashes(self):
         """Test detection with multiple slashes."""
-        model, is_litellm = detect_model_provider("anthropic/claude-3-5-sonnet-20241022")
-        self.assertEqual(model, "openrouter/anthropic/claude-3-5-sonnet-20241022")
-        self.assertTrue(is_litellm)
+        model, provider = detect_model_provider("anthropic/claude-3-5-sonnet-20241022")
+        self.assertEqual(model, "anthropic/claude-3-5-sonnet-20241022")
+        self.assertEqual(provider, "openrouter")
+
+    def test_detect_model_provider_ollama_prefix(self):
+        """Test detection of Ollama models via explicit prefix."""
+        model, provider = detect_model_provider("ollama/llama3.2")
+        self.assertEqual(model, "llama3.2")
+        self.assertEqual(provider, "ollama")
     
-    @patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"})
-    @patch('utils.model_provider.LitellmModel')
-    def test_create_model_config_litellm(self, mock_litellm):
-        """Test LiteLLM model creation."""
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_create_model_config_openrouter(self, mock_get_client, mock_openai_model):
+        """Test OpenRouter model creation via OpenAIChatCompletionsModel."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
         mock_instance = MagicMock()
-        mock_litellm.return_value = mock_instance
+        mock_openai_model.return_value = mock_instance
         
         model_config = create_model_config("google/gemini-2.5-flash")
         
-        mock_litellm.assert_called_once_with(
-            model="openrouter/google/gemini-2.5-flash",
-            api_key="test-key"
+        mock_get_client.assert_called_once()
+        mock_openai_model.assert_called_once_with(
+            model="google/gemini-2.5-flash:nitro",
+            openai_client=mock_client
         )
         self.assertEqual(model_config, mock_instance)
     
     def test_create_model_config_openai(self):
         """Test OpenAI model string passthrough."""
-        model_config = create_model_config("gpt-4.1-mini")
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            model_config = create_model_config("gpt-4.1-mini")
         self.assertEqual(model_config, "gpt-4.1-mini")
-    
-    @patch('utils.model_provider.LitellmModel')
-    def test_create_model_config_missing_key(self, mock_litellm):
-        """Test that LiteLLM model is created even without OpenRouter key (matches Open_Router_Test.py behavior)."""
+
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_ollama_client')
+    def test_create_model_config_ollama(self, mock_get_client, mock_openai_model):
+        """Test Ollama model creation via OpenAIChatCompletionsModel."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
         mock_instance = MagicMock()
-        mock_litellm.return_value = mock_instance
+        mock_openai_model.return_value = mock_instance
+
+        model_config = create_model_config("ollama/llama3.2")
+
+        mock_get_client.assert_called_once()
+        mock_openai_model.assert_called_once_with(
+            model="llama3.2",
+            openai_client=mock_client
+        )
+        self.assertEqual(model_config, mock_instance)
+
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_create_model_config_openrouter_without_key(self, mock_get_client, mock_openai_model):
+        """Test that OpenRouter model is created even without API key in environment."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
         
         with patch.dict(os.environ, {}, clear=True):
             model_config = create_model_config("google/gemini-2.5-flash")
             
-            # Should still create LiteLLM model with None API key (like Open_Router_Test.py)
-            mock_litellm.assert_called_once_with(
-                model="openrouter/google/gemini-2.5-flash",
-                api_key=None
+            # Should still create model using get_openrouter_client()
+            mock_get_client.assert_called_once()
+            mock_openai_model.assert_called_once_with(
+                model="google/gemini-2.5-flash:nitro",
+                openai_client=mock_client
             )
             self.assertEqual(model_config, mock_instance)
     
@@ -112,60 +146,132 @@ class TestModelProvider(unittest.TestCase):
     
     def test_get_model_provider_info_openai(self):
         """Test provider info for OpenAI models."""
-        info = get_model_provider_info("gpt-4.1-mini")
-        
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}, clear=False):
+            info = get_model_provider_info("gpt-4.1-mini")
+
         expected = {
             "original_model": "gpt-4.1-mini",
             "processed_model": "gpt-4.1-mini",
-            "is_litellm": False,
-            "provider": "OpenAI",
+            "is_openrouter": False,
+            "provider": "openai",
             "requires_env_var": "OPENAI_API_KEY"
         }
-        
+
         self.assertEqual(info, expected)
-    
+
     def test_get_model_provider_info_openrouter(self):
         """Test provider info for OpenRouter models."""
         info = get_model_provider_info("google/gemini-2.5-flash")
-        
+
         expected = {
             "original_model": "google/gemini-2.5-flash",
-            "processed_model": "openrouter/google/gemini-2.5-flash",
-            "is_litellm": True,
-            "provider": "OpenRouter",
+            "processed_model": "google/gemini-2.5-flash",
+            "is_openrouter": True,
+            "provider": "openrouter",
             "requires_env_var": "OPENROUTER_API_KEY"
         }
-        
+
+        self.assertEqual(info, expected)
+
+    def test_get_model_provider_info_ollama(self):
+        """Test provider info for Ollama models."""
+        info = get_model_provider_info("ollama/llama3.2")
+
+        expected = {
+            "original_model": "ollama/llama3.2",
+            "processed_model": "llama3.2",
+            "is_openrouter": False,
+            "provider": "ollama",
+            "requires_env_var": "OLLAMA_BASE_URL (optional)"
+        }
+
         self.assertEqual(info, expected)
     
-    @patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"})
-    @patch('utils.model_provider.LitellmModel')
-    def test_temperature_handled_via_model_settings_for_litellm(self, mock_litellm):
-        """Test that temperature is handled via ModelSettings for LiteLLM models (not in constructor)."""
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_temperature_handled_via_model_settings_for_openrouter(self, mock_get_client, mock_openai_model):
+        """Test that temperature is handled via ModelSettings for OpenRouter models (not in constructor)."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
         mock_instance = MagicMock()
-        mock_litellm.return_value = mock_instance
+        mock_openai_model.return_value = mock_instance
         
-        # Temperature parameter is not passed to LiteLLM constructor
+        # Temperature parameter is not passed to OpenAIChatCompletionsModel constructor
         # It will be handled via ModelSettings in the Agent constructor
         model_config = create_model_config("google/gemini-2.5-flash", temperature=0.8)
         
-        # LitellmModel should be called without temperature (temperature goes to ModelSettings)
-        mock_litellm.assert_called_once_with(
-            model="openrouter/google/gemini-2.5-flash",
-            api_key="test-key"
+        # OpenAIChatCompletionsModel should be called without temperature (temperature goes to ModelSettings)
+        mock_get_client.assert_called_once()
+        mock_openai_model.assert_called_once_with(
+            model="google/gemini-2.5-flash:nitro",
+            openai_client=mock_client
         )
     
     def test_edge_case_empty_model_string(self):
         """Test behavior with empty model string."""
-        model, is_litellm = detect_model_provider("")
-        self.assertEqual(model, "")
-        self.assertFalse(is_litellm)
-    
+        with self.assertRaises(ValueError):
+            detect_model_provider("")
+
     def test_edge_case_slash_only_model(self):
         """Test behavior with slash-only model string."""
-        model, is_litellm = detect_model_provider("/")
-        self.assertEqual(model, "openrouter//")
-        self.assertTrue(is_litellm)
+        model, provider = detect_model_provider("/")
+        self.assertEqual(model, "/")
+        self.assertEqual(provider, "openrouter")
+    
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_nitro_suffix_addition(self, mock_get_client, mock_openai_model):
+        """Test that :nitro suffix is added to OpenRouter models."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
+        
+        model_config = create_model_config("qwen/qwen-2.5-72b-instruct")
+        
+        mock_openai_model.assert_called_once_with(
+            model="qwen/qwen-2.5-72b-instruct:nitro",
+            openai_client=mock_client
+        )
+    
+    @patch('utils.model_provider.OpenAIChatCompletionsModel')
+    @patch('utils.model_provider.get_openrouter_client')
+    def test_nitro_suffix_not_duplicated(self, mock_get_client, mock_openai_model):
+        """Test that :nitro suffix is not added if already present."""
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_instance = MagicMock()
+        mock_openai_model.return_value = mock_instance
+        
+        model_config = create_model_config("qwen/qwen-2.5-72b-instruct:nitro")
+        
+        # Should not double the suffix
+        mock_openai_model.assert_called_once_with(
+            model="qwen/qwen-2.5-72b-instruct:nitro",
+            openai_client=mock_client
+        )
+    
+    def test_nitro_suffix_utility_function(self):
+        """Test the _append_nitro_suffix utility function directly."""
+        from utils.model_provider import _append_nitro_suffix
+        
+        # OpenRouter models should get :nitro suffix
+        self.assertEqual(
+            _append_nitro_suffix("qwen/qwen-2.5-72b-instruct", True),
+            "qwen/qwen-2.5-72b-instruct:nitro"
+        )
+        
+        # Already has :nitro suffix - should not duplicate
+        self.assertEqual(
+            _append_nitro_suffix("qwen/qwen-2.5-72b-instruct:nitro", True),
+            "qwen/qwen-2.5-72b-instruct:nitro"
+        )
+        
+        # OpenAI models should remain unchanged
+        self.assertEqual(
+            _append_nitro_suffix("gpt-4", False),
+            "gpt-4"
+        )
 
 
 if __name__ == '__main__':

@@ -1,5 +1,4 @@
 openai-agents
-openai-agents[litellm]
 python-dotenv
 pydantic
 pandas
@@ -12,6 +11,17 @@ scipy
 statsmodels
 plotly
 diagrams
+
+# Testing dependencies
+pytest
+pytest-asyncio
+pytest-cov
+
+# Documentation dependencies
+sphinx>=7.0.0
+sphinx-rtd-theme
+furo
+pydocstyle
 
 # R programming language 
 # R package "languageserver" 

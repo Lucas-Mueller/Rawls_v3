@@ -1,0 +1,44 @@
+# Sample experiment configuration using a local Ollama model.
+# Requires `ollama serve` to be running and `ollama pull gemma3:1b` beforehand.
+
+language: English
+seed: 123
+
+# Keep memory guidance minimal for quick local runs
+selective_memory_updates: false
+memory_guidance_style: narrative
+phase2_include_internal_reasoning_in_memory: false
+include_experiment_explanation_each_turn: false
+memory_update_threshold: minimal
+
+agents:
+  - name: Ada
+    personality: "You are a cooperative analyst focused on equitable outcomes."
+    model: "ollama/gemma3:1b"
+    temperature: 0.6
+    memory_character_limit: 20000
+    reasoning_enabled: true
+
+  - name: Bruno
+    personality: "You are a methodical planner who prefers pragmatic compromises."
+    model: "ollama/gemma3:1b"
+    temperature: 0.6
+    memory_character_limit: 20000
+    reasoning_enabled: true
+
+utility_agent_model: "ollama/gemma3:1b"
+utility_agent_temperature: 0.0
+
+phase2_rounds: 2
+distribution_range_phase1: [0.5, 1.5]
+distribution_range_phase2: [0.5, 1.5]
+
+income_class_probabilities:
+  high: 0.2
+  medium_high: 0.2
+  medium: 0.2
+  medium_low: 0.2
+  low: 0.2
+
+original_values_mode:
+  enabled: false

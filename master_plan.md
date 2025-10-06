@@ -33,7 +33,9 @@ In this phase, each AI agent independently familiarizes itself with a set of jus
 
 * Very Sure
 
-* **Note for Claude Code:** A "utility agent" (a separate, specialized agent) will process the participant agent's output to extract the preference ranking and certainty.**1.2. Detailed Explanation of Principles Applied to Distributions*** **Action:** Agents are shown a table of four example income distributions.
+* **Note for Claude Code:** A "utility agent" (a separate, specialized agent) will process the participant agent's output to extract the preference ranking and certainty.
+
+**1.2. Detailed Explanation of Principles Applied to Distributions*** **Action:** Agents are shown a table of four example income distributions.
 
 * **Agent Task:** Agents are informed how each of the four justice principles would select a specific distribution from the examples. This is for informational purposes to deepen their understanding.\
   **Example Income Distributions:**|                  |             |             |             |             |
@@ -43,21 +45,29 @@ In this phase, each AI agent independently familiarizes itself with a set of jus
 | Medium high      | $27,000     | $22,000     | $24,000     | $20,000     |
 | Medium           | $24,000     | $20,000     | $21,000     | $19,000     |
 | Medium low       | $13,000     | $17,000     | $16,000     | $16,000     |
-| Low              | $12,000     | $13,000     | $14,000     | $15,000     |- **Distributions Chosen by Each Principle (Examples):**- **Maximizing the floor:** Distribution 4
+| Low              | $12,000     | $13,000     | $14,000     | $15,000     |-
+ **Distributions Chosen by Each Principle (Examples):
+ - **Maximizing the floor:** Distribution 4
 
 - **Maximizing average:** Distribution 1
 
-- **Maximizing average with a floor constraint of…:**- le $12,000: Distribution 1
+- **Maximizing average with a floor constraint of…:**- 
+  le $12,000: Distribution 1
 
 - le $13,000: Distribution 2
 
 - le $14,000: Distribution 3
 
-- le $15,000: Distribution 4- **Maximizing average with a range constraint of…:*** ge $20,000: Distribution 1
+- le $15,000: Distribution 4- 
+
+**Maximizing average with a range constraint of…:**
+* ge $20,000: Distribution 1
 
 * ge $17,000: Distribution 3
 
-* ge $15,000: Distribution 2**1.3. Repeated Application of Principles (4 Rounds)**This step is repeated four times for each agent.* **Action:** In each round, a new set of income distributions is presented to the agent.
+* ge $15,000: Distribution 2
+
+**1.3. Repeated Application of Principles (4 Rounds)**This step is repeated four times for each agent.* **Action:** In each round, a new set of income distributions is presented to the agent.
 
 * **Agent Task:** The agent must choose one of the four justice principles. If principle (c) or (d) is chosen, the agent _must_ specify the floor or range constraint value in dollar terms.
 
@@ -100,7 +110,8 @@ This phase involves a group of multiple AI agents interacting to reach a consens
 - **Process:** The group discusses for a maximum number of rounds, as set in the configuration file.\
   **Round Process:**1. **Speaking Order:** The speaking order for agents is randomly generated. A restriction: if one round ends with Agent X, the next round cannot start with Agent X.
 
-2. **Agent Turn:** For each agent's turn:- The agent is told the current round number and the total number of rounds.
+2. **Agent Turn:** For each agent's turn:
+- The agent is told the current round number and the total number of rounds.
 
 - The agent is given the "public history" (the full transcript of all previous public conversations between agents).
 

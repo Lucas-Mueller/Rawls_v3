@@ -1,10 +1,47 @@
 {
+  "experiment_title": "Justice Principle Experiment",
+  "experiment_description": "Multi-language experiment for studying distributive justice preferences",
+  "experiment_author": "Research Team",
+  "experiment_version": "3.0",
+  "supported_languages": [
+    "English",
+    "Spanish",
+    "Mandarin"
+  ],
+  "default_language": "English",
+  "master_principle_descriptions": {
+    "maximizing_floor": "**Maximizing Floor Income**: Choose the distribution that maximizes the lowest income in society. This principle considers only the welfare of the worst-off individual in society. In judging among income distributions, the distribution which ensures the poorest person the highest income is the most just. No person's income can go up unless it increases the income of the people at the very bottom.",
+    "maximizing_average": "**Maximizing Average Income**: Choose the distribution that maximizes the average income in society. This principle maximizes total societal income. For any society maximizing the average income maximizes the total income in the society.",
+    "maximizing_average_floor_constraint": "**Maximizing Average with Floor Constraint**: Choose the distribution that maximizes the average income only after a certain specified minimum income is guaranteed to everyone. Such a principle ensures that the attempt to maximize the average is constrained so as to ensure that individuals 'at the bottom' receive a specified minimum. To choose this principle one must specify the value of the floor (lowest income).",
+    "maximizing_average_range_constraint": "**Maximizing Average with Range Constraint**: Choose the distribution that attempts to maximize the average income only after guaranteeing that the difference between the poorest and the richest individuals (i.e., the range of income) in the society is not greater than a specified amount. Such a principle ensures that the attempt to maximize the average does not allow income differences between rich and poor to exceed a specified amount. To choose this principle one must specify the dollar difference between the high and low incomes."
+  },
   "common": {
     "principle_names": {
-      "maximizing_floor": "Maximizing the floor",
-      "maximizing_average": "Maximizing the average",
-      "maximizing_average_floor_constraint": "Maximizing the average with a floor constraint",
-      "maximizing_average_range_constraint": "Maximizing the average with a range constraint"
+      "maximizing_floor": "Maximizing Floor Income",
+      "maximizing_average": "Maximizing Average Income",
+      "maximizing_average_floor_constraint": "Maximizing Average with Floor Constraint",
+      "maximizing_average_range_constraint": "Maximizing Average with Range Constraint"
+    },
+    "principle_descriptions": {
+      "maximizing_floor": "Choose the distribution that maximizes the lowest income in society",
+      "maximizing_average": "Choose the distribution that maximizes the average income",
+      "maximizing_average_floor_constraint": "Maximize average income while ensuring everyone gets at least a specified minimum",
+      "maximizing_average_range_constraint": "Maximize average income while keeping the gap between richest and poorest within a specified limit"
+    },
+    "principle_notes": {
+      "floor_constraint": " (specify amount)",
+      "range_constraint": " (specify amount)"
+    },
+    "phase_names": {
+      "phase1": "Phase 1",
+      "phase2": "Phase 2"
+    },
+    "certainty_levels": {
+      "very_unsure": "Very unsure",
+      "unsure": "Unsure",
+      "sure": "Sure",
+      "very_sure": "Very sure",
+      "no_opinion": "No opinion"
     },
     "income_classes": {
       "high": "High",
@@ -13,72 +50,455 @@
       "medium_low": "Medium low",
       "low": "Low"
     },
-    "certainty_levels": {
-      "very_unsure": "very unsure",
-      "unsure": "unsure",
-      "no_opinion": "no opinion",
-      "sure": "sure",
-      "very_sure": "very sure"
+    "average_label": "Average",
+    "yes_no": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "list_formatting": {
+      "conjunction": "and",
+      "two_items": "{first} and {second}",
+      "three_plus_items": "{items}, and {last}"
     }
   },
   "prompts": {
-    "experiment_explanation": "\nYou are participating in an experiment studying principles of justice and income distribution.\n\nThe experiment has two main phases:\n\nPHASE 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.\n\nPHASE 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nThroughout the experiment, maintain your assigned personality while engaging thoughtfully with the principles and other participants.\n",
-    "phase1_round0_initial_ranking": "\nCURRENT TASK: Initial Principle Ranking\n\nThe Four Justice Principles:\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income in society\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average income while ensuring everyone gets at least a specified minimum\n4. **Maximizing the average income with a range constraint**: Maximize average income while keeping the gap between richest and poorest within a specified limit\n\nYou will be asked to rank these four justice principles from best (1) to worst (4) based on your preference.\nFor each principle, also indicate your certainty level (very unsure, unsure, no opinion, sure, very sure).\nExplain your reasoning clearly.\n\nRESPONSE FORMAT:\nPlease structure your response as follows:\n1. [Your best choice]\n2. [Your second choice]\n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nThen provide your detailed reasoning for this ranking.\n\nExample:\n1. Maximizing average with floor constraint\n2. Maximizing the floor income\n3. Maximizing average income\n4. Maximizing average with range constraint\n\nOverall certainty: sure\n\n[Your reasoning here...]\n",
-    "phase1_round_neg1_detailed_explanation": "\nCURRENT TASK: Learning About Principle Applications\nYou will be shown examples of how each justice principle would be applied to specific income distributions.\nThis is for learning purposes - pay attention to how each principle works in practice.\n",
-    "phase1_rounds1_4_principle_application": "\nCURRENT TASK: Principle Application (Round {round_number} of 4)\n\nChoose from these four justice principles:\n(a) **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n(b) **Maximizing the average income**: Choose the distribution that maximizes the average income  \n(c) **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n(d) **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nYou will be shown 4 income distributions and must choose ONE of these justice principles to apply.\nIf you choose a constraint principle (c or d), you MUST specify the constraint amount in dollars.\nYour choice will determine which distribution is selected, and you'll be assigned to an income class within that distribution based on realistic population probabilities (middle class being most common).\nYour earnings will be $1 for every $10,000 of income you receive.\n\nRESPONSE FORMAT:\nPlease structure your response as follows:\n1. State your choice clearly: \"I choose [principle a/b/c/d]\"\n2. If choosing c or d, specify: \"with a constraint of $[amount]\"\n3. State your certainty: \"I am [very unsure/unsure/sure/very sure] about this choice\"\n4. Explain your reasoning in detail\n\nExample: \"I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protecting the worst-off.\"\n",
-    "phase1_round5_final_ranking": "\nCURRENT TASK: Final Principle Ranking\n\nThe Four Justice Principles:\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income in society\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average income while ensuring everyone gets at least a specified minimum\n4. **Maximizing the average income with a range constraint**: Maximize average income while keeping the gap between richest and poorest within a specified limit\n\nAfter experiencing the four rounds of principle application, rank these principles again from best (1) to worst (4).\nReflect on what you learned from applying these principles and how it may have changed your preferences.\n\nRESPONSE FORMAT:\nPlease structure your response as follows:\n1. [Your best choice]\n2. [Your second choice] \n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nThen explain how your experience in the four application rounds influenced your ranking.\n\nExample:\n1. Maximizing the floor income\n2. Maximizing average with floor constraint\n3. Maximizing average income\n4. Maximizing average with range constraint\n\nOverall certainty: very sure\n\nAfter applying these principles, I learned that...\n",
-    "phase2_group_discussion": "\nCURRENT TASK: Group Discussion (Round {round_number})\n\nThe Four Justice Principles:\n(a) **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n(b) **Maximizing the average income**: Choose the distribution that maximizes the average income  \n(c) **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n(d) **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nYou are now in the group discussion phase. Work with other participants to reach consensus on which justice principle the group should adopt.\n\nDISCUSSION RULES:\n- Take turns speaking in the assigned order\n- You may propose a vote when you think the group is ready\n- All participants must agree to vote before voting begins\n- Consensus requires everyone to choose the EXACT same principle (including constraint amounts)\n\nRESPONSE FORMAT:\nStructure your discussion statement clearly:\n1. If ready to vote, clearly state: \"I propose we vote on [specific principle with constraint if applicable]\"\n2. End with your current preferred principle\n\nThe group's chosen principle will determine everyone's final earnings.\nIf no consensus is reached, final earnings will be randomly determined.\n",
-    "utility_parser_instructions": "\nYou are a specialized parser for the Frohlich Experiment.\n\nWhen analyzing text for vote proposals, respond with either:\n- \"VOTE_PROPOSAL: [extracted proposal text]\" if a vote is proposed\n- \"NO_VOTE\" if no vote is proposed\n\nLook for phrases like \"I propose we vote\", \"Let's vote on\", \"Should we take a vote\", etc.\n\nFor other parsing tasks, extract the relevant information and respond clearly and concisely.\n",
-    "utility_validator_instructions": "\nYou are a validator agent for the Frohlich Experiment.\n\nYour task is to validate parsed responses for completeness and correctness:\n\n1. Constraint Validation: If a participant chooses a constraint principle \n   (maximizing_average_floor_constraint or maximizing_average_range_constraint),\n   they MUST specify a constraint amount.\n\n2. Ranking Validation: Complete rankings must include all 4 principles with ranks 1-4.\n\n3. Data Integrity: All required fields must be present and valid.\n\nReturn is_valid=True if validation passes, is_valid=False with specific errors if not.\n",
-    "utility_parse_principle_choice": "\nParse the following participant response to extract their justice principle choice:\n\nResponse: \"{response}\"\n\nExtract:\n- Which principle they chose\n- Constraint amount (if applicable)\n- Their certainty level\n- Their reasoning\n\nReturn the parsed data as a dictionary with keys: principle, constraint_amount, certainty, reasoning\n",
-    "utility_parse_principle_ranking": "\nParse the following participant response to extract their complete ranking of justice principles:\n\nResponse: \"{response}\"\n\nExtract a complete ranking of all 4 principles from best (rank 1) to worst (rank 4).\nAlso extract the overall certainty level for the entire ranking.\n\nReturn the parsed data as a dictionary with:\n- rankings: list of {{principle, rank}} objects (no individual certainty levels)\n- certainty: overall certainty level for the entire ranking\n",
-    "utility_vote_detection": "\nAnalyze this group discussion statement to determine if the participant is proposing a vote:\n\nStatement: \"{statement}\"\n\nLook for indicators that they want to:\n- Start a vote/voting process\n- Move to consensus/decision\n- Finalize the group decision\n- Call for a vote on a principle\n- Express readiness to vote\n- Suggest moving to voting\n\nPhrases that indicate voting intent (BE VERY GENEROUS in detection):\n- \"I propose we vote\"\n- \"Let's vote on\"\n- \"Ready to vote\"\n- \"Call for a vote\"\n- \"Should we vote\"\n- \"Time to vote\"\n- \"Proceed with a vote\"\n- \"proceed with a final vote\"\n- \"propose that we vote\"\n- \"moving forward with a vote\"\n- \"finalize with a vote\"\n- \"we can proceed with a final vote\"\n- \"I propose we finalize\"\n- \"I propose we proceed\"\n- \"let's proceed with\"\n- \"we should vote\"\n- \"can we vote\"\n- \"shall we vote\"\n- \"are we ready to vote\"\n- \"I think we're ready to vote\"\n- \"we're ready to vote\"\n- \"time for a vote\"\n- \"move to voting\"\n- \"go ahead with the vote\"\n- \"conduct a vote\"\n- \"take a vote\"\n- \"final vote\"\n\nIMPORTANT: If ANY of these patterns appear, or if the statement expresses readiness/desire to move to voting, detect it as a vote proposal.\n\nIf the participant IS proposing a vote, respond with:\nVOTE_PROPOSAL: [brief description of what they want to vote on]\n\nIf the participant is NOT proposing a vote, respond with:\nNO_VOTE\n\nBe VERY generous in detection - if there's any reasonable indication they want to vote, detect it.\n",
-    "utility_constraint_re_prompt": "\n{participant_name}, you chose the \"{principle_name}\" principle, but you did not specify the {constraint_type} constraint amount.\n\nPlease specify the dollar amount for your {constraint_type} constraint.\n\nFor example:\n- Floor constraint: \"I choose maximizing average with a floor constraint of $15,000\"\n- Range constraint: \"I choose maximizing average with a range constraint of $20,000\"\n",
-    "utility_format_improvement_choice": "\nThe following response needs to be reformatted for clear principle choice extraction:\n\nOriginal response: \"{response}\"\n\nPlease rewrite this to clearly state:\n1. Which principle they chose (a, b, c, or d)\n2. If they chose c or d, the specific constraint amount in dollars\n3. Their certainty level\n4. Their reasoning\n\nFormat as: \"I choose [principle] with [constraint if applicable]. I am [certainty level] about this choice because [reasoning].\"\n",
-    "utility_format_improvement_ranking": "\nThe following response needs to be reformatted for clear ranking extraction:\n\nOriginal response: \"{response}\"\n\nPlease rewrite this as a numbered list ranking all 4 principles from best (1) to worst (4):\n\n1. [principle name]\n2. [principle name]  \n3. [principle name]\n4. [principle name]\n\nOverall certainty: [certainty level]\n",
-    "phase1_counterfactual_table_header": "This assigns you to the following income class: {assigned_class}\n\nFor each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.\n\nPrinciple of Justice                          Income    Payoff",
-    "phase1_round_memory_template": "Prompt: {application_prompt}\nYour Response: {text_response}\nYour Choice: {chosen_principle_display}\n\nROUND {round_num} OUTCOME:\n{counterfactual_table}\n\nYour actual earnings this round: ${earnings:.2f}\nYour total earnings so far: ${total_earnings:.2f}",
-    "phase1_detailed_principles_explanation": "Here is how each justice principle would be applied to example income distributions:\n\nExample Distributions:\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n\nHow each principle would choose:\n- **Maximizing the floor**: Would choose Distribution 4 (highest low income: $15,000)\n- **Maximizing average**: Would choose Distribution 1 (highest average: $21,600)\n- **Maximizing average with floor constraint ≤ $13,000**: Would choose Distribution 1\n- **Maximizing average with floor constraint ≤ $14,000**: Would choose Distribution 3  \n- **Maximizing average with range constraint ≥ $20,000**: Would choose Distribution 1\n- **Maximizing average with range constraint ≥ $15,000**: Would choose Distribution 2\n\nStudy these examples to understand how each principle works in practice.",
-    "phase1_post_explanation_ranking_prompt": "After learning how each justice principle is applied to income distributions, please rank the four principles again from best (1) to worst (4):\n\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nConsider:\n- How each principle works in practice based on the examples you just studied\n- Whether the detailed explanations changed your understanding\n- Your preference for how income should be distributed\n\nIndicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.\n\nProvide your ranking with reasoning, noting any changes from your initial ranking and why.",
-    "phase1_initial_ranking_prompt_template": "This is your first time ranking these four principles of justice:\n\n1. **Maximizing the floor income**: Choose the distribution that maximizes the lowest income\n2. **Maximizing the average income**: Choose the distribution that maximizes the average income  \n3. **Maximizing the average income with a floor constraint**: Maximize average while ensuring minimum income\n4. **Maximizing the average income with a range constraint**: Maximize average while limiting income gap\n\nPlease rank the principles from best (1) to worst (4) based on your initial understanding.\n\nIndicate your overall certainty level for the entire ranking: very_unsure, unsure, no_opinion, sure, or very_sure.\n\nProvide your ranking with clear reasoning for your preferences.",
+    "experiment_explanation": "\nYou are participating in an experiment studying principles of justice and income distribution.\n\nThe experiment has two main phases:\n\nPhase 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.\n\nPhase 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings.\n",
+    "initial_experiment_explanation": "\nThis experiment deals with the question: \"What is a just distribution of income?\" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into two parts.\n\nIn the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. If you do not learn the material, you will not be able to earn as much money as possible.\n\nIn the second part, you will all be asked, as a group, to discuss notions of justice. After the discussion, you will be asked to reach a group decision on which principle of justice you like best. Your pay for Part II of the experiment will be based on the principle which the group chooses.\n",
+    "phase1_round_neg1_detailed_explanation": "\nCurrent Task: Learning About Principle Applications\nYou will be shown examples of how each justice principle would be applied to specific income distributions.\nThis is for learning purposes - pay attention to how each principle works in practice.\n",
+    "phase1_detailed_principles_explanation": "Here is how each justice principle would be applied to example income distributions:\n\nExample Distributions:\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n\nHow each principle would choose:\n- **{principle_name_floor}**: Would choose Distribution 4 (highest low income: $15,000)\n- **{principle_name_average}**: Would choose Distribution 1 (highest average: $21,600)\n- **{principle_name_floor_constraint} ≥ $13,000**: Would choose Distribution 3\n- **{principle_name_floor_constraint} ≥ $14,000**: Would choose Distribution 3  \n- **{principle_name_range_constraint} ≤ $20,000**: Would choose Distribution 1\n- **{principle_name_range_constraint} ≤ $15,000**: Would choose Distribution 2\n\nStudy these examples to understand how each principle works in practice.",
+    "phase1_post_explanation_ranking_prompt": "After learning how each justice principle is applied to income distributions, please rank the four principles again from best (1) to worst (4):\n\n{master_principle_descriptions}\n\nResponse Format:\nPlease structure your response as follows:\n1. [Your best choice]\n2. [Your second choice]\n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nImportant: You must provide all 4 principles ranked as numbered lines, not just one choice.\n\nProvide your ranking.",
+    "phase1_initial_ranking_prompt": "This is your first time ranking these four principles of justice:\n\n{master_principle_descriptions}\n\nPlease rank the principles from best (1) to worst (4) based on your initial understanding.\n\nResponse Format:\nPlease structure your response as follows:\n1. [Your best choice]\n2. [Your second choice]\n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nImportant: You must provide all 4 principles ranked as numbered lines, not just one choice.\n\nProvide your ranking.",
+    "phase1_application_round": "\nCurrent Task: Principle Application (Round {round_number} of 4)\n\nYou will be shown 4 income distributions and must choose one of these justice principles to apply.\nIf you choose a constraint principle (maximizing average with floor constraint or maximizing average with range constraint), you must specify the constraint amount in dollars.\nYour choice will determine which distribution is selected, and you'll be assigned to an income class within that distribution based on realistic population probabilities (middle class being most common).\nYour earnings will be $1 for every $10,000 of income you receive.\nImportant: Negotiation and any constraint amounts are in full income dollars, not payoff dollars.\n\nChoose from these four justice principles:\n{principle_list_simple}\n\n{distributions_table}\n\nResponse Format:\nPlease structure your response as follows:\nState your choice clearly: \"I choose [principle name]\"\nIf choosing a constraint principle, specify: \"with a constraint of $[amount]\"\nState your certainty: \"I am [very unsure/unsure/sure/very sure] about this choice\"\n\nExample for each principle:\n\n\"I choose maximizing the floor income. I am sure about this choice\"\n\"I choose maximizing the average income. I am sure about this choice\"\n\"I choose maximizing average with a range constraint with a constraint of $X. I am sure about this choice.\"\n\"I choose maximizing average with floor constraint with a constraint of $X. I am sure about this choice.\"\n",
+    "phase1_final_ranking_prompt": "\nCurrent Task: Final Principle Ranking\n\nAfter experiencing the four rounds of principle application, please rank these four justice principles from best (1) to worst (4):\n\n{master_principle_descriptions}\n\nResponse Format:\nPlease structure your response as follows:\n1. [Your best choice]\n2. [Your second choice] \n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nImportant: You must provide all 4 principles ranked as numbered lines, not just one choice.\n",
+    "phase2_agent_unavailable": "{participant_name} is currently unavailable to provide a statement.",
+    "phase2_favored_principle_unspecified": "unspecified",
+    "phase2_final_ranking_prompt": "Current Task: Final Principle Ranking\n\nBased on your experience throughout the experiment, please rank these four justice principles from best (1) to worst (4):\n\n{master_principle_descriptions}\n\nResponse Format:\nPlease structure your response as follows:\n\n1. [Your best choice]\n2. [Your second choice]\n3. [Your third choice]\n4. [Your worst choice]\n\nOverall certainty: [very unsure/unsure/no opinion/sure/very sure]\n\nImportant: You must provide all 4 principles ranked as numbered lines, not just one choice.",
+    "vote_initiation_prompt": "The discussion has progressed and you may feel ready to move to formal voting.\n\nIf you choose to initiate voting:\n- All participants will be asked to confirm agreement (1=Yes, 0=No)\n- If everyone agrees, you'll proceed to secret numerical ballots (1-4)\n- Consensus requires all participants to select the same principle\n- If reached, that principle determines final earnings\n- If not reached, discussion continues\n- You can initiate a vote once per round, if no consensus is reached no negative consequence will follow\n\nDo you want to initiate this voting process now?\n- 1 if you want to start the voting process\n- 0 if you dont want to vote now\n\nYour response (1 or 0):",
+    "vote_initiation_with_statement_prompt": "You just made this statement to the group:\n\"{agent_recent_statement}\"\n\nBased on your recent statement and the discussion so far, do you want to initiate formal voting on the justice principles now?\n\nPlease respond with:\n- 1 if you want to initiate voting now\n- 0 if you dont want to vote now\n\nYour response (1 or 0):",
+    "vote_initiation_with_reasoning_prompt": "=== Your Internal Reasoning ===\n{internal_reasoning}\n\n================================\n\nThe discussion has progressed and you may feel ready to move to formal voting.\n\nBased on your internal reasoning above and the discussion so far, do you want to initiate this voting process now?\n- 1 if you want to start the voting process\n- 0 if you dont want to vote now\n\nYour response (1 or 0):",
+    "vote_initiation_with_statement_and_reasoning_prompt": "You just made this statement to the group:\n\"{agent_recent_statement}\"\n\n=== Your Internal Reasoning ===\n{internal_reasoning}\n\n================================\n\nBased on your internal reasoning above, your recent statement, and the discussion so far, do you want to initiate formal voting on the justice principles now?\n\nPlease respond with:\n- 1 if you want to initiate voting now\n- 0 if you dont want to vote now\n\nYour response (1 or 0):",
+    "phase2_internal_reasoning": "You are in Phase 2: \nIn this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. \nTHE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. \nYour choice of principle will be used to pick out those distribution schedules which conform to your principle. \nThus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nIf you, as a group, do not adopt any principle, then we will select one of the income distributions at random for you as a group. That choice of income distribution will conform to no particular characteristics.\n\nImportant: the group must adopt exactly one of the four principles you studied in Phase 1—no new principles can be created.\nYou are now working with a higher-stakes distribution distinct from the Phase 1 examples, and its exact payoffs remain unknown to participants by design.\n\nEach round of Phase 2 follows this flow:\n1. Discussion\n2. Voting\n\nVoting process: Participants can initiate voting, which requires unanimous confirmation (1=Yes, 0=No). If confirmed, a two-stage secret ballot occurs: principle selection (1-4), then constraint specification for principles 3-4. Consensus requires all participants to agree on both principle and constraint amount (if applicable).\n\nGroup Discussion - Round {round_number} of {max_rounds} (Internal Reasoning)\n\nBefore making your public statement, consider internally:\n\n1. Situational Analysis:\n\nWhat is your current preferred justice principle and the core reasons for it?\n\nWhat are the stated positions of the other participants? Based on their arguments, what do you infer are their underlying interests or motivations?\n\nWhat are the key arguments and proposals on the table so far?\n\nIf a vote was conducted, what was the outcome and what does it reveal about current alliances or preferences?\n\nWhere are the main points of agreement and disagreement in the group?\n\n2. Strategic Planning for This Round:\n\nWhat is your primary goal for this round? (e.g., persuade a specific person, test support for an idea, block a rival proposal).\n\nHow will you contribute to the discussion to steer it towards your preferences? What key points will you make?\n\nWho are your potential allies on this issue? What specific language could you use to win them over or form a voting bloc?\n\nAre there any small concessions you are willing to offer to build consensus without compromising your core objective?\n\n3. Voting Strategy:\n\nDoes it make sense to initiate a vote this round? Why or why not? (Remember you can trigger a vote once, and a failed vote has no negative consequences).\n\nHow does your plan for this round fit into your overall strategy for the remaining rounds?\n\nImportant Reminders:\n\nIf no consensus is reached by the end of the last round (round {max_rounds}), payoffs will be assigned completely at random.\n\nYour internal reasoning from your previous round will be overwritten by your response to this prompt. If you want to keep any part of it, include it in your response.\n\nProvide your internal reasoning (this will not be shared with other participants).",
+    "phase2_internal_reasoning_short": "Group Discussion - Round {round_number} of {max_rounds} (Internal Reasoning)\n\nBefore making your public statement, consider internally:\n\n1. Situational Analysis:\n\nWhat is your current preferred justice principle and the core reasons for it?\n\nWhat are the stated positions of the other participants? Based on their arguments, what do you infer are their underlying interests or motivations?\n\nWhat are the key arguments and proposals on the table so far?\n\nIf a vote was conducted, what was the outcome and what does it reveal about current alliances or preferences?\n\nWhere are the main points of agreement and disagreement in the group?\n\n2. Strategic Planning for This Round:\n\nWhat is your primary goal for this round? (e.g., persuade a specific person, test support for an idea, block a rival proposal).\n\nHow will you contribute to the discussion to steer it towards your preferences? What key points will you make?\n\nWho are your potential allies on this issue? What specific language could you use to win them over or form a voting bloc?\n\nAre there any small concessions you are willing to offer to build consensus without compromising your core objective?\n\n3. Voting Strategy:\n\nDoes it make sense to initiate a vote this round? Why or why not? (Remember you can trigger a vote once, and a failed vote has no negative consequences).\n\nHow does your plan for this round fit into your overall strategy for the remaining rounds?\n\nImportant Reminders:\n\nIf no consensus is reached by the end of the last round (round {max_rounds}), payoffs will be assigned completely at random.\n\nYour internal reasoning from your previous round will be overwritten by your response to this prompt. If you want to keep any part of it, include it below.\n\nProvide your internal reasoning (this will not be shared with other participants).",
+    "context_context_info_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\n{stage_header}{discussion_header_section}\n{formatted_memory}\n\n{internal_reasoning_section}\n\n{experiment_explanation}\n\n{phase_instructions}\n\n{language_instruction}\n",
+    "context_round_section": "\nRound: {round_number}",
+    "context_memory_update_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\n{discussion_header_section}\nYou are updating your memory.\n",
+    "context_memory_section_format": "=== Your Memory ===\n{memory}\n\n====================",
+    "context_memory_summary_format": "=== Memory Highlights ===\n{memory_summary}\n=========================",
+    "context_memory_empty_placeholder": "(Empty)",
+    "context_memory_summary_empty_placeholder": "No key insights yet.",
+    "internal_reasoning_context_format": "=== Your Internal Reasoning ===\n{internal_reasoning}\n\n================================",
+    "language_instruction": "Please only respond in English.",
+    "memory_empty_memory_placeholder": "(Empty)",
+    "memory_memory_update_prompt": "Return your complete updated memory incorporating insights from the recent activity.\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment. Return the complete memory.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nRecent Activity:\n{round_content}\n\nReturn: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')",
+    "memory_memory_update_prompt_no_recent_activity": "Return your complete updated memory incorporating insights from the current discussion and your recent reasoning. Include both important information from your previous memory and new learnings.\n\nReview the information provided below alongside your current memory. Focus on incorporating insights that might influence your choices about justice principles or help in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\n=== Current Discussion History ===\n{round_content}\n=======================================\n\nReturn: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')",
+    "memory_narrative_update_prompt": "Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.\n\nReview the information provided below alongside your current memory. Focus on incorporating insights that might influence your choices about justice principles or help in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory. Emphasize what changed and key insights, not rules or transcripts.\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nRecent Activity:\n{round_content}\n\nReturn: Your complete updated memory as a continuous narrative (do not add prefixes like 'Memory update:')",
+    "memory_narrative_update_prompt_no_recent_activity": "Return your complete updated memory incorporating insights from the current discussion and your recent reasoning. Include both important information from your previous memory and new learnings.\n\nReview the information provided below alongside your current memory. Focus on incorporating insights that might influence your choices about justice principles or help in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory. Emphasize what changed and key insights, not rules or transcripts.\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\n=== Current Discussion History ===\n{round_content}\n=======================================\n\nReturn: Your complete updated memory as a continuous narrative (do not add prefixes like 'Memory update:')",
+    "memory_compression_prompt": "Your memory is approaching the {memory_limit} character limit. Return a condensed complete memory containing the most important insights and patterns from your experience. Focus on key decisions, learnings, and strategy changes. Target length: approximately {target_length} characters.\n\nYour Current Memory to Compress:\n{current_memory}\n\nReturn: Your complete compressed memory (not a summary with prefixes)",
+    "memory_memory_update_prompt_first_round": "Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.\n\nBesides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.\n\nFocus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nYou are in Phase 2: \nIn this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. \nTHE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. \nYour choice of principle will be used to pick out those distribution schedules which conform to your principle. \nThus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nEach round of Phase 2 follows this flow:\n1. Discussion\n2. Voting\n\nVoting process: Participants can initiate voting, which requires unanimous confirmation (1=Yes, 0=No). If confirmed, a two-stage secret ballot occurs: principle selection (1-4), then constraint specification for principles 3-4. Consensus requires all participants to agree on both principle and constraint amount (if applicable).\n\nRecent Activity:\n{round_content}\n\nReturn: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')",
+    "memory_memory_update_prompt_first_round_no_recent_activity": "Return your complete updated memory incorporating insights from the current discussion and your recent reasoning. Include both important information from your previous memory and new learnings.\n\nBesides your memory and your current discussion you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.\n\nFocus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nYou are in Phase 2: \nIn this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. \nTHE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. \nYour choice of principle will be used to pick out those distribution schedules which conform to your principle. \nThus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nEach round of Phase 2 follows this flow:\n1. Discussion\n2. Voting\n\nVoting process: Participants can initiate voting, which requires unanimous confirmation (1=Yes, 0=No). If confirmed, a two-stage secret ballot occurs: principle selection (1-4), then constraint specification for principles 3-4. Consensus requires all participants to agree on both principle and constraint amount (if applicable).\n\n=== CURRENT DISCUSSION HISTORY ===\n{round_content}\n=======================================\n\nReturn: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')",
+    "memory_narrative_update_prompt_first_round": "Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings.\n\nBesides your memory and your recent activity you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.\n\nFocus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory. Emphasize what changed and key insights, not rules or transcripts.\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nYou are in Phase 2: \nIn this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. \nTHE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. \nYour choice of principle will be used to pick out those distribution schedules which conform to your principle. \nThus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nEach round of Phase 2 follows this flow:\n1. Discussion\n2. Voting\n\nVoting process: Participants can initiate voting, which requires unanimous confirmation (1=Yes, 0=No). If confirmed, a two-stage secret ballot occurs: principle selection (1-4), then constraint specification for principles 3-4. Consensus requires all participants to agree on both principle and constraint amount (if applicable).\n\nRecent Activity:\n{round_content}\n\nReturn: Your complete updated memory as a continuous narrative (do not add prefixes like 'Memory update:')",
+    "memory_narrative_update_prompt_first_round_no_recent_activity": "Return your complete updated memory incorporating insights from the current discussion and your recent reasoning. Include both important information from your previous memory and new learnings.\n\nBesides your memory and your current discussion you will receive the outcome of your choice which includes the payoff you received, your class assignment and the payoffs you would have received under each principle. Please analyze and incorporate this information into your updated memory.\n\nFocus on information that might influence your choices about justice principles or help you in group discussions. Pay particular attention to patterns in outcomes, unexpected results, and insights about how different principles perform in practice versus theory. Emphasize what changed and key insights, not rules or transcripts.\n\nImportant: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.\n\nYour Previous Memory:\n{current_memory}\n\n{experiment_explanation}\n\nYou are in Phase 2: \nIn this part of the experiment you, as a group, are to choose one principle for yourselves. This choice will determine the payoff you get in this part of the experiment. Your payoffs will be determined as follows. The distributions do not need resemble the distributions in Part I. \nTHE STAKES IN THIS PART OF THE EXPERIMENT ARE MUCH HIGHER THAN IN THE FIRST PART. \nYour choice of principle will be used to pick out those distribution schedules which conform to your principle. \nThus, for example, if you picked the principle to maximize the average income, you would be saying that the group wants to pick out a distribution with the highest average income.  Each of you will then be randomly assigned an income from that distribution. That is your payoff for Part II. The group's chosen principle will then be applied to determine everyone's final earnings.\n\nEach round of Phase 2 follows this flow:\n1. Discussion\n2. Voting\n\nVoting process: Participants can initiate voting, which requires unanimous confirmation (1=Yes, 0=No). If confirmed, a two-stage secret ballot occurs: principle selection (1-4), then constraint specification for principles 3-4. Consensus requires all participants to agree on both principle and constraint amount (if applicable).\n\n=== CURRENT DISCUSSION HISTORY ===\n{round_content}\n=======================================\n\nReturn: Your complete updated memory as a continuous narrative (do not add prefixes like 'Memory update:')",
     "distribution_distributions_table_header": "Income Distributions:\n\n",
     "distribution_distributions_table_column_header": "| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n",
     "distribution_distributions_table_separator": "|--------------|---------|---------|---------|----------|\n",
     "phase2_default_constraint_specification": "Not specified",
-    "memory_memory_update_prompt": "Review what just happened and update your memory with whatever you think will be important for future decisions in this experiment. Focus on information that might influence your choices about justice principles or help you in group discussions.\n\nCurrent Memory:\n{current_memory}\n\nRecent Activity:\n{round_content}",
-    "memory_empty_memory_placeholder": "(Empty)",
+    "phase1_counterfactual_table_header": "This assigns you to the following income class: {assigned_class}\n\nFor each principle of justice the following income would be received by each member of this income class. You will receive a payoff of $1 for each $10,000 of income.\n\nPrinciple of Justice                          Income    Payoff",
+    "memory_insertions": {
+      "vote_initiation_decision": "Round {round_num}: I chose to {decision}.",
+      "confirmation_response": "Voting confirmation: I {response} participate in formal voting.",
+      "secret_ballot_choice": "Secret ballot: I voted for {principle_name}.",
+      "amount_specification": "Constraint amount: I specified {amount}.",
+      "status_update": "Status: {status_message}",
+      "initiate_voting": "initiate voting",
+      "continue_discussion": "continue discussion",
+      "agreed_to": "agreed to",
+      "declined_to": "declined to"
+    },
+    "phase1_round_memory_template": "Prompt: {application_prompt}\nYour Response: {text_response}\nYour Choice: {chosen_principle_display}\n\nRound {round_num} Outcome:\n{counterfactual_table}\n\nYour actual earnings this round: ${earnings:.2f}\nYour total earnings so far: ${total_earnings:.2f}",
+    "two_stage_principle_selection": "All participants agreed to vote. Your ballot is completely private - other participants will not see your individual choice.\n\nSelect your preferred justice principle by number:\n\n1. Maximizing Floor Income\n2. Maximizing Average Income\n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nImportant: Principles 3 and 4 require constraint amounts in the next step.\n\nYour private ballot choice (1, 2, 3, or 4):",
+    "two_stage_amount_specification": "Secret Ballot - Step 2 of 2\n\nYou selected {principle_name}.\n\nThis principle requires you to specify a constraint amount in dollars. This amount will be compared with other participants' amounts to determine if consensus is reached.\n\nFor consensus, all participants must choose:\n- The same principle number and\n- The same constraint amount (if applicable)\n\nImportant: Enter full income dollars, not payoff dollars. Do not scale by the $1 per $10,000 payoff rate.\n\nPlease specify your constraint amount as a whole dollar amount:",
+    "validation_memory_limit_exceeded": "Your memory exceeds the character limit. Please condense your memory while keeping the most important information.",
+    "validation_invalid_principle_choice": "Invalid principle choice detected. Please select one of the four available justice principles.",
+    "validation_missing_constraint_amount": "You selected a constraint principle but did not specify the constraint amount. Please provide a dollar amount.",
+    "validation_incomplete_ranking": "Your ranking is incomplete. Please rank all four principles from 1 to 4.",
+    "validation_parsing_failed": "Failed to parse your response. Please reformat your answer according to the specified format.",
+    "validation_consensus_not_reached": "The group has not reached consensus. Discussion will continue.",
+    "validation_experiment_timeout": "The experiment has timed out. Results will be finalized with current data.",
     "system_error_messages_memory_limit_exceeded": "Your memory exceeds the character limit. Please condense your memory while keeping the most important information.",
     "system_error_messages_invalid_principle_choice": "Invalid principle choice detected. Please select one of the four available justice principles.",
     "system_error_messages_missing_constraint_amount": "You selected a constraint principle but did not specify the constraint amount. Please provide a dollar amount.",
     "system_error_messages_incomplete_ranking": "Your ranking is incomplete. Please rank all four principles from 1 to 4.",
-    "system_error_messages_parsing_failed": "Failed to parse your response. Please reformat your answer according to the specified format.",
-    "system_error_messages_consensus_not_reached": "The group has not reached consensus. Discussion will continue.",
-    "system_error_messages_experiment_timeout": "The experiment has timed out. Results will be finalized with current data.",
-    "system_success_messages_choice_accepted": "Your principle choice has been accepted and recorded.",
-    "system_success_messages_ranking_accepted": "Your principle ranking has been accepted and recorded.",
-    "system_success_messages_memory_updated": "Your memory has been successfully updated.",
-    "system_success_messages_vote_proposal_detected": "Vote proposal detected and will be processed.",
-    "system_success_messages_consensus_reached": "Congratulations! The group has reached consensus.",
-    "system_status_messages_phase1_starting": "Phase 1 is beginning. You will now learn about and apply justice principles.",
-    "system_status_messages_phase2_starting": "Phase 2 is beginning. You will now participate in group discussion.",
-    "system_status_messages_round_starting": "Round {round_number} is starting.",
-    "system_status_messages_earnings_update": "Your current earnings: ${amount:.2f}",
-    "system_status_messages_final_results": "Experiment completed. Final earnings: ${amount:.2f}",
-    "format_earnings_display_format": "Your actual earnings this round: ${earnings:.2f}",
-    "format_total_earnings_format": "Your total earnings so far: ${total_earnings:.2f}",
-    "format_bank_balance_format": "Bank Balance: ${bank_balance:.2f}",
-    "format_round_outcome_header": "ROUND {round_num} OUTCOME:",
-    "format_current_phase_format": "Current Phase: {phase}",
-    "format_round_number_format": "Round: {round_number}",
-    "format_class_assignment_format": "This assigns you to the following income class: {assigned_class}",
-    "format_floor_constraint_example": "Floor constraint: \"I choose maximizing average with a floor constraint of $15,000\"",
-    "format_range_constraint_example": "Range constraint: \"I choose maximizing average with a range constraint of $20,000\"",
-    "context_memory_section_format": "=== YOUR MEMORY ===\n{memory}\n====================",
-    "context_memory_empty_placeholder": "(Empty)",
-    "context_context_info_format": "\nName: {name}\nRole Description: {role_description}\nBank Balance: ${bank_balance:.2f}\nCurrent Phase: {phase}\nRound: {round_number}\n\n{formatted_memory}\n\n{experiment_explanation}\n\nPERSONALITY: {personality}\n\n{phase_instructions}\n\nRemember to stay true to your personality while participating thoughtfully in the experiment.\nProvide clear, reasoned responses that explain your thinking.\n",
-    "utility_string_parser_agent_name": "Response Parser",
-    "utility_string_validator_agent_name": "Response Validator",
-    "utility_string_validation_error_incomplete_ranking": "Incomplete ranking - missing principles or invalid ranks",
-    "fallback_default_phase_instructions": "No specific instructions for current phase/round."
+    "fallback_default_phase_instructions": "",
+    "phase1_round0_initial_ranking": "",
+    "phase1_rounds1_4_principle_application": "",
+    "phase1_round5_final_ranking": "",
+    "phase2_discussion_prompt": "{group_participants}\n\nGroup Discussion - Round {round_number} of {max_rounds}\n\nDiscussion History:\n{discussion_history}\n\nWhat is your statement to the group for this round?",
+    "phase2_discussion_short_prompt": "What is your statement to the group for this round?",
+    "utility_parser_instructions": "You are a specialized parser for the Frohlich Experiment. Extract the relevant information from participant responses and return clear, structured data.",
+    "utility_validator_instructions": "You are a validator agent for the Frohlich Experiment. Validate parsed responses for completeness and correctness.",
+    "utility_parse_principle_choice": "\nParse the following participant response to extract their justice principle choice:\n\nResponse: \"{response}\"\n\nExtract:\n- Which principle they chose\n- Constraint amount (if applicable)\n- Their certainty level\n- Their reasoning\n\nReturn the parsed data as a dictionary with keys: principle, constraint_amount, certainty, reasoning\n",
+    "utility_parse_principle_ranking": "\nParse the following participant response to extract their complete ranking of ALL 4 justice principles:\n\nResponse: \"{response}\"\n\nThe 4 principles are:\n1. maximizing_floor (maximizing floor income)\n2. maximizing_average (maximizing average income)\n3. maximizing_average_floor_constraint (maximizing average with floor constraint)\n4. maximizing_average_range_constraint (maximizing average with range constraint)\n\nExtract a complete ranking from best (rank 1) to worst (rank 4). Each principle must appear exactly once.\n\nReturn only a JSON dictionary with this exact format:\n{{\n  \"rankings\": [\n    {{\"principle\": \"maximizing_floor\", \"rank\": 1}},\n    {{\"principle\": \"maximizing_average_floor_constraint\", \"rank\": 2}},\n    {{\"principle\": \"maximizing_average_range_constraint\", \"rank\": 3}},\n    {{\"principle\": \"maximizing_average\", \"rank\": 4}}\n  ],\n  \"certainty\": \"sure\"\n}}\n\nCertainty levels: very_unsure, unsure, sure, very_sure\nPrinciple names: Use exactly \"maximizing_floor\", \"maximizing_average\", \"maximizing_average_floor_constraint\", \"maximizing_average_range_constraint\"\n",
+    "utility_constraint_re_prompt": "\n{participant_name}, you chose the \"{principle_name}\" principle, but you did not specify the {constraint_type} constraint amount.\n\nReminder about your chosen principle:\n- Floor constraint: Maximizes average income only after guaranteeing everyone receives at least a specified minimum income\n- Range constraint: Maximizes average income while ensuring the difference between richest and poorest does not exceed a specified amount\n\nPlease specify the dollar amount for your {constraint_type} constraint.\n\nFor example:\n- Floor constraint: \"I choose maximizing average with a floor constraint of $X\"\n- Range constraint: \"I choose maximizing average with a range constraint of $X\"\n",
+    "utility_format_improvement_choice": "\nThe following response needs to be reformatted for clear principle choice extraction:\n\nOriginal response: \"{response}\"\n\nPlease rewrite this to clearly state:\n1. Which principle they chose\n2. If they chose a constraint principle, the specific constraint amount in dollars\n3. Their certainty level (very_unsure, unsure, sure, very_sure)\n4. Their reasoning (optional)\n\nFormat as: \"I choose [principle] [with constraint if applicable]. I am [certainty level] about this choice [optional reasoning].\"\n",
+    "utility_format_improvement_ranking": "\nThe following response needs to be reformatted for clear ranking extraction:\n\nOriginal response: \"{response}\"\n\nPlease rewrite this as a numbered list ranking all 4 principles from best (1) to worst (4):\n\n1. [principle name or description]\n2. [principle name or description]\n3. [principle name or description]\n4. [principle name or description]\n\nOverall certainty: [certainty level]\n",
+    "utility_voting_confirmation_request": "{initiator_name} has requested to vote on the justice principles.\n\nDo you agree to participate in a voting session now?\n\nRespond with exactly one number:\n- Reply 1 if you want to vote now\n- Reply 0 if you want to continue discussion\n\nYour response will be visible to all participants.",
+    "utility_secret_ballot_request": "Voting Session - Secret Ballot\n\nPlease cast your secret ballot by selecting your preferred justice principle:\n\n{master_principle_descriptions}\n\nImportant: If you choose a constraint principle, you must specify the constraint amount in dollars. Specify constraint amounts in full income dollars, not payoff dollars. Do not scale by the $1 per $10,000 payoff rate.\n\nYour ballot is completely secret and will not be revealed to other participants.\n\nFormat your response as: \"My ballot choice is [principle] [with constraint if applicable]\"\n\nExample: \"My ballot choice is maximizing average with floor constraint with a floor constraint of $15,000\"",
+    "utility_consensus_validation": "Analyze the discussion content to validate whether the recorded consensus aligns with what was actually discussed.\n\nDiscussion Content:\n\"{discussion_content}\"\n\nRecorded Consensus: {consensus_principle}\n\nAnalyze whether:\n1. The discussion content consistently supports the recorded consensus principle\n2. Participants expressed preferences that align with the recorded consensus\n3. There are any contradictions between stated preferences and the final consensus\n\nLook for:\n- Explicit preference statements for principles\n- Strong endorsements or recommendations for specific principles  \n- Agreement or disagreement patterns\n- Final statements that suggest consensus direction\n\nPay special attention to:\n- Constraint vs non-constraint principles (e.g., \"maximizing average\" vs \"maximizing average with floor constraint\")\n- Consistency between individual preferences and group consensus\n- Whether the discussion naturally led to the recorded consensus\n\nIf the discussion content supports the recorded consensus, respond:\nConsensus Valid: Discussion aligns with recorded consensus\n\nIf there are significant contradictions or misalignment, respond:\nConsensus Mismatch: Discussion does not support the recorded consensus\n\nBe objective and focus on evidence from the actual discussion content.",
+    "phase1_distributions_intro": "Here are some example distributions to help you understand:",
+    "statement_validation_classification": "Analyze this discussion statement that failed validation:\n\nStatement: '{statement}'\nMinimum required length: {min_length} characters\nActual length: {actual_length} characters\nLanguage: {language}\nContext: {context}\n\nClassify why this statement failed validation. Respond with exactly one of these classifications:\n- Empty Response: if the statement is empty or contains only whitespace\n- Too Short: if the statement is below minimum length but has some content\n- Minimal Content: if the statement meets length requirements but lacks substantive discussion content\n\nClassification:",
+    "context_stage_prompts": {
+      "initial_ranking": "Phase 1 – Initial ranking.",
+      "principle_explanation": "Phase 1 – Principle explanation.",
+      "post_explanation_ranking": "Phase 1 – Post-explanation ranking.",
+      "application": "Phase 1 – Demonstration round.",
+      "discussion": "Phase 2 – Group discussion.",
+      "voting": "Phase 2 – Voting stage.",
+      "results": "Phase 2 – Results review.",
+      "final_ranking": "{phase_label} – Final ranking."
+    }
+  },
+  "context_stage_prompts": {
+    "initial_ranking": "Phase 1 – Initial ranking.",
+    "principle_explanation": "Phase 1 – Principle explanation.",
+    "post_explanation_ranking": "Phase 1 – Post-explanation ranking.",
+    "application": "Phase 1 – Demonstration round.",
+    "discussion": "Phase 2 – Group discussion.",
+    "voting": "Phase 2 – Voting stage.",
+    "results": "Phase 2 – Results review.",
+    "final_ranking": "{phase_label} – Final ranking."
+  },
+  "statement_validation_feedback": {
+    "too_short": {
+      "explanation": "Your statement needs more detail to contribute meaningfully to the discussion.",
+      "instruction": "Please provide more explanation of your reasoning, preferences, or analysis.",
+      "example": "For example: 'I believe we should prioritize maximizing average income because it provides the best overall outcome while maintaining fairness across all income levels.'"
+    },
+    "empty_response": {
+      "explanation": "No statement was provided for this discussion round.",
+      "instruction": "Please share your thoughts, analysis, or preferences about the justice principles.",
+      "example": "For example: 'Based on our discussion, I think the floor constraint approach ensures basic security for everyone while still allowing economic growth.'"
+    },
+    "minimal_content": {
+      "explanation": "While your agreement is noted, detailed reasoning helps the group reach consensus.",
+      "instruction": "Please explain why you agree and add your own analysis or perspective.",
+      "example": "For example: 'I agree with the floor income approach because it guarantees basic dignity for all members, which aligns with core principles of social justice.'"
+    }
+  },
+  "retry_prompts": {
+    "retry_needed_intro": "Let me try to provide a better response.",
+    "feedback_header": "Feedback on previous response:",
+    "original_request": "Please respond to the original request:"
+  },
+  "errors": {
+    "two_stage_respond_with_number_only": "Invalid response (attempt {attempt}/{max_attempts}). You must respond with exactly one number: 1, 2, 3, or 4.",
+    "two_stage_use_digits_not_words": "Invalid response (attempt {attempt}/{max_attempts}). Please use digits (1, 2, 3, or 4), not words.",
+    "two_stage_number_out_of_range": "Invalid response (attempt {attempt}/{max_attempts}). You must respond with 1, 2, 3, or 4 only.",
+    "two_stage_zero_not_valid": "Invalid response (attempt {attempt}/{max_attempts}). Zero is not a valid principle choice. Use 1, 2, 3, or 4.",
+    "two_stage_response_too_long": "Invalid response (attempt {attempt}/{max_attempts}). Please respond with just the number.",
+    "two_stage_empty_response": "Empty response (attempt {attempt}/{max_attempts}). Please respond with 1, 2, 3, or 4.",
+    "two_stage_no_letter_choices": "Invalid response (attempt {attempt}/{max_attempts}). Don't use letters (a, b, c, d). Use numbers: 1, 2, 3, or 4.",
+    "two_stage_principle_content_unclear": "Unclear principle choice (attempt {attempt}/{max_attempts}). Please respond with the number of your preferred principle: 1, 2, 3, or 4.",
+    "two_stage_invalid_format_general": "Invalid response (attempt {attempt}/{max_attempts}). You must respond with exactly one number: 1, 2, 3, or 4.",
+    "two_stage_amount_must_be_positive": "Invalid amount (attempt {attempt}/{max_attempts}). You must respond with a positive whole dollar amount.",
+    "two_stage_whole_numbers_only": "Invalid amount format (attempt {attempt}/{max_attempts}). You must respond with a whole dollar amount (no decimals).",
+    "two_stage_no_negative_amounts": "Invalid amount (attempt {attempt}/{max_attempts}). Negative amounts are not allowed.",
+    "two_stage_no_text_in_amount": "Invalid amount format (attempt {attempt}/{max_attempts}). You must respond with a number only.",
+    "two_stage_empty_amount_response": "Empty response (attempt {attempt}/{max_attempts}). Please provide a dollar amount.",
+    "two_stage_invalid_amount_format": "Invalid amount format (attempt {attempt}/{max_attempts}). You must respond with a positive whole dollar amount.",
+    "two_stage_amount_too_low": "Amount too low (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount (minimum $1,000).",
+    "two_stage_amount_too_high": "Amount too high (attempt {attempt}/{max_attempts}). Please provide a realistic dollar amount (maximum $100,000).",
+    "timeout_retry": "Response timed out. Please try again."
+  },
+  "discussion_format": {
+    "round_speaker_format": "Round {round_number} / Speaker: {speaker_name} Statement: {statement}"
+  },
+  "memory_field_labels": {
+    "prompt": "Prompt:",
+    "your_response": "Your Response:",
+    "your_rankings": "Your Rankings:",
+    "your_post_explanation_rankings": "Your Post-Explanation Rankings:",
+    "your_final_rankings": "Your Final Rankings:",
+    "your_statement": "Your Statement:",
+    "your_income_assignment": "Your Income Class Assignment:",
+    "your_earnings": "Your Earnings:",
+    "chosen_principle": "Chosen Principle:",
+    "constraint_amount": "Constraint Amount:",
+    "assigned_class": "Assigned Class:",
+    "earnings": "Earnings:",
+    "original_values_situation": "Situation:",
+    "distribution_multiplier": "Distribution Multiplier:",
+    "distribution_assignment": "Distribution: {number}",
+    "your_payoff": "Your Payoff (already in your bank account):",
+    "outcome": "Outcome:",
+    "feedback_received": "Feedback received:",
+    "improved_response": "Improved response:",
+    "payoff_notification_header": "=== Payoff Notification ===",
+    "retry_feedback": "Retry feedback:"
+  },
+  "context_phase2_discussion_header": "Group Discussion - Round {round_number} of {max_rounds}",
+  "context_group_composition_format": "Participants: {participants}",
+  "context_discussion_header_section": "\nGroup Discussion - Round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
+  "context_voting_header_section": "\nVoting Session - Round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
+  "context_discussion_history_section_format": "--- Discussion History ---\n{discussion_history}\n\n--------------------------",
+  "memory_discussion_history_header": "=== Discussion History ===",
+  "experiment_explanation_header": "=== Experiment Overview ===",
+  "no_previous_discussion_placeholder": "No previous discussion.",
+  "memory_outcomes": {
+    "completed_initial_ranking": "Completed initial ranking of justice principles.",
+    "learned_principle_applications": "Learned how each justice principle is applied to income distributions through examples.",
+    "completed_post_explanation_ranking": "Completed ranking after learning how principles apply to distributions.",
+    "applied_principle_round": "Applied chosen justice principle in demonstration Round {round_number}.",
+    "completed_final_ranking": "Completed final ranking of justice principles after experiencing all four rounds.",
+    "made_discussion_statement": "Made statement in Round {round_number} of group discussion.",
+    "agreed_to_vote": "Agreed to proceed with voting",
+    "declined_to_vote": "Declined to vote",
+    "statement_retry_successful": "Successfully provided improved statement after feedback"
+  },
+  "memory": {
+    "round_statement_format": "Round {round_num}: Your statement: {statement}",
+    "internal_reasoning_format": "Internal reasoning: {reasoning}",
+    "final_results_format": "Final Phase 2 Results: {result_content}",
+    "round_prefix": "Round ",
+    "statement_key": "statement:",
+    "reasoning_prefix": "Internal reasoning:",
+    "memory_end_marker": "--- Memory End ---",
+    "labels": {
+      "round_applied": "Round {round_num}: Applied {principle}",
+      "class_earnings": "Class: {assigned_class}, Earnings: ${earnings:.2f}",
+      "original_values": "(Original Values: {situation})",
+      "multiplier": "(Multiplier: {multiplier:.2f})",
+      "constraint": "Constraint: {constraint}",
+      "reasoning": "Reasoning: {reasoning}",
+      "key_alternatives": "Key alternatives: {highlights}",
+      "speaking": "Speaking #{position}",
+      "statement": "Statement: {statement}",
+      "favored": "Favored: {principle}",
+      "vote_intention": "Vote intention: {vote_status}",
+      "no_consensus_random": "No consensus - random assignment",
+      "alternatives": "Alternatives: {highlights}"
+    },
+    "two_stage": {
+      "stage1_header": "Two-Stage Voting - Stage 1: Principle Selection",
+      "selected": "Selected: {principle_num} ({principle_display_name})",
+      "attempts": "Attempts: {attempts}",
+      "failed_select": "Failed - Unable to select principle",
+      "response_short": "Response: '{response}'",
+      "stage2_header": "Two-Stage Voting - Stage 2: Amount Specification for {principle_display_name}",
+      "specified": "Specified: ${constraint_amount:,}",
+      "failed_amount": "Failed - Unable to specify constraint amount",
+      "complete_header": "Two-Stage Voting Complete",
+      "vote_info": "Your vote: {principle_num} ({principle_display_name})",
+      "vote_info_with_constraint": "Your vote: {principle_num} ({principle_display_name}) with ${constraint_amount:,} constraint",
+      "process_two_stage": "Two-stage process (principle + amount)",
+      "process_single_stage": "Single-stage process (principle only)",
+      "total_attempts": "Total attempts: {total_attempts}",
+      "consensus_yes": "Group consensus: YES",
+      "consensus_yes_with_agreed": "Group consensus: YES (Agreed: {agreed_principle})",
+      "consensus_no": "Group consensus: NO"
+    }
+  },
+  "voting_phases": {
+    "initiation": "Voting has been initiated by {initiator_name}. Formal voting process is starting.",
+    "confirmation": "Confirmation phase: Participants are being asked to confirm whether they agree to proceed with voting.",
+    "secret_ballot": "Secret ballot phase: All participants are casting their votes on justice principles.",
+    "results": "Voting results phase: The voting outcome has been determined and communicated to all participants."
+  },
+  "voting_results": {
+    "consensus_reached": "Consensus reached: {principle_name}",
+    "consensus_with_constraint": "Consensus reached: {principle_name} (${constraint_amount:,})"
+  },
+  "voting": {
+    "timeout_fallback": "Response timed out. Please try again.",
+    "fallback_principle_prompt": "A vote has been initiated. Which of the four principles do you want to vote for?\n\n1. Maximizing Floor Income\n2. Maximizing Average Income \n3. Maximizing Average with Floor Constraint\n4. Maximizing Average with Range Constraint\n\nRespond with only the number (1, 2, 3, or 4):",
+    "fallback_amount_prompt": "You chose {principle_name}. Please state the amount in dollars as a whole positive number.\n\nRespond with the amount (examples: 25000 or $25000):",
+    "error_messages": {
+      "respond_with_number_only": "Invalid response (attempt {attempt}/{max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
+      "use_digits_not_words": "Invalid response (attempt {attempt}/{max_retries}). Please use digits (1, 2, 3, or 4), not words.",
+      "number_out_of_range": "Invalid response (attempt {attempt}/{max_retries}). You must respond with 1, 2, 3, or 4 only.",
+      "zero_not_valid": "Invalid response (attempt {attempt}/{max_retries}). Zero is not a valid principle choice. Use 1, 2, 3, or 4.",
+      "multiple_valid_numbers": "Multiple numbers detected (attempt {attempt}/{max_retries}). Please respond with only ONE number: 1, 2, 3, or 4.",
+      "response_too_long": "Invalid response (attempt {attempt}/{max_retries}). Please respond with just the number.",
+      "empty_response": "Empty response (attempt {attempt}/{max_retries}). Please respond with 1, 2, 3, or 4.",
+      "no_letter_choices": "Invalid response (attempt {attempt}/{max_retries}). Don't use letters (a, b, c, d). Use numbers: 1, 2, 3, or 4.",
+      "principle_content_unclear": "Unclear principle choice (attempt {attempt}/{max_retries}). Please respond with the number of your preferred principle: 1, 2, 3, or 4.",
+      "invalid_format_general": "Invalid response (attempt {attempt}/{max_retries}). You must respond with exactly one number: 1, 2, 3, or 4.",
+      "amount_must_be_positive": "Invalid amount (attempt {attempt}/{max_retries}). You must respond with a positive whole dollar amount.",
+      "whole_numbers_only": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a whole dollar amount (no decimals).",
+      "no_negative_amounts": "Invalid amount (attempt {attempt}/{max_retries}). Negative amounts are not allowed.",
+      "no_text_in_amount": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a number only.",
+      "empty_amount_response": "Empty response (attempt {attempt}/{max_retries}). Please provide a dollar amount.",
+      "invalid_amount_format": "Invalid amount format (attempt {attempt}/{max_retries}). You must respond with a positive whole dollar amount.",
+      "no_amount_found": "No monetary amount found (attempt {attempt}/{max_retries}). Please clearly state a dollar amount (e.g., $10,000 or 25000).",
+      "multiple_different_amounts_found": "Multiple different amounts detected (attempt {attempt}/{max_retries}). Please specify exactly one dollar amount clearly."
+    }
+  },
+  "phase2_voting_no_consensus_principle_disagreement": "No consensus - agents voted for different justice principles - discussion continues",
+  "phase2_voting_no_consensus_constraint_disagreement": "No consensus - agents agreed on {principle_name} but disagreed on constraint amounts - discussion continues",
+  "phase2_voting_no_consensus_mixed_disagreement": "No consensus - mixed disagreement on principles and constraints - discussion continues",
+  "phase2_no_consensus": "Group did not reach consensus. Earnings were randomly assigned",
+  "phase2_counterfactual_insights_best_more": "- Best alternative: Would have earned ${best_diff:.2f} more under {best_principle}",
+  "phase2_counterfactual_insights_best_same": "- Best alternative: Current earnings match the best possible outcome",
+  "phase2_counterfactual_insights_worst_more": "- Worst alternative: Would have earned ${worst_diff:.2f} less under {worst_principle}",
+  "phase2_counterfactual_insights_worst_same": "- Worst alternative: Current earnings match the worst possible outcome",
+  "error_messages": {
+    "empty_response_retry": "Important: Your previous response was empty or too short. Please provide a meaningful response."
+  },
+  "system_messages": {
+    "voting": {
+      "initiated_tag": "[Voting Initiated]",
+      "confirmation_tag": "[Voting Confirmation]",
+      "result_tag": "[Voting Result]",
+      "error_tag": "[Voting Error]",
+      "initiated_message": "{name} has initiated formal voting",
+      "confirmation_success": "All participants agreed to proceed with voting",
+      "confirmation_failed": "Confirmation failed - continuing discussion",
+      "process_failed": "Two-stage voting process failed",
+      "result_summary": "Vote conducted - Consensus: {consensus}",
+      "agreed_principle": " (Agreed on: {principle})",
+      "all_confirmed": "All confirmed",
+      "voting_declined": "Voting declined",
+      "consensus_tag": "[CONSENSUS]",
+      "no_consensus_tag": "[NO CONSENSUS]"
+    },
+    "discussion": {
+      "truncation_marker": "...earlier discussion truncated...",
+      "group_composition": "The current group consists of {participants}",
+      "retry_hint": "Please ensure your response contains a clear statement about your position on the justice principles",
+      "rounds_remaining": "\n Experiment Info: There are {rounds_remaining} rounds remaining, this means this group has {rounds_remaining} opportunities to vote left \n"
+    }
+  },
+  "results": {
+    "phase2_header": "Phase 2 Earnings",
+    "counterfactual_header": "COUNTERFACTUAL ANALYSIS - What you would have earned under each principle:",
+    "assigned_income_class": "Assigned income class: {class_name}",
+    "class_probabilities_header": "Income class probabilities:",
+    "counterfactuals_header": "Counterfactual analysis",
+    "table_headers": {
+      "principle": "Justice Principle",
+      "income": "Income",
+      "earnings": "Earnings"
+    },
+    "consensus_status": "Consensus Status:",
+    "key_insights": "Key Insights:",
+    "income_classes": {
+      "very_high": "VERY HIGH",
+      "high": "HIGH",
+      "medium": "MEDIUM",
+      "low": "LOW",
+      "very_low": "VERY LOW"
+    }
+  },
+  "comprehensive_earnings": {
+    "distributions_table_header": "Experiment Distributions and Selection Mapping",
+    "principle_outcomes_header": "Round {round_number} Choice Results - Principle Outcomes for {class_name} Class:",
+    "principle_outcomes_simple_header": "Outcome for each principle for class {class_name}:",
+    "phase2_outcomes_header": "Final Phase 2 Results - Principle Outcomes for {class_name} Class:",
+    "outcome_line": "- {principle_name} → {distribution} → {income} → {earnings}{marker}",
+    "markers": {
+      "assigned_principle": " ← Your assigned principle",
+      "group_choice": " ← Your group's choice",
+      "random_assignment": " ← Random assignment"
+    },
+    "no_consensus_status": "No consensus reached: Random assignment applied",
+    "no_consensus_explanation": "Your group could not agree on a justice principle after {rounds} rounds of discussion. Earnings were randomly assigned among all participants.",
+    "no_consensus_outcome_line": "Your random assignment: {class_name} class and Distribution {distribution_num} → ${earnings:.2f} earnings.",
+    "constraint_analysis_header": "Constraint Analysis Results:",
+    "outcome_summary": "Summary of outcomes under different constraints:",
+    "selected_distribution": "Selected Distribution:",
+    "constraint_value": "Constraint Value: ${amount:,}",
+    "no_constraint": "No constraint",
+    "floor_constraint_label": "Floor constraint of ${amount:,}",
+    "range_constraint_label": "Range constraint of ${amount:,}",
+    "table_columns": {
+      "constraint": "Constraint",
+      "selected_dist": "Selected Dist.",
+      "your_class": "Your Class",
+      "your_income": "Your Income",
+      "your_earnings": "Your Earnings"
+    },
+    "choice_summary_header": "**Your Choice Summary**",
+    "choice_summary_line": "You chose: {principle_name}{constraint_display}",
+    "choice_outcome_line": "Your outcome: {distribution} → {class_name} → {income} → {earnings}",
+    "choice_brief_explanation": "Your {principle_type} led to {distribution} being selected{class_assignment}."
+  },
+  "constraint_explanations": {
+    "floor_constraint_fallback": "No distribution met floor constraint of ${constraint_amount:,}. Chose distribution with highest floor: ${actual_floor:,}",
+    "range_constraint_fallback": "No distribution met range constraint of ${constraint_amount:,}. Chose distribution with smallest range: ${actual_range:,}",
+    "floor_constraint_success": "Chose distribution with highest {weighted}average (${avg_income:,.0f}) meeting floor constraint of ${constraint_amount:,}",
+    "range_constraint_success": "Chose distribution with highest {weighted}average (${avg_income:,.0f}) meeting range constraint of ${constraint_amount:,}",
+    "maximizing_floor_explanation": "Chose distribution with highest floor income: ${floor_amount:,}",
+    "maximizing_average_explanation": "Chose distribution with highest {weighted}average income: ${avg_income:,.0f}"
+  },
+  "constraint_formatting": {
+    "floor_constraint": "Floor constraint ≤ {amount}",
+    "range_constraint": "Range constraint ≤ {amount}",
+    "currency_format": "${amount:,}"
+  },
+  "distributions": {
+    "income_class_header": "Income Class",
+    "column_header": "Dist. {number}",
+    "distribution_label": "Distribution {number}",
+    "average_row_label": "Average"
+  },
+  "voting_prompts": {
+    "retry_instruction": "⚠️ Please respond with exactly 1 (to vote now) or 0 (to continue discussion)",
+    "internal_reasoning_section": "=== YOUR INTERNAL REASONING ===",
+    "reasoning_prompt": "Based on your internal reasoning above, what is your statement to the group?"
+  },
+  "parsing_feedback": {
+    "choice_format_confusion": {
+      "explanation": "You provided a choice statement (\"I choose X\") instead of a ranking format.",
+      "instruction": "Please provide a numbered ranking of all 4 principles from 1 (best) to 4 (worst).",
+      "example": "1. Maximizing floor income\n2. Maximizing average income\n3. Maximizing average with floor constraint\n4. Maximizing average with range constraint"
+    },
+    "incomplete_ranking": {
+      "explanation": "Your ranking is incomplete - some principles are missing.",
+      "instruction": "Please rank ALL 4 justice principles from 1 to 4.",
+      "example": "Make sure to include:\n1. [First choice]\n2. [Second choice]\n3. [Third choice]\n4. [Fourth choice]"
+    },
+    "no_numbered_list": {
+      "explanation": "You provided a natural language response instead of a numbered list.",
+      "instruction": "Please use a numbered format to rank the principles.",
+      "example": "Format: 1. [principle name], 2. [principle name], etc."
+    },
+    "empty_response": {
+      "explanation": "Your response was empty or too short to parse.",
+      "instruction": "Please provide a complete response ranking the justice principles.",
+      "example": "Example: 1. Your top choice, 2. Second choice, 3. Third choice, 4. Last choice"
+    }
+  },
+  "results_explicit": {
+    "principle_applied_consensus": "Principle applied: Your group reached consensus on {principle_name}{constraint}",
+    "principle_applied_no_consensus": "Principle applied: Your group did not reach consensus on a justice principle",
+    "probabilities_header": "The probabilities for each income class are:",
+    "assignment_statement": "You were assigned to the income class {class_name}",
+    "distributions_header": "These were the Experiment Distributions:",
+    "causal_narrative_consensus": "The principle your group reached consensus on was {principle_name}{constraint} which resulted in Distribution {dist_num}. You were assigned to the income class {class_name}, resulting in a yearly income of ${income} (which converts to a payoff of ${earnings} at the rate of $1 per $10,000 income).",
+    "causal_narrative_no_consensus": "Because the group did not reach consensus, you were randomly assigned to Distribution {dist_num}. You were assigned to the income class {class_name}, resulting in a yearly income of ${income} (which converts to a payoff of ${earnings} at the rate of $1 per $10,000 income).",
+    "counterfactual_header": "COUNTERFACTUAL ANALYSIS:",
+    "counterfactual_purpose_consensus": "The section below shows what you would have earned under each principle, assuming you had the same income class assignment ({class_name}).",
+    "counterfactual_purpose_no_consensus": "The section below shows what you would have earned if the group HAD reached consensus on each principle, assuming you had the same income class assignment ({class_name}).",
+    "outcomes_header": "Final Phase 2 Results - Principle Outcomes for {class_name} Class:",
+    "veil_reminder_header": "IMPORTANT FOR RANKING:",
+    "veil_reminder_consensus": "Your income class was assigned randomly AFTER the group chose the principle. When evaluating which principle is most just, consider what you would have preferred BEFORE knowing your class assignment (from behind the \"veil of ignorance\").",
+    "veil_reminder_no_consensus": "Your income class was assigned randomly, and since no consensus was reached, your distribution was also randomly assigned. When evaluating which principle is most just, consider which principle you would have preferred the group to choose from behind the \"veil of ignorance\" (before knowing your position).",
+    "difference_same": "Difference: same",
+    "difference_positive": "Difference: +${diff}",
+    "difference_negative": "Difference: ${diff}",
+    "marker_chosen": " ← YOUR CHOSEN PRINCIPLE",
+    "marker_random": " ← YOUR RANDOM ASSIGNMENT",
+    "floor_constraint_label": "Floor constraint ${amount}",
+    "range_constraint_label": "Range constraint ${amount}"
+  },
+  "results_phase1": {
+    "round_header": "=== Round {round_num} Payoff Notification ===",
+    "principle_chosen": "Principle chosen: {principle_name}{constraint}",
+    "probabilities_header": "The probabilities for each income class are:",
+    "assignment_statement": "You were randomly assigned to the income class {class_name}",
+    "distributions_header": "These were the Round {round_num} Distributions:",
+    "causal_narrative": "Your chosen principle was {principle_name}{constraint} which resulted in Distribution {dist_num}. You were assigned to the income class {class_name}, resulting in a yearly income of ${income} (which converts to a payoff of ${earnings} at the rate of $1 per $10,000 income).",
+    "counterfactual_header": "COUNTERFACTUAL ANALYSIS:",
+    "counterfactual_purpose": "The section below shows what you would have earned under each principle, assuming you had the same income class assignment ({class_name}).",
+    "outcomes_header": "Round {round_num} Principle Outcomes for {class_name} Class:"
   }
 }

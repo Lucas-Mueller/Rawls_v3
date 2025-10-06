@@ -15,6 +15,7 @@ from models import (
     CertaintyLevel, ApplicationResult, IncomeClass, GroupDiscussionResult
 )
 from core.distribution_generator import DistributionGenerator
+from core.experiment_manager import FrohlichExperimentManager
 
 
 class ExperimentTestFixture:
@@ -23,6 +24,10 @@ class ExperimentTestFixture:
     @staticmethod
     def create_minimal_config(num_agents: int = 2) -> ExperimentConfiguration:
         """Create minimal viable configuration for testing."""
+        # Add validation to prevent single-agent configs that violate constraints
+        if num_agents < 2:
+            raise ValueError("Minimum 2 agents required for valid experiment configuration")
+            
         agents = []
         personalities = [
             "Analytical and methodical, focused on fairness",
@@ -49,6 +54,31 @@ class ExperimentTestFixture:
         )
     
     @staticmethod
+    def create_config_with_agents(agent_specs: List[Dict[str, Any]]) -> ExperimentConfiguration:
+        """Create configuration with specific agent specifications."""
+        agents = []
+        
+        for spec in agent_specs:
+            # Set defaults for missing fields
+            agent_config = AgentConfiguration(
+                name=spec.get("name", f"TestAgent{len(agents)+1}"),
+                personality=spec.get("personality", "Test personality"),
+                model=spec.get("model", "o3-mini"),
+                temperature=spec.get("temperature", 0.7),
+                memory_character_limit=spec.get("memory_character_limit", 50000),
+                reasoning_enabled=spec.get("reasoning_enabled", True),
+                language=spec.get("language", "english")
+            )
+            agents.append(agent_config)
+        
+        return ExperimentConfiguration(
+            agents=agents,
+            phase2_rounds=5,
+            distribution_range_phase1=(0.8, 1.2),
+            distribution_range_phase2=(0.9, 1.1)
+        )
+    
+    @staticmethod
     def create_mock_agent_pool(config: ExperimentConfiguration) -> List[ParticipantAgent]:
         """Create pool of mock agents with different personalities."""
         mock_agents = []
@@ -65,6 +95,38 @@ class ExperimentTestFixture:
             mock_agents.append(mock_agent)
         
         return mock_agents
+    
+    @staticmethod
+    def create_mocked_experiment_manager(config: ExperimentConfiguration) -> FrohlichExperimentManager:
+        """Create a FrohlichExperimentManager with properly mocked components.
+        
+        This avoids the need to call async_init() in tests by providing pre-mocked
+        utility_agent and participants that are ready for patching.
+        """
+        manager = FrohlichExperimentManager(config)
+        
+        # Create mock utility agent with all expected methods
+        mock_utility_agent = Mock(spec=UtilityAgent)
+        mock_utility_agent.parse_principle_ranking_enhanced = AsyncMock()
+        mock_utility_agent.parse_principle_choice_enhanced = AsyncMock()
+        mock_utility_agent.validate_constraint_specification = AsyncMock(return_value=True)
+        mock_utility_agent.extract_vote_from_statement = AsyncMock(return_value=None)
+        mock_utility_agent.async_init = AsyncMock()
+        
+        # Create mock participants list
+        mock_participants = []
+        for agent_config in config.agents:
+            mock_participant = Mock(spec=ParticipantAgent)
+            mock_participant.name = agent_config.name
+            mock_participant.agent = AsyncMock()
+            mock_participant.update_memory = AsyncMock(return_value="Updated memory")
+            mock_participants.append(mock_participant)
+        
+        # Override the None values with mocks
+        manager.utility_agent = mock_utility_agent
+        manager.participants = mock_participants
+        
+        return manager
     
     @staticmethod
     def create_test_distributions(num_sets: int = 4) -> List[DistributionSet]:
@@ -107,10 +169,10 @@ class ExperimentTestFixture:
                 "initial_ranking": ["I rank the principles as follows: 1. Maximizing the floor income (Best), 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint (Worst). Overall certainty: sure. I believe protecting the worst-off is most important."],
                 "post_explanation_ranking": ["After seeing the examples, I maintain my ranking: 1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure. The examples reinforced my belief in protecting the vulnerable."],
                 "principle_applications": [
-                    "I choose principle a (maximizing the floor). I am sure about this choice because it helps the worst-off people the most.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protection.",
-                    "I choose principle a (maximizing the floor). I am very sure about this choice after seeing how it protects vulnerable people.",
-                    "I choose principle c (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice as it provides good balance."
+                    "I choose maximizing the floor income (maximizing the floor). I am sure about this choice because it helps the worst-off people the most.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $15,000. I am sure about this choice because it balances efficiency with protection.",
+                    "I choose maximizing the floor income (maximizing the floor). I am very sure about this choice after seeing how it protects vulnerable people.",
+                    "I choose maximizing the average income with a floor constraint (maximizing average with floor constraint) with a constraint of $16,000. I am sure about this choice as it provides good balance."
                 ],
                 "final_ranking": ["My final ranking remains: 1. Maximizing the floor income, 2. Maximizing average with floor constraint, 3. Maximizing average income, 4. Maximizing average with range constraint. Overall certainty: very_sure. My experience confirmed that protecting the worst-off should be the priority."],
                 "discussion_statements": [
@@ -123,10 +185,10 @@ class ExperimentTestFixture:
                 "initial_ranking": ["My ranking: 1. Maximizing average income (Best), 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income (Worst). Overall certainty: sure. Efficiency should be our primary concern."],
                 "post_explanation_ranking": ["After the explanation: 1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: sure. The examples showed how average maximization creates the most total wealth."],
                 "principle_applications": [
-                    "I choose principle b (maximizing the average). I am sure about this choice because it creates the most total wealth for society.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice as it maintains efficiency while limiting inequality.",
-                    "I choose principle b (maximizing the average). I am very sure about this choice as efficiency is paramount.",
-                    "I choose principle d (maximizing average with range constraint) with a constraint of $18,000. I am sure this balances efficiency with fairness."
+                    "I choose maximizing the average income (maximizing the average). I am sure about this choice because it creates the most total wealth for society.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $20,000. I am sure about this choice as it maintains efficiency while limiting inequality.",
+                    "I choose maximizing the average income (maximizing the average). I am very sure about this choice as efficiency is paramount.",
+                    "I choose maximizing the average income with a range constraint (maximizing average with range constraint) with a constraint of $18,000. I am sure this balances efficiency with fairness."
                 ],
                 "final_ranking": ["Final ranking: 1. Maximizing average income, 2. Maximizing average with range constraint, 3. Maximizing average with floor constraint, 4. Maximizing the floor income. Overall certainty: very_sure. My experience showed that efficiency creates the most benefit overall."],
                 "discussion_statements": [
@@ -194,15 +256,23 @@ class ExperimentTestFixture:
     def create_test_principle_choices() -> List[PrincipleChoice]:
         """Create test principle choices for validation testing."""
         return [
-            PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_FLOOR),
-            PrincipleChoice(principle=JusticePrinciple.MAXIMIZING_AVERAGE),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_FLOOR,
+                certainty=CertaintyLevel.SURE
+            ),
+            PrincipleChoice(
+                principle=JusticePrinciple.MAXIMIZING_AVERAGE,
+                certainty=CertaintyLevel.SURE
+            ),
             PrincipleChoice(
                 principle=JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
-                constraint_amount=15000
+                constraint_amount=15000,
+                certainty=CertaintyLevel.SURE
             ),
             PrincipleChoice(
                 principle=JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT,
-                constraint_amount=20000
+                constraint_amount=20000,
+                certainty=CertaintyLevel.SURE
             )
         ]
     

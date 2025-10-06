@@ -1,0 +1,44 @@
+language: "English" 
+
+agents:
+  - name: "Alice"
+    personality: "You are an american college student."
+    model: "google/gemma-3-27b-it"
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+    
+  - name: "James" 
+    personality: "You are an american college student."
+    model: "google/gemma-3-27b-it"
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: true
+  
+  - name: "Donald" 
+    personality: "You are an american college student."
+    model: "google/gemma-3-27b-it"
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    
+
+  
+
+utility_agent_model: 'gpt-4.1-nano'
+utility_agent_temperature: 0.0
+
+phase2_rounds: 6
+distribution_range_phase2: [4, 8]
+
+# Income class assignment probabilities (used when original_values_mode is disabled)
+income_class_probabilities:
+  high: 0.05          # 5%
+  medium_high: 0.10   # 10%
+  medium: 0.50        # 50%
+  medium_low: 0.25    # 25%
+  low: 0.10           # 10%
+
+# Original Values Mode Configuration
+original_values_mode:
+  enabled: true                 

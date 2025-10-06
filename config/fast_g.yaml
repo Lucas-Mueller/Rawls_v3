@@ -1,0 +1,43 @@
+language: "English" 
+
+seed: 42
+
+agents:
+  - name: "Sophie"
+    personality: "You are an american college student."
+    model: "gemini-2.0-flash-lite"
+    memory_character_limit: 25000
+    reasoning_enabled: true
+    temperature: 0
+    
+  - name: "Alice" 
+    personality: "You are an american college student."
+    model:  "gemini-2.0-flash-lite"
+    temperature: 0
+    memory_character_limit: 25000
+    reasoning_enabled: true
+
+    
+
+utility_agent_model: "gemini-2.0-flash-lite"
+utility_agent_temperature: 0.0
+
+phase2_rounds: 5
+distribution_range_phase2: [4, 8]
+
+# Income class assignment probabilities (used when original_values_mode is disabled)
+income_class_probabilities:
+  high: 0.05          # 5%
+  medium_high: 0.10   # 10%
+  medium: 0.50        # 50%
+  medium_low: 0.25    # 25%
+  low: 0.1           # 10%
+
+# Original Values Mode Configuration
+original_values_mode:
+  enabled: true                 
+
+logging:
+  verbosity_level: "debug"  # or minimal, detailed, debug
+  use_colors: true
+  show_progress_bars: true

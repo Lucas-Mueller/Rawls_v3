@@ -1,0 +1,5 @@
+language: "English" 
+agents:
+  - name: "Test"
+    personality: "Test"
+    model: 'gpt-4.1-mini'

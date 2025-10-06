@@ -1,0 +1,55 @@
+# Test configuration for Mandarin retry mechanism with maximum retries
+language: "Mandarin"
+seed: 42
+
+# RETRY MECHANISM CONFIGURATION - MAXIMUM SETTINGS
+enable_intelligent_retries: true
+max_participant_retries: 5  # Maximum allowed retries
+enable_progressive_guidance: true
+memory_update_on_retry: true
+retry_feedback_detail: "detailed"
+
+# Speed optimizations for testing
+selective_memory_updates: true
+memory_guidance_style: structured
+phase2_include_internal_reasoning_in_memory: false
+include_experiment_explanation_each_turn: false
+memory_update_threshold: minimal
+
+agents:
+  - name: "测试代理1"
+    personality: "您是一个可能偶尔提供不清楚回答以测试重试机制的参与者。"
+    model: "gpt-4o-mini"
+    temperature: 0.1
+    memory_character_limit: 8000
+    reasoning_enabled: true
+
+  - name: "测试代理2"
+    personality: "您是一个可能偶尔提供不完整回答以测试重试机制的参与者。"
+    model: "gpt-4o-mini"
+    temperature: 0.1
+    memory_character_limit: 8000
+    reasoning_enabled: true
+
+utility_agent_model: "gpt-4o-mini"
+utility_agent_temperature: 0.0
+
+phase2_rounds: 3
+
+distribution_range_phase1: [1.0, 1.01]
+distribution_range_phase2: [1.0, 1.01]
+
+income_class_probabilities:
+  high: 0.2
+  medium_high: 0.2
+  medium: 0.2
+  medium_low: 0.2
+  low: 0.2
+
+original_values_mode:
+  enabled: true
+
+logging:
+  verbosity_level: "detailed"
+  use_colors: true
+  show_progress_bars: true

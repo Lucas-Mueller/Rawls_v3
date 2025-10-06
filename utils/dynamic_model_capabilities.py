@@ -9,16 +9,63 @@ import asyncio
 import logging
 from typing import Dict, Optional, Tuple, List
 from agents import Agent, Runner, ModelSettings
-from utils.model_provider import detect_model_provider
-from agents.extensions.models.litellm_model import LitellmModel
+from agents.tracing.setup import get_trace_provider
+from utils.model_provider import detect_model_provider_legacy, _append_nitro_suffix
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+from utils.openrouter_client import get_openrouter_client
 import os
 
 logger = logging.getLogger(__name__)
 
-# Cache for temperature compatibility results to avoid repeated tests
-_temperature_cache: Dict[str, bool] = {}
 
-async def test_temperature_support(model_string: str) -> Tuple[bool, str, Optional[Exception]]:
+class TemperatureCache:
+    """Instance-based cache for temperature compatibility results.
+    
+    This allows each experiment to maintain its own cache, preventing
+    interference between concurrent experiments.
+    """
+    
+    def __init__(self):
+        self._cache: Dict[str, bool] = {}
+    
+    def get(self, model_string: str) -> Optional[bool]:
+        """Get cached temperature support result."""
+        return self._cache.get(model_string)
+    
+    def set(self, model_string: str, supports_temp: bool) -> None:
+        """Set cached temperature support result."""
+        self._cache[model_string] = supports_temp
+    
+    def clear(self) -> None:
+        """Clear all cached results."""
+        self._cache.clear()
+        logger.info("Temperature compatibility cache cleared")
+    
+    def get_info(self) -> dict:
+        """Get information about the current cache state."""
+        return {
+            "cached_models": len(self._cache),
+            "models": dict(self._cache),
+            "supported_models": [k for k, v in self._cache.items() if v],
+            "unsupported_models": [k for k, v in self._cache.items() if not v]
+        }
+
+
+# Global cache instance for backward compatibility
+_global_temperature_cache = TemperatureCache()
+
+
+async def _run_without_tracing(agent, prompt: str, context=None):
+    """Run a quick probe call without emitting tracing spans.
+
+    Uses a disabled trace context to scope suppression to this probe only,
+    avoiding global tracing flips that can affect concurrent participant runs.
+    """
+    trace_obj = get_trace_provider().create_trace(name="capability_probe", disabled=True)
+    with trace_obj:
+        return await Runner.run(agent, prompt, context=context)
+
+async def test_temperature_support(model_string: str, cache: Optional[TemperatureCache] = None) -> Tuple[bool, str, Optional[Exception]]:
     """
     Dynamically test if a model supports temperature parameter.
     
@@ -29,25 +76,30 @@ async def test_temperature_support(model_string: str) -> Tuple[bool, str, Option
         Tuple of (supports_temperature, reason, exception_if_any)
     """
     
+    # Use global cache if none provided
+    if cache is None:
+        cache = _global_temperature_cache
+    
     # Check cache first
-    if model_string in _temperature_cache:
-        cached_result = _temperature_cache[model_string]
+    cached_result = cache.get(model_string)
+    if cached_result is not None:
         reason = "Cached result from previous test"
         return cached_result, reason, None
     
     logger.info(f"Testing temperature support for model: {model_string}")
     
     try:
-        # Create model configuration
-        processed_model, is_litellm = detect_model_provider(model_string)
-        
-        if is_litellm:
-            model_config = LitellmModel(
-                model=processed_model,
-                api_key=os.getenv("OPENROUTER_API_KEY"),
-            )
-        else:
-            model_config = model_string
+        # Create model configuration using new provider detection
+        from utils.model_provider import detect_model_provider, create_model_config
+
+        try:
+            # Use the new create_model_config that handles all providers
+            model_config = create_model_config(model_string)
+        except ValueError as e:
+            # If API key is missing, we can't test
+            logger.warning(f"Cannot test temperature support for {model_string}: {e}")
+            cache.set(model_string, False)
+            return False, f"Cannot test: {str(e)}", e
         
         # Test 1: Try creating agent with temperature
         try:
@@ -62,13 +114,13 @@ async def test_temperature_support(model_string: str) -> Tuple[bool, str, Option
             # Test 2: Try a simple inference call to verify it actually works
             logger.debug(f"Running test inference with temperature for {model_string}")
             simple_response = await asyncio.wait_for(
-                Runner.run(test_agent_with_temp, "Say 'test' and nothing else."),
-                timeout=30  # 30 second timeout for testing
+                _run_without_tracing(test_agent_with_temp, "Say 'test' and nothing else."),
+                timeout=600  # 10 minute timeout for testing slow LLMs
             )
             
             # If we get here, temperature is supported
             logger.info(f"✅ {model_string}: Temperature supported (test successful)")
-            _temperature_cache[model_string] = True
+            cache.set(model_string, True)
             return True, "Successfully created agent and ran inference with temperature parameter", None
             
         except Exception as temp_error:
@@ -87,43 +139,53 @@ async def test_temperature_support(model_string: str) -> Tuple[bool, str, Option
                 # Test basic inference without temperature
                 logger.debug(f"Running test inference without temperature for {model_string}")
                 simple_response = await asyncio.wait_for(
-                    Runner.run(test_agent_no_temp, "Say 'test' and nothing else."),
-                    timeout=30
+                    _run_without_tracing(test_agent_no_temp, "Say 'test' and nothing else."),
+                    timeout=600
                 )
                 
                 # Model works without temperature but failed with temperature
                 logger.warning(f"⚠️  {model_string}: Temperature NOT supported (works without temperature)")
-                _temperature_cache[model_string] = False
+                cache.set(model_string, False)
                 return False, f"Model works without temperature but failed with it: {str(temp_error)}", temp_error
                 
             except Exception as no_temp_error:
                 # Model doesn't work at all - this might be a configuration issue
                 logger.error(f"❌ {model_string}: Model failed both with and without temperature")
-                _temperature_cache[model_string] = False
+                cache.set(model_string, False)
                 return False, f"Model failed both with and without temperature - may be unavailable: {str(no_temp_error)}", no_temp_error
     
     except Exception as setup_error:
         # Failed to even set up the test
         logger.error(f"❌ {model_string}: Failed to set up temperature test: {setup_error}")
-        _temperature_cache[model_string] = False
+        cache.set(model_string, False)
         return False, f"Failed to set up temperature compatibility test: {str(setup_error)}", setup_error
 
-def supports_temperature_cached(model_string: str) -> Optional[bool]:
+def supports_temperature_cached(model_string: str, cache: Optional[TemperatureCache] = None) -> Optional[bool]:
     """
     Check cached temperature support without running new tests.
+    
+    Args:
+        model_string: Model to check
+        cache: Cache instance to use (defaults to global cache)
     
     Returns:
         True/False if cached, None if not yet tested
     """
-    return _temperature_cache.get(model_string)
+    if cache is None:
+        cache = _global_temperature_cache
+    return cache.get(model_string)
 
-def clear_temperature_cache():
-    """Clear the temperature compatibility cache."""
-    global _temperature_cache
-    _temperature_cache.clear()
-    logger.info("Temperature compatibility cache cleared")
+def clear_temperature_cache(cache: Optional[TemperatureCache] = None):
+    """Clear the temperature compatibility cache.
+    
+    Args:
+        cache: Cache instance to clear (defaults to global cache)
+    """
+    if cache is None:
+        cache = _global_temperature_cache
+    cache.clear()
 
-async def batch_test_model_temperatures(model_strings: List[str]) -> Dict[str, dict]:
+async def batch_test_model_temperatures(model_strings: List[str], cache: Optional[TemperatureCache] = None) -> Dict[str, dict]:
     """
     Batch test multiple models for temperature support during experiment startup.
     
@@ -142,10 +204,14 @@ async def batch_test_model_temperatures(model_strings: List[str]) -> Dict[str, d
     logger.info(f"Batch testing {len(unique_models)} unique models for temperature compatibility...")
     start_time = asyncio.get_event_loop().time()
     
+    # Use global cache if none provided
+    if cache is None:
+        cache = _global_temperature_cache
+        
     # Test all models concurrently
     tasks = []
     for model_string in unique_models:
-        task = asyncio.create_task(test_temperature_support(model_string))
+        task = asyncio.create_task(test_temperature_support(model_string, cache))
         tasks.append((model_string, task))
     
     # Collect results
@@ -177,7 +243,8 @@ async def create_agent_with_temperature_retry(
     agent_class, 
     model_string: str, 
     temperature: Optional[float],
-    agent_kwargs: dict
+    agent_kwargs: dict,
+    cache: Optional[TemperatureCache] = None
 ) -> tuple:
     """
     Create agent with automatic temperature error handling and retry.
@@ -198,11 +265,16 @@ async def create_agent_with_temperature_retry(
         Tuple of (agent, temperature_info_dict)
     """
     from utils.model_provider import detect_model_provider
-    from agents.extensions.models.litellm_model import LitellmModel
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    from utils.openrouter_client import get_openrouter_client
     from agents import ModelSettings
     
+    # Use global cache if none provided
+    if cache is None:
+        cache = _global_temperature_cache
+        
     # Step 1: Check cache first
-    cached_support = supports_temperature_cached(model_string)
+    cached_support = supports_temperature_cached(model_string, cache)
     
     if cached_support is False:
         # We know this model doesn't support temperature - skip it from the start
@@ -222,16 +294,15 @@ async def create_agent_with_temperature_retry(
         
         return agent, temp_info
     
-    # Step 2: Create model config
-    processed_model, is_litellm = detect_model_provider(model_string)
-    
-    if is_litellm:
-        model_config = LitellmModel(
-            model=processed_model,
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-        )
-    else:
-        model_config = model_string
+    # Step 2: Create model config using new provider detection
+    from utils.model_provider import create_model_config
+
+    try:
+        model_config = create_model_config(model_string)
+    except ValueError as e:
+        # If API key is missing, we can't create agent
+        logger.error(f"Cannot create agent for {model_string}: {e}")
+        raise
     
     # Prepare agent kwargs with model
     final_kwargs = agent_kwargs.copy()
@@ -263,18 +334,18 @@ async def create_agent_with_temperature_retry(
                     phase=ExperimentPhase.PHASE_1,
                     memory_character_limit=1000
                 )
-                await Runner.run(agent, test_prompt, context=test_context)
+                await _run_without_tracing(agent, test_prompt, context=test_context)
             except Exception as ctx_error:
                 # If context doesn't work, try without context (for regular Agent)
                 try:
-                    await Runner.run(agent, test_prompt)
+                    await _run_without_tracing(agent, test_prompt)
                 except Exception as no_ctx_error:
                     # Re-raise the original context error since that's more likely to be the intended usage
                     raise ctx_error
             
             # Success with temperature - update cache if not already known
             if cached_support is None:
-                _temperature_cache[model_string] = True
+                cache.set(model_string, True)
                 logger.info(f"✅ {model_string} supports temperature (discovered during creation)")
             
             temp_info = {
@@ -296,7 +367,7 @@ async def create_agent_with_temperature_retry(
                 logger.warning(f"🔄 {model_string}: Temperature not supported error detected - recreating without temperature")
                 
                 # Step 5: Add to cache immediately
-                _temperature_cache[model_string] = False
+                cache.set(model_string, False)
                 logger.info(f"Added {model_string} to no-temperature-support cache")
                 
                 # Step 6: Retry without temperature
@@ -325,11 +396,11 @@ async def create_agent_with_temperature_retry(
                             phase=ExperimentPhase.PHASE_1,
                             memory_character_limit=1000
                         )
-                        await Runner.run(agent, test_prompt, context=test_context)
+                        await _run_without_tracing(agent, test_prompt, context=test_context)
                     except Exception as ctx_error:
                         # If context doesn't work, try without context (for regular Agent)
                         try:
-                            await Runner.run(agent, test_prompt)
+                            await _run_without_tracing(agent, test_prompt)
                         except Exception as no_ctx_error:
                             # Re-raise the original context error since that's more likely to be the intended usage
                             raise ctx_error
@@ -395,11 +466,12 @@ def is_temperature_not_supported_error(exception: Exception) -> bool:
     return any(pattern in error_message for pattern in temperature_error_patterns)
 
 
-def get_temperature_cache_info() -> dict:
-    """Get information about the current temperature cache state."""
-    return {
-        "cached_models": len(_temperature_cache),
-        "models": dict(_temperature_cache),
-        "supported_models": [k for k, v in _temperature_cache.items() if v],
-        "unsupported_models": [k for k, v in _temperature_cache.items() if not v]
-    }
+def get_temperature_cache_info(cache: Optional[TemperatureCache] = None) -> dict:
+    """Get information about the current temperature cache state.
+    
+    Args:
+        cache: Cache instance to query (defaults to global cache)
+    """
+    if cache is None:
+        cache = _global_temperature_cache
+    return cache.get_info()

@@ -4,281 +4,499 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **Frohlich Experiment**: a multi-agent AI system implementing an experiment to simulate how AI agents interact with principles of justice and income distribution. The system is based on the OpenAI Agents SDK and implements a two-phase experimental design.
+The Frohlich Experiment is a Python-based framework for conducting experiments with AI agents simulating distributive justice scenarios. It's inspired by economist Norman Frohlich's experiments and implements a "veil of ignorance" scenario where AI agents engage in two-phase experiments to reach consensus on principles of justice.
+
+The framework uses OpenAI Agents SDK for participant agents and integrates sophisticated voting systems, multilingual support, and comprehensive experiment orchestration.
+
+## Core Architecture
+
+### Two-Phase Experiment Structure
+- **Phase 1**: Individual agents familiarize themselves with justice principles and their own income assignments
+- **Phase 2**: Group discussion where agents reach consensus on a justice principle through formal voting mechanisms
+
+### Key Components
+- **FrohlichExperimentManager** (`core/experiment_manager.py`): Orchestrates complete experiments
+- **Phase1Manager** (`core/phase1_manager.py`): Manages individual agent deliberation 
+- **Phase2Manager** (`core/phase2_manager.py`): Orchestrates group discussion using specialized services
+- **Participant Agents** (`experiment_agents/participant_agent.py`): AI agents that participate in experiments
+- **Utility Agents** (`experiment_agents/utility_agent.py`): Parser/validator agents for processing responses
+
+### Services-First Architecture
+Phase 2 uses a services-first architecture where specialized services handle specific responsibilities:
+
+- **SpeakingOrderService** (`core/services/speaking_order_service.py`): Manages speaking turn orders with finisher restrictions
+- **DiscussionService** (`core/services/discussion_service.py`): Handles discussion prompts, statement validation, and history management
+- **VotingService** (`core/services/voting_service.py`): Manages vote initiation, confirmation, and ballot coordination
+- **MemoryService** (`core/services/memory_service.py`): Provides unified memory management with guidance styles and truncation
+- **CounterfactualsService** (`core/services/counterfactuals_service.py`): Handles payoff calculations, counterfactual analysis, and results formatting
+
+The Phase2Manager acts as an orchestrator that delegates specific responsibilities to these services, ensuring clean separation of concerns and maintainability.
+
+#### Services-Always Architecture
+The framework has fully migrated to a services-first approach. All Phase 2 operations go through the specialized services - there are no feature flags or legacy pathways. This ensures:
+- **Consistent Behavior**: All experiments use the same service-based logic
+- **Maintainability**: Changes are made in focused, single-responsibility services
+- **Testability**: Services can be tested in isolation with protocol-based dependencies
+- **Configurability**: Behavior is controlled through `Phase2Settings` rather than code changes
+
+### Service Ownership and Modification Guide
+
+When adding or modifying Phase 2 behavior, work with the appropriate service rather than modifying Phase2Manager directly:
+
+#### SpeakingOrderService
+- **Owns**: Speaking turn management, finisher restrictions, randomization strategies
+- **Modify here for**: New speaking order algorithms, finisher rule changes, turn allocation logic
+- **Key methods**: `determine_speaking_order()`, `apply_finisher_restrictions()`
+
+#### DiscussionService  
+- **Owns**: Discussion prompts, statement validation, history management, group composition formatting
+- **Modify here for**: Prompt templates, validation rules, history truncation logic, multilingual support
+- **Key methods**: `build_discussion_prompt()`, `validate_statement()`, `manage_discussion_history_length()`
+- **Configuration**: Uses `Phase2Settings.public_history_max_length` for history limits
+
+#### VotingService
+- **Owns**: Vote initiation, confirmation phases, ballot coordination, consensus validation
+- **Modify here for**: Voting workflows, confirmation logic, ballot validation, consensus rules
+- **Key methods**: `initiate_voting()`, `coordinate_voting_confirmation()`, `coordinate_secret_ballot()`
+
+#### MemoryService
+- **Owns**: All memory updates, guidance style management, content truncation, event routing
+- **Modify here for**: Memory update strategies, guidance formatting, truncation algorithms
+- **Key methods**: `update_discussion_memory()`, `update_voting_memory()`, `update_results_memory()`
+
+#### CounterfactualsService
+- **Owns**: Payoff calculations, counterfactual analysis, results formatting, final rankings
+- **Modify here for**: Payoff algorithms, counterfactual logic, results presentation, ranking collection
+- **Key methods**: `calculate_payoffs()`, `format_detailed_results()`, `collect_final_rankings()`
+
+### Configuration System
+Configuration is YAML-driven with Pydantic models in `config/models.py`. Key settings:
+- Agent personalities, models, and language preferences
+- Phase 2 behavior via `Phase2Settings` (`config/phase2_settings.py`)
+- Memory management and temperature settings
+- Reproducibility via seed configuration
+
+#### Phase2Settings Configuration
+Phase 2 behavior is controlled through `Phase2Settings` which includes:
+- **Discussion History**: Configurable `public_history_max_length` (default: 100,000 characters)
+- **Statement Validation**: Minimum lengths, retry attempts, and timeout settings
+- **Memory Management**: Compression thresholds and validation strictness
+- **Voting Settings**: Timeout values, retry limits, and constraint tolerance
+- **Two-Stage Voting**: Structured voting with numerical validation
 
 ## Development Commands
 
+### Running Experiments
+```bash
+# Run with a configuration file (required)
+python main.py config/fast.yaml
+
+# Specify output path
+python main.py config/fast.yaml results/my_experiment.json
+
+# Note: There is no default_config.yaml - you must specify a config file
+# Use config/fast.yaml for quick testing or create your own
+```
+
+### Testing
+
+The framework includes an **intelligent test acceleration system** that provides ultra-fast feedback for development while maintaining comprehensive validation for releases.
+
+#### **Intelligent Test Execution Modes**
+```bash
+# DEVELOPMENT WORKFLOWS (Ultra-fast feedback)
+
+# Ultra-fast mode: Unit tests only (~7 seconds, 0 API calls)
+python run_tests.py --mode ultra_fast
+
+# Development mode: Unit + component tests (~5 minutes, minimal API calls)
+python run_tests.py --mode dev
+
+# CI/CD mode: Comprehensive validation (~15 minutes, moderate API calls)
+python run_tests.py --mode ci
+
+# Full mode: Complete validation (~30-45 minutes, all API calls)
+python run_tests.py --mode full
+```
+
+#### **Advanced Test Runner Options**
+```bash
+# Custom configuration override
+python run_tests.py --mode dev --config config/test_ultra_fast.yaml
+
+# Control multilingual testing (1, 2, or 3 languages)
+python run_tests.py --mode ci --languages 2
+
+# Performance analysis and reporting
+python run_tests.py --mode dev --performance-report
+
+# Dry run to preview execution plan
+python run_tests.py --mode full --dry-run
+
+# Get help with available modes and options
+python run_tests.py --help
+```
+
+#### **Legacy Test Execution (Backward Compatible)**
+```bash
+# Run all tests (sequential: unit -> component -> integration -> contracts -> live)
+python run_tests.py
+
+# Specific test types
+python run_tests.py unit                    # Fast unit tests
+python run_tests.py component               # Component tests with language coverage enforcement
+python run_tests.py integration             # Heavier multilingual flows
+python run_tests.py contracts               # Contract/regression tests (golden snapshots)
+python run_tests.py live                    # Live tests requiring API keys
+
+# Multiple test types in sequence
+python run_tests.py unit component          # Fast feedback loop
+python run_tests.py integration contracts   # Comprehensive validation
+
+# Control live test execution
+RUN_LIVE_TESTS=0 python run_tests.py integration  # Force-skip live suites
+RUN_LIVE_TESTS=1 python run_tests.py live         # Force-enable live tests
+
+# With coverage reporting
+python run_tests.py --coverage
+python run_tests.py unit --coverage         # Coverage for specific test type
+```
+
+#### **Fast Test Suite (Phase 2 Strategic Mocking)**
+```bash
+# Run ultra-fast service boundary tests (43 tests in ~0.04 seconds)
+python -m pytest tests/fast/ -v
+
+# Multilingual response parsing tests (0 API calls)
+python -m pytest tests/fast/test_response_parsing.py
+
+# Data flow validation tests (synthetic data)
+python -m pytest tests/fast/test_data_flows.py
+```
+
+#### **Environment-Based Test Control**
+```bash
+# Development mode (skips expensive tests by default)
+DEVELOPMENT_MODE=1 python run_tests.py
+
+# Force comprehensive testing in development
+FULL_INTEGRATION_TESTS=1 python run_tests.py
+
+# Skip expensive tests even with API keys
+SKIP_EXPENSIVE_TESTS=1 python run_tests.py
+
+# Use custom configuration globally
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml python run_tests.py
+```
+
+#### **Advanced pytest commands**
+```bash
+python -m pytest tests/unit/test_specific_file.py -v
+python -m pytest -k "test_pattern" -v
+python -m pytest tests/unit/ --tb=short
+
+# Language coverage validation
+# Component and live tests enforce coverage across english, spanish, mandarin
+# Set LANGUAGE_REPORT_PATH environment variable for detailed language test reporting
+
+# Pytest markers (configured in pytest.ini)
+python -m pytest -m "not slow"        # Skip slow tests
+python -m pytest -m "unit"            # Run only unit tests
+python -m pytest -m "integration"     # Run only integration tests
+python -m pytest -m "live"            # Run only live endpoint tests
+
+# Standalone issue-specific test scripts (located in project root)
+python test_compromise_forgetting_issue.py
+python test_dynamic_tool_logging.py
+python test_keyword_fix.py
+python test_memory_optimization.py
+python test_parallel_execution.py
+python test_selective_memory_updates.py
+```
+
+#### **Performance Improvements Achieved**
+- **Ultra-fast mode**: 99.3% improvement (7.6s vs 90-120 minutes)
+- **Fast test suite**: 99.97% improvement (0.04s for 43 tests)
+- **Development workflow**: 95% improvement (5min vs 90-120 minutes)
+- **CI/CD pipeline**: 85% improvement (15min vs 90-120 minutes)
+
+### Batch Experiment Execution
+```bash
+# Hypothesis testing framework provides utilities for batch execution
+# See hypothesis_testing/utils_hypothesis_testing/runner.py for batch execution utilities
+# Experiment configurations organized by hypothesis in hypothesis_testing/ directory:
+# - hypothesis_1/: 33 different experimental conditions
+# - hypothesis_2/: Cultural variations (American, Chinese)
+# - hypothesis_3/: Income inequality variations (low, medium, high)
+# - hypothesis_6/: Additional experimental conditions
+
+# Custom batch scripts can leverage utils/experiment_runner.py for automation
+```
+
 ### Environment Setup
 ```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On macOS/Linux
-
 # Install dependencies
 pip install -r requirements.txt
 
-# Core dependencies: openai-agents[litellm], python-dotenv, pydantic, PyYAML
-# Analysis libraries: pandas, numpy, matplotlib, seaborn, scipy, statsmodels, plotly
-# Additional: tqdm, diagrams
+# Set up environment variables (create .env file)
+OPENAI_API_KEY=your_openai_key_here
+GEMINI_API_KEY=your_gemini_key_here        # Optional: For native Gemini models
+OPENROUTER_API_KEY=your_openrouter_key_here  # Optional: For OpenRouter models
+
+# Optional: Control OpenAI Agents SDK tracing
+OPENAI_AGENTS_DISABLE_TRACING=1    # Disable tracing for tests
+OPENAI_DISABLE_TRACING=true
+
+# Optional: Test system environment variables
+RUN_LIVE_TESTS=1                   # Enable live tests (default: auto-detect API key)
+LANGUAGE_REPORT_PATH=/path/to/report.json  # Language coverage reporting
+
+# Test acceleration environment variables
+DEVELOPMENT_MODE=1                 # Enable development mode (default: 1)
+FULL_INTEGRATION_TESTS=1          # Force comprehensive testing in dev mode
+SKIP_EXPENSIVE_TESTS=1            # Skip expensive tests even with API keys
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml  # Override configuration globally
+
+# Install R programming language support (for statistical analysis)
+# R package "languageserver" is also recommended
+
+# Python 3.11+ is required
 ```
 
-### Running the System
+### Documentation
 ```bash
-# Run experiment with default configuration
-python main.py
+# Build Sphinx documentation locally
+cd docs
+make html
 
-# Run with custom config and output
-python main.py config/custom_config.yaml results/my_experiment.json
+# View built documentation
+open _build/html/index.html
 
-# Run with specific config file
-python main.py my_config.yaml
-
-# Run with language-specific configurations
-python main.py config/spanish_config.yaml
-python main.py config/mandarin_config.yaml
-python main.py config/mixed_models_example.yaml
-
-# Example configurations with different model providers
-# OpenAI models (existing behavior)
-model: "gpt-4.1-mini"
-
-# OpenRouter models (new LiteLLM integration)  
-model: "google/gemini-2.5-flash"
-model: "anthropic/claude-3-5-sonnet-20241022"
-model: "meta-llama/llama-3.1-70b-instruct"
+# Clean documentation build
+make clean
 ```
 
-### Jupyter Notebook Execution
-```python
-# For Jupyter notebook environments, use the experiment_runner utility
-from utils.experiment_runner import (
-    generate_random_config, 
-    run_experiment, 
-    run_experiments_parallel,
-    generate_and_save_configs
-)
+The project includes comprehensive Sphinx documentation with GitHub Pages deployment via GitHub Actions.
 
-# Generate and run a single experiment
-config = generate_random_config(num_agents=3, num_rounds=20)
-results = run_experiment(config)
+### Code Quality
+The project does not have dedicated linting commands configured. When working on the codebase:
+- Follow existing code style and patterns (PEP 8, four-space indents, explicit type hints)
+- Use `snake_case` for modules/functions, `PascalCase` for classes, `UPPER_CASE` for constants
+- Run the test suite to ensure changes don't break functionality
+- Use the import test in `run_tests.py` to verify module integrity
+- See `AGENTS.md` for detailed repository guidelines and commit conventions
 
-# Generate multiple config files (useful for batch experiments)
-generate_and_save_configs(num_configs=10, save_path="hypothesis_2_&_4/configs/condition_1")
+#### Testing Requirements for API Access
+- **OPENAI_API_KEY** required for live tests and some component/integration tests
+- Tests automatically detect API key availability and skip/enable live tests accordingly
+- Use `RUN_LIVE_TESTS=0` to force-skip live tests even with API key present
+- Component tests require multilingual coverage (English, Spanish, Mandarin) when live tests are enabled
 
-# Run multiple experiments in parallel
-config_files = ["path/to/config1.yaml", "path/to/config2.yaml"]
-results = run_experiments_parallel(config_files, max_parallel=5)
-```
+## Multi-Language Support
 
-### Testing Commands
+The framework supports English, Spanish, and Mandarin experiments:
+- Prompts are managed via `translations/` JSON files
+- Language manager handles localization (`utils/language_manager.py`)
+- Agent language preferences configured per-agent in YAML
+
+## Model Provider Support
+
+The framework supports multiple LLM providers with intelligent detection:
+- **OpenAI Models**: Native API for `gpt-*`, `o1-*`, `o3-*` models
+- **Google Gemini**: Native API for `gemini-*`, `gemma-*` models
+- **OpenRouter**: Universal proxy for any model using `provider/model` format
+- **Ollama**: Local models via OpenAI-compatible API using `ollama/<model>` prefix
+
+### Using Ollama (Local Models)
 ```bash
-# Run all tests (includes import validation, unit tests, and integration tests)
-python run_tests.py
+# 1. Start Ollama daemon and pull model
+ollama serve &
+ollama pull gemma3:1b
 
-# Run only unit tests
-python run_tests.py unit
+# 2. Optional: Override defaults
+export OLLAMA_BASE_URL="http://localhost:11434/v1"  # Default
+export OLLAMA_API_KEY="ollama"                      # Default
 
-# Run only integration tests  
-python run_tests.py integration
+# 3. Configure agent with ollama/ prefix
+# In your config YAML: model: "ollama/gemma3:1b"
 
-# Run specific test files using unittest
-python -m unittest tests.unit.test_memory_manager -v
-python -m unittest tests.integration.test_complete_experiment_flow -v
-python -m unittest tests.integration.test_error_recovery -v
-python -m unittest tests.integration.test_state_consistency -v
-
-# Note: No linting/formatting commands configured - system relies on code review
+# 4. Run experiment
+python main.py config/sample_ollama_gemma3.yaml
 ```
 
-### Environment Requirements
-```bash
-# Environment file optional - create .env file in project root if needed:
-OPENAI_API_KEY=your_key_here
-OPENROUTER_API_KEY=your_openrouter_key_here
-```
+See `GEMINI.md` for detailed Gemini setup and usage.
 
-**Important**: 
-- `OPENAI_API_KEY` is retrieved automatically for OpenAI models (e.g., "gpt-4.1-mini") - set only if needed
-- `OPENROUTER_API_KEY` is retrieved automatically for OpenRouter models (e.g., "google/gemini-2.5-flash") - set only if needed
-- Both API keys are handled the same way as in Open_Router_Test.py - using `os.getenv()` without strict validation
+## Voting System
 
-### Debugging and Development
-```bash
-# View experiment results and logs
-ls experiment_results_*.json
+The framework uses a **formal voting system** with structured consensus building, managed entirely through VotingService:
 
-# Check OpenAI trace links in experiment output
-# Results include trace URLs for debugging agent interactions
+### Formal Voting Process
+- **Initiation**: Via end-of-round prompts only ("Do you want to initiate voting?")
+- **Confirmation Phase**: All agents must agree to participate (1=Yes, 0=No) 
+- **Secret Ballot**: Two-stage structured voting with numerical validation
+- **Consensus**: Requires unanimous agreement on principle and constraints
+- **Service Integration**: All voting logic handled by VotingService with configurable timeouts and retry limits
 
-# Monitor error handling during development
-# All modules use standardized error categorization with automatic retry logic
-```
+## Two-Stage Voting System
 
-## System Architecture
+The framework implements a sophisticated voting mechanism (`core/two_stage_voting_manager.py`):
 
-### Core Components
-
-1. **Two-Phase Experimental Design**:
-   - **Phase 1**: Individual agent familiarization with justice principles (runs in parallel)
-   - **Phase 2**: Group discussion and consensus building (runs sequentially)
-
-2. **Agent Types**:
-   - **Participant Agents**: Main experimental subjects with configurable personalities, models, and temperatures
-   - **Utility Agent**: Specialized agent for processing participant outputs and validating responses
-
-3. **Justice Principles**: Four principles agents must understand and apply:
-   - Maximizing floor income
-   - Maximizing average income  
-   - Maximizing average with floor constraint
-   - Maximizing average with range constraint
+### Voting Stages
+- **Stage 1**: Numerical principle selection (agents input 1-4)
+- **Stage 2**: Amount specification (for principles 3 & 4 requiring floor constraints)
 
 ### Key Features
+- Deterministic numerical input validation replacing complex LLM-based detection
+- Multilingual number format parsing (supports various cultural number formats)
+- Integrated with principle name manager for consistent terminology
+- Fallback keyword matching system for validation
 
-- **Configuration-driven**: Uses YAML files to specify agent properties, experiment parameters, and distribution ranges
-- **Multi-language Support**: Full experimental support for English, Spanish, and Mandarin with translated prompts and agents
-- **Agent-Managed Memory**: Agents create and manage their own memory (default 50,000 characters) with complete freedom over structure and content
-- **Tracing**: Uses OpenAI Agents SDK tracing with one trace per run
-- **Validation**: Built-in validation for agent responses, especially for constraint specifications
-- **Randomization**: Dynamic income distributions with configurable multiplier ranges
-- **Original Values Mode**: Fixed predefined distributions for experimental consistency
+## Memory Management
 
-### Code Architecture
+The framework includes sophisticated memory management through MemoryService:
+- **Unified Management**: All memory updates routed through MemoryService for consistency
+- **Character limits**: Per-agent limits to prevent context overflow
+- **Guidance styles**: "narrative" or "structured" formatting options
+- **Content Truncation**: Configurable truncation with intelligent content preservation
+- **Event Routing**: Automatic routing between simple and complex memory update strategies
+- **Internal Reasoning**: Optional inclusion of internal reasoning in memory updates
+- **Configuration**: Memory behavior controlled through `Phase2Settings`
 
-The system follows a modular, service-oriented architecture with clear separation of concerns:
+## Key Data Models
 
-#### Core Structure
-- **`main.py`**: Single entry point with command-line argument parsing
-- **`config/`**: YAML-based configuration system with Pydantic models
-- **`core/`**: Experiment orchestration and phase management
-  - `experiment_manager.py`: Main coordinator with OpenAI SDK tracing
-  - `phase1_manager.py`: Parallel individual agent familiarization
-  - `phase2_manager.py`: Sequential group discussion and consensus
-  - `distribution_generator.py`: Dynamic income distribution creation and original values mode
-  - `original_values_data.py`: Predefined distribution situations for experimental consistency
-- **`experiment_agents/`**: AI agent implementations
-  - `participant_agent.py`: Main experimental subjects with configurable personalities
-  - `utility_agent.py`: Specialized agent for response parsing and validation
-- **`models/`**: Pydantic data models for type safety
-  - `experiment_types.py`: Core experiment structures (phases, distributions, results)
-  - `principle_types.py`: Justice principle choices and rankings
-  - `response_types.py`: Agent response schemas and validation
-  - `logging_types.py`: Logging and tracing data structures
-- **`utils/`**: Supporting utilities
-  - `memory_manager.py`: Agent-managed memory with character limits and retry logic
-  - `agent_centric_logger.py`: JSON logging system tracking agent inputs/outputs
-  - `error_handling.py`: Standardized error categorization with automatic retry mechanisms
-  - `language_manager.py`: Multi-language support with translation loading and management
-  - `model_provider.py`: Model provider abstraction for OpenAI and OpenRouter integration
-  - `experiment_runner.py`: Jupyter notebook utilities for batch experiments and parallel execution
-- **`tests/`**: Comprehensive testing infrastructure
-  - `unit/`: Component-level tests (models, memory manager, distribution generator, logger)
-  - `integration/`: End-to-end tests (complete experiment flow, error recovery, state consistency)
-  - `integration/fixtures/`: Test fixtures and setup utilities
-  - `integration/utils/`: Async testing utilities
+- **JusticePrinciple**: Represents different distributive justice approaches
+- **IncomeDistribution**: Handles income class assignments and calculations
+- **ExperimentConfiguration**: Pydantic model for all experiment settings
+- **Response types**: Structured parsing of agent communications
 
-#### Key Design Patterns
-- **Configuration-driven**: All agent properties, experiment parameters, and distribution ranges specified via YAML
-- **Async/Await**: Full async implementation for efficient parallel execution in Phase 1
-- **Agent-Managed Memory**: Agents maintain configurable memory (default 50,000 characters) that they update themselves after each step
-- **Validation System**: Built-in validation for agent responses, especially constraint specifications
-- **Tracing Integration**: Uses OpenAI Agents SDK tracing with one trace per experiment run
+## Testing Strategy
 
-#### Special Directories
-- **`hypothesis_2_&_4/`**: Experimental condition directory with batch configs and analysis notebooks
-  - `configs/condition_1/`: Generated config files for hypothesis testing (config_01.yaml through config_10.yaml)
-  - `analysis.ipynb`: Jupyter notebook for result analysis
-  - `execution.ipynb`: Jupyter notebook for running experiments
-  - `parallel_execution_showcase.ipynb`: Demonstration of parallel execution capabilities
-  - `logs/`: Experiment output files and results
+The testing framework provides **intelligent test acceleration** with layered execution and automatic API key detection. It includes both traditional test types and new ultra-fast mocking-based tests.
 
-#### Reference Documentation
-- `knowledge_base/agents_sdk/`: Comprehensive OpenAI Agents SDK documentation and examples
-- `master_plan.md`: Complete experimental procedure and detailed system specifications
-- `translations/`: Multi-language support files (English, Spanish, Mandarin)
+### **Traditional Test Layers**
+- **Unit tests** (`tests/unit/`): Component-level testing
+  - Individual service testing for isolated behavior validation
+  - Protocol-based dependency injection for clean service testing
+  - Fast execution, no external dependencies (~7 seconds)
+- **Component tests** (`tests/component/`): Mid-level integration testing
+  - Requires API key for LLM interactions
+  - Enforces multilingual coverage (English, Spanish, Mandarin)
+  - Language coverage validation with detailed reporting
+- **Integration tests** (`tests/integration/`): Cross-component testing
+  - End-to-end Phase 2 workflows through services
+  - Service interaction and memory consistency validation
+  - Heavier multilingual flows requiring API access
+- **Contract tests** (`tests/contracts/`): Regression and golden snapshot testing
+  - Validates expected behaviors against baseline results
+  - Snapshot comparisons for consistent outputs
+- **Live tests**: Full system validation with external API calls
+  - Most comprehensive validation requiring API access
+  - Automatically enabled when OPENAI_API_KEY is present
 
-## Development Guidelines
+### **Strategic Mocking Layer (NEW)**
+- **Fast tests** (`tests/fast/`): Ultra-fast service boundary testing
+  - **43 tests in 0.04 seconds** with 0 API calls
+  - **Response parsing tests**: Multilingual response validation with deterministic data
+  - **Data flow tests**: Service integration testing with synthetic data
+  - **Service interface tests**: Protocol-based boundary validation
+  - **Multilingual coverage**: English, Spanish, Mandarin with realistic mock responses
 
-- **Modularity**: System follows service-oriented architecture principles  
-- **Testing**: Always run `python run_tests.py` before committing changes - includes import validation, unit tests, and integration tests with comprehensive error handling and state consistency validation
-- **Simplicity**: "As simple as possible and as complex as necessary"
-- **Logging**: Agent-centric JSON logging system tracking all inputs/outputs
-- **Configuration**: All experimental parameters configurable via YAML files
-- **Dependencies**: Core dependencies are `openai-agents[litellm]`, `python-dotenv`, `pydantic`, `PyYAML` plus data analysis libraries (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `statsmodels`, `plotly`) and utilities (`tqdm`, `diagrams`) - avoid adding unnecessary packages
+### **Intelligent Test Execution Modes**
+The enhanced test runner provides mode-based execution optimized for different development phases:
 
-## Important Implementation Details
+- **Ultra-fast mode** (`--mode ultra_fast`): Unit tests only (~7 seconds, 99.3% improvement)
+- **Development mode** (`--mode dev`): Unit + fast tests (~5 minutes, 95% improvement)
+- **CI mode** (`--mode ci`): Comprehensive validation (~15 minutes, 85% improvement)
+- **Full mode** (`--mode full`): Complete validation (~30-45 minutes, 65% improvement)
 
-### Original Values Mode
+### **Test Configuration System**
+- **Configuration factory** (`tests/support/config_factory.py`): Optimized configs for different test scenarios
+- **Smart language selection** (`tests/support/language_matrix.py`): Intelligent multilingual testing
+- **Mock utilities** (`tests/support/mock_utilities.py`): Comprehensive mocking framework
+- **Environment control**: Development-friendly test execution with configurable behavior
 
-The system supports an "Original Values Mode" for Phase 1 that uses predefined distribution sets instead of randomly generated ones. This mode is useful for experimental consistency and comparison studies.
+### **Test Execution Patterns (Updated)**
+- **Daily development**: `python run_tests.py --mode ultra_fast` (7 seconds)
+- **Pre-commit**: `python run_tests.py --mode dev` (5 minutes)
+- **CI/CD pipeline**: `python run_tests.py --mode ci` (15 minutes)
+- **Release validation**: `python run_tests.py --mode full` (30-45 minutes)
+- **Legacy support**: All existing patterns remain compatible
+- **Service boundary testing**: `python -m pytest tests/fast/` (0.04 seconds)
+- **Import validation**: Automatic module import testing across all layers
 
-#### Configuration
-```yaml
-# Enable original values mode
-original_values_mode:
-  enabled: true                    # Use predefined distributions
-  situation: "sample"              # Choose situation: sample, a, b, c, d
-```
+## Tracing and Observability
 
-#### Available Situations
-- **Sample**: Baseline distributions with standard 5/10/50/25/10 probability weighting
-- **Situation A**: Higher upper-class probability (10%) with 10/20/40/20/10 weighting
-- **Situation B**: Higher medium-low probability with 6.3/20.8/28.3/34.5/10 weighting  
-- **Situation C**: Extreme high-income outlier with 1.3/4.3/58.3/26/10 weighting
-- **Situation D**: Graduated middle-class focus with 5/20.8/28.3/35.8/10 weighting
+- OpenAI Agents SDK tracing for participant agents only (utility agents untraced)
+- Trace URLs generated for experiment debugging
+- Environment variables control tracing behavior
 
-#### Behavior
-- **Phase 1**: Uses predefined distributions and situation-specific probabilities
-- **Phase 2**: Uses normal dynamic generation (unaffected)
-- **Logging**: Mode and situation are tracked in experiment results
-- **Backward Compatibility**: Mode disabled by default; existing experiments unchanged
+## Configuration Examples
 
-### Error Handling & Recovery
-- **Standardized Error Framework**: All modules use consistent error categorization (memory, validation, communication, system, experiment logic)
-- **Automatic Retry Logic**: Configurable retry mechanisms for recoverable errors with exponential backoff
-- **Error Statistics**: Comprehensive error tracking and reporting throughout experiment execution
-- **Graceful Degradation**: System handles partial failures and continues when possible
+Common configurations are in `config/`:
+- `fast.yaml`: Quick testing configuration (5 rounds) - recommended starting point
+- `sample_ollama_gemma3.yaml`: Example Ollama local model configuration
+- `test_gemini.yaml`: Example Google Gemini configuration
+- `test_mixed_providers.yaml`: Example mixing different model providers
+- `gpt_5_disagree.yaml`: Multi-agent disagreement scenario
+- `ollama.yaml`: General Ollama configuration example
 
-### Experiment Flow
-1. **Phase 1** (parallel): Individual agents familiarize with justice principles through 4 rounds of applications
-2. **Phase 2** (sequential): Group discussion with random speaking order, voting mechanism, and consensus building  
-3. **Results**: Complete JSON output with agent-centric logging and OpenAI trace links
-4. **Error Recovery**: Built-in recovery mechanisms for memory limits, agent communication failures, and validation errors
+### **Test-Optimized Configurations**
+- `config/test_ultra_fast.yaml`: Maximum speed optimization
+  - 2 rounds (vs 10), gpt-4o-mini model, reasoning disabled
+  - Single language, deterministic settings, reduced memory limits
+  - Expected 75% API call reduction for testing scenarios
+- `config/test_gpt_utility.yaml`: GPT-based utility agent testing
+- `config/test_retry_*.yaml`: Language-specific retry behavior testing (English, Spanish, Mandarin)
 
-### Agent Configuration
-Each participant agent has configurable:
-- `name`, `personality`, `model` (e.g., "gpt-4.1-mini")  
-- `temperature`, `reasoning_enabled`, `memory_character_limit`
-- System automatically creates participant agents from config and validates responses with utility agent
+## Project Structure
 
-### Memory System
-- **Agent-Managed**: Agents create and update their own memory throughout the experiment
-- **Character Limit**: Default 50,000 characters (configurable via `memory_character_limit`)
-- **Complete Freedom**: Agents decide what to remember and how to structure their memory
-- **Error Handling**: 5 retry attempts if memory exceeds character limit, experiment aborts on failure
-- **Continuous**: Memory persists across Phase 1 and Phase 2 for complete experimental continuity
+### Hypothesis Testing Framework
+The `hypothesis_testing/` directory contains organized experimental conditions:
+- `hypothesis_1/`: 33 different experimental conditions
+- `hypothesis_2/`: Cultural variations (American, Chinese)
+- `hypothesis_3/`: Income inequality variations (low, medium, high)
+- `hypothesis_6/`: Additional experimental conditions
+- `utils_hypothesis_testing/`: Shared utilities including `runner.py` for batch execution
 
-### Data Validation
-- Income distributions validated for positive values and proper constraint specifications
-- Justice principle choices validated (principles c/d require constraint amounts)
-- All agent responses parsed and validated by dedicated utility agent
+### Specialized Components
 
-### Model Provider Support
-- **OpenAI Models**: Model strings without "/" use standard OpenAI Agents SDK
-- **OpenRouter Models**: Model strings with "/" trigger LiteLLM integration
-- **Environment Variables**: 
-  - `OPENAI_API_KEY`: Retrieved automatically for OpenAI models - set only if needed
-  - `OPENROUTER_API_KEY`: Retrieved automatically for OpenRouter models (those containing "/") - set only if needed
-- **Mixed Configurations**: Experiments can use different model providers for different agents
-- **Utility Agent Configuration**: `utility_agent_model` in config controls model for parser/validator agents
+#### Core Services Architecture
+- `core/services/`: Service-based Phase 2 architecture
+  - `speaking_order_service.py`: Speaking turn management with finisher restrictions
+  - `discussion_service.py`: Discussion prompts, validation, and history management  
+  - `voting_service.py`: Vote initiation, confirmation, and ballot coordination
+  - `memory_service.py`: Unified memory management with guidance styles
+  - `counterfactuals_service.py`: Payoff calculations and results formatting
 
-### Multi-Language Support
-- **Supported Languages**: English, Spanish, and Mandarin
-- **Translation Files**: Located in `translations/` directory with language-specific prompt files
-- **Language Configuration**: Use language-specific config files (`spanish_config.yaml`, `mandarin_config.yaml`)
-- **Agent Language**: All participant agents conduct the experiment in the configured language
-- **Validation**: Utility agents parse responses in the appropriate language
+#### Supporting Components
+- `core/two_stage_voting_manager.py`: Advanced voting system with numerical validation
+- `core/principle_name_manager.py`: Consistent justice principle terminology
+- `config/phase2_settings.py`: Configurable Phase 2 behavior and validation settings
+- `utils/cultural_adaptation.py`: Multilingual number formatting and cultural context
+- `experiment_agents/`: Participant and utility agent implementations
+- `utils/experiment_runner.py`: Utility for batch experiment execution
+- `hypothesis_testing/utils_hypothesis_testing/runner.py`: Framework for hypothesis testing workflows
 
-### Output & Tracing
-- Results saved as timestamped JSON files: `experiment_results_YYYYMMDD_HHMMSS.json`
-- OpenAI tracing enabled: view at `https://platform.openai.com/traces`
-- Comprehensive logging with experiment summaries
+#### **Test Acceleration Infrastructure (NEW)**
+- `tests/support/config_factory.py`: Optimized test configuration generation
+  - `build_minimal_test_configuration()`: Ultra-minimal configs for fast testing
+  - `build_focused_component_config()`: Component-specific optimizations
+  - `build_configuration_for_test_mode()`: Mode-based configuration selection
+- `tests/support/language_matrix.py`: Smart multilingual testing
+  - `smart_parametrize_languages()`: Intelligent language selection (1-3 languages)
+- `tests/support/mock_utilities.py`: Comprehensive mocking framework
+  - Mock agents, services, and multilingual response patterns
+- `tests/fast/`: Ultra-fast service boundary testing (43 tests in 0.04s)
+  - `test_response_parsing.py`: Multilingual parsing with deterministic data
+  - `test_data_flows.py`: Service integration with synthetic data
+
+## Important Instruction Reminders
+
+- Do what has been asked; stay focused
+- Do not create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one  
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested by the User
+- ALWAYS USE a systematic approach
+- Heavily use detailed and systematic to do lists
+- Obey the principle of simplicity, do not overengineer things. Stay effective
+

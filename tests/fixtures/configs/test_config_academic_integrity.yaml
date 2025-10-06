@@ -1,0 +1,31 @@
+language: "English"
+seed: 42
+
+agents:
+  - name: "Test_Agent_1"
+    personality: "Focused on equality and fairness"
+    model: 'gpt-4o-mini'
+    temperature: 0.3
+    reasoning_enabled: true
+    memory_character_limit: 50000
+    
+  - name: "Test_Agent_2" 
+    personality: "Focused on efficiency and outcomes"
+    model: 'gpt-4o-mini'
+    temperature: 0.3
+    reasoning_enabled: true
+    memory_character_limit: 50000
+
+utility_agent_model: 'gpt-4o-mini'
+utility_agent_temperature: 0.0
+
+phase2_rounds: 3
+distribution_range_phase2: [4, 6]
+
+
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.10
+  medium: 0.50
+  medium_low: 0.25
+  low: 0.10

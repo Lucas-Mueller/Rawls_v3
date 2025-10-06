@@ -1,0 +1,813 @@
+{
+  "general_information": {
+    "consensus_reached": false,
+    "consensus_principle": null,
+    "max_rounds_phase_2": 7,
+    "rounds_conducted_phase_2": 7,
+    "public_conversation_phase_2": "\nRound 1 / Speaker: Alice Statement: I think it's important for us to consider how each principle aligns with our ideas of fairness. For example, maximizing the floor income seems to prioritize helping the worst-off, which feels morally compelling. On the other hand, maximizing the average income might lead to overall greater societal wealth but could overlook those at the bottom. I believe we should discuss which of these principles best balances fairness and societal benefit, and how they might impact different income groups. What's everyone else's take?\nRound 1 / Speaker: Sophie Statement: I think I lean towards prioritizing the principle of maximizing the average income with a floor constraint. It seems like a good balance because it ensures everyone has a minimum level of income while still allowing us to increase overall societal wealth. I believe this approach promotes fairness by preventing extreme poverty, but also encourages growth that benefits society as a whole. What do you think about that?\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 2 / Speaker: Alice Statement: I think choosing the principle of maximizing the average income with a floor constraint is a reasonable approach because it balances fairness and societal growth. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I believe this combination aligns with our shared values of fairness and progress, and I look forward to seeing how it impacts our group's outcomes.\nRound 2 / Speaker: Sophie Statement: I think it's important to consider how the different principles can work together to create a fair and efficient society. While maximizing the average income with a floor constraint seems promising because it balances fairness and growth, I also wonder if we should think about the range constraint to prevent too much disparity. Striking a balance between these ideas might help us develop a more comprehensive approach that benefits everyone. What are your thoughts on combining these principles or adjusting the constraints to better serve societal fairness?\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 3 / Speaker: Alice Statement: I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.\nRound 3 / Speaker: Sophie Statement: I think we should consider the potential long-term effects of each principle. While maximizing the average income with a floor constraint seems to strike a good balance now, we also need to think about how these choices might influence societal fairness and economic mobility in the future. Perhaps exploring a combination of principles or adjusting constraints could help us develop a more sustainable and equitable approach. What does everyone else think about integrating these ideas?\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 4 / Speaker: Alice Statement: I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.\nRound 4 / Speaker: Sophie Statement: I think it's important for us to consider how adjusting the constraint amount in the principle of maximizing the average income with a floor constraint can impact both fairness and overall societal benefit. Setting a higher floor might better support the worst-off, but it could also limit overall growth, while a lower floor might promote more growth but leave some individuals behind. I suggest we discuss what specific constraint amount would best balance these concerns to create a fair and sustainable income distribution.\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 5 / Speaker: Alice Statement: I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.\nRound 5 / Speaker: Sophie Statement: I think we should consider the potential long-term impacts of our chosen principles. While maximizing the average income with a floor constraint seems to balance fairness and growth now, we need to think about how these choices might influence societal fairness and economic mobility in the future. Perhaps exploring a combination of principles or adjusting the constraints could help us develop a more sustainable and equitable approach. What does everyone else think about integrating these ideas?\n\n Experiment Info: There are 2 rounds remaining, this means this group has 2 opportunities to vote left \n\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 6 / Speaker: Alice Statement: I believe that choosing the principle of maximizing the average income with a floor constraint at $24,000 strikes a good balance between fairness and societal growth. It ensures that everyone has a minimum income to support the worst-off, while still allowing for overall wealth creation. I think this approach aligns with our shared values of fairness and progress, and I support moving forward with this constraint amount.\nRound 6 / Speaker: Sophie Statement: I think setting the floor constraint at $24,000 might be too high, as it could limit overall growth and reduce the potential benefits for society as a whole. I believe a slightly lower constraint, like $14,000 or $15,000, would better balance supporting the worst-off while still allowing for increased societal wealth. This way, we can promote fairness without significantly hindering overall economic progress.\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\nRound 7 / Speaker: Alice Statement: I believe that setting the floor constraint at $24,000 strikes a reasonable balance between supporting the worst-off and allowing for societal growth. It ensures a minimum income level that helps reduce extreme poverty, while still enabling overall wealth creation. I think this approach aligns with our shared values of fairness and progress, and I support moving forward with this constraint amount.\nRound 7 / Speaker: Sophie Statement: I think setting the floor constraint at $14,000 offers the best balance between supporting those who are worst-off and allowing for overall societal growth. A lower floor helps ensure that no one falls into extreme poverty, while still leaving room for increased income and wealth creation across society. I believe this approach promotes fairness and progress without overly restricting economic mobility or growth.\n[Voting Confirmation] Sophie: Confirmed (initiated vote)\n[Voting Confirmation] Alice: Confirmed\nAll confirmed\n[NO CONSENSUS] No consensus - agents agreed on Maximizing Average with Floor Constraint but disagreed on constraint amounts - discussion continues\n",
+    "config_file_used": "default_config.yaml",
+    "seed_randomness": 42,
+    "income_class_probabilities": {
+      "high": 0.05,
+      "medium_high": 0.1,
+      "medium": 0.5,
+      "medium_low": 0.25,
+      "low": 0.1
+    },
+    "original_values_mode_enabled": true
+  },
+  "agents": [
+    {
+      "name": "Sophie",
+      "model": "gpt-4.1-nano",
+      "temperature": 0.0,
+      "personality": "You are an american college student.",
+      "reasoning_enabled": false,
+      "phase_1": {
+        "initial_ranking": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "",
+          "bank_balance": 0.0
+        },
+        "detailed_explanation": {
+          "response_to_demonstration": "Prompt: Here is how each justice principle would be applied to example income distributions:\n\nIncome Distributions:\n\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n| Average      | $21,600 | $20,000 | $21,200 | $18,200 |\n\n\nThe probabilities for each class are as follows\nHigh: 5%\nMedium high: 10%\nMedium: 50%\nMedium low: 25%\nLow: 10%\n\nNote: These probabilities are for this example only and may be different in subsequent rounds. They can vary significantly.\n\nHow each principle would choose:\n- **Maximizing Floor Income**: Would choose Distribution 4 (highest low income)\n- **Maximizing Average Income**: Would choose Distribution 1 (highest weighted average)\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Floor Constraint \u2264 $14,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Would choose Distribution 1 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Would choose Distribution 2 (highest weighted average among eligible)\nYour Response: Thanks for sharing these examples! They really help clarify how each justice principle would guide the choice of income distribution in different scenarios.\n\n- The **Maximizing Floor Income** principle prioritizes raising the lowest income, so it picks Distribution 4, which has the highest low income.\n- The **Maximizing Average Income** principle looks for the overall highest average, leading to Distribution 1.\n- When there's a **Floor Constraint** (like \u2264 $13,000 or \u2264 $14,000), the principle chooses the distribution with the highest average that still meets the minimum income requirement, which is Distribution 3.\n- For the **Range Constraint** (limiting income disparity), the principle selects the distribution with the highest average that doesn't exceed the specified range, leading to Distribution 1 or 2 depending on the limit.\n\nThis helps me understand how each principle balances fairness and efficiency differently. Thanks!\nOutcome: Learned how each justice principle is applied to income distributions through examples.",
+          "memory_coming_in_this_round": "- The experiment explores different theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants are introduced to four principles of justice, each with specific criteria for distributing income:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am unsure about this ranking, indicating some uncertainty in my preferences or understanding of the implications of each principle.\n\n--- Memory End ---"
+        },
+        "ranking_2": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment explores different theories of justice related to income distribution, focusing on fairness and societal welfare.\n- Participants are introduced to four principles of justice, each with specific criteria for distributing income:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am unsure about this ranking, indicating some uncertainty in my preferences or understanding of the implications of each principle.\n- Recent activity involved analyzing how each justice principle would be applied to specific income distributions, with detailed examples and explanations:\n  - Maximizing Floor Income selects the distribution with the highest low income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n\n--- Memory End ---",
+          "bank_balance": 0.0
+        },
+        "demonstrations": [
+          {
+            "number_demonstration_round": 1,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "high",
+            "payoff_received": 3.0,
+            "payoff_if_other_principles": "distribution_1: $1.50; distribution_2: $2.50; distribution_3: $2.80; distribution_4: $2.50",
+            "memory_coming_in_this_round": "- The experiment focuses on understanding different principles of justice related to income distribution, emphasizing fairness and societal welfare.\n- Participants are introduced to four principles, each with specific criteria for distributing income:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am unsure about this ranking, indicating some uncertainty in my preferences or understanding of the implications of each principle.\n- Recent activity involved analyzing how each justice principle would be applied to specific income distributions, with detailed examples and explanations:\n  - Maximizing Floor Income selects the distribution with the highest low income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n\n--- Memory End ---",
+            "bank_balance_after_round": 3.0
+          },
+          {
+            "number_demonstration_round": 2,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "medium",
+            "payoff_received": 2.5,
+            "payoff_if_other_principles": "distribution_1: $1.50; distribution_2: $2.50; distribution_3: $2.00; distribution_4: $2.00",
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, with a focus on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 3, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $10,000.\n- Overall, my understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency.\n\n--- Memory End ---",
+            "bank_balance_after_round": 5.5
+          },
+          {
+            "number_demonstration_round": 3,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "medium",
+            "payoff_received": 2.5,
+            "payoff_if_other_principles": "distribution_1: $2.00; distribution_2: $2.50; distribution_3: $2.30; distribution_4: $2.20",
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 3, resulting in an income of $25,000 for my assigned high-income class, translating to a payoff of $2.50.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $10,000.\n- Overall, my understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency.\n\n--- Memory End ---",
+            "bank_balance_after_round": 8.0
+          },
+          {
+            "number_demonstration_round": 4,
+            "choice_principal": "maximizing_average",
+            "class_put_in": "high",
+            "payoff_received": 3.0,
+            "payoff_if_other_principles": "distribution_1: $2.00; distribution_2: $2.60; distribution_3: $1.80; distribution_4: $2.00",
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $25,000 for my assigned medium-income class, translating to a payoff of $2.50.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $10,000.\n- Overall, my understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency.\n\n--- Memory End ---",
+            "bank_balance_after_round": 11.0
+          }
+        ],
+        "ranking_3": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- Overall, my understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency.\n\n--- Memory End ---",
+          "bank_balance": 11.0
+        }
+      },
+      "phase_2": {
+        "rounds": [
+          {
+            "number_discussion_round": 1,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- Overall, my understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency.\n\n--- Memory End ---",
+            "internal_reasoning": "",
+            "public_message": "I think I lean towards prioritizing the principle of maximizing the average income with a floor constraint. It seems like a good balance because it ensures everyone has a minimum level of income while still allowing us to increase overall societal wealth. I believe this approach promotes fairness by preventing extreme poverty, but also encourages growth that benefits society as a whole. What do you think about that?",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 2,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\nRound 1: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think it's important to consider how the different principles can work together to create a fair and efficient society. While maximizing the average income with a floor constraint seems promising because it balances fairness and growth, I also wonder if we should think about the range constraint to prevent too much disparity. Striking a balance between these ideas might help us develop a more comprehensive approach that benefits everyone. What are your thoughts on combining these principles or adjusting the constraints to better serve societal fairness?",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 3,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\nRound 2: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think we should consider the potential long-term effects of each principle. While maximizing the average income with a floor constraint seems to strike a good balance now, we also need to think about how these choices might influence societal fairness and economic mobility in the future. Perhaps exploring a combination of principles or adjusting constraints could help us develop a more sustainable and equitable approach. What does everyone else think about integrating these ideas?",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 4,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\n- The group has engaged in multiple rounds of discussion, with repeated emphasis on the principle of maximizing the average income with a floor constraint, often with disagreements on the specific constraint amount.\n- The group has also considered the potential for combining principles or adjusting constraints to develop more balanced and sustainable approaches.\n- My understanding continues to evolve, with ongoing reflection on how these principles and their constraints influence societal fairness, economic mobility, and overall societal benefit.\nRound 3: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think it's important for us to consider how adjusting the constraint amount in the principle of maximizing the average income with a floor constraint can impact both fairness and overall societal benefit. Setting a higher floor might better support the worst-off, but it could also limit overall growth, while a lower floor might promote more growth but leave some individuals behind. I suggest we discuss what specific constraint amount would best balance these concerns to create a fair and sustainable income distribution.",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 5,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\n- The group has engaged in multiple rounds of discussion, with repeated emphasis on the principle of maximizing the average income with a floor constraint, often with disagreements on the specific constraint amount.\n- The group has also considered the potential for combining principles or adjusting constraints to develop more balanced and sustainable approaches.\n- My understanding continues to evolve, with ongoing reflection on how these principles and their constraints influence societal fairness, economic mobility, and overall societal benefit.\nRound 4: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think we should consider the potential long-term impacts of our chosen principles. While maximizing the average income with a floor constraint seems to balance fairness and growth now, we need to think about how these choices might influence societal fairness and economic mobility in the future. Perhaps exploring a combination of principles or adjusting the constraints could help us develop a more sustainable and equitable approach. What does everyone else think about integrating these ideas?",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 6,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\n- The group has engaged in multiple rounds of discussion, with repeated emphasis on the principle of maximizing the average income with a floor constraint, often with disagreements on the specific constraint amount.\n- The group has also considered the potential for combining principles or adjusting constraints to develop more balanced and sustainable approaches.\n- My understanding continues to evolve, with ongoing reflection on how these principles and their constraints influence societal fairness, economic mobility, and overall societal benefit.\nRound 5: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think setting the floor constraint at $24,000 might be too high, as it could limit overall growth and reduce the potential benefits for society as a whole. I believe a slightly lower constraint, like $14,000 or $15,000, would better balance supporting the worst-off while still allowing for increased societal wealth. This way, we can promote fairness without significantly hindering overall economic progress.",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 7,
+            "speaking_order": 2,
+            "bank_balance": 11.0,
+            "memory_coming_in_this_round": "- The experiment involves understanding and applying four principles of justice related to income distribution, focusing on fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while guaranteeing a minimum income level for everyone; requires specifying the constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between richest and poorest) to exceed a specified limit; requires specifying the constraint amount.\n- My initial ranking of these principles, based on my understanding, is:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I am uncertain about this ranking, indicating some ambiguity in my preferences or understanding of the implications of each principle.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $30,000 for my assigned high-income class, translating to a payoff of $3.00.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($3.50) under the maximizing average with a floor constraint of $13,000.\n- During the group discussion, Alice emphasized the importance of fairness and how each principle aligns with different ideas of moral and societal benefit. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, with a focus on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in the context of group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\n- The group has engaged in multiple rounds of discussion, with repeated emphasis on the principle of maximizing the average income with a floor constraint, often with disagreements on the specific constraint amount.\n- The group has also considered the potential for combining principles or adjusting constraints to develop more balanced and sustainable approaches.\n- My understanding continues to evolve, with ongoing reflection on how these principles and their constraints influence societal fairness, economic mobility, and overall societal benefit.\n- In the latest rounds, the group discussed setting the floor constraint at various levels, including $24,000, $14,000, and $15,000, with differing opinions on the optimal balance between fairness and societal growth.\n- The most recent discussion involved proposing a floor constraint at $24,000, which I supported as a good balance, but I also recognized that setting it too high could limit growth.\n- I expressed that a lower constraint, such as $14,000 or $15,000, might better balance supporting the worst-off and promoting overall societal wealth.\n- The group's ongoing deliberations reflect a focus on balancing fairness, societal benefit, and economic mobility through the adjustment of constraints within the principles.\nRound 6: I chose to initiate voting.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $14,000.",
+            "internal_reasoning": "",
+            "public_message": "I think setting the floor constraint at $14,000 offers the best balance between supporting those who are worst-off and allowing for overall societal growth. A lower floor helps ensure that no one falls into extreme poverty, while still leaving room for increased income and wealth creation across society. I believe this approach promotes fairness and progress without overly restricting economic mobility or growth.",
+            "initiate_vote": "Yes",
+            "favored_principle": "maximizing_average_floor_constraint"
+          }
+        ],
+        "post_group_discussion": {
+          "class_put_in": "medium",
+          "payoff_received": 16.1,
+          "final_ranking": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "final_vote": "Maximizing Average with Floor Constraint",
+          "vote_timestamp": "2025-10-06T15:25:20.205813",
+          "memory_coming_in_this_round": "- The experiment centers on understanding and applying four principles of justice related to income distribution, emphasizing fairness and societal welfare.\n- The four principles are:\n  1. Maximizing Floor Income: Prioritizes improving the welfare of the worst-off by maximizing the lowest income.\n  2. Maximizing Average Income: Focuses on increasing the total or average income across society.\n  3. Maximizing Average with Floor Constraint: Aims to maximize average income while ensuring a minimum income level for everyone; requires setting a specific constraint amount.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income without allowing income disparity (difference between the richest and poorest) to exceed a specified limit; requires setting a range constraint.\n- My initial ranking of these principles, based on my understanding, was:\n  1. Maximize Average Income with Floor Constraint\n  2. Maximize Average Income\n  3. Maximize Floor Income\n  4. Maximize Average with Range Constraint\n- I expressed some uncertainty about this ranking, indicating ambiguity in my preferences or understanding of the implications.\n- Recent activity involved applying these principles to specific income distributions, with detailed analysis:\n  - Maximizing Floor Income selects the distribution with the highest minimum income.\n  - Maximizing Average Income chooses the distribution with the highest overall average.\n  - When applying floor constraints (e.g., \u2264 $13,000 or \u2264 $14,000), the principle selects the highest average distribution that meets the minimum income requirement.\n  - For range constraints (e.g., \u2264 $20,000 or \u2264 $15,000), the principle picks the distribution with the highest average that does not exceed the specified disparity limit.\n- This exercise clarified how each principle balances fairness and efficiency, deepening my understanding of their practical implications in income distribution scenarios.\n- In the recent round, I chose the principle of maximizing average income, which led to selecting Distribution 2, resulting in an income of $160,963 for my assigned high-income class, translating to a payoff of $16.10.\n- The counterfactual analysis showed that under different principles, my earnings would have varied, with the highest payoff ($16.10) under the maximizing average income principle.\n- During group discussion, Alice emphasized the importance of fairness and how each principle aligns with different moral and societal benefits. She highlighted that maximizing the floor income helps the worst-off, which feels morally compelling, while maximizing average income could lead to greater societal wealth but might overlook those at the bottom.\n- I expressed a preference for the principle of maximizing the average income with a floor constraint, as it balances fairness (by preventing extreme poverty) and societal growth.\n- The ongoing discussion indicates a shared concern about balancing fairness and efficiency, focusing on how principles impact different income groups.\n- My understanding of these principles and their application is evolving, with ongoing reflection on how each balances societal fairness and efficiency, especially in group decision-making and the stakes involved.\n- In the first round, I initiated voting and voted for the principle of maximizing the average income with a floor constraint, specifying a constraint amount of $14,000.\n- During the second round, both Alice and I confirmed the principle of maximizing the average income with a floor constraint, but we disagreed on the specific constraint amount, leading to continued discussion.\n- Alice expressed that choosing the principle of maximizing the average income with a floor constraint is reasonable because it balances fairness and societal growth, aligning with shared values of fairness and progress.\n- I suggested considering how different principles could work together or be adjusted, such as combining the floor constraint with range constraints, to develop a more comprehensive approach that benefits society and maintains fairness.\n- Recent discussion highlights the group's focus on balancing fairness and efficiency, with particular attention to how different principles and constraints influence income distribution outcomes.\n- The group has engaged in multiple rounds of discussion, with repeated emphasis on the principle of maximizing the average income with a floor constraint, often with disagreements on the specific constraint amount.\n- The group has also considered the potential for combining principles or adjusting constraints to develop more balanced and sustainable approaches.\n- My understanding continues to evolve, with ongoing reflection on how these principles and their constraints influence societal fairness, economic mobility, and overall societal benefit.\n- In the latest rounds, the group discussed setting the floor constraint at various levels, including $24,000, $14,000, and $15,000, with differing opinions on the optimal balance between fairness and societal growth.\n- The most recent discussion involved proposing a floor constraint at $24,000, which I supported as a good balance, but I also recognized that setting it too high could limit growth.\n- I expressed that a lower constraint, such as $14,000 or $15,000, might better balance supporting the worst-off and promoting overall societal wealth.\n- The group's ongoing deliberations reflect a focus on balancing fairness, societal benefit, and economic mobility through the adjustment of constraints within the principles.\n- Final Phase 2 results showed no consensus on a justice principle, with probabilities assigned to income classes:\n  - High: 5%\n  - Medium high: 10%\n  - Medium: 50%\n  - Medium low: 25%\n  - Low: 10%\n- My assigned income class was Medium, with an income of $160,963, translating to a payoff of $16.10.\n- Because no consensus was reached, I was randomly assigned to Distribution 1, which has an income of $160,963.\n- Counterfactual analysis for the Medium class:\n  - Maximizing Floor Income \u2192 Distribution 4 \u2192 $127,429 \u2192 $12.74\n  - Maximizing Average Income \u2192 Distribution 1 \u2192 $160,963 \u2192 $16.10\n  - Maximizing Average with Floor Constraint:\n    - Floor $80,481 \u2192 Distribution 1 \u2192 $160,963 \u2192 $16.10\n    - Floor $87,188 \u2192 Distribution 3 \u2192 $140,842 \u2192 $14.08\n    - Floor $93,895 \u2192 Distribution 3 \u2192 $140,842 \u2192 $14.08\n    - Floor $100,601 \u2192 Distribution 4 \u2192 $127,429 \u2192 $12.74\n  - Maximizing Average with Range Constraint:\n    - Range $134,136 \u2192 Distribution 1 \u2192 $160,963 \u2192 $16.10\n    - Range $100,602 \u2192 Distribution 2 \u2192 $134,135 \u2192 $13.41\n    - Range $114,015 \u2192 Distribution 3 \u2192 $140,842 \u2192 $14.08\n    - Range $40,241 \u2192 Distribution 4 \u2192 $127,429 \u2192 $12.74\n- When evaluating which principle I would have preferred behind the \"veil of ignorance,\" I consider the distribution I would have hoped for, given my random assignment to the Medium class.\n- Overall, my understanding of the principles continues to develop, with ongoing reflection on their implications for fairness, societal benefit, and individual outcomes in income distribution scenarios.\n\n--- Memory End ---",
+          "bank_balance": 27.1
+        }
+      }
+    },
+    {
+      "name": "Alice",
+      "model": "gpt-4.1-nano",
+      "temperature": 0.0,
+      "personality": "You are an american college student.",
+      "reasoning_enabled": false,
+      "phase_1": {
+        "initial_ranking": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "",
+          "bank_balance": 0.0
+        },
+        "detailed_explanation": {
+          "response_to_demonstration": "Prompt: Here is how each justice principle would be applied to example income distributions:\n\nIncome Distributions:\n\n| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |\n|--------------|---------|---------|---------|----------|\n| High         | $32,000 | $28,000 | $31,000 | $21,000 |\n| Medium high  | $27,000 | $22,000 | $24,000 | $20,000 |\n| Medium       | $24,000 | $20,000 | $21,000 | $19,000 |\n| Medium low   | $13,000 | $17,000 | $16,000 | $16,000 |\n| Low          | $12,000 | $13,000 | $14,000 | $15,000 |\n| Average      | $21,600 | $20,000 | $21,200 | $18,200 |\n\n\nThe probabilities for each class are as follows\nHigh: 5%\nMedium high: 10%\nMedium: 50%\nMedium low: 25%\nLow: 10%\n\nNote: These probabilities are for this example only and may be different in subsequent rounds. They can vary significantly.\n\nHow each principle would choose:\n- **Maximizing Floor Income**: Would choose Distribution 4 (highest low income)\n- **Maximizing Average Income**: Would choose Distribution 1 (highest weighted average)\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Floor Constraint \u2264 $14,000**: Would choose Distribution 3 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Would choose Distribution 1 (highest weighted average among eligible)\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Would choose Distribution 2 (highest weighted average among eligible)\nYour Response: Thanks for sharing these examples! Here's a quick summary of how each justice principle applies to the different income distributions:\n\n- **Maximizing Floor Income**: Focuses on raising the lowest income, so it picks **Distribution 4**, which has the highest low income at $15,000.\n- **Maximizing Average Income**: Looks for the highest overall societal wealth, so it chooses **Distribution 1**, with the highest average income of $21,600.\n- **Maximizing Average with Floor Constraint \u2264 $13,000**: Only considers distributions where the lowest income is at or below $13,000, so it picks **Distribution 3**, which has a low income of $14,000, but since the constraint is \u2264 $13,000, it actually would not qualify. However, based on the example, it seems the principle chooses **Distribution 3** as the best among those meeting the constraint, perhaps assuming a slightly different threshold or a typo.\n- **Maximizing Average with Floor Constraint \u2264 $14,000**: Similar logic, selecting **Distribution 3** as the best among those with a low income at or below $14,000.\n- **Maximizing Average with Range Constraint \u2264 $20,000**: Looks for the highest average income among distributions where the income disparity (range) is at or below $20,000, leading to **Distribution 1**.\n- **Maximizing Average with Range Constraint \u2264 $15,000**: Chooses **Distribution 2**, which has a narrower range and a high average, fitting the constraint.\n\nThis helps illustrate how each principle prioritizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or balancing the two with constraints.\nOutcome: Learned how each justice principle is applied to income distributions through examples.",
+          "memory_coming_in_this_round": "- The experiment explores the concept of just income distribution, considering the role of luck, social accidents, and societal policies in addressing inequalities.\n- The first part involves understanding different theories of justice through examples and choices, with monetary incentives based on performance.\n- The second part involves group discussion and consensus on the most preferred principle of justice, influencing the final compensation.\n- The principles of justice are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing total societal income, maximizing overall wealth.\n  3. Maximizing Average with Floor Constraint: Balances the goal of maximizing average income with a guaranteed minimum income for everyone, requiring a specified floor value.\n  4. Maximizing Average with Range Constraint: Aims to maximize average income while limiting income disparity between the richest and poorest to a specified amount, requiring a range value.\n- The initial ranking provided was:\n  1. Maximize Average with Floor Constraint\n  2. Maximize Floor Income\n  3. Maximize Average with Range Constraint\n  4. Maximize Average Income\n- The certainty about this initial ranking is \"unsure.\"\n- This activity is part of a broader experiment to understand perceptions of justice and fairness in income distribution, with real monetary consequences for choices and group decisions.\n\n--- Memory End ---"
+        },
+        "ranking_2": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment explores the concept of just income distribution, considering the roles of luck, social accidents, and societal policies in addressing inequalities.\n- The first part involves understanding different theories of justice through examples and choices, with monetary incentives based on performance.\n- The second part involves group discussion and consensus on the most preferred principle of justice, influencing the final compensation.\n- The principles of justice are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing total societal income, maximizing overall wealth.\n  3. Maximizing Average with Floor Constraint: Balances the goal of maximizing average income with a guaranteed minimum income for everyone, requiring a specified floor value.\n  4. Maximizing Average with Range Constraint: Aims to maximize average income while limiting income disparity between the richest and poorest to a specified amount, requiring a range value.\n- The initial ranking provided was:\n  1. Maximize Average with Floor Constraint\n  2. Maximize Floor Income\n  3. Maximize Average with Range Constraint\n  4. Maximize Average Income\n- The certainty about this initial ranking is \"unsure.\"\n- This activity is part of a broader experiment to understand perceptions of justice and fairness in income distribution, with real monetary consequences for choices and group decisions.\n- Recent activity involved analyzing how each justice principle would select among different income distributions based on their criteria:\n  - **Maximizing Floor Income**: Chooses Distribution 4 (highest low income at $15,000).\n  - **Maximizing Average Income**: Chooses Distribution 1 (highest average income of $21,600).\n  - **Maximizing Average with Floor Constraint \u2264 $13,000**: Would select Distribution 3, though its low income is $14,000, which exceeds the constraint, indicating a possible inconsistency or a different threshold.\n  - **Maximizing Average with Floor Constraint \u2264 $14,000**: Also selects Distribution 3.\n  - **Maximizing Average with Range Constraint \u2264 $20,000**: Chooses Distribution 1, with the highest average among those with a disparity within the range.\n  - **Maximizing Average with Range Constraint \u2264 $15,000**: Selects Distribution 2, which has a narrower range and high average.\n- The response summarized how each principle prioritizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance of both with specific constraints.\n- The activity helped in understanding how each justice principle applies to income distributions through concrete examples.\n\n--- Memory End ---",
+          "bank_balance": 0.0
+        },
+        "demonstrations": [
+          {
+            "number_demonstration_round": 1,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 1.9,
+            "payoff_if_other_principles": "distribution_1: $2.80; distribution_2: $3.00; distribution_3: $3.00; distribution_4: $2.20",
+            "memory_coming_in_this_round": "- The experiment explores the concept of just income distribution, considering the roles of luck, social accidents, and societal policies in addressing inequalities.\n- The first part involves understanding different theories of justice through examples and choices, with monetary incentives based on performance.\n- The second part involves group discussion and consensus on the most preferred principle of justice, influencing the final compensation.\n- The principles of justice are:\n  1. Maximizing Floor Income: Prioritizes the welfare of the worst-off individual, ensuring the lowest income is as high as possible.\n  2. Maximizing Average Income: Focuses on increasing total societal income, maximizing overall wealth.\n  3. Maximizing Average with Floor Constraint: Balances the goal of maximizing average income with a guaranteed minimum income for everyone, requiring a specified floor value.\n  4. Maximizing Average with Range Constraint: Aims to maximize average income while limiting income disparity between the richest and poorest to a specified amount, requiring a range value.\n- The initial ranking provided was:\n  1. Maximize Average with Floor Constraint\n  2. Maximize Floor Income\n  3. Maximize Average with Range Constraint\n  4. Maximize Average Income\n- The certainty about this initial ranking is \"unsure.\"\n- This activity is part of a broader experiment to understand perceptions of justice and fairness in income distribution, with real monetary consequences for choices and group decisions.\n- Recent activity involved analyzing how each justice principle would select among different income distributions based on their criteria:\n  - **Maximizing Floor Income**: Chooses Distribution 4 (highest low income at $15,000).\n  - **Maximizing Average Income**: Chooses Distribution 1 (highest average income of $21,600).\n  - **Maximizing Average with Floor Constraint \u2264 $13,000**: Would select Distribution 3, though its low income is $14,000, which exceeds the constraint, indicating a possible inconsistency or a different threshold.\n  - **Maximizing Average with Floor Constraint \u2264 $14,000**: Also selects Distribution 3.\n  - **Maximizing Average with Range Constraint \u2264 $20,000**: Chooses Distribution 1, with the highest average among those with a disparity within the range.\n  - **Maximizing Average with Range Constraint \u2264 $15,000**: Selects Distribution 2, which has a narrower range and high average.\n- The response summarized how each principle prioritizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance of both with specific constraints.\n- The activity helped in understanding how each justice principle applies to income distributions through concrete examples.\n\n--- Memory End ---",
+            "bank_balance_after_round": 1.9
+          },
+          {
+            "number_demonstration_round": 2,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 1.5,
+            "payoff_if_other_principles": "distribution_1: $1.40; distribution_2: $2.00; distribution_3: $3.00; distribution_4: $2.00",
+            "memory_coming_in_this_round": "- The experiment investigates principles of justice and income distribution, focusing on how different criteria influence societal fairness and individual outcomes.\n- The first phase involves understanding four principles of justice:\n  1. Maximizing Floor Income: Prioritizes the lowest income, ensuring the worst-off are as well-off as possible.\n  2. Maximizing Average Income: Focuses on increasing total societal wealth.\n  3. Maximizing Average with Floor Constraint: Balances overall wealth with a guaranteed minimum income, requiring a specified floor.\n  4. Maximizing Average with Range Constraint: Seeks to maximize average income while limiting income disparity within a specified range.\n- Initial rankings of these principles were uncertain, with the tentative order:\n  1. Maximize Average with Floor Constraint\n  2. Maximize Floor Income\n  3. Maximize Average with Range Constraint\n  4. Maximize Average Income\n- The activity involves applying these principles to income distributions, with choices affecting personal earnings based on assigned income classes.\n- Recent activity included selecting a principle for Round 1:\n  - Chose \"Maximizing Floor Income\" with certainty.\n  - Distribution selected: Distribution 4, which has the highest minimum income ($13,000).\n  - Assigned to the Medium income class, resulting in a yearly income of $19,000, translating to a payoff of $1.90.\n- Counterfactual analysis for the same income class:\n  - Under \"Maximizing Floor Income,\" the outcome was $19,000 ($1.90).\n  - Under \"Maximizing Average Income,\" the outcome would have been $28,000 ($2.80).\n  - Under \"Maximizing Average with Floor Constraint\" at various thresholds, outcomes ranged from $19,000 to $28,000.\n  - Under \"Maximizing Average with Range Constraint,\" outcomes varied similarly, with the highest at $28,000.\n- This process illustrates how each principle prioritizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n--- Memory End ---",
+            "bank_balance_after_round": 3.4
+          },
+          {
+            "number_demonstration_round": 3,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 2.0,
+            "payoff_if_other_principles": "distribution_1: $2.00; distribution_2: $2.50; distribution_3: $1.20; distribution_4: $2.30",
+            "memory_coming_in_this_round": "- The experiment explores principles of justice and income distribution, focusing on how different criteria influence societal fairness and individual outcomes.\n- The first phase involves understanding and applying four principles of justice:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n- Initial tentative rankings placed \"Maximize Average with Floor Constraint\" as most preferred, followed by \"Maximize Floor Income,\" then \"Maximize Average with Range Constraint,\" and finally \"Maximize Average Income.\"\n- The activity involves selecting a principle for each round, applying it to income distributions, and understanding how choices affect personal earnings.\n- Recent activity included selecting \"Maximizing Floor Income\" with certainty, which led to choosing Distribution 1 (highest minimum income of $13,000). \n- Assigned to the Medium income class in this distribution, resulting in an income of $15,000, which translates to a payoff of $1.50.\n- Counterfactual analysis shows that if \"Maximizing Average Income\" had been chosen instead, the income for the same class would have been $25,000, yielding a payoff of $2.50.\n- For constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes ranging from $15,000 to $25,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $15,000 to $22,000.\n- These analyses demonstrate how each principle prioritizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n--- Memory End ---",
+            "bank_balance_after_round": 5.4
+          },
+          {
+            "number_demonstration_round": 4,
+            "choice_principal": "maximizing_floor",
+            "class_put_in": "medium",
+            "payoff_received": 2.4,
+            "payoff_if_other_principles": "distribution_1: $3.00; distribution_2: $3.00; distribution_3: $1.40; distribution_4: $2.00",
+            "memory_coming_in_this_round": "- The experiment focuses on understanding principles of justice and income distribution, examining how different criteria influence societal fairness and individual outcomes.\n- Phase 1 involves learning and applying four principles of justice:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n- Initial preferences ranked \"Maximize Average with Floor Constraint\" as most preferred, followed by \"Maximize Floor Income,\" then \"Maximize Average with Range Constraint,\" and lastly \"Maximize Average Income.\"\n- The activity involves selecting a principle for each round, applying it to income distributions, and observing how choices impact personal earnings.\n- Recent activity included selecting \"Maximizing Floor Income\" with certainty, which led to choosing Distribution 1 (highest minimum income of $13,000). \n- Assigned to the Medium income class in this distribution, resulting in an income of $20,000, translating to a payoff of $2.00.\n- Counterfactual analysis shows that if \"Maximizing Average Income\" had been chosen instead, the income for the same class would have been $25,000, yielding a payoff of $2.50.\n- For constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $15,000 to $25,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $15,000 to $22,000.\n- These analyses demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n- The recent activity involved applying the \"Maximizing Floor Income\" principle, which resulted in distribution 1, and being assigned to the Medium income class, earning $20,000 (payoff of $2.00).\n- The counterfactual analysis indicates that choosing \"Maximizing Average Income\" would have increased the income to $25,000, yielding a payoff of $2.50 for the same class.\n- For constraint-based principles, different threshold constraints lead to varying outcomes, with higher constraints generally increasing income and payoff.\n- The experiment continues to explore how different principles and constraints influence income distribution and individual earnings, providing insights into societal fairness and economic outcomes.\n\n--- Memory End ---",
+            "bank_balance_after_round": 7.800000000000001
+          }
+        ],
+        "ranking_3": {
+          "ranking_result": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "memory_coming_in_this_round": "- The experiment centers on exploring principles of justice and income distribution, focusing on how different criteria influence societal fairness and individual earnings.\n- Phase 1 involves learning and applying four principles of justice:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n- Initial preferences ranked \"Maximize Average with Floor Constraint\" as most preferred, followed by \"Maximize Floor Income,\" then \"Maximize Average with Range Constraint,\" and lastly \"Maximize Average Income.\"\n- The activity involves selecting a principle for each round, applying it to income distributions, and observing the impact on personal earnings.\n- Recent activity included selecting \"Maximizing Floor Income\" with certainty, which led to choosing Distribution 4 (highest minimum income of $14,000).\n- Assigned to the Medium income class in this distribution, resulting in an income of $24,000, which translates to a payoff of $2.40.\n- Counterfactual analysis shows that if \"Maximizing Average Income\" had been chosen instead, the income for the same class would have been $26,000, yielding a payoff of $2.60.\n- For constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n- These analyses demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n- The recent activity involved applying the \"Maximizing Floor Income\" principle, which resulted in distribution 4, and being assigned to the Medium income class, earning $24,000 (payoff of $2.40).\n- The counterfactual analysis indicates that choosing \"Maximizing Average Income\" would have increased the income to $26,000, yielding a payoff of $2.60 for the same class.\n- For constraint-based principles, different threshold constraints lead to varying outcomes, with higher constraints generally increasing income and payoff.\n- The experiment continues to explore how different principles and constraints influence income distribution and individual earnings, providing insights into societal fairness and economic outcomes.\n\n--- Memory End ---",
+          "bank_balance": 7.800000000000001
+        }
+      },
+      "phase_2": {
+        "rounds": [
+          {
+            "number_discussion_round": 1,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "- The experiment focuses on understanding how different principles of justice influence income distribution and societal fairness, with an emphasis on individual earnings and societal outcomes.\n- Phase 1 involves learning and applying four principles of justice:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n- Initial preferences ranked \"Maximize Average with Floor Constraint\" as most preferred, followed by \"Maximize Floor Income,\" then \"Maximize Average with Range Constraint,\" and lastly \"Maximize Average Income.\"\n- Recent activity included selecting \"Maximizing Floor Income\" with certainty, leading to choosing Distribution 4 (highest minimum income of $14,000).\n- Being assigned to the Medium income class in this distribution, I earned $24,000, which translates to a payoff of $2.40.\n- Counterfactual analysis shows that if \"Maximizing Average Income\" had been chosen instead, the income for the same class would have been $26,000, yielding a payoff of $2.60.\n- For constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n- These analyses demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n- The recent activity involved applying the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with me in the Medium income class earning $24,000 (payoff of $2.40).\n- The counterfactual indicates that choosing \"Maximizing Average Income\" would have increased my income to $26,000, with a payoff of $2.60.\n- For the constraint-based principles, higher thresholds or limits generally lead to increased income and payoff, but may also affect fairness or distributional balance.\n- The final ranking I provided for the principles was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n- My overall certainty about this ranking is \"unsure,\" reflecting some uncertainty in my preferences and understanding of the principles' implications.\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group discussion to reach a consensus on the adopted principle.\n\n--- Memory End ---",
+            "internal_reasoning": "",
+            "public_message": "I think it's important for us to consider how each principle aligns with our ideas of fairness. For example, maximizing the floor income seems to prioritize helping the worst-off, which feels morally compelling. On the other hand, maximizing the average income might lead to overall greater societal wealth but could overlook those at the bottom. I believe we should discuss which of these principles best balances fairness and societal benefit, and how they might impact different income groups. What's everyone else's take?",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_floor"
+          },
+          {
+            "number_discussion_round": 2,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment aims to explore how different principles of justice influence income distribution and societal fairness, with a focus on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- I was most recently applying the \"Maximizing Floor Income\" principle, which led me to distribution 4, resulting in a medium income class earning $24,000, with a payoff of $2.40.\n\n- Counterfactual analysis indicates that if I had chosen \"Maximizing Average Income\" instead, my income would have been $26,000, yielding a payoff of $2.60, which is higher.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, Alice emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. She suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I think choosing the principle of maximizing the average income with a floor constraint is a reasonable approach because it balances fairness and societal growth. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I believe this combination aligns with our shared values of fairness and progress, and I look forward to seeing how it impacts our group's outcomes.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 3,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment explores how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - Alice's emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 4,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment explores how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - My emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 5,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment explores how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - My emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\n\n- The group has engaged in multiple rounds of discussion, consistently favoring the principle of maximizing the average income with a floor constraint, but disagreements remain on the specific constraint amount.\n\n- The ongoing dialogue reflects a shared concern for fairness, with suggestions to explore the effects of different constraint levels to balance support for the worst-off and overall societal growth.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I believe that choosing the principle of maximizing the average income with a floor constraint is a balanced approach that aligns with our shared values of fairness and societal progress. It ensures that everyone has a minimum income, which helps support the worst-off, while still promoting overall wealth creation. I think this approach offers a good compromise between helping those in need and encouraging growth that benefits society as a whole.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 6,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment explores how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - My emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\n\n- The group has engaged in multiple rounds of discussion, consistently favoring the principle of maximizing the average income with a floor constraint, but disagreements remain on the specific constraint amount.\n\n- The ongoing dialogue reflects a shared concern for fairness, with suggestions to explore the effects of different constraint levels to balance support for the worst-off and overall societal growth.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I believe that choosing the principle of maximizing the average income with a floor constraint at $24,000 strikes a good balance between fairness and societal growth. It ensures that everyone has a minimum income to support the worst-off, while still allowing for overall wealth creation. I think this approach aligns with our shared values of fairness and progress, and I support moving forward with this constraint amount.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_average_floor_constraint"
+          },
+          {
+            "number_discussion_round": 7,
+            "speaking_order": 1,
+            "bank_balance": 7.800000000000001,
+            "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment investigates how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - My emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\n\n- The group has engaged in multiple rounds of discussion, consistently favoring the principle of maximizing the average income with a floor constraint, but disagreements remain on the specific constraint amount.\n\n- The ongoing dialogue reflects a shared concern for fairness, with suggestions to explore the effects of different constraint levels to balance support for the worst-off and overall societal growth.\n\n- Recent activity shows that in the final rounds, I supported a constraint of $24,000, believing it strikes a good balance, but Sophie expressed concern that this might be too high, potentially limiting overall growth, and suggested a lower constraint such as $14,000 or $15,000 to better balance fairness and societal progress.\nSecret ballot: I voted for Maximizing Average with Floor Constraint.\nConstraint amount: I specified $24,000.",
+            "internal_reasoning": "",
+            "public_message": "I believe that setting the floor constraint at $24,000 strikes a reasonable balance between supporting the worst-off and allowing for societal growth. It ensures a minimum income level that helps reduce extreme poverty, while still enabling overall wealth creation. I think this approach aligns with our shared values of fairness and progress, and I support moving forward with this constraint amount.",
+            "initiate_vote": "N/A",
+            "favored_principle": "maximizing_floor"
+          }
+        ],
+        "post_group_discussion": {
+          "class_put_in": "high",
+          "payoff_received": 21.46,
+          "final_ranking": {
+            "rankings": [
+              {
+                "principle": "maximizing_average_floor_constraint",
+                "rank": 1
+              },
+              {
+                "principle": "maximizing_floor",
+                "rank": 2
+              },
+              {
+                "principle": "maximizing_average_range_constraint",
+                "rank": 3
+              },
+              {
+                "principle": "maximizing_average",
+                "rank": 4
+              }
+            ],
+            "certainty": "unsure"
+          },
+          "final_vote": "Maximizing Average with Floor Constraint",
+          "vote_timestamp": "2025-10-06T15:25:20.205825",
+          "memory_coming_in_this_round": "**Updated Memory:**\n\n- The experiment investigates how different principles of justice influence income distribution and societal fairness, focusing on individual earnings and societal outcomes.\n\n- In Phase 1, I learned about and applied four principles:\n  1. Maximizing Floor Income\n  2. Maximizing Average Income\n  3. Maximizing Average with Floor Constraint\n  4. Maximizing Average with Range Constraint\n\n- My initial preference ranking was:\n  1. Maximizing Average with Floor Constraint\n  2. Maximizing Floor Income\n  3. Maximizing Average with Range Constraint\n  4. Maximizing Average Income\n\n- Recently, I applied the \"Maximizing Floor Income\" principle, which resulted in distribution 4, with a medium income class earning $24,000, and my payoff was $2.40.\n\n- Counterfactual analysis shows that choosing \"Maximizing Average Income\" instead would have increased my income to $26,000, with a payoff of $2.60.\n\n- For the constraint-based principles:\n  - \"Maximizing Average with Floor Constraint\" at various thresholds yields outcomes from $24,000 to $26,000.\n  - \"Maximizing Average with Range Constraint\" with different limits results in outcomes from $16,000 to $26,000.\n\n- These outcomes demonstrate how each principle emphasizes different aspects of income distribution\u2014either fairness to the worst-off, overall wealth, or a balance with specific constraints\u2014affecting individual payoffs and societal outcomes.\n\n- During recent discussions, I emphasized the importance of fairness and moral considerations, highlighting that maximizing the floor income helps support the worst-off, which feels morally compelling. I suggested that balancing fairness and societal benefit is crucial.\n\n- Sophie expressed a preference for the principle of maximizing the average income with a floor constraint, viewing it as a balanced approach that ensures minimum income levels while promoting overall societal growth. She sees it as a way to prevent extreme poverty while encouraging wealth creation.\n\n- The group discussion indicates a shared concern about fairness, with a focus on balancing support for the worst-off and promoting societal wealth.\n\n- The current phase involves selecting a single principle for the group to adopt, which will determine individual payoffs based on the distribution conforming to that principle.\n\n- The voting process requires unanimous agreement on the principle and any constraints, with a two-stage secret ballot.\n\n- The stakes are higher in this phase, emphasizing the importance of choosing a principle that aligns with the group's collective sense of fairness and societal benefit.\n\n- My overall uncertainty about my preferences remains, but I recognize the importance of balancing fairness to the worst-off with overall societal wealth, as reflected in my initial ranking and recent discussions.\n\n- The experiment continues to explore how these principles shape income distribution and societal fairness, with the upcoming group decision being pivotal.\n\n- Recent discussion highlights include:\n  - My emphasis on fairness and moral considerations, advocating for balancing fairness and societal progress.\n  - Sophie\u2019s inclination towards maximizing average income with a floor constraint, viewing it as a balanced approach.\n  - Consideration of combining principles or adjusting constraints to develop a more comprehensive approach that benefits everyone.\n\n- In the current phase, I voted for \"Maximizing Average with Floor Constraint\" and specified a constraint amount of $24,000.\n\n- The group has engaged in multiple rounds of discussion, consistently favoring the principle of maximizing the average income with a floor constraint, but disagreements remain on the specific constraint amount.\n\n- The ongoing dialogue reflects a shared concern for fairness, with suggestions to explore the effects of different constraint levels to balance support for the worst-off and overall societal growth.\n\n- Recent activity shows that in the final rounds, I supported a constraint of $24,000, believing it strikes a good balance, but Sophie expressed concern that this might be too high, potentially limiting overall growth, and suggested a lower constraint such as $14,000 or $15,000 to better balance fairness and societal progress.\n\n- In the latest round, I maintained that $24,000 is a reasonable balance, while Sophie argued for a lower constraint (around $14,000 to $15,000), emphasizing that a lower floor would better support fairness without overly restricting societal growth.\n\n- Final Phase 2 results: The group did not reach consensus on a justice principle. Probabilities for each income class are: High (5%), Medium high (10%), Medium (50%), Medium low (25%), Low (10%). I was assigned to the High income class, with a distribution of $214,617, translating to a payoff of $21.46.\n\n- Because no consensus was reached, my distribution was randomly assigned to Distribution 1, with a high income of $214,617. My random assignment to the High class resulted in a payoff of $21.46.\n\n- Counterfactual analysis for the High class:\n  - If the group had chosen \"Maximizing Floor Income\" \u2192 Distribution 4 \u2192 $140,842 \u2192 $14.08\n  - If the group had chosen \"Maximizing Average Income\" \u2192 Distribution 1 \u2192 $214,617 \u2192 $21.46\n  - For \"Maximizing Average with Floor Constraint\" at various thresholds, outcomes ranged from $20.79 to $21.46.\n  - For \"Maximizing Average with Range Constraint,\" outcomes ranged from $14.08 to $20.79.\n\n- When evaluating principles from behind the \"veil of ignorance\" (before knowing my position), I should consider which principle I would have preferred the group to choose, given my potential to be in any income class.\n\n- The experiment emphasizes the importance of fairness, societal benefit, and the moral implications of income distribution principles, with ongoing discussions about balancing support for the worst-off and overall societal wealth.\n\n--- Memory End ---",
+          "bank_balance": 29.26
+        }
+      }
+    }
+  ],
+  "voting_history": {
+    "voting_system": "formal_voting",
+    "voting_detection_mode": "complex",
+    "total_vote_attempts": 7,
+    "successful_votes": 0,
+    "vote_rounds": [
+      {
+        "round_number": 1,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | I'll choose a constraint amount of $14,000.",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:21:45.037520",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | I will specify a constraint amount of $24,000.",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:21:45.037537",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 2,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $14,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:22:18.453289",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:22:18.453299",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 3,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $14,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:22:56.748993",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:22:56.749002",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 4,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $14,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:23:31.046097",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:23:31.046110",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 5,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | I will specify a constraint amount of $14,000.",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:24:07.518314",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:24:07.518324",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 6,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose principle 3: Maximizing Average with Floor Constraint. | $14,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:24:40.022658",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:24:40.022666",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      },
+      {
+        "round_number": 7,
+        "vote_type": "formal_vote",
+        "trigger_participant": null,
+        "trigger_statement": null,
+        "participant_votes": [
+          {
+            "participant_name": "Sophie",
+            "raw_response": "I choose principle 3: Maximizing Average with Floor Constraint. | $14,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 14000,
+            "vote_timestamp": "2025-10-06T15:25:20.205813",
+            "parsing_success": true
+          },
+          {
+            "participant_name": "Alice",
+            "raw_response": "I choose option 3: Maximizing Average with Floor Constraint. | $24,000",
+            "assessed_choice": "Maximizing Average with Floor Constraint",
+            "constraint_amount": 24000,
+            "vote_timestamp": "2025-10-06T15:25:20.205825",
+            "parsing_success": true
+          }
+        ],
+        "consensus_reached": false,
+        "agreed_principle": null,
+        "agreed_constraint": null,
+        "vote_counts": {},
+        "confirmation_phase_occurred": false,
+        "confirmation_results": null,
+        "warnings": []
+      }
+    ],
+    "vote_initiation_requests": {
+      "1": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "2": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "3": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "4": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "5": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "6": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      },
+      "7": {
+        "Sophie": "Yes",
+        "Alice": "N/A"
+      }
+    },
+    "vote_confirmation_attempts": [
+      {
+        "round_number": 1,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:21:41.600081"
+      },
+      {
+        "round_number": 2,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:22:14.180308"
+      },
+      {
+        "round_number": 3,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:22:52.583166"
+      },
+      {
+        "round_number": 4,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:23:27.979779"
+      },
+      {
+        "round_number": 5,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:24:02.390822"
+      },
+      {
+        "round_number": 6,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:24:36.795012"
+      },
+      {
+        "round_number": 7,
+        "initiator": "Sophie",
+        "confirmation_responses": {
+          "Sophie": "Yes",
+          "Alice": "Yes"
+        },
+        "confirmation_succeeded": true,
+        "timestamp": "2025-10-06T15:25:16.791970"
+      }
+    ],
+    "vote_statistics": {
+      "total_attempts": 7,
+      "successful_votes": 0,
+      "success_rate": 0.0,
+      "failed_parsing_attempts": 0,
+      "average_consensus_round": null
+    }
+  }
+}
