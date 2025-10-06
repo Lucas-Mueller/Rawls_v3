@@ -268,20 +268,89 @@ Unused Codex Prompt
 ▌ ▌ experiment. Work systematically. The goal is to make it clear to the agent, where (if at all) it is
 ▌ ▌ not. Pleaes work detail oriented
 
-
-Hey codex please change the text of this prompt from this
+Hey claude please change the final earning layout from this 
 "
-This experiment deals with the question: "What is a just distribution of income?" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into three parts.
+Recent Activity:
+Final Phase 2 Results: Phase 2 Earnings: $13.44
+Assigned income class: Medium high
+Consensus reached: Maximizing Average with Floor Constraint ($12,000).
 
-In the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. You will have 1 hour for the first part. In this part you will be given a series of questions. These questions are merely to ensure that you have learned the concepts which are being used in the experiment. If you do not answer the questions correctly, then you are to go back to review the material and correct wrong answers. Once you have mastered the material, you can go on to make choices for which you will be paid. If you do not learn the material in a reasonable amount of time, you will not be able to earn as much money as possible since you must finish the first part of the experiment in 1 hour. But you should have plenty of time to finish this part of the experiment. Everyone will go on to the second part either after 1 hour or after everyone has finished Part I, whichever occurs first.
+Income class probabilities:
+
+High: 5%
+Medium high: 10%
+Medium: 50%
+Medium low: 25%
+Low: 10%
+Experiment Distributions and Selection Mapping
+
+Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
+High	$159,346	$139,427	$154,366	$104,570
+Medium high	$134,448	$109,550	$119,509	$99,591
+Medium	$119,509	$99,591	$104,570	$94,611
+Medium low	$64,734	$84,652	$79,673	$79,673
+Low	$59,754	$64,734	$69,713	$74,693
+Average	$103,326	$95,358	$98,844	$89,881
+Final Phase 2 Results - Principle Outcomes for Medium high Class:
+
+Maximizing Floor Income → Distribution 4 → $99,591 → $9.96
+Maximizing Average Income → Distribution 1 → $134,448 → $13.44
+Maximizing Average with Floor Constraint Floor constraint ≤ $59,754 → Distribution 1 → $134,448 → $13.44
+Maximizing Average with Floor Constraint Floor constraint ≤ $64,734 → Distribution 3 → $119,509 → $11.95
+Maximizing Average with Floor Constraint Floor constraint ≤ $69,713 → Distribution 3 → $119,509 → $11.95
+Maximizing Average with Floor Constraint Floor constraint ≤ $74,693 → Distribution 4 → $99,591 → $9.96
+Maximizing Average with Range Constraint Range constraint ≤ $99,592 → Distribution 1 → $134,448 → $13.44
+Maximizing Average with Range Constraint Range constraint ≤ $74,693 → Distribution 2 → $109,550 → $10.96
+Maximizing Average with Range Constraint Range constraint ≤ $84,653 → Distribution 3 → $119,509 → $11.95
+Maximizing Average with Range Constraint Range constraint ≤ $29,877 → Distribution 4 → $99,591 → $9.96
+Return: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')
 "
 
-to this
+to this format
 
+"Recent Activity:
+Final Phase 2 Results: 
+Principle applied: Your group reached consensus on Maximizing Average with Floor Constraint ($12,000)
+The probabiltes for each incomce class are
+
+High: 5%
+Medium high: 10%
+Medium: 50%
+Medium low: 25%
+Low: 10%
+
+You were assigned to the incomce class Medium high
+
+This was the Experiment Distribution
+
+Income Class	Dist. 1	Dist. 2	Dist. 3	Dist. 4
+High	$159,346	$139,427	$154,366	$104,570
+Medium high	$134,448	$109,550	$119,509	$99,591
+Medium	$119,509	$99,591	$104,570	$94,611
+Medium low	$64,734	$84,652	$79,673	$79,673
+Low	$59,754	$64,734	$69,713	$74,693
+Average	$103,326	$95,358	$98,844	$89,881
+
+The principel your group reached consensus on was Maximizing Average with Floor Constraint ($12,000) resulted in distribution 1. You were assigned to the incomce class Medium high, resulting in a yearly incomde of 134,448$ and a payoff of 13.44$. 
+
+These were the results for all choices
+
+Final Phase 2 Results - Principle Outcomes for Medium high Class:
+
+-Maximizing Floor Income → Distribution 4 → $99,591 → $9.96
+-Maximizing Average Income → Distribution 1 → $134,448 → $13.44
+-Maximizing Average with 
+  Floor Constraint Floor constraint ≤ $59,754 → Distribution 1 → $134,448 → $13.44 - YOUR CHOSEN PRINCIPLE
+  Floor Constraint Floor constraint ≤ $64,734 → Distribution 3 → $119,509 → $11.95
+  Floor Constraint Floor constraint ≤ $69,713 → Distribution 3 → $119,509 → $11.95
+  Floor Constraint Floor constraint ≤ $74,693 → Distribution 4 → $99,591 → $9.96
+-Maximizing Average with 
+  Range Constraint Range constraint ≤ $99,592 → Distribution 1 → $134,448 → $13.44
+  Range Constraint Range constraint ≤ $74,693 → Distribution 2 → $109,550 → $10.96
+  Range Constraint Range constraint ≤ $84,653 → Distribution 3 → $119,509 → $11.95
+  Range Constraint Range constraint ≤ $29,877 → Distribution 4 → $99,591 → $9.96
+
+Return: Your complete updated memory (not incremental changes or prefixes like 'Memory update:')
 "
-This experiment deals with the question: "What is a just distribution of income?" An individual's lifetime income is in part a result of many genetic and social accidents. The luckiest get the greatest talents and the highest rewards such as status and wealth. The least fortunate get the lowest abilities and opportunities, and receive the associated costs of poverty. Societies can deal with these inequities and risks by adopting income redistribution policies. This experiment deals with the justice of such policies. The experiment is divided into two parts.
 
-In the first part of the experiment each of you will be introduced to a few theories of justice. To do this you will consider some examples and make some choices. These choices will have real monetary consequences for you. Your pay for the first part of the experiment will be based on your choices. If you do not learn the material, you will not be able to earn as much money as possible.
-"
-
-for all three languages
+Pleae update the plan with my idea, and give feedback on it! 

@@ -123,7 +123,18 @@ class MemoryManager:
                     memory_to_use = await MemoryManager._compress_memory_if_needed(
                         agent, context.memory, context.bank_balance, context.memory_character_limit, language_manager
                     )
-                
+
+                # Remove any trailing "--- Memory End ---" marker before creating the prompt
+                # This prevents the LLM from seeing and potentially copying the marker into the new memory
+                if memory_to_use and language_manager:
+                    try:
+                        marker = language_manager.get("memory.memory_end_marker")
+                        memory_to_use = memory_to_use.rstrip()
+                        if memory_to_use.endswith(marker):
+                            memory_to_use = memory_to_use[:-len(marker)].rstrip()
+                    except Exception as e:
+                        logger.warning(f"Could not retrieve memory end marker for removal: {e}")
+
                 # Create memory update prompt
                 prompt = MemoryManager._create_memory_update_prompt(
                     memory_to_use,
@@ -145,7 +156,18 @@ class MemoryManager:
                     round_number=agent_round_number,
                     stage=context.stage
                 )
-                
+
+                # Defensively remove any trailing "--- Memory End ---" marker from agent output
+                # The marker will be added by MemoryService after this method returns
+                if updated_memory and language_manager:
+                    try:
+                        marker = language_manager.get("memory.memory_end_marker")
+                        updated_memory = updated_memory.rstrip()
+                        if updated_memory.endswith(marker):
+                            updated_memory = updated_memory[:-len(marker)].rstrip()
+                    except Exception as e:
+                        logger.warning(f"Could not retrieve memory end marker for defensive removal: {e}")
+
                 # Check memory length with 15% tolerance buffer
                 char_limit = agent.config.memory_character_limit
                 tolerance_limit = int(char_limit * 1.15)  # 15% tolerance

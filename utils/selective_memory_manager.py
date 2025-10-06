@@ -238,56 +238,67 @@ class SelectiveMemoryManager:
     ) -> str:
         """
         Handle simple memory updates using direct insertion.
-        
+
         Args:
             context: Participant context
             event_type: Classified event type
             content: Update content
             metadata: Event metadata
             language_manager: Language manager instance
-            
+
         Returns:
             Updated memory string
         """
         original_memory = context.memory
-        
+
         try:
+            # Remove any existing trailing "--- Memory End ---" marker before appending new content
+            # This prevents duplicate markers (MemoryService will add it back after this method returns)
+            if context.memory and language_manager:
+                try:
+                    marker = language_manager.get("memory.memory_end_marker")
+                    context.memory = context.memory.rstrip()
+                    if context.memory.endswith(marker):
+                        context.memory = context.memory[:-len(marker)].rstrip()
+                except Exception as e:
+                    logger.warning(f"Could not retrieve memory end marker for removal: {e}")
+
             if event_type == MemoryEventType.VOTE_INITIATION_RESPONSE:
                 # Content already formatted by MemoryService - just append to memory
                 if context.memory and not context.memory.endswith('\n'):
                     context.memory += '\n'
                 context.memory += content.strip()
-            
+
             elif event_type == MemoryEventType.VOTING_CONFIRMATION:
                 # Content already formatted by MemoryService - just append to memory
                 if context.memory and not context.memory.endswith('\n'):
                     context.memory += '\n'
                 context.memory += content.strip()
-            
+
             elif event_type == MemoryEventType.BALLOT_SELECTION:
                 # Content already formatted by MemoryService - just append to memory
                 if context.memory and not context.memory.endswith('\n'):
                     context.memory += '\n'
                 context.memory += content.strip()
-            
+
             elif event_type == MemoryEventType.AMOUNT_SPECIFICATION:
                 # Content already formatted by MemoryService - just append to memory
                 if context.memory and not context.memory.endswith('\n'):
                     context.memory += '\n'
                 context.memory += content.strip()
-            
+
             elif event_type == MemoryEventType.SIMPLE_STATUS_UPDATE:
                 # Simple status update - just append to memory
                 if context.memory and not context.memory.endswith('\n'):
                     context.memory += '\n'
                 context.memory += content.strip()
-            
+
             else:
                 raise ValueError(f"Unsupported simple event type: {event_type}")
-            
+
             logger.debug(f"Simple memory update successful: {event_type}")
             return context.memory
-            
+
         except Exception as e:
             # Restore original memory and re-raise
             context.memory = original_memory
