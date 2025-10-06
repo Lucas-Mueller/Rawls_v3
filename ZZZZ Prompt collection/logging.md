@@ -421,3 +421,11 @@ Provide your internal reasoning (this will not be shared with other participants
 If you,  as  a group,  do  not  adopt  any principle,  then  we  will  select 
 one  of the  income  distributions  at  random  for you  as  a  group. 
 That  choice  of income  distribution  will  conform  to no  particular characteristics. 
+
+
+
+
+
+Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings. Structure the memory as it fits you best. 
+
+Important: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.

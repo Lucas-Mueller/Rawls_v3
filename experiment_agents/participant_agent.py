@@ -271,6 +271,15 @@ def _generate_dynamic_instructions(
     phase2_max_rounds = None
     phase2_participant_names = None
     stage_header = ""
+    stage_kwargs = {}
+
+    if language_manager and stage_key == ExperimentStage.FINAL_RANKING.value:
+        try:
+            phase_key = context.phase.value.replace('_', '') if context.phase else None
+            if phase_key:
+                stage_kwargs['phase_label'] = language_manager.get_phase_name(phase_key)
+        except Exception:
+            stage_kwargs.pop('phase_label', None)
 
     # Start with baseline instructions derived from phase/round context
     phase_instructions = _get_phase_specific_instructions_translated(
@@ -294,7 +303,8 @@ def _generate_dynamic_instructions(
             stage_header = language_manager.get_context_stage_instruction(
                 stage_key,
                 round_number=context.round_number,
-                max_rounds=max_rounds
+                max_rounds=max_rounds,
+                **stage_kwargs
             )
 
         if stage_key == ExperimentStage.DISCUSSION.value:
@@ -329,7 +339,8 @@ def _generate_dynamic_instructions(
         if stage_key:
             stage_header = language_manager.get_context_stage_instruction(
                 stage_key,
-                round_number=context.round_number
+                round_number=context.round_number,
+                **stage_kwargs
             )
 
         if stage_key == ExperimentStage.APPLICATION.value and context.round_number is not None:

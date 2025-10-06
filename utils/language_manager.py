@@ -412,12 +412,23 @@ class LanguageManager:
         """Get translated name for a phase."""
         return self.get(f"common.phase_names.{phase_key}")
     
-    def get_context_stage_instruction(self, stage_key: str, round_number: int | None = None, max_rounds: int | None = None) -> str:
+    def get_context_stage_instruction(
+        self,
+        stage_key: str,
+        round_number: int | None = None,
+        max_rounds: int | None = None,
+        **format_kwargs: Any
+    ) -> str:
         """Get localized instruction text for a specific experiment stage."""
+        if 'round_number' not in format_kwargs:
+            format_kwargs['round_number'] = round_number if round_number is not None else ""
+        if 'max_rounds' not in format_kwargs:
+            format_kwargs['max_rounds'] = max_rounds if max_rounds is not None else ""
         try:
-            instruction = self.get(f"prompts.context_stage_prompts.{stage_key}",
-                                   round_number=round_number if round_number is not None else "",
-                                   max_rounds=max_rounds if max_rounds is not None else "")
+            instruction = self.get(
+                f"prompts.context_stage_prompts.{stage_key}",
+                **format_kwargs
+            )
         except KeyError:
             # Fallback to a simple English string if translation missing
             instruction = stage_key.replace('_', ' ').title()
