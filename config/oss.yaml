@@ -17,13 +17,17 @@ agents:
     memory_character_limit: 25000
     reasoning_enabled: true
 
-include_experiment_explanation: false
-    
+
+
+transcript_logging:
+  enabled: true
+  include_memory_updates: true  # Exclude memory updates for cleaner transcript
+  output_path: "test_transcript_2.json"
 
 utility_agent_model: "openai/gpt-oss-120b"
 utility_agent_temperature: 0.0
 
-phase2_rounds: 10
+phase2_rounds: 5
 distribution_range_phase2: [4, 8]
 
 # Income class assignment probabilities (used when original_values_mode is disabled)

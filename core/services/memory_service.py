@@ -81,7 +81,8 @@ class MemoryService:
         utility_agent: UtilityProvider,
         settings: Phase2Settings,
         logger: Optional[Logger] = None,
-        config=None
+        config=None,
+        transcript_logger=None
     ):
         """
         Initialize MemoryService with dependencies.
@@ -98,6 +99,7 @@ class MemoryService:
         self.settings = settings
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
+        self.transcript_logger = transcript_logger
         
         # Content truncation limits
         self.statement_max_chars = 300
@@ -160,6 +162,7 @@ class MemoryService:
                 language_manager=self.language_manager,
                 error_handler=error_handler,
                 utility_agent=self.utility_agent,
+                transcript_logger=self.transcript_logger,
                 memory_guidance_style=self.memory_guidance_style,
                 **kwargs
             )

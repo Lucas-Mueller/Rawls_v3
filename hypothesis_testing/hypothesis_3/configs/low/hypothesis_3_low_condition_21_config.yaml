@@ -66,3 +66,8 @@ manipulator:
   - maximizing_average_floor_constraint
   - maximizing_average_range_constraint
   - maximizing_floor
+transcript_logging:
+  enabled: true
+  include_instructions: false
+  include_input_prompts: true
+  include_memory_updates: true

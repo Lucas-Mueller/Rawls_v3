@@ -68,6 +68,45 @@ class LoggingConfig(BaseModel):
         return v.lower()
 
 
+class TranscriptLoggingConfig(BaseModel):
+    """Configuration for transcript logging."""
+    enabled: bool = Field(default=False, description="Enable transcript logging of agent prompts")
+    output_path: Optional[str] = Field(
+        default=None,
+        description="Custom output path for transcript (default: transcript_<experiment_id>.json)"
+    )
+    include_memory_updates: bool = Field(
+        default=False,
+        description="Include memory consolidation calls in transcript"
+    )
+    include_instructions: bool = Field(
+        default=False,
+        description="Include system instructions in transcript (WARNING: adds performance overhead due to instruction re-generation)"
+    )
+    include_input_prompts: bool = Field(
+        default=True,
+        description="Include user input prompts in transcript"
+    )
+
+    @field_validator('output_path')
+    @classmethod
+    def validate_output_path(cls, value: Optional[str]) -> Optional[str]:
+        """Validate output path for security and usability."""
+        if value is None:
+            return value
+
+        path = Path(value)
+        if '..' in path.parts:
+            raise ValueError("Path traversal not allowed in output_path")
+
+        try:
+            path.resolve()
+        except Exception as exc:  # pragma: no cover - defensive guard
+            raise ValueError(f"Invalid output path: {exc}") from exc
+
+        return value
+
+
 class ExperimentConfiguration(BaseModel):
     """Complete configuration for an experiment run."""
     language: str = Field("English", description="Language for experiment prompts and messages")
@@ -83,6 +122,10 @@ class ExperimentConfiguration(BaseModel):
     original_values_mode: Optional[OriginalValuesModeConfig] = Field(None, description="Original values mode configuration")
     phase2_enhanced_transparency: Optional[Phase2TransparencyConfig] = Field(None, description="Phase 2 enhanced transparency configuration")
     logging: Optional[LoggingConfig] = Field(None, description="Terminal output and logging configuration")
+    transcript_logging: Optional[TranscriptLoggingConfig] = Field(
+        None,
+        description="Transcript logging configuration"
+    )
     
     # Memory optimization config options
     memory_guidance_style: str = Field("structured", description="Memory guidance style: 'narrative' or 'structured'")

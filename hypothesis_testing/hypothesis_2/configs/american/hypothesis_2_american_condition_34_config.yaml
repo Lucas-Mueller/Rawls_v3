@@ -39,3 +39,8 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
+transcript_logging:
+  enabled: true
+  include_instructions: false
+  include_input_prompts: true
+  include_memory_updates: true

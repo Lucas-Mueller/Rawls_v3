@@ -86,6 +86,7 @@ class SelectiveMemoryManager:
         language_manager=None,
         error_handler=None,
         utility_agent=None,
+        transcript_logger=None,
         **kwargs
     ) -> str:
         """
@@ -127,12 +128,28 @@ class SelectiveMemoryManager:
                 logger.warning(f"Simple memory update failed for {agent.name}: {e}, falling back to full update")
                 # Fallback to full LLM update
                 return await SelectiveMemoryManager._full_memory_update(
-                    agent, context, content, config, language_manager, error_handler, utility_agent, **kwargs
+                    agent,
+                    context,
+                    content,
+                    config,
+                    language_manager,
+                    error_handler,
+                    utility_agent,
+                    transcript_logger=transcript_logger,
+                    **kwargs
                 )
         else:
             # Use full LLM update for complex events
             return await SelectiveMemoryManager._full_memory_update(
-                agent, context, content, config, language_manager, error_handler, utility_agent, **kwargs
+                agent,
+                context,
+                content,
+                config,
+                language_manager,
+                error_handler,
+                utility_agent,
+                transcript_logger=transcript_logger,
+                **kwargs
             )
     
     @staticmethod
@@ -313,6 +330,7 @@ class SelectiveMemoryManager:
         language_manager=None,
         error_handler=None,
         utility_agent=None,
+        transcript_logger=None,
         **kwargs
     ) -> str:
         """
@@ -378,6 +396,7 @@ class SelectiveMemoryManager:
             language_manager=language_manager,
             error_handler=error_handler,
             utility_agent=utility_agent,
+            transcript_logger=transcript_logger,
             **kwargs_clean  # Pass cleaned kwargs without conflicts
         )
     

@@ -19,6 +19,7 @@ from datetime import datetime
 # Import model classes for proper integration
 from models.principle_types import VoteResult, PrincipleChoice, JusticePrinciple, CertaintyLevel
 from agents import Runner
+from utils.logging import run_with_transcript_logging
 
 # Import multilingual support components  
 from utils.cultural_adaptation import get_amount_formatter, SupportedLanguage as CulturalLanguage
@@ -82,7 +83,7 @@ class TwoStageVotingManager:
     - Stage 2: Amount specification for constraint principles (positive integers)
     """
     
-    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None, phase2_rounds: int = 10):
+    def __init__(self, participants: List[Any], language_manager: Any, logger: Any, settings: Any = None, error_handler: Any = None, utility_agent: Any = None, memory_service: Any = None, phase2_rounds: int = 10, transcript_logger=None):
         """
         Initialize the two-stage voting manager.
 
@@ -105,6 +106,7 @@ class TwoStageVotingManager:
         self.memory_service = memory_service
         # Store phase2_rounds from ExperimentConfiguration
         self.phase2_rounds = phase2_rounds
+        self.transcript_logger = transcript_logger
         
         # Initialize multilingual support components
         self.amount_formatter = get_amount_formatter()
@@ -352,11 +354,12 @@ class TwoStageVotingManager:
                     
                     # Get response from agent with timeout
                     logger.debug(f"Calling agent {participant.name} with prompt length {len(current_prompt)}")
-                    # Set interaction type for ballot (disables propose_vote tool)
-                    context.interaction_type = "ballot"
-                    result = await asyncio.wait_for(
-                        self._run_agent(participant.agent, current_prompt, context),
-                        timeout=self.timeout_seconds
+                    result = await self._run_agent(
+                        participant=participant,
+                        prompt=current_prompt,
+                        context=context,
+                        interaction_type="ballot",
+                        timeout_seconds=self.timeout_seconds
                     )
                     logger.debug(f"Received result from agent {participant.name}: type={type(result)}")
                     
@@ -478,9 +481,12 @@ class TwoStageVotingManager:
                     logger.debug(f"Calling agent {participant.name} for amount with prompt length {len(current_prompt)}")
                     # Set interaction type for ballot (disables propose_vote tool)
                     context.interaction_type = "ballot"
-                    result = await asyncio.wait_for(
-                        self._run_agent(participant.agent, current_prompt, context),
-                        timeout=self.timeout_seconds
+                    result = await self._run_agent(
+                        participant=participant,
+                        prompt=current_prompt,
+                        context=context,
+                        interaction_type="ballot",
+                        timeout_seconds=self.timeout_seconds
                     )
                     logger.debug(f"Received amount result from agent {participant.name}: type={type(result)}")
                     
@@ -988,11 +994,32 @@ class TwoStageVotingManager:
             timestamp=datetime.now()
         )
 
-    async def _run_agent(self, agent: Any, prompt: str, context: Any) -> Any:
-        """
-        Run agent with given prompt and context using the actual Runner system.
-        """
-        return await Runner.run(agent, prompt, context=context)
+    async def _run_agent(
+        self,
+        participant: Any,
+        prompt: str,
+        context: Any,
+        interaction_type: str,
+        timeout_seconds: Optional[float]
+    ) -> Any:
+        """Run participant interaction with transcript support and optional timeout."""
+
+        context.interaction_type = interaction_type
+
+        if hasattr(participant, "agent"):
+            coroutine = run_with_transcript_logging(
+                participant=participant,
+                prompt=prompt,
+                context=context,
+                transcript_logger=getattr(self, "transcript_logger", None),
+                interaction_type=interaction_type
+            )
+        else:
+            coroutine = Runner.run(participant, prompt, context=context)
+
+        if timeout_seconds is not None:
+            return await asyncio.wait_for(coroutine, timeout_seconds)
+        return await coroutine
 
     # Fallback methods for when language manager is not available
     def _get_fallback_principle_prompt(self) -> str:
@@ -1171,7 +1198,8 @@ Respond with the amount (examples: 25000 or $25000):"""
                 error_handler=self.error_handler,
                 utility_agent=self.utility_agent,
                 round_number=getattr(context, 'round_number', None),
-                phase=getattr(context, 'phase', None)
+                phase=getattr(context, 'phase', None),
+                transcript_logger=self.transcript_logger
             )
             
             logger.info(f"Updated memory for {participant.name} after two-stage voting")

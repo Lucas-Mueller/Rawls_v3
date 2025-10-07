@@ -4,7 +4,6 @@ Phase 2 manager for group discussion and consensus building.
 import asyncio
 import time
 from typing import List, Optional
-from agents import Runner
 
 from models import (
     ParticipantContext, Phase2Results, GroupDiscussionResult, GroupDiscussionState,
@@ -14,13 +13,24 @@ from config import ExperimentConfiguration, AgentConfiguration
 from config.phase2_settings import Phase2Settings
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from utils.logging.agent_centric_logger import AgentCentricLogger
+from utils.logging import TranscriptLogger, run_with_transcript_logging
 from utils.error_handling import ExperimentErrorHandler
 
 
 class Phase2Manager:
     """Manages Phase 2 group discussion and consensus building."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, experiment_config=None, language_manager=None, error_handler=None, seed_manager=None, agent_logger=None):
+    def __init__(
+        self,
+        participants: List[ParticipantAgent],
+        utility_agent: UtilityAgent,
+        experiment_config=None,
+        language_manager=None,
+        error_handler=None,
+        seed_manager=None,
+        agent_logger=None,
+        transcript_logger: Optional[TranscriptLogger] = None
+    ):
         self.participants = participants
         self.utility_agent = utility_agent
         self.config = experiment_config
@@ -30,6 +40,7 @@ class Phase2Manager:
         self.logger = None  # Will be set in run_phase2
         # Use provided error handler or create a new one
         self.error_handler = error_handler if error_handler is not None else ExperimentErrorHandler()
+        self.transcript_logger = transcript_logger
         
         # Load Phase 2 settings
         self.settings = experiment_config.phase2_settings if experiment_config and experiment_config.phase2_settings else Phase2Settings.get_default()
@@ -63,7 +74,8 @@ class Phase2Manager:
             utility_agent=self.utility_agent,
             settings=self.settings,
             logger=logger,
-            config=self.config
+            config=self.config,
+            transcript_logger=self.transcript_logger
         )
         
         self.speaking_order_service = SpeakingOrderService(
@@ -75,7 +87,8 @@ class Phase2Manager:
         self.discussion_service = DiscussionService(
             language_manager=self.language_manager,
             settings=self.settings,
-            logger=logger
+            logger=logger,
+            transcript_logger=self.transcript_logger
         )
         
         self.voting_service = VotingService(
@@ -85,7 +98,8 @@ class Phase2Manager:
             logger=logger,
             memory_service=self.memory_service,
             agent_logger=self.agent_logger,
-            phase2_rounds=self.config.phase2_rounds if self.config else 10
+            phase2_rounds=self.config.phase2_rounds if self.config else 10,
+            transcript_logger=self.transcript_logger
         )
         
         self.counterfactuals_service = CounterfactualsService(
@@ -94,7 +108,8 @@ class Phase2Manager:
             logger=logger,
             seed_manager=self.seed_manager,
             memory_service=self.memory_service,
-            config=self.config
+            config=self.config,
+            transcript_logger=self.transcript_logger
         )
         
         self._services_initialized = True
@@ -360,7 +375,13 @@ class Phase2Manager:
                     retry_prompt = self._build_statement_retry_prompt(discussion_prompt, feedback, self.config.retry_feedback_detail)
 
                     # Get participant's retry response
-                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_result = await run_with_transcript_logging(
+                        participant=participant,
+                        prompt=retry_prompt,
+                        context=context,
+                        transcript_logger=self.transcript_logger,
+                        interaction_type="statement"
+                    )
                     retry_response = retry_result.final_output
 
                     # Update participant memory with retry experience if enabled
@@ -871,4 +892,3 @@ class Phase2Manager:
         except Exception as e:
             self.logger.warning(f"Failed to update memory with retry experience for {participant.name}: {e}")
             # Non-fatal: continue execution
-

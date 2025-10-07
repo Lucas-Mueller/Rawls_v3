@@ -11,6 +11,13 @@ This document explains the core fields required to run a Frohlich Experiment con
 - `include_experiment_explanation_each_turn` (bool): Toggles the per-turn explanation scaffold used in prompts.
 - `memory_update_threshold` (str): Threshold for memory updates (`minimal`, `moderate`, `comprehensive`).
 
+## Transcript Logging
+- `transcript_logging.enabled` (bool): Enables capture of prompt transcripts for participant agents.
+- `transcript_logging.include_instructions` (bool): Also record system instructions (adds noticeable overhead).
+- `transcript_logging.include_input_prompts` (bool): Include user-visible prompts in the transcript payload (default: `true`).
+- `transcript_logging.include_memory_updates` (bool): Log memory maintenance calls alongside interactive prompts.
+- `transcript_logging.output_path` (str, optional): Override the default `transcript_<experiment_id>.json` save location.
+
 ## Agent Definitions (`agents`)
 Each entry must provide:
 - `name` (str): Unique display name.

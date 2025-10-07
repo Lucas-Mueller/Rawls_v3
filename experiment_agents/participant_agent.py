@@ -10,8 +10,10 @@ from utils.dynamic_model_capabilities import create_agent_with_temperature_retry
 # Voting tools removed - now using prompt-based voting
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from utils.logging import TranscriptLogger
 
 # This will be replaced by dynamic language manager calls
 
@@ -112,7 +114,8 @@ class ParticipantAgent:
                            phase: ExperimentPhase = ExperimentPhase.PHASE_1,
                            round_number: int = 0,
                            role_description: str = None,
-                           stage: ExperimentStage = None) -> str:
+                           stage: ExperimentStage = None,
+                           transcript_logger: Optional["TranscriptLogger"] = None) -> str:
         """Agent updates their own memory based on prompt using minimal context."""
         # Ensure agent is initialized
         await self.async_init()
@@ -136,9 +139,34 @@ class ParticipantAgent:
         # Store actual role description for formatting
         temp_context._actual_role_description = actual_role
 
-        result = await Runner.run(self.agent, prompt, context=temp_context)
+        if transcript_logger and transcript_logger.config.include_memory_updates:
+            from utils.logging import run_with_transcript_logging
+
+            result = await run_with_transcript_logging(
+                participant=self,
+                prompt=prompt,
+                context=temp_context,
+                transcript_logger=transcript_logger,
+                interaction_type="memory_update"
+            )
+        else:
+            result = await Runner.run(self.agent, prompt, context=temp_context)
         return result.final_output
-    
+
+    def get_instructions_for_context(self, context: ParticipantContext) -> str:
+        """Generate the instructions that would be sent for the provided context."""
+        if self.agent is None:
+            raise RuntimeError("Agent not initialized. Call async_init() first.")
+
+        wrapper = RunContextWrapper(context=context)
+        return _generate_dynamic_instructions(
+            wrapper,
+            self.agent,
+            self.config,
+            self.experiment_config,
+            self.language_manager
+        )
+
     def clone(self, **kwargs):
         """Clone the underlying agent with modifications."""
         if self.agent is None:
