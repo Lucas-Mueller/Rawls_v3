@@ -1,1 +1,99 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducability_proof/configs/reproducibility_condition_2_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducability_proof/results/reproducibility_condition_2_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 363114a6
+Participants: 3
+Language: English
+Max Phase 2 rounds: 5
+
+🤖 Initializing Agents...
+  ✅ Agent_1 (gemma3:1b)
+  ✅ Agent_2 (gemma3:1b)
+  ✅ Agent_3 (gemma3:1b)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+2025-10-07 14:18:45,215 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
+2025-10-07 14:18:56,317 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
+2025-10-07 14:19:04,783 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
+
+🎯 Phase 1 Complete - Duration: 11m 34s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 5 rounds)...
+
+🗣️  Round 1
+2025-10-07 14:30:41,166 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-07 14:31:13,736 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-07 14:31:41,946 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+2025-10-07 14:34:14,694 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-07 14:34:47,178 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-07 14:35:27,715 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+2025-10-07 14:38:43,217 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-07 14:39:27,432 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
+    results = await experiment_manager.run_complete_experiment(process_logger)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 273, in run_complete_experiment
+    phase2_results = await self.phase2_manager.run_phase2(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 195, in run_phase2
+    discussion_result = await self._run_group_discussion(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 719, in _run_group_discussion
+    statement, internal_reasoning, is_fallback = await self._process_participant_statement(
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 401, in _process_participant_statement
+    statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_intelligent_retry(
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 584, in get_participant_statement_with_intelligent_retry
+    reasoning_result = await self._invoke_discussion_interaction(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 108, in _invoke_discussion_interaction
+    return await asyncio.wait_for(coroutine, timeout_seconds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 476, in wait_for
+    await waiter
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 187, in <module>
+    asyncio.run(main())
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+RETURN CODE: -2  DURATION: 1321.9s
