@@ -26,6 +26,7 @@ class TranscriptInteraction(BaseModel):
     timestamp: str
     instructions: Optional[str] = None
     input_prompt: Optional[str] = None
+    output_response: Optional[str] = None
 
 
 class AgentTranscript(BaseModel):
@@ -88,6 +89,7 @@ class TranscriptLogger:
         interaction_type: str,
         instructions: Optional[str],
         input_prompt: Optional[str],
+        output_response: Optional[str] = None,
         timestamp: Optional[datetime] = None
     ) -> None:
         """Record a single interaction for the given agent."""
@@ -102,7 +104,8 @@ class TranscriptLogger:
             interaction_type=interaction_type,
             timestamp=interaction_timestamp,
             instructions=instructions,
-            input_prompt=input_prompt
+            input_prompt=input_prompt,
+            output_response=output_response
         )
 
         agent_transcript = self._experiment_transcript.transcripts.get(agent_name)
@@ -158,6 +161,12 @@ async def run_with_transcript_logging(
 
     if transcript_logger and transcript_logger.is_enabled():
         input_prompt = prompt if transcript_logger.config.include_input_prompts else None
+        agent_response: Optional[str] = None
+        if (
+            transcript_logger.config.include_agent_responses
+            and getattr(result, "final_output", None) is not None
+        ):
+            agent_response = str(result.final_output)
         try:
             phase_value = context.phase.value if getattr(context, "phase", None) else "unknown"
             round_value = getattr(context, "round_number", None)
@@ -167,7 +176,8 @@ async def run_with_transcript_logging(
                 round_number=round_value,
                 interaction_type=interaction_type,
                 instructions=instructions,
-                input_prompt=input_prompt
+                input_prompt=input_prompt,
+                output_response=agent_response
             )
         except Exception as exc:  # pragma: no cover - defensive resilience
             transcript_logger._logger.warning(

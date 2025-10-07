@@ -60,6 +60,22 @@ def detect_model_provider(model_string: str) -> Tuple[str, str]:
             )
         return processed_model, "ollama"
 
+    # Rule 0.5: Gemini models - prioritize native API even with prefixes
+    if "gemini" in model_lower:
+        if os.getenv("GEMINI_API_KEY"):
+            # Strip provider prefix if present (e.g., "google/gemini-2.0" -> "gemini-2.0")
+            if "/" in model_string:
+                processed_model = model_string.split("/", 1)[1].strip()
+            else:
+                processed_model = model_string
+            return processed_model, "gemini"
+        raise ValueError(
+            f"Gemini model '{model_string}' requires GEMINI_API_KEY.\n"
+            f"Solutions:\n"
+            f"  1. Set GEMINI_API_KEY environment variable\n"
+            f"  2. Remove 'google/' prefix to use OpenRouter"
+        )
+
     # Rule 1: Explicit OpenRouter via "/"
     if "/" in model_string:
         return model_string, "openrouter"

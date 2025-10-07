@@ -43,6 +43,7 @@ transcript_logging:
   include_memory_updates: true
   include_instructions: false  # Skip for better performance
   include_input_prompts: true
+  include_agent_responses: true  # Capture agent outputs (may contain sensitive content)
 
 logging:
   verbosity_level: "debug"  # or minimal, detailed, debug

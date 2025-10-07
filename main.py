@@ -146,6 +146,10 @@ async def main():
             'total_errors': 0,  # Will be filled by experiment manager
             'results_file': output_path
         }
+
+        transcript_path = experiment_manager.get_last_transcript_path()
+        if transcript_path:
+            experiment_summary['transcript_file'] = transcript_path
         
         # Display trace link if available
         trace_id = experiment_manager.get_trace_id()

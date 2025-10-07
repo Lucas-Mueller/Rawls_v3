@@ -92,6 +92,7 @@ class FrohlichExperimentManager:
             experiment_id=self.experiment_id,
             config_path=config_file_path
         )
+        self._last_transcript_path: Optional[str] = None
         self._initialization_complete = False
         
     async def async_init(self):
@@ -175,6 +176,7 @@ class FrohlichExperimentManager:
         
         # Ensure experiment manager is initialized
         start_init_time = time.time()
+        self._last_transcript_path = None
         
         # Initialize agent creation with ProcessFlowLogger
         if process_logger:
@@ -373,6 +375,7 @@ class FrohlichExperimentManager:
                 if self.transcript_logger and self.transcript_logger.is_enabled():
                     try:
                         transcript_path = self.transcript_logger.save_transcript()
+                        self._last_transcript_path = transcript_path
                         if process_logger:
                             process_logger.log_technical(f"Transcript saved to: {transcript_path}")
                         else:
@@ -404,6 +407,10 @@ class FrohlichExperimentManager:
     def get_trace_id(self) -> Optional[str]:
         """Get the trace ID from the current experiment, if available."""
         return getattr(self, '_trace_id', None)
+
+    def get_last_transcript_path(self) -> Optional[str]:
+        """Return the path of the most recently saved transcript, if available."""
+        return self._last_transcript_path
             
     async def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration with dynamic temperature detection."""

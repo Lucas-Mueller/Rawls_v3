@@ -87,6 +87,14 @@ class TranscriptLoggingConfig(BaseModel):
         default=True,
         description="Include user input prompts in transcript"
     )
+    include_agent_responses: bool = Field(
+        default=True,
+        description=(
+            "Include agent response outputs in transcript. Defaults to True for "
+            "consistency with include_input_prompts. WARNING: Agent responses may "
+            "contain sensitive or unexpected content."
+        )
+    )
 
     @field_validator('output_path')
     @classmethod

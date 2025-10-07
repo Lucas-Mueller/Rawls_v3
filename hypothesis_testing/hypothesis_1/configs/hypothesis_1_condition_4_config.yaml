@@ -1,9 +1,9 @@
 language: English
-seed: 1700175816
+seed: 984773598
 agents:
 - name: Agent_1
   personality: You are an American college student
-  model: google/gemini-2.5-pro
+  model: google/gemini-2.5-flash
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -21,13 +21,13 @@ agents:
   reasoning_enabled: true
 - name: Agent_4
   personality: You are an American college student
-  model: google/gemini-2.5-flash
+  model: google/gemini-2.5-pro
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_5
   personality: You are an American college student
-  model: google/gemini-2.5-flash
+  model: google/gemini-2.5-pro
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true

@@ -88,6 +88,24 @@ class TranscriptLoggerTests(TestCase):
         self.assertIn("call_1", agent_transcript.interactions)
         self.assertIsNone(agent_transcript.interactions["call_1"].round)
 
+    def test_record_interaction_includes_response_when_configured(self):
+        config = TranscriptLoggingConfig(enabled=True)
+        logger = TranscriptLogger(config=config, experiment_id="exp246")
+
+        logger.record_interaction(
+            agent_name="Jordan",
+            phase="phase_1",
+            round_number=1,
+            interaction_type="statement",
+            instructions=None,
+            input_prompt="prompt",
+            output_response="response text"
+        )
+
+        agent_transcript = logger.transcript.transcripts["Jordan"]
+        interaction = agent_transcript.interactions["call_1"]
+        self.assertEqual(interaction.output_response, "response text")
+
 
 class RunWithTranscriptLoggingTests(IsolatedAsyncioTestCase):
     """Async tests for the run_with_transcript_logging helper."""
@@ -115,6 +133,7 @@ class RunWithTranscriptLoggingTests(IsolatedAsyncioTestCase):
         participant.get_instructions_for_context.return_value = "instruction"
 
         mock_result = MagicMock()
+        mock_result.final_output = "Result text"
         with patch("utils.logging.transcript_logger.Runner.run", new=AsyncMock(return_value=mock_result)) as mock_run:
             result = await run_with_transcript_logging(
                 participant=participant,
@@ -133,6 +152,7 @@ class RunWithTranscriptLoggingTests(IsolatedAsyncioTestCase):
         self.assertEqual(interaction.interaction_type, "initial_ranking")
         self.assertEqual(interaction.instructions, "instruction")
         self.assertEqual(interaction.input_prompt, "Prompt text")
+        self.assertEqual(interaction.output_response, "Result text")
 
     async def test_wrapper_skips_logging_when_disabled(self):
         config = TranscriptLoggingConfig(enabled=False)
@@ -165,3 +185,40 @@ class RunWithTranscriptLoggingTests(IsolatedAsyncioTestCase):
         mock_run.assert_awaited_once()
         self.assertIs(result, mock_result)
         self.assertEqual(logger.transcript.transcripts, {})
+
+    async def test_wrapper_omits_response_when_flag_disabled(self):
+        config = TranscriptLoggingConfig(
+            enabled=True,
+            include_agent_responses=False,
+            include_input_prompts=True
+        )
+        logger = TranscriptLogger(config=config, experiment_id="exp202")
+        context = ParticipantContext(
+            name="Bailey",
+            role_description="Tester",
+            bank_balance=0.0,
+            memory="",
+            round_number=2,
+            phase=ExperimentPhase.PHASE_1,
+            memory_character_limit=50000
+        )
+
+        participant = MagicMock()
+        participant.name = "Bailey"
+        participant.agent = object()
+        participant.get_instructions_for_context.return_value = "instruction"
+
+        mock_result = MagicMock()
+        mock_result.final_output = "Should not record"
+        with patch("utils.logging.transcript_logger.Runner.run", new=AsyncMock(return_value=mock_result)):
+            await run_with_transcript_logging(
+                participant=participant,
+                prompt="Prompt text",
+                context=context,
+                transcript_logger=logger,
+                interaction_type="initial_ranking"
+            )
+
+        agent_transcript = logger.transcript.transcripts["Bailey"]
+        interaction = agent_transcript.interactions["call_1"]
+        self.assertIsNone(interaction.output_response)

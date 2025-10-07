@@ -84,6 +84,12 @@ Phase 2 behavior is controlled through `Phase2Settings` which includes:
 - **Voting Settings**: Timeout values, retry limits, and constraint tolerance
 - **Two-Stage Voting**: Structured voting with numerical validation
 
+### Transcript Logging
+- **Configuration**: Enable via `transcript_logging.enabled` in experiment YAML; configure output path and capture toggles in `config/models.py`.
+- **Captured Data**: Prompts sent to participant agents, optional system instructions, and—when `include_agent_responses: true` (default)—each agent's returned output.
+- **Privacy Notice**: Agent responses may contain sensitive or unexpected content; document storage locations and access controls when enabling transcripts.
+- **Performance**: Logging is lightweight (string serialization). Instruction capture remains optional (`include_instructions`) due to generation overhead.
+
 ## Development Commands
 
 ### Running Experiments
@@ -499,4 +505,3 @@ The `hypothesis_testing/` directory contains organized experimental conditions:
 - ALWAYS USE a systematic approach
 - Heavily use detailed and systematic to do lists
 - Obey the principle of simplicity, do not overengineer things. Stay effective
-

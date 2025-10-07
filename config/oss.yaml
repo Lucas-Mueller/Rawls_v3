@@ -21,8 +21,11 @@ agents:
 
 transcript_logging:
   enabled: true
-  include_memory_updates: true  # Exclude memory updates for cleaner transcript
+  include_memory_updates: true  # Include memory updates for complete history
   output_path: "test_transcript_2.json"
+  include_instructions: true    # Capture system instructions (adds runtime overhead)
+  include_input_prompts: true
+  include_agent_responses: true # Capture agent outputs (may contain sensitive content)
 
 utility_agent_model: "openai/gpt-oss-120b"
 utility_agent_temperature: 0.0

@@ -1,1 +1,84 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/configs/hypothesis_1_condition_4_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/results/hypothesis_1_condition_4_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: de2e0f2c
+Participants: 5
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-flash-lite)
+  ✅ Agent_3 (gemini-2.5-flash)
+  ✅ Agent_4 (gemini-2.5-pro)
+  ✅ Agent_5 (gemini-2.5-pro)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+
+🎯 Phase 1 Complete - Duration: 6m 57s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
+    results = await experiment_manager.run_complete_experiment(process_logger)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 275, in run_complete_experiment
+    phase2_results = await self.phase2_manager.run_phase2(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 195, in run_phase2
+    discussion_result = await self._run_group_discussion(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 719, in _run_group_discussion
+    statement, internal_reasoning, is_fallback = await self._process_participant_statement(
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 401, in _process_participant_statement
+    statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_intelligent_retry(
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 609, in get_participant_statement_with_intelligent_retry
+    result = await self._invoke_discussion_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 108, in _invoke_discussion_interaction
+    return await asyncio.wait_for(coroutine, timeout_seconds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 476, in wait_for
+    await waiter
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 191, in <module>
+    asyncio.run(main())
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+RETURN CODE: -2  DURATION: 750.7s

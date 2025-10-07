@@ -5,21 +5,15 @@ agents:
   personality: You are an American college student
   model: ollama/gemma3:1b
   temperature: 0
-  memory_character_limit: 2000
+  memory_character_limit: 5000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are an American college student
   model: ollama/gemma3:1b
   temperature: 0
-  memory_character_limit: 2000
+  memory_character_limit: 5000
   reasoning_enabled: true
-- name: Agent_3
-  personality: You are an American college student
-  model: ollama/gemma3:1b
-  temperature: 0
-  memory_character_limit: 2000
-  reasoning_enabled: true
-utility_agent_model: google/gemini-2.0-flash-lite-001
+utility_agent_model: google/gemini-2.5-flash-lite
 utility_agent_temperature: 0.0
 phase2_rounds: 5
 distribution_range_phase2:

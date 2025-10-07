@@ -317,6 +317,10 @@ class ProcessFlowLogger:
                 print(f"Consensus: {self._colorize('✅ ' + principle, 'green')}")
             else:
                 print(f"Consensus: {self._colorize('❌ Not reached', 'yellow')}")
+
+            transcript_file = experiment_summary.get('transcript_file')
+            if transcript_file:
+                print(f"Transcript saved: {transcript_file}")
                 
         if self._should_log(VerbosityLevel.DETAILED):
             errors = experiment_summary.get('total_errors', 0)

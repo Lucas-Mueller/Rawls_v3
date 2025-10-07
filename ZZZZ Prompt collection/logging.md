@@ -160,6 +160,13 @@ Critically discuses the feedback
 Use a structured approach. 
 
 
+Please review this plan
+
+TRANSCRIPT_RESPONSE_LOGGING_EXPANSION_PLAN.md
+
+using the reviewing subagent. Send him the plan then engange iwth the feedbakc. Adapt the
+plan if you agree with the or parts of the feedback. Critically discuses with the agent feedback you dont buy into. Use a structured approach. Create ToDO list 
+
 
 
 I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 

@@ -68,6 +68,8 @@ manipulator:
   - maximizing_average
 transcript_logging:
   enabled: true
+  include_memory_updates: true
   include_instructions: false
   include_input_prompts: true
-  include_memory_updates: true
+  include_agent_responses: true
+  output_path: transcripts/
