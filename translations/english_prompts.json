@@ -129,6 +129,7 @@
     "system_error_messages_missing_constraint_amount": "You selected a constraint principle but did not specify the constraint amount. Please provide a dollar amount.",
     "system_error_messages_incomplete_ranking": "Your ranking is incomplete. Please rank all four principles from 1 to 4.",
     "fallback_default_phase_instructions": "",
+    "fallback_default_agent_instruction": "You are a participant in the Frohlich Experiment. Respond concisely.",
     "phase1_round0_initial_ranking": "",
     "phase1_rounds1_4_principle_application": "",
     "phase1_round5_final_ranking": "",
@@ -168,6 +169,9 @@
     "final_ranking": "{phase_label} – Final ranking."
   },
   "statement_validation_feedback": {
+    "attempt_label": "Attempt {attempt_number}",
+    "issue_heading": "Statement Issue",
+    "preview_label": "Your statement",
     "too_short": {
       "explanation": "Your statement needs more detail to contribute meaningfully to the discussion.",
       "instruction": "Please provide more explanation of your reasoning, preferences, or analysis.",
@@ -434,6 +438,13 @@
     "range_constraint": "Range constraint ≤ {amount}",
     "currency_format": "${amount:,}"
   },
+  "fallback_messages": {
+    "earnings_display_error": "Earnings display unavailable due to an internal error.",
+    "counterfactual_error": "Counterfactual analysis unavailable.",
+    "consensus_generic": "Consensus was reached on a justice principle.",
+    "no_consensus_generic": "No consensus was reached. Earnings were randomly assigned.",
+    "generic_error": "An unexpected error occurred."
+  },
   "distributions": {
     "income_class_header": "Income Class",
     "column_header": "Dist. {number}",
@@ -446,6 +457,9 @@
     "reasoning_prompt": "Based on your internal reasoning above, what is your statement to the group?"
   },
   "parsing_feedback": {
+    "attempt_label": "Attempt {attempt_number}",
+    "issue_heading": "Parsing Issue",
+    "preview_label": "Your response",
     "choice_format_confusion": {
       "explanation": "You provided a choice statement (\"I choose X\") instead of a ranking format.",
       "instruction": "Please provide a numbered ranking of all 4 principles from 1 (best) to 4 (worst).",

@@ -511,8 +511,24 @@ class DistributionGenerator:
             JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT,
             JusticePrinciple.MAXIMIZING_AVERAGE_RANGE_CONSTRAINT
         ]:
-            base_name += f" of ${principle_choice.constraint_amount:,}"
-        
+            try:
+                if language_manager:
+                    if principle_choice.principle == JusticePrinciple.MAXIMIZING_AVERAGE_FLOOR_CONSTRAINT:
+                        constraint_text = language_manager.get(
+                            "results_explicit.floor_constraint_label",
+                            amount=f"{principle_choice.constraint_amount:,}"
+                        )
+                    else:
+                        constraint_text = language_manager.get(
+                            "results_explicit.range_constraint_label",
+                            amount=f"{principle_choice.constraint_amount:,}"
+                        )
+                    base_name = f"{base_name} {constraint_text}"
+                else:
+                    base_name += f" of ${principle_choice.constraint_amount:,}"
+            except Exception:
+                base_name += f" of ${principle_choice.constraint_amount:,}"
+
         return base_name
     
     @staticmethod

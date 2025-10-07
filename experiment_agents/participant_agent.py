@@ -229,6 +229,11 @@ def _generate_dynamic_instructions(
     
     # Guard against missing context during model capability probes
     if ctx is None or getattr(ctx, 'context', None) is None:
+        if language_manager:
+            try:
+                return language_manager.get("prompts.fallback_default_agent_instruction")
+            except Exception:
+                pass
         return "You are a participant agent in the Frohlich Experiment. Respond concisely."
     
     context = ctx.context

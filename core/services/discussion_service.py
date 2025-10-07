@@ -177,10 +177,29 @@ class DiscussionService:
         
         if len(participant_names) == 1:
             participant_list = participant_names[0]
+        elif len(participant_names) == 2:
+            try:
+                participant_list = self._get_localized_message(
+                    "common.list_formatting.two_items",
+                    first=participant_names[0],
+                    second=participant_names[1]
+                )
+            except Exception:
+                participant_list = f"{participant_names[0]} and {participant_names[1]}"
         else:
-            # Format as "A, B, and C" or "A and B"
-            participant_list = ", ".join(participant_names[:-1]) + f" and {participant_names[-1]}"
-        
+            try:
+                participant_list = self._get_localized_message(
+                    "common.list_formatting.three_plus_items",
+                    items=", ".join(participant_names[:-1]),
+                    last=participant_names[-1]
+                )
+            except Exception:
+                try:
+                    conjunction = self._get_localized_message("common.list_formatting.conjunction")
+                except Exception:
+                    conjunction = "and"
+                participant_list = ", ".join(participant_names[:-1]) + f" {conjunction} {participant_names[-1]}"
+
         return self._get_localized_message(
             "system_messages.discussion.group_composition", 
             participants=participant_list
@@ -284,17 +303,20 @@ class DiscussionService:
             template = fallback_templates.get(template_key, fallback_templates["too_short"])
 
         # Build feedback message with language-specific phrases (exact A1/A2 pattern)
-        attempt_phrase = {
-            "english": f"Attempt {attempt_number}",
-            "spanish": f"Intento {attempt_number}",
-            "mandarin": f"第{attempt_number}次尝试"
-        }.get(language.lower(), f"Attempt {attempt_number}")
+        try:
+            attempt_phrase = self._get_localized_message(
+                "statement_validation_feedback.attempt_label",
+                attempt_number=attempt_number
+            )
+        except Exception:
+            attempt_phrase = f"Attempt {attempt_number}"
 
-        validation_issue_phrase = {
-            "english": "Statement Issue",
-            "spanish": "Problema de Declaración",
-            "mandarin": "陈述问题"
-        }.get(language.lower(), "Statement Issue")
+        try:
+            validation_issue_phrase = self._get_localized_message(
+                "statement_validation_feedback.issue_heading"
+            )
+        except Exception:
+            validation_issue_phrase = "Statement Issue"
 
         feedback_parts = [
             f"⚠️ {validation_issue_phrase} ({attempt_phrase}):",
@@ -308,11 +330,12 @@ class DiscussionService:
 
         # Add statement preview for context
         if original_statement and len(original_statement.strip()) > 0:
-            statement_preview_phrase = {
-                "english": "Your statement",
-                "spanish": "Tu declaración",
-                "mandarin": "您的陈述"
-            }.get(language.lower(), "Your statement")
+            try:
+                statement_preview_phrase = self._get_localized_message(
+                    "statement_validation_feedback.preview_label"
+                )
+            except Exception:
+                statement_preview_phrase = "Your statement"
 
             preview = original_statement[:50] + "..." if len(original_statement) > 50 else original_statement
             feedback_parts.extend([

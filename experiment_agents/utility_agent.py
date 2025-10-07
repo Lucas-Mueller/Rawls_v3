@@ -841,17 +841,20 @@ class UtilityAgent:
             template = fallback_template
 
         # Build feedback message with language-specific phrases
-        attempt_phrase = {
-            "english": f"Attempt {attempt_number}",
-            "spanish": f"Intento {attempt_number}",
-            "mandarin": f"第{attempt_number}次尝试"
-        }.get(self.experiment_language.lower(), f"Attempt {attempt_number}")
+        try:
+            attempt_phrase = self.language_manager.get(
+                "parsing_feedback.attempt_label",
+                attempt_number=attempt_number
+            )
+        except Exception:
+            attempt_phrase = f"Attempt {attempt_number}"
 
-        parsing_issue_phrase = {
-            "english": "Parsing Issue",
-            "spanish": "Problema de Análisis",
-            "mandarin": "解析问题"
-        }.get(self.experiment_language.lower(), "Parsing Issue")
+        try:
+            parsing_issue_phrase = self.language_manager.get(
+                "parsing_feedback.issue_heading"
+            )
+        except Exception:
+            parsing_issue_phrase = "Parsing Issue"
 
         feedback_parts = [
             f"⚠️ {parsing_issue_phrase} ({attempt_phrase}):",
@@ -865,11 +868,12 @@ class UtilityAgent:
 
         # Add response preview for context (truncated if too long)
         if original_response and len(original_response.strip()) > 0:
-            response_preview_phrase = {
-                "english": "Your response",
-                "spanish": "Tu respuesta",
-                "mandarin": "您的回复"
-            }.get(self.experiment_language.lower(), "Your response")
+            try:
+                response_preview_phrase = self.language_manager.get(
+                    "parsing_feedback.preview_label"
+                )
+            except Exception:
+                response_preview_phrase = "Your response"
 
             preview = original_response[:100] + "..." if len(original_response) > 100 else original_response
             feedback_parts.extend([

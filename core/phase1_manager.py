@@ -843,6 +843,17 @@ class Phase1Manager:
         result_lines = []
         lang_manager = self.language_manager
 
+        def format_income_value(amount: float | int) -> str:
+            try:
+                if isinstance(amount, int) or (isinstance(amount, float) and amount.is_integer()):
+                    return lang_manager.get("constraint_formatting.currency_format", amount=int(round(amount)))
+            except Exception:
+                pass
+
+            if isinstance(amount, float):
+                return f"${amount:,.2f}"
+            return f"${amount:,}"
+
         # 1. Maximizing Floor (simple principle)
         if 'maximizing_floor' in grouped:
             for outcome in grouped['maximizing_floor']:
@@ -855,7 +866,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_floor':
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 2. Maximizing Average (simple principle)
         if 'maximizing_average' in grouped:
@@ -869,7 +883,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average':
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 3. Floor Constraint (grouped with multiple children)
         if 'maximizing_average_floor_constraint' in grouped:
@@ -889,7 +906,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average_floor_constraint' and chosen_constraint == constraint_amt:
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"  {floor_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 4. Range Constraint (grouped with multiple children)
         if 'maximizing_average_range_constraint' in grouped:
@@ -909,7 +929,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average_range_constraint' and chosen_constraint == constraint_amt:
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"  {range_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         return "\n".join(result_lines)
 

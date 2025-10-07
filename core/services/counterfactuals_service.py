@@ -525,7 +525,10 @@ class CounterfactualsService:
             
         except Exception as e:
             self.logger.warning(f"Failed to build comprehensive earnings display for {participant_name}: {e}")
-            return f"Earnings display unavailable due to error: {str(e)}"
+            try:
+                return lang_manager.get("fallback_messages.earnings_display_error")
+            except Exception:
+                return "Earnings display unavailable due to an internal error."
     
     def _build_consensus_info(self, discussion_result: GroupDiscussionResult, lang_manager) -> str:
         """
@@ -566,9 +569,15 @@ class CounterfactualsService:
             self.logger.warning(f"Failed to build consensus info: {e}")
             # Fallback message
             if discussion_result.consensus_reached:
-                return "Consensus was reached on a justice principle."
+                try:
+                    return lang_manager.get("fallback_messages.consensus_generic")
+                except Exception:
+                    return "Consensus was reached on a justice principle."
             else:
-                return "No consensus was reached. Earnings were randomly assigned."
+                try:
+                    return lang_manager.get("fallback_messages.no_consensus_generic")
+                except Exception:
+                    return "No consensus was reached. Earnings were randomly assigned."
 
     def _format_difference(self, diff: float, lang_manager: LanguageProvider) -> str:
         """
@@ -621,6 +630,17 @@ class CounterfactualsService:
         try:
             from core.distribution_generator import DistributionGenerator
 
+            def format_income_value(amount: float | int) -> str:
+                try:
+                    if isinstance(amount, int) or (isinstance(amount, float) and amount.is_integer()):
+                        return lang_manager.get("constraint_formatting.currency_format", amount=int(round(amount)))
+                except Exception:
+                    pass
+
+                if isinstance(amount, float):
+                    return f"${amount:,.2f}"
+                return f"${amount:,}"
+
             # Get comprehensive outcomes (all constraint variations)
             comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
                 distribution_set.distributions,
@@ -665,7 +685,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 2. Maximizing Average (simple principle)
             if 'maximizing_average' in grouped:
@@ -682,7 +705,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 3. Floor Constraint (grouped with multiple children)
             if 'maximizing_average_floor_constraint' in grouped:
@@ -705,7 +731,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"  {floor_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 4. Range Constraint (grouped with multiple children)
             if 'maximizing_average_range_constraint' in grouped:
@@ -728,13 +757,19 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"  {range_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             return "\n".join(result_lines)
 
         except Exception as e:
             self.logger.warning(f"Failed to build counterfactual outcomes: {e}")
-            return "Counterfactual analysis unavailable."
+            try:
+                return lang_manager.get("fallback_messages.counterfactual_error")
+            except Exception:
+                return "Counterfactual analysis unavailable."
 
     def _build_consensus_results(
         self,
