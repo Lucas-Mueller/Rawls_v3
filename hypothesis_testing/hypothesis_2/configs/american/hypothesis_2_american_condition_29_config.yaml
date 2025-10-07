@@ -9,13 +9,13 @@ agents:
   reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student
-  model: google/gemini-2.5-pro
+  model: gemini-2.5-pro
   temperature: 1.0349270793800027
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: google/gemini-2.5-pro
+  model: gemini-2.5-pro
   temperature: 1.0349270793800027
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -25,7 +25,7 @@ agents:
   temperature: 1.0349270793800027
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: google/gemini-2.5-flash
+utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
 phase2_rounds: 10
 distribution_range_phase2:

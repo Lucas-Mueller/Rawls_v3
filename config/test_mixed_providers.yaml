@@ -30,7 +30,7 @@ agents:
   # OpenRouter model with explicit prefix (requires OPENROUTER_API_KEY)
   - name: Charlie
     personality: "You are a creative artist who values individual expression."
-    model: google/gemini-2.5-flash
+    model: gemini-2.5-flash
     temperature: 0.8
     memory_character_limit: 25000
     reasoning_enabled: true

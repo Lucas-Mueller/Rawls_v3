@@ -104,7 +104,7 @@ Agent Creation and Configuration
          openrouter_agent = AgentConfiguration(
              name="Gemini_Agent", 
              personality="Creative and empathetic",
-             model="google/gemini-2.5-flash",  # OpenRouter model
+             model="gemini-2.5-flash",  # OpenRouter model
              temperature=0.5
          )
          
@@ -335,7 +335,7 @@ Agents can operate in multiple languages with full experimental support.
                  AgentConfiguration(
                      name="AgentEspañol",
                      personality="Eres un estudiante universitario español reflexivo",
-                     model="google/gemini-2.5-flash"
+                     model="gemini-2.5-flash"
                  )
              ]
          )
@@ -603,7 +603,7 @@ Performance Optimization
        AgentConfiguration(
            name=f"EfficientAgent{i}",
            personality="Focused and direct",
-           model="google/gemini-2.5-flash",  # Fast OpenRouter model
+           model="gemini-2.5-flash",  # Fast OpenRouter model
            memory_character_limit=20000,  # Minimal memory
            reasoning_enabled=True
        )

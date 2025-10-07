@@ -41,7 +41,7 @@ agents:
   temperature: 0.5929768959017911
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: google/gemini-2.5-flash
+utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
 phase2_rounds: 15
 distribution_range_phase2:

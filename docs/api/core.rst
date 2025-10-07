@@ -71,7 +71,7 @@ The experiment manager handles the complete lifecycle of an experiment:
                  AgentConfiguration(
                      name="Bob", 
                      personality="Empathetic and community-focused",
-                     model="google/gemini-2.5-flash",
+                     model="gemini-2.5-flash",
                      temperature=0.3
                  )
              ],

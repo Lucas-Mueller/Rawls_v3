@@ -118,7 +118,7 @@ Model Provider Options
 **OpenRouter Models** (via LiteLLM)
    .. code-block:: yaml
 
-      model: "google/gemini-2.5-flash"
+      model: "gemini-2.5-flash"
       model: "anthropic/claude-3-5-sonnet-20241022"
       model: "meta-llama/llama-3.1-70b-instruct"
 
