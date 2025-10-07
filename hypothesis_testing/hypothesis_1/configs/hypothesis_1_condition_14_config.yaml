@@ -1,34 +1,34 @@
 language: English
-seed: 1112952177
+seed: 1800285514
 agents:
-- name: Agent_0
-  personality: You are an American college student
-  model: google/gemini-2.5-flash-lite
-  temperature: 0.5929295073787967
-  memory_character_limit: 25000
-  reasoning_enabled: true
 - name: Agent_1
   personality: You are an American college student
-  model: google/gemini-2.5-pro
-  temperature: 0.5929295073787967
+  model: google/gemini-2.5-flash
+  temperature: 0.5869581630173255
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are an American college student
-  model: google/gemma-3-27b-it
-  temperature: 0.5929295073787967
+  model: google/gemini-2.5-flash
+  temperature: 0.5869581630173255
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are an American college student
-  model: google/gemma-3-27b-it
-  temperature: 0.5929295073787967
+  model: google/gemini-2.5-flash-lite
+  temperature: 0.5869581630173255
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_4
   personality: You are an American college student
-  model: google/gemini-2.5-pro
-  temperature: 0.5929295073787967
+  model: google/gemini-2.5-flash-lite
+  temperature: 0.5869581630173255
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_5
+  personality: You are an American college student
+  model: google/gemini-2.5-flash-lite
+  temperature: 0.5869581630173255
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: google/gemini-2.0-flash-lite-001
@@ -45,8 +45,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-transcript_logging:
-  enabled: true
-  include_instructions: false
-  include_input_prompts: true
-  include_memory_updates: true

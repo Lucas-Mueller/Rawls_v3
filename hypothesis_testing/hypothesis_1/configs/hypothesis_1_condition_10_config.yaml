@@ -1,12 +1,6 @@
 language: English
-seed: 790607130
+seed: 872803038
 agents:
-- name: Agent_0
-  personality: You are an American college student
-  model: google/gemini-2.5-flash-lite
-  temperature: 0.0
-  memory_character_limit: 25000
-  reasoning_enabled: true
 - name: Agent_1
   personality: You are an American college student
   model: google/gemini-2.5-flash
@@ -15,17 +9,23 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are an American college student
-  model: google/gemini-2.5-flash-lite
+  model: google/gemini-2.5-pro
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are an American college student
-  model: google/gemma-3-12b-it
+  model: google/gemini-2.5-flash
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_4
+  personality: You are an American college student
+  model: google/gemini-2.5-flash
+  temperature: 0.0
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_5
   personality: You are an American college student
   model: google/gemini-2.5-pro
   temperature: 0.0
@@ -45,8 +45,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-transcript_logging:
-  enabled: true
-  include_instructions: false
-  include_input_prompts: true
-  include_memory_updates: true
