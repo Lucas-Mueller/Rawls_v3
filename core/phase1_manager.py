@@ -1004,29 +1004,14 @@ class Phase1Manager:
         result_parts.append(distributions_header)
         result_parts.append("")
 
-        # Build distributions table
-        table_lines = []
-        table_lines.append("| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |")
-        table_lines.append("|--------------|---------|---------|---------|---------|")
-
-        class_order = [IncomeClass.HIGH, IncomeClass.MEDIUM_HIGH, IncomeClass.MEDIUM, IncomeClass.MEDIUM_LOW, IncomeClass.LOW]
-        for cls in class_order:
-            cls_label = lang_manager.get(f"common.income_classes.{cls.value}")
-            row = [cls_label]
-            for dist in distribution_set.distributions:
-                income = dist.get_income_by_class(cls)
-                row.append(f"${income:,}")
-            table_lines.append("| " + " | ".join(row) + " |")
-
-        # Add average row
-        average_label = lang_manager.get("common.average_label", default="Average")
-        avg_row = [average_label]
-        for dist in distribution_set.distributions:
-            avg_income = dist.get_average_income(probabilities)
-            avg_row.append(f"${avg_income:,.0f}")
-        table_lines.append("| " + " | ".join(avg_row) + " |")
-
-        result_parts.extend(table_lines)
+        # Use comprehensive distributions table (skip the generic header, keep only table)
+        # The comprehensive_data['distributions_table'] includes its own header line and blank line,
+        # so we extract just the table portion (skip first 2 lines)
+        comprehensive_table = comprehensive_data['distributions_table']
+        table_lines = comprehensive_table.split('\n')
+        # Skip first 2 lines (generic header + blank line), keep the actual table
+        table_only = '\n'.join(table_lines[2:])
+        result_parts.append(table_only)
         result_parts.append("")
 
         # 6. Causal narrative
