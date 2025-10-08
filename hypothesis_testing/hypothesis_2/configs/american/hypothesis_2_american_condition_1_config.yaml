@@ -9,19 +9,13 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: x-ai/grok-3-mini
+  model: google/gemini-2.5-flash-lite
   temperature: 0.6555084292117406
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
   model: openai/gpt-oss-120b
-  temperature: 0.6555084292117406
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_4
-  personality: You are a college student
-  model: openai/gpt-4.1
   temperature: 0.6555084292117406
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -39,4 +33,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-voting_detection_mode: complex

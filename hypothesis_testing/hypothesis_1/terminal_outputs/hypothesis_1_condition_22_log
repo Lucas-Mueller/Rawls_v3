@@ -2,14 +2,88 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: d3fbe971
+Experiment ID: 413da33f
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-2025-10-07 18:33:17,640 - utils.dynamic_model_capabilities - ERROR - ❌ gemini-2.0-flash-lite-001: Non-temperature related error: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-2025-10-07 18:33:17,640 - experiment_agents.utility_agent - ERROR - ❌ Failed to initialize utility agents: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-❌ Experiment failed: Failed to initialize experiment manager: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-pro)
+  ✅ Agent_3 (gemini-2.5-flash-lite)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-flash-lite)
 
-RETURN CODE: 1  DURATION: 9.6s
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+
+🎯 Phase 1 Complete - Duration: 4m 58s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+2025-10-08 12:48:03,547 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+🗳️  Voting initiated (Round 3)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 3 complete
+
+🗣️  Round 4
+   ✅ Round 4 complete
+
+🗣️  Round 5
+2025-10-08 12:53:08,316 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+   ✅ Round 5 complete
+
+🗣️  Round 6
+   ✅ Round 6 complete
+
+🗣️  Round 7
+   ✅ Round 7 complete
+
+🗣️  Round 8
+2025-10-08 13:02:08,273 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+   ✅ Round 8 complete
+
+🗣️  Round 9
+🗳️  Voting initiated (Round 9)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 9 complete
+
+🗣️  Round 10
+🗳️  Voting initiated (Round 10)
+2025-10-08 13:10:02,892 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_3 amount_specification: all 3 attempts exhausted
+2025-10-08 13:10:02,893 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_3
+2025-10-08 13:10:02,893 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-08 13:10:02,893 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-08 13:10:02,893 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-08 13:10:05,198 - core.two_stage_voting_manager - ERROR - Voting failed for 1 participants out of 5
+2025-10-08 13:10:05,198 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_3
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 10 complete
+
+🏁 Phase 2 Complete without consensus - Duration: 30m 44s
+   Rounds conducted: 10
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 35m 48s
+Consensus: ❌ Not reached
+
+
+RETURN CODE: 0  DURATION: 2149.9s

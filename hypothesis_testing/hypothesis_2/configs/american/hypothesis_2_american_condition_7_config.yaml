@@ -3,7 +3,7 @@ seed: 19058015
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: gemini-2.5-flash
+  model: x-ai/grok-code-fast-1
   temperature: 0.8062951823949759
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -16,12 +16,6 @@ agents:
 - name: Agent_3
   personality: You are a college student
   model: openai/gpt-oss-120b
-  temperature: 0.8062951823949759
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_4
-  personality: You are a college student
-  model: x-ai/grok-3-mini
   temperature: 0.8062951823949759
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -39,4 +33,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-voting_detection_mode: complex

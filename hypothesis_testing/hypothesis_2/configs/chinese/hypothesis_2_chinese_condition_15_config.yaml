@@ -3,25 +3,19 @@ seed: 1306134171
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: z-ai/glm-4.5
+  model: qwen/qwen3-next-80b-a3b-thinking
   temperature: 0.7894692141879649
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: qwen/qwen3-235b-a22b-thinking-2507
+  model: deepseek/deepseek-v3.2-exp
   temperature: 0.7894692141879649
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: deepseek/deepseek-chat-v3.1
-  temperature: 0.7894692141879649
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_4
-  personality: You are a college student
-  model: qwen/qwen3-235b-a22b-thinking-2507
+  model: z-ai/glm-4.5-air
   temperature: 0.7894692141879649
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -39,4 +33,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-voting_detection_mode: complex

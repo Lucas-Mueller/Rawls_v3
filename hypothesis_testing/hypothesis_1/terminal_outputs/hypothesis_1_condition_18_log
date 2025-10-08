@@ -2,14 +2,54 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 923692eb
+Experiment ID: 51534d8f
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-2025-10-07 18:31:06,131 - utils.dynamic_model_capabilities - ERROR - ❌ gemini-2.0-flash-lite-001: Non-temperature related error: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-2025-10-07 18:31:06,131 - experiment_agents.utility_agent - ERROR - ❌ Failed to initialize utility agents: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-❌ Experiment failed: Failed to initialize experiment manager: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+  ✅ Agent_1 (gemini-2.5-pro)
+  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_3 (gemini-2.5-pro)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-pro)
 
-RETURN CODE: 1  DURATION: 21.3s
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+
+🎯 Phase 1 Complete - Duration: 5m 21s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+2025-10-08 11:02:39,207 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+2025-10-08 11:03:41,071 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $11000)
+
+🏁 Phase 2 Complete with consensus - Duration: 18m 53s
+   Rounds conducted: 4
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 24m 31s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1472.7s

@@ -1,0 +1,16 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/configs/mandarin/hypothesis_6_mandarin_condition_18_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/results/mandarin/hypothesis_6_mandarin_condition_18_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 9ab7f755
+Participants: 5
+Language: Mandarin
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+2025-10-08 17:02:10,172 - utils.dynamic_model_capabilities - ERROR - ❌ gemini-2.5-pro: Non-temperature related error: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-08 17:02:10,173 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_4: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-08 17:02:10,173 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_4: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+❌ Experiment failed: Failed to initialize experiment manager: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+
+RETURN CODE: 1  DURATION: 30.8s

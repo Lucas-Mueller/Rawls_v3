@@ -1,5 +1,24 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_7_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_7_config_results.json
-❌ Failed to load configuration: Unknown configuration keys in /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_7_config.yaml: voting_detection_mode. Refer to config/models.py for supported fields.
-❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 38e7b4e8
+Participants: 4
+Language: English
+Max Phase 2 rounds: 10
 
-RETURN CODE: 1  DURATION: 0.8s
+🤖 Initializing Agents...
+  ✅ Agent_1 (qwen3-235b-a22b-thinking-2507)
+  ✅ Agent_2 (minimax-m1)
+  ✅ Agent_3 (deepseek-chat-v3.1)
+  ✅ Agent_4 (glm-4.5)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 4 participants...
+
+❌ Experiment failed: Phase 1 execution failed: Agent Agent_2 memory update failed: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+
+RETURN CODE: 1  DURATION: 1529.1s

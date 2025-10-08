@@ -3,25 +3,19 @@ seed: 1510671027
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: openai/gpt-4.1
+  model: nvidia/llama-3.3-nemotron-super-49b-v1.5
   temperature: 1.1176324381845586
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: x-ai/grok-3-mini
+  model: google/gemini-2.5-flash-lite
   temperature: 1.1176324381845586
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: google/gemini-2.5-pro
-  temperature: 1.1176324381845586
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_4
-  personality: You are a college student
-  model: openai/gpt-4.1
+  model: x-ai/grok-4-fast
   temperature: 1.1176324381845586
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -39,4 +33,3 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-voting_detection_mode: complex

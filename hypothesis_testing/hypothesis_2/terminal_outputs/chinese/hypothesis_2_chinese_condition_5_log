@@ -1,5 +1,199 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_5_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_5_config_results.json
-❌ Failed to load configuration: Unknown configuration keys in /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_5_config.yaml: voting_detection_mode. Refer to config/models.py for supported fields.
-❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: e57bf8ec
+Participants: 4
+Language: English
+Max Phase 2 rounds: 10
 
-RETURN CODE: 1  DURATION: 0.8s
+🤖 Initializing Agents...
+  ✅ Agent_1 (qwen3-30b-a3b-instruct-2507)
+  ✅ Agent_2 (deepseek-r1-0528)
+  ✅ Agent_3 (deepseek-chat-v3.1)
+  ✅ Agent_4 (qwen3-235b-a22b-thinking-2507)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 4 participants...
+
+
+🎯 Phase 1 Complete - Duration: 4m 14s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 4 complete
+
+🗣️  Round 5
+🗳️  Voting initiated (Round 5)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 5 complete
+
+🗣️  Round 6
+🗳️  Voting initiated (Round 6)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 6 complete
+
+🗣️  Round 7
+🗳️  Voting initiated (Round 7)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 7 complete
+
+🗣️  Round 8
+🗳️  Voting initiated (Round 8)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 8 complete
+
+🗣️  Round 9
+🗳️  Voting initiated (Round 9)
+
+======================================================================
+🔴 VOTING CONFIRMATION ERROR DETECTED
+======================================================================
+ERROR during confirmation from Agent_3:
+  Exception type: APIStatusError
+  Exception message: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+  Context.stage: ExperimentStage.DISCUSSION
+  Context.phase: ExperimentPhase.PHASE_2
+  Context.allow_vote_tool: False
+  Context.formatted_context_header exists: True
+  Context.formatted_context_header is None: False
+  Context.interaction_type: vote_confirmation
+
+📋 STACK TRACE:
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 311, in conduct_confirmation_phase
+    result = await self._invoke_voting_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 110, in _invoke_voting_interaction
+    return await asyncio.wait_for(coroutine, timeout_seconds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/logging/transcript_logger.py", line 160, in run_with_transcript_logging
+    result = await Runner.run(participant.agent, prompt, context=context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
+    return await runner.run(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
+    input_guardrail_results, turn_result = await asyncio.gather(
+                                           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
+    new_response = await cls._get_new_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
+    new_response = await model.get_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
+    response = await self._fetch_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
+    ret = await self._get_client().chat.completions.create(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1591, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.APIStatusError: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+
+======================================================================
+
+
+======================================================================
+🔴 VOTING CONFIRMATION ERROR DETECTED
+======================================================================
+ERROR during confirmation from Agent_4:
+  Exception type: APIStatusError
+  Exception message: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+  Context.stage: ExperimentStage.DISCUSSION
+  Context.phase: ExperimentPhase.PHASE_2
+  Context.allow_vote_tool: False
+  Context.formatted_context_header exists: True
+  Context.formatted_context_header is None: False
+  Context.interaction_type: vote_confirmation
+
+📋 STACK TRACE:
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 311, in conduct_confirmation_phase
+    result = await self._invoke_voting_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 110, in _invoke_voting_interaction
+    return await asyncio.wait_for(coroutine, timeout_seconds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/logging/transcript_logger.py", line 160, in run_with_transcript_logging
+    result = await Runner.run(participant.agent, prompt, context=context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
+    return await runner.run(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
+    input_guardrail_results, turn_result = await asyncio.gather(
+                                           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
+    new_response = await cls._get_new_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
+    new_response = await model.get_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
+    response = await self._fetch_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
+    ret = await self._get_client().chat.completions.create(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1591, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.APIStatusError: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+
+======================================================================
+
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 9 complete
+
+🗣️  Round 10
+❌ Experiment failed: Phase 2 execution failed: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+
+RETURN CODE: 1  DURATION: 2093.5s
