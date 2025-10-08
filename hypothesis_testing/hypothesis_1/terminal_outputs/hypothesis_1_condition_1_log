@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 01157e9f
+Experiment ID: e73463b0
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
@@ -20,140 +20,41 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-2025-10-07 16:39:59,593 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Invalid ranking structure: got 0 rankings, expected 4
 
-🎯 Phase 1 Complete - Duration: 6m 11s
+🎯 Phase 1 Complete - Duration: 11m 49s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 1 complete
 
 🗣️  Round 2
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
-    results = await experiment_manager.run_complete_experiment(process_logger)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
-    return await func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 275, in run_complete_experiment
-    phase2_results = await self.phase2_manager.run_phase2(
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 195, in run_phase2
-    discussion_result = await self._run_group_discussion(
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 732, in _run_group_discussion
-    await self._log_discussion_round(
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 455, in _log_discussion_round
-    favored_principle = await self.discussion_service.extract_favored_principle(statement, self.utility_agent)
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 746, in extract_favored_principle
-    parsed = await utility_agent.parse_principle_choice_enhanced(statement)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/experiment_agents/utility_agent.py", line 342, in parse_principle_choice_enhanced
-    result = await run_without_tracing(self.parser_agent, prompt)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/experiment_agents/utility_agent.py", line 31, in run_without_tracing
-    return await Runner.run(agent, prompt, context=context)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
-    return await runner.run(
-           ^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
-    input_guardrail_results, turn_result = await asyncio.gather(
-                                           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
-    new_response = await cls._get_new_response(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
-    new_response = await model.get_response(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
-    response = await self._fetch_response(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
-    ret = await self._get_client().chat.completions.create(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
-    return await self._post(
-           ^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
-    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1526, in request
-    response = await self._client.send(
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1629, in send
-    response = await self._send_handling_auth(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
-    response = await self._send_handling_redirects(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
-    response = await self._send_single_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1730, in _send_single_request
-    response = await transport.handle_async_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
-    resp = await self._pool.handle_async_request(req)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
-    raise exc from None
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
-    response = await connection.handle_async_request(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
-    return await self._connection.handle_async_request(request)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
-    raise exc
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
-    ) = await self._receive_response_headers(**kwargs)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
-    event = await self._receive_event(timeout=timeout)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
-    data = await self._network_stream.read(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_backends/anyio.py", line 35, in read
-    return await self._stream.receive(max_bytes=max_bytes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 219, in receive
-    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 162, in _call_sslobject_method
-    data = await self.transport_stream.receive()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 1254, in receive
-    await self._protocol.read_event.wait()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/locks.py", line 213, in wait
-    await fut
-asyncio.exceptions.CancelledError
+   ✅ Round 2 complete
 
-During handling of the above exception, another exception occurred:
+🗣️  Round 3
+   ✅ Round 3 complete
 
-Traceback (most recent call last):
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 191, in <module>
-    asyncio.run(main())
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
-    raise KeyboardInterrupt()
-KeyboardInterrupt
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+⏳ No consensus yet - continuing discussion...
 
-RETURN CODE: -2  DURATION: 750.7s
+   ✅ Round 4 complete
+
+🗣️  Round 5
+2025-10-07 17:34:03,605 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+🗳️  Voting initiated (Round 5)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
+
+🏁 Phase 2 Complete with consensus - Duration: 31m 11s
+   Rounds conducted: 5
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 45m 18s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 2724.3s

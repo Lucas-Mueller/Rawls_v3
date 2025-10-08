@@ -1,0 +1,121 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/configs/english/hypothesis_6_english_condition_21_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/results/english/hypothesis_6_english_condition_21_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 21f4c4fd
+Participants: 5
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_0 (gemini-2.5-flash)
+  ✅ Agent_1 (gemini-2.5-pro)
+  ✅ Agent_2 (gemini-2.5-flash-lite)
+  ✅ Agent_3 (gemini-2.5-flash)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+
+🎯 Phase 1 Complete - Duration: 4m 23s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+2025-10-07 22:01:53,126 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_2 amount_specification: all 3 attempts exhausted
+2025-10-07 22:01:53,126 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_2
+2025-10-07 22:01:53,126 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-07 22:01:53,126 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-07 22:01:53,126 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-07 22:02:06,138 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_4 amount_specification: all 3 attempts exhausted
+2025-10-07 22:02:06,138 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_4
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR - Voting failed for 2 participants out of 5
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_2
+2025-10-07 22:02:06,139 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_4
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 4 complete
+
+🗣️  Round 5
+🗳️  Voting initiated (Round 5)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 5 complete
+
+🗣️  Round 6
+🗳️  Voting initiated (Round 6)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 6 complete
+
+🗣️  Round 7
+🗳️  Voting initiated (Round 7)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 7 complete
+
+🗣️  Round 8
+🗳️  Voting initiated (Round 8)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 8 complete
+
+🗣️  Round 9
+🗳️  Voting initiated (Round 9)
+2025-10-07 22:23:34,689 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_2 amount_specification: all 3 attempts exhausted
+2025-10-07 22:23:34,690 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_2
+2025-10-07 22:23:34,690 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-07 22:23:34,690 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-07 22:23:34,690 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_4 amount_specification: all 3 attempts exhausted
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_4
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR - Voting failed for 2 participants out of 5
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_2
+2025-10-07 22:23:50,451 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_4
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 9 complete
+
+🗣️  Round 10
+🗳️  Voting initiated (Round 10)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $1000)
+
+🏁 Phase 2 Complete with consensus - Duration: 36m 14s
+   Rounds conducted: 10
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 40m 44s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 2445.8s

@@ -1,0 +1,47 @@
+language: English
+seed: 875212049
+agents:
+- name: Agent_0
+  personality: You are an American college student
+  model: gemini-2.5-flash-lite
+  temperature: 0.1084977940625172
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_1
+  personality: You are an American college student
+  model: gemini-2.5-flash
+  temperature: 0.1084977940625172
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_2
+  personality: You are an American college student
+  model: gemini-2.5-flash
+  temperature: 0.1084977940625172
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_3
+  personality: You are an American college student
+  model: gemini-2.5-flash
+  temperature: 0.1084977940625172
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_4
+  personality: You are an American college student
+  model: gemini-2.5-flash-lite
+  temperature: 0.1084977940625172
+  memory_character_limit: 25000
+  reasoning_enabled: true
+utility_agent_model: gemini-2.5-flash-lite
+utility_agent_temperature: 0.0
+phase2_rounds: 10
+distribution_range_phase2:
+- 2
+- 6
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.1
+  medium: 0.5
+  medium_low: 0.25
+  low: 0.1
+original_values_mode:
+  enabled: true

@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: ef1cc84c
+Experiment ID: 255b7995
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
@@ -21,61 +21,39 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 5 participants...
 
 
-🎯 Phase 1 Complete - Duration: 6m 10s
+🎯 Phase 1 Complete - Duration: 9m 38s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
    ✅ Round 1 complete
 
 🗣️  Round 2
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
-    results = await experiment_manager.run_complete_experiment(process_logger)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
-    return await func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 275, in run_complete_experiment
-    phase2_results = await self.phase2_manager.run_phase2(
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 195, in run_phase2
-    discussion_result = await self._run_group_discussion(
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 719, in _run_group_discussion
-    statement, internal_reasoning, is_fallback = await self._process_participant_statement(
-                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 401, in _process_participant_statement
-    statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_intelligent_retry(
-                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 584, in get_participant_statement_with_intelligent_retry
-    reasoning_result = await self._invoke_discussion_interaction(
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 108, in _invoke_discussion_interaction
-    return await asyncio.wait_for(coroutine, timeout_seconds)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 476, in wait_for
-    await waiter
-asyncio.exceptions.CancelledError
+   ✅ Round 2 complete
 
-During handling of the above exception, another exception occurred:
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+⏳ No consensus yet - continuing discussion...
 
-Traceback (most recent call last):
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 191, in <module>
-    asyncio.run(main())
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
-    raise KeyboardInterrupt()
-KeyboardInterrupt
+   ✅ Round 3 complete
 
-RETURN CODE: -2  DURATION: 750.9s
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13000)
+
+🏁 Phase 2 Complete with consensus - Duration: 22m 38s
+   Rounds conducted: 4
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 33m 58s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 2042.9s

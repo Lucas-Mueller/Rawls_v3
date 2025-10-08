@@ -1,12 +1,6 @@
 language: English
 seed: 1791606566
 agents:
-- name: Agent_0
-  personality: You are a college student
-  model: deepseek/deepseek-chat-v3.1
-  temperature: 1.0908604200649807
-  memory_character_limit: 25000
-  reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student
   model: deepseek/deepseek-chat-v3.1
@@ -15,11 +9,17 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: qwen/qwen3-30b-a3b-instruct-2507
+  model: deepseek/deepseek-chat-v3.1
   temperature: 1.0908604200649807
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
+  personality: You are a college student
+  model: qwen/qwen3-30b-a3b-instruct-2507
+  temperature: 1.0908604200649807
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_4
   personality: You are a college student
   model: deepseek/deepseek-chat-v3.1
   temperature: 1.0908604200649807
@@ -39,10 +39,4 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-transcript_logging:
-  enabled: true
-  include_memory_updates: true
-  include_instructions: false
-  include_input_prompts: true
-  include_agent_responses: true
-  output_path: transcripts/
+voting_detection_mode: complex

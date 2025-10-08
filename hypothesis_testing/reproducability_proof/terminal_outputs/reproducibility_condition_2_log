@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: f38ab23b
+Experiment ID: 0316e2a4
 Participants: 2
 Language: English
 Max Phase 2 rounds: 5
@@ -17,12 +17,32 @@ Max Phase 2 rounds: 5
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 2 participants...
 
-2025-10-07 15:54:07,929 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
-2025-10-07 15:54:11,977 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
-2025-10-07 15:54:53,527 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
-2025-10-07 15:54:57,615 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
-2025-10-07 15:55:24,676 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: 'very_unsure|unsure|sure|very_sure' is not a valid CertaintyLevel
-2025-10-07 15:55:24,677 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking after 3 attempts with feedback. Failure types: ['no_numbered_list', 'no_numbered_list', 'no_numbered_list']
-❌ Experiment failed: Phase 1 execution failed: Agent provided natural language instead of numbered ranking
 
-RETURN CODE: 1  DURATION: 97.8s
+🎯 Phase 1 Complete - Duration: 54m 5s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 5 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 3 complete
+
+🗣️  Round 4
+❌ Experiment failed: Phase 2 execution failed: Agent Agent_2 memory update failed: Request timed out.
+
+RETURN CODE: 1  DURATION: 19585.6s

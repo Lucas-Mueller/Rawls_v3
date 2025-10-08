@@ -1,1 +1,59 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/configs/hypothesis_1_condition_6_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_1/results/hypothesis_1_condition_6_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 76005786
+Participants: 5
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_3 (gemini-2.5-pro)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-flash-lite)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 5 participants...
+
+2025-10-07 17:32:57,984 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+
+🎯 Phase 1 Complete - Duration: 5m 40s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+2025-10-07 17:37:24,107 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+2025-10-07 17:48:29,757 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $10000)
+
+🏁 Phase 2 Complete with consensus - Duration: 15m 2s
+   Rounds conducted: 4
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 20m 56s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1258.3s

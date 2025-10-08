@@ -1,25 +1,25 @@
 language: English
 seed: 1654450107
 agents:
-- name: Agent_0
+- name: Agent_1
   personality: You are a college student
   model: z-ai/glm-4.5
   temperature: 1.3971595489213473
   memory_character_limit: 25000
   reasoning_enabled: true
-- name: Agent_1
+- name: Agent_2
   personality: You are a college student
   model: minimax/minimax-m1
   temperature: 1.3971595489213473
   memory_character_limit: 25000
   reasoning_enabled: true
-- name: Agent_2
+- name: Agent_3
   personality: You are a college student
   model: qwen/qwen3-30b-a3b-instruct-2507
   temperature: 1.3971595489213473
   memory_character_limit: 25000
   reasoning_enabled: true
-- name: Agent_3
+- name: Agent_4
   personality: You are a college student
   model: deepseek/deepseek-r1-0528
   temperature: 1.3971595489213473
@@ -39,10 +39,4 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
-transcript_logging:
-  enabled: true
-  include_memory_updates: true
-  include_instructions: false
-  include_input_prompts: true
-  include_agent_responses: true
-  output_path: transcripts/
+voting_detection_mode: complex
