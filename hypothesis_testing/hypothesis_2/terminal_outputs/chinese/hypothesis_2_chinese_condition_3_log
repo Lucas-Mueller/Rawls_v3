@@ -2,27 +2,87 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 770d82d3
-Participants: 4
+Experiment ID: 71cf7cd4
+Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (deepseek-chat-v3.1)
-  ✅ Agent_2 (deepseek-r1-0528)
-  ✅ Agent_3 (minimax-m1)
-  ✅ Agent_4 (deepseek-r1-0528)
+  ✅ Agent_1 (glm-4.5-air)
+  ✅ Agent_2 (deepseek-v3.2-exp)
+  ✅ Agent_3 (qwen3-30b-a3b-instruct-2507)
 
 ✨ All agents ready
 
 📖 PHASE 1: Individual Familiarization
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Running parallel familiarization for 4 participants...
+Running parallel familiarization for 3 participants...
 
-2025-10-08 10:20:46,022 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
-2025-10-08 10:21:11,311 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
-2025-10-08 10:21:36,012 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
-2025-10-08 10:21:36,013 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts with feedback. Failure types: ['empty_response', 'empty_response', 'empty_response']
-❌ Experiment failed: Phase 1 execution failed: Agent provided empty or minimal response for choice
 
-RETURN CODE: 1  DURATION: 186.4s
+🎯 Phase 1 Complete - Duration: 7m 17s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
+    results = await experiment_manager.run_complete_experiment(process_logger)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 275, in run_complete_experiment
+    phase2_results = await self.phase2_manager.run_phase2(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 195, in run_phase2
+    discussion_result = await self._run_group_discussion(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 809, in _run_group_discussion
+    consensus_result = await self._attempt_end_of_round_voting(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 549, in _attempt_end_of_round_voting
+    consensus_reached = await self.voting_service.conduct_voting_process(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 636, in conduct_voting_process
+    all_confirmed = await self.conduct_confirmation_phase(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 311, in conduct_confirmation_phase
+    result = await self._invoke_voting_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/voting_service.py", line 110, in _invoke_voting_interaction
+    return await asyncio.wait_for(coroutine, timeout_seconds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 495, in wait_for
+    await _cancel_and_wait(fut, loop=loop)
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 562, in _cancel_and_wait
+    await waiter
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 191, in <module>
+    asyncio.run(main())
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+RETURN CODE: -2  DURATION: 38239.5s

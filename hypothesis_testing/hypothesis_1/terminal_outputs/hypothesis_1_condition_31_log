@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: aed5fffa
+Experiment ID: f3781162
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
@@ -20,6 +20,34 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-❌ Experiment failed: Phase 1 execution failed: Agent Agent_3 memory update failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
 
-RETURN CODE: 1  DURATION: 509.1s
+🎯 Phase 1 Complete - Duration: 5m 21s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $10000)
+
+🏁 Phase 2 Complete with consensus - Duration: 15m 25s
+   Rounds conducted: 4
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 20m 54s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1257.0s

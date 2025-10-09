@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 08438cf2
+Experiment ID: 366cad94
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
@@ -20,6 +20,43 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-❌ Experiment failed: Phase 1 execution failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
 
-RETURN CODE: 1  DURATION: 31.9s
+🎯 Phase 1 Complete - Duration: 5m 53s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+   ✅ Round 4 complete
+
+🗣️  Round 5
+🗳️  Voting initiated (Round 5)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $20000)
+
+🏁 Phase 2 Complete with consensus - Duration: 23m 12s
+   Rounds conducted: 5
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 29m 14s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1756.0s
