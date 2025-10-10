@@ -1,53 +1,69 @@
-CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/configs/english/hypothesis_6_english_condition_3_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_6/results/english/hypothesis_6_english_condition_3_config_results.json
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/american/hypothesis_2_american_condition_34_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/american/hypothesis_2_american_condition_34_config_results.json
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: c41b9fd4
-Participants: 5
+Experiment ID: d0c99e9f
+Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemini-2.5-pro)
-  ✅ Agent_1 (gemini-2.5-flash)
-  ✅ Agent_2 (gemini-2.5-pro)
-  ✅ Agent_3 (gemini-2.5-flash-lite)
-  ✅ Agent_4 (gemini-2.5-pro)
+  ✅ Agent_1 (gemini-2.5-flash-lite)
+  ✅ Agent_2 (gpt-oss-20b)
+  ✅ Agent_3 (grok-4-fast)
 
 ✨ All agents ready
 
 📖 PHASE 1: Individual Familiarization
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Running parallel familiarization for 5 participants...
+Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 5m 34s
+🎯 Phase 1 Complete - Duration: 8m 17s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 1 complete
 
 🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
    ✅ Round 2 complete
 
 🗣️  Round 3
 🗳️  Voting initiated (Round 3)
-🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $10000)
+⏳ No consensus yet - continuing discussion...
 
-🏁 Phase 2 Complete with consensus - Duration: 15m 26s
-   Rounds conducted: 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 4 complete
+
+🗣️  Round 5
+🗳️  Voting initiated (Round 5)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 5 complete
+
+🗣️  Round 6
+🗳️  Voting initiated (Round 6)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
+
+🏁 Phase 2 Complete with consensus - Duration: 22m 20s
+   Rounds conducted: 6
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 21m 13s
+Total Duration: 31m 8s
 Consensus: ✅ maximizing_average_floor_constraint
 
 
-RETURN CODE: 0  DURATION: 1275.6s
+RETURN CODE: 0  DURATION: 1869.8s
