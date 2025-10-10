@@ -3,19 +3,19 @@ seed: 1244111426
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: openai/gpt-oss-20b
+  model: nousresearch/hermes-4-70b
   temperature: 1.0071029976737353
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: nvidia/llama-3.3-nemotron-super-49b-v1.5
+  model: google/gemini-2.5-flash-lite
   temperature: 1.0071029976737353
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: nvidia/llama-3.3-nemotron-super-49b-v1.5
+  model: google/gemini-2.5-flash-lite
   temperature: 1.0071029976737353
   memory_character_limit: 25000
   reasoning_enabled: true

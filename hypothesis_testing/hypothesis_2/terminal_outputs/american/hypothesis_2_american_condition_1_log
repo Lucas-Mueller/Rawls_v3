@@ -1,0 +1,48 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/american/hypothesis_2_american_condition_1_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/american/hypothesis_2_american_condition_1_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: b018f5e9
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_1 (hermes-4-70b)
+  ✅ Agent_2 (gpt-oss-20b)
+  ✅ Agent_3 (gpt-oss-120b)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+
+🎯 Phase 1 Complete - Duration: 1m 53s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
+
+🏁 Phase 2 Complete with consensus - Duration: 3m 45s
+   Rounds conducted: 2
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 5m 58s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 362.1s

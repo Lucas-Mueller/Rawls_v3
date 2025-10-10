@@ -2,15 +2,97 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 3508e750
-Participants: 4
+Experiment ID: f5def482
+Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-2025-10-08 10:56:32,396 - utils.dynamic_model_capabilities - ERROR - ❌ qwen/qwen3-30b-a3b-instruct-2507: Non-temperature related error: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
-2025-10-08 10:56:32,397 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_1: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
-2025-10-08 10:56:32,397 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_1: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
-❌ Experiment failed: Failed to initialize experiment manager: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+  ✅ Agent_1 (qwq-32b)
+  ✅ Agent_2 (qwen3-30b-a3b-instruct-2507)
+  ✅ Agent_3 (deepseek-v3.2-exp)
 
-RETURN CODE: 1  DURATION: 1.1s
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+
+🎯 Phase 1 Complete - Duration: 12m 15s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 4 complete
+
+🗣️  Round 5
+🗳️  Voting initiated (Round 5)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 5 complete
+
+🗣️  Round 6
+🗳️  Voting initiated (Round 6)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 6 complete
+
+🗣️  Round 7
+🗳️  Voting initiated (Round 7)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 7 complete
+
+🗣️  Round 8
+🗳️  Voting initiated (Round 8)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 8 complete
+
+🗣️  Round 9
+🗳️  Voting initiated (Round 9)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 9 complete
+
+🗣️  Round 10
+🗳️  Voting initiated (Round 10)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 10 complete
+
+🏁 Phase 2 Complete without consensus - Duration: 1h 14m
+   Rounds conducted: 10
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 1h 26m
+Consensus: ❌ Not reached
+
+
+RETURN CODE: 0  DURATION: 5210.2s

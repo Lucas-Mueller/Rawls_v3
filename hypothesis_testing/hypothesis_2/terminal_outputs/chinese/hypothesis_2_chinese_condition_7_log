@@ -2,23 +2,26 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 38e7b4e8
-Participants: 4
+Experiment ID: adba52fa
+Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (qwen3-235b-a22b-thinking-2507)
-  ✅ Agent_2 (minimax-m1)
-  ✅ Agent_3 (deepseek-chat-v3.1)
-  ✅ Agent_4 (glm-4.5)
+  ✅ Agent_1 (deepseek-v3.2-exp)
+  ✅ Agent_2 (qwen3-30b-a3b-instruct-2507)
+  ✅ Agent_3 (glm-4.5-air)
 
 ✨ All agents ready
 
 📖 PHASE 1: Individual Familiarization
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Running parallel familiarization for 4 participants...
+Running parallel familiarization for 3 participants...
 
-❌ Experiment failed: Phase 1 execution failed: Agent Agent_2 memory update failed: Error code: 402 - {'error': {'message': 'Insufficient credits. Add more using https://openrouter.ai/settings/credits', 'code': 402}}
+2025-10-09 22:22:52,070 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
+2025-10-09 22:23:31,745 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
+2025-10-09 22:24:14,259 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
+2025-10-09 22:24:14,260 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts with feedback. Failure types: ['empty_response', 'empty_response', 'empty_response']
+❌ Experiment failed: Phase 1 execution failed: Agent provided empty or minimal response for choice
 
-RETURN CODE: 1  DURATION: 1529.1s
+RETURN CODE: 1  DURATION: 283.0s

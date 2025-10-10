@@ -9,13 +9,13 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: google/gemini-2.5-flash-lite
+  model: openai/gpt-oss-20b
   temperature: 1.3971595489213473
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: google/gemini-2.5-flash-lite
+  model: openai/gpt-oss-20b
   temperature: 1.3971595489213473
   memory_character_limit: 25000
   reasoning_enabled: true

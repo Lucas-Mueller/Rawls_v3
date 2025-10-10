@@ -15,7 +15,7 @@ agents:
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: google/gemini-2.5-flash-lite
+  model: openai/gpt-oss-20b
   temperature: 0.4156162520070896
   memory_character_limit: 25000
   reasoning_enabled: true

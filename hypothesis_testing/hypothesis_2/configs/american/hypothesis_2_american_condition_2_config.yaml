@@ -3,7 +3,7 @@ seed: 1950533397
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: google/gemini-2.5-flash-lite
+  model: openai/gpt-oss-20b
   temperature: 1.3765153208599754
   memory_character_limit: 25000
   reasoning_enabled: true

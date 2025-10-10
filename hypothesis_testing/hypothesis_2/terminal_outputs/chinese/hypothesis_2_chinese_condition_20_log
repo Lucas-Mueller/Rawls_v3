@@ -1,5 +1,1 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_20_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_20_config_results.json
-❌ Failed to load configuration: Unknown configuration keys in /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_20_config.yaml: voting_detection_mode. Refer to config/models.py for supported fields.
-❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
-
-RETURN CODE: 1  DURATION: 0.7s

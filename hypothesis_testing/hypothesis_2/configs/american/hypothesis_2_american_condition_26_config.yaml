@@ -15,7 +15,7 @@ agents:
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: nvidia/llama-3.3-nemotron-super-49b-v1.5
+  model: google/gemini-2.5-flash-lite
   temperature: 0.40809987250687163
   memory_character_limit: 25000
   reasoning_enabled: true
