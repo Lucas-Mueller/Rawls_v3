@@ -1,5 +1,69 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_26_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_26_config_results.json
-❌ Failed to load configuration: Unknown configuration keys in /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_26_config.yaml: voting_detection_mode. Refer to config/models.py for supported fields.
-❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: e4139eb1
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
 
-RETURN CODE: 1  DURATION: 0.7s
+🤖 Initializing Agents...
+  ✅ Agent_1 (deepseek-v3.2-exp)
+  ✅ Agent_2 (deepseek-v3.2-exp)
+  ✅ Agent_3 (deepseek-v3.2-exp)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+
+🎯 Phase 1 Complete - Duration: 3m 59s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+   ✅ Round 4 complete
+
+🗣️  Round 5
+   ✅ Round 5 complete
+
+🗣️  Round 6
+   ✅ Round 6 complete
+
+🗣️  Round 7
+2025-10-10 11:09:46,331 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
+   ✅ Round 7 complete
+
+🗣️  Round 8
+   ✅ Round 8 complete
+
+🗣️  Round 9
+   ✅ Round 9 complete
+
+🗣️  Round 10
+   ✅ Round 10 complete
+
+🏁 Phase 2 Complete without consensus - Duration: 30m 37s
+   Rounds conducted: 10
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 34m 42s
+Consensus: ❌ Not reached
+
+
+RETURN CODE: 0  DURATION: 2084.2s

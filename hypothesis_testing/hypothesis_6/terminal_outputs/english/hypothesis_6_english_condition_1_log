@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 4e487bf7
+Experiment ID: 23c67627
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
@@ -20,6 +20,50 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-❌ Experiment failed: Phase 1 execution failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
 
-RETURN CODE: 1  DURATION: 146.9s
+🎯 Phase 1 Complete - Duration: 5m 24s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+2025-10-10 11:04:25,669 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_1 amount_specification: all 3 attempts exhausted
+2025-10-10 11:04:25,681 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_1
+2025-10-10 11:04:25,681 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-10 11:04:25,681 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-10 11:04:25,681 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-10 11:05:01,148 - core.two_stage_voting_manager - ERROR - Two-stage voting failure - Agent_3 amount_specification: all 3 attempts exhausted
+2025-10-10 11:05:01,149 - core.two_stage_voting_manager - ERROR - Stage 2 (amount specification) failed for Agent_3
+2025-10-10 11:05:01,149 - core.two_stage_voting_manager - ERROR -   - Error type: retries_exhausted
+2025-10-10 11:05:01,149 - core.two_stage_voting_manager - ERROR -   - Attempts used: 3
+2025-10-10 11:05:01,149 - core.two_stage_voting_manager - ERROR -   - Raw response: ...
+2025-10-10 11:05:27,504 - core.two_stage_voting_manager - ERROR - Voting failed for 2 participants out of 5
+2025-10-10 11:05:27,505 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_1
+2025-10-10 11:05:27,505 - core.two_stage_voting_manager - ERROR -   - Failed: Agent_3
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13500)
+
+🏁 Phase 2 Complete with consensus - Duration: 15m 58s
+   Rounds conducted: 3
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 21m 36s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1297.7s

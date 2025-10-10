@@ -1,5 +1,51 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_24_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_24_config_results.json
-❌ Failed to load configuration: Unknown configuration keys in /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_24_config.yaml: voting_detection_mode. Refer to config/models.py for supported fields.
-❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 55ed7be8
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
 
-RETURN CODE: 1  DURATION: 0.7s
+🤖 Initializing Agents...
+  ✅ Agent_1 (deepseek-v3.2-exp)
+  ✅ Agent_2 (qwq-32b)
+  ✅ Agent_3 (qwq-32b)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+
+🎯 Phase 1 Complete - Duration: 9m 46s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+🎉 Consensus Reached! Principle: maximizing_floor
+
+🏁 Phase 2 Complete with consensus - Duration: 16m 10s
+   Rounds conducted: 3
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 26m 20s
+Consensus: ✅ maximizing_floor
+
+
+RETURN CODE: 0  DURATION: 1581.8s
