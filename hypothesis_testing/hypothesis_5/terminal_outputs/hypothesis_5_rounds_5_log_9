@@ -1,0 +1,20 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_5/configs/hypothesis_5_rounds_5_config_9.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_5/results/hypothesis_5_rounds_5_config_9_results.json
+❌ Failed to load configuration: 5 validation errors for ExperimentConfiguration
+agents.0.model
+  Input should be a valid string [type=string_type, input_value=['gemini-2.5-pro', 'gemin...'gemini-2.5-flash-lite'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+agents.1.model
+  Input should be a valid string [type=string_type, input_value=['gemini-2.5-pro', 'gemin...'gemini-2.5-flash-lite'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+agents.2.model
+  Input should be a valid string [type=string_type, input_value=['gemini-2.5-pro', 'gemin...'gemini-2.5-flash-lite'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+agents.3.model
+  Input should be a valid string [type=string_type, input_value=['gemini-2.5-pro', 'gemin...'gemini-2.5-flash-lite'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+agents.4.model
+  Input should be a valid string [type=string_type, input_value=['gemini-2.5-pro', 'gemin...'gemini-2.5-flash-lite'], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+❌ Experiment failed: cannot access local variable 'config' where it is not associated with a value
+
+RETURN CODE: 1  DURATION: 0.7s
