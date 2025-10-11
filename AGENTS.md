@@ -1,41 +1,40 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `core/` orchestrates phase managers, distribution helpers, dataset loaders; treat as pipeline backbone.
-- `experiment_agents/` hosts participant agents and shared utilities; keep each agent modular with explicit typing.
-- `config/` contains YAML specs and Pydantic models; `config/default_config.yaml` anchors defaults.
-- `models/` provides dataclasses/enums for principles, results, logging payloads; extend rather than replace existing types.
-- Tests live under `tests/unit/` and `tests/integration/`; entrypoints are `main.py` for experiments and `run_tests.py` for suites.
+- `core/` orchestrates experiment phases, data distribution, and support utilities; treat it as the pipeline backbone.
+- `experiment_agents/` houses participant agents and shared utilities; keep each module modular with explicit typing.
+- `config/` holds YAML specs and Pydantic models; extend `config/default_config.yaml` when adding knobs.
+- `models/` defines dataclasses and enums for principles, results, and logging; extend existing types instead of replacing them.
+- `utils/` and `knowledge_base/` provide shared helpers and prompt assets; scope changes and document them.
+- Tests live in `tests/unit/` and `tests/integration/`; research notes and plans live under `docs/` and `reports/`.
+- Entrypoints are `main.py` for experiments and `run_tests.py` for suites.
 
 ## Build, Test, and Development Commands
-- `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt` boots the local environment.
+- `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt` bootstraps the environment.
 - `python main.py` runs the baseline experiment; pass `python main.py config/custom.yaml results/out.json` to target custom flows.
-- `python run_tests.py` executes the full matrix; append `unit` or `integration` to scope.
-- `python -m unittest tests.unit.test_memory_manager -v` isolates a single module.
+- `python run_tests.py` executes the full test matrix; append `unit` or `integration` to scope.
+- `python -m unittest tests.unit.test_memory_manager -v` isolates a single module for focused debugging.
 
 ## Coding Style & Naming Conventions
-- Follow PEP 8 with four-space indents and explicit type hints on public functions.
-- Modules/functions use `snake_case`; classes `PascalCase`; constants `UPPER_CASE`.
-- Mirror existing formatting; use concise comments only for non-obvious intent.
-- Keep new files ASCII unless an existing file already uses Unicode.
+- Follow PEP 8 with four-space indents, explicit public type hints, and docstrings where intent is non-obvious.
+- Modules and functions use `snake_case`, classes use `PascalCase`, constants stay in `UPPER_CASE`.
+- Mirror existing formatting, keep new files ASCII, and comment only when behavior is unclear.
 
 ## Testing Guidelines
-- Rely on `unittest`; async helpers already include necessary pytest markers.
-- Name tests `test_*`, cover happy paths plus error handling and config variants.
-- Prefer targeted unit coverage before integration runs; validate new YAML via `ExperimentConfiguration`.
-- Run `python run_tests.py` after significant changes and before PRs.
+- Primary framework is `unittest`; async helpers already embed required pytest markers.
+- Name tests `test_*`, cover success and failure paths, and validate new YAML via `ExperimentConfiguration`.
+- Run `python run_tests.py` after substantial changes and before proposing merges.
 
 ## Commit & Pull Request Guidelines
-- Write imperative commit subjects scoped by area, e.g., `core: fix phase2 retry logic`.
-- Use branches like `feature/<short-description>`, `fix/<issue-id>`, or `chore/<task>`.
-- PRs should summarize intent, list critical changes, link issues, and attach test evidence.
+- Write imperative commit subjects scoped by area (e.g., `core: add phase2 retry telemetry`).
+- Use branches like `feature/<short-description>`, `fix/<issue-id>`, or `chore/<task>` and keep histories linear.
+- Pull requests should state intent, highlight critical code paths, link issues, and attach test evidence.
 
 ## Security & Configuration Tips
-- Store secrets (e.g., `OPENAI_API_KEY`, `OPENROUTER_API_KEY`) in `.env`; never commit them.
-- Place analysis artifacts in `reports/` and scrub sensitive data prior to sharing.
-- Validate new configs against project models before merging defaults.
+- Keep secrets such as `OPENAI_API_KEY` or `OPENROUTER_API_KEY` in `.env` and out of version control.
+- Validate config changes with the Pydantic models before updating defaults.
 
 ## Agent-Specific Instructions
-- Add agents under `experiment_agents/` with modular behavior and explicit dependencies.
-- Surface toggles through Pydantic config models and update `config/default_config.yaml` when defaults change.
-- Pair agent updates with focused unit tests and, when relevant, integration runs that exercise the full flow.
+- Place new agents in `experiment_agents/`, expose behavior through clear methods, and declare dependencies explicitly.
+- Surface toggles through the config models and update `config/default_config.yaml` when defaults shift.
+- Pair agent updates with targeted unit tests and, when relevant, integration runs that exercise the whole pipeline.
