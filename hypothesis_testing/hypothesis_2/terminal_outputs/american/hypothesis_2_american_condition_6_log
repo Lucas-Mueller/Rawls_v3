@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 59519519
+Experiment ID: 72cc4bb4
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
@@ -19,36 +19,27 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 2m 26s
+🎯 Phase 1 Complete - Duration: 1m 52s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 1 complete
 
 🗣️  Round 2
 🗳️  Voting initiated (Round 2)
-⏳ No consensus yet - continuing discussion...
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13000)
 
-   ✅ Round 2 complete
-
-🗣️  Round 3
-🗳️  Voting initiated (Round 3)
-🎉 Consensus Reached! Principle: maximizing_floor
-
-🏁 Phase 2 Complete with consensus - Duration: 5m 24s
-   Rounds conducted: 3
+🏁 Phase 2 Complete with consensus - Duration: 2m 26s
+   Rounds conducted: 2
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 8m 9s
-Consensus: ✅ maximizing_floor
+Total Duration: 4m 28s
+Consensus: ✅ maximizing_average_floor_constraint
 
 
-RETURN CODE: 0  DURATION: 490.9s
+RETURN CODE: 0  DURATION: 270.0s
