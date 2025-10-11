@@ -2,15 +2,22 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 6820f76a
+Experiment ID: c7e42231
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-2025-10-10 20:52:33,469 - utils.dynamic_model_capabilities - ERROR - ❌ x-ai/grok-code-fast-1: Non-temperature related error: Expecting value: line 1735 column 1 (char 9537)
-2025-10-10 20:52:33,471 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_2: Expecting value: line 1735 column 1 (char 9537)
-2025-10-10 20:52:33,472 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_2: Expecting value: line 1735 column 1 (char 9537)
-❌ Experiment failed: Failed to initialize experiment manager: Expecting value: line 1735 column 1 (char 9537)
+  ✅ Agent_1 (gpt-oss-20b)
+  ✅ Agent_2 (grok-code-fast-1)
+  ✅ Agent_3 (gpt-oss-120b)
 
-RETURN CODE: 1  DURATION: 628.7s
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+❌ Experiment failed: Phase 1 execution failed: Agent Agent_2 memory update failed: Expecting value: line 1253 column 1 (char 6886)
+
+RETURN CODE: 1  DURATION: 2006.9s

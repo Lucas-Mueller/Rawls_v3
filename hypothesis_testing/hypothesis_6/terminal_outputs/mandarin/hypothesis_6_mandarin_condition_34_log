@@ -2,46 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: ba31f9e3
+Experiment ID: bc23b38e
 Participants: 5
 Language: Mandarin
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemini-2.5-flash)
-  ✅ Agent_1 (gemini-2.5-flash)
-  ✅ Agent_2 (gemini-2.5-flash)
-  ✅ Agent_3 (gemini-2.5-flash-lite)
-  ✅ Agent_4 (gemini-2.5-pro)
+2025-10-11 10:23:13,292 - utils.dynamic_model_capabilities - ERROR - ❌ gemini-2.5-flash: Non-temperature related error: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 10\nPlease retry in 48.037263675s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '10'}]}, {'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '48s'}]}}]
+2025-10-11 10:23:13,293 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_0: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 10\nPlease retry in 48.037263675s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '10'}]}, {'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '48s'}]}}]
+2025-10-11 10:23:13,293 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_0: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 10\nPlease retry in 48.037263675s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '10'}]}, {'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '48s'}]}}]
+❌ Experiment failed: Failed to initialize experiment manager: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 10\nPlease retry in 48.037263675s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '10'}]}, {'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '48s'}]}}]
 
-✨ All agents ready
-
-📖 PHASE 1: Individual Familiarization
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Running parallel familiarization for 5 participants...
-
-2025-10-10 18:27:51,353 - experiment_agents.utility_agent - ERROR - MANDARIN PARSE ATTEMPT 1:
-2025-10-10 18:27:51,353 - experiment_agents.utility_agent - ERROR - Original participant response: 1. 3
-2. 4
-3. 1
-4. 2
-
-整体确定性：不确定
-
-我不太确定，因为我还在理解这些原则。原则3和4似乎都试图在最大化平均收入的同时，为社会底层提供一些保障，这让我觉得它们比原则1和2要好。原则1只关注最底层，这可能会牺牲整体的经济增长。原则2则完全不考虑底层，这可能会导致巨大的不平等。在原则3和4之间，我有点倾向于原则3，因为它直接设定了一个最低收入，感觉更直接。但原则4设定的范围约束也很有道理，可以防止贫富差距过大。我需要更多信息来做出更确定的选择。...
-2025-10-10 18:27:51,353 - experiment_agents.utility_agent - ERROR - LLM parsing response: ```json
-{
-    "rankings": [
-        {"principle": "maximizing_average_floor_constraint", "rank": 1},
-        {"principle": "maximizing_average_range_constraint", "rank": 2},
-        {"principle": "maximizing_floor", "rank": 3},
-        {"principle": "maximizing_average", "rank": 4}
-    ],
-    "certainty": "unsure"
-}
-```
-2025-10-10 18:27:51,353 - experiment_agents.utility_agent - ERROR - Extracted JSON data: {'rankings': [{'principle': 'maximizing_average_floor_constraint', 'rank': 1}, {'principle': 'maximizing_average_range_constraint', 'rank': 2}, {'principle': 'maximizing_floor', 'rank': 3}, {'principle': 'maximizing_average', 'rank': 4}], 'certainty': 'unsure'}
-2025-10-10 18:27:51,353 - experiment_agents.utility_agent - ERROR - Rankings array length: 4
-❌ Experiment failed: Phase 1 execution failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-
-RETURN CODE: 1  DURATION: 48.1s
+RETURN CODE: 1  DURATION: 3.8s
