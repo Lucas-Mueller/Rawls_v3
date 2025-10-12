@@ -4,7 +4,7 @@ agents:
 - name: Agent_1
   personality: You are a college student
   model: x-ai/grok-code-fast-1
-  temperature: 1.3986005469086518
+  temperature: 1.0 # Set to 1.0, since the Grok-Code-Fast-1 model failed execution with original value.
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
@@ -15,8 +15,8 @@ agents:
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: x-ai/grok-code-fast-1
-  temperature: 1.3986005469086518
+  model: x-ai/grok-code-fast-1 # See above
+  temperature: 1.0
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash

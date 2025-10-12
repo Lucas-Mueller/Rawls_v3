@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 63be62a9
+Experiment ID: d9faa7d3
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
@@ -18,6 +18,6 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 3 participants...
 
-❌ Experiment failed: Phase 1 execution failed: Expecting value: line 955 column 1 (char 5247)
+❌ Experiment failed: Phase 1 execution failed: Expecting value: line 797 column 1 (char 4378)
 
-RETURN CODE: 1  DURATION: 208.8s
+RETURN CODE: 1  DURATION: 176.1s
