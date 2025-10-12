@@ -4,19 +4,19 @@ agents:
 - name: Agent_1
   personality: You are a college student
   model: qwen/qwen3-30b-a3b-instruct-2507
-  temperature: 1.3765153208599754
+  temperature: 0.5 # Had to modify this because the original value caused an error
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
   model: deepseek/deepseek-v3.2-exp
-  temperature: 1.3765153208599754
+  temperature: 0.5 # Had to modify this because the original value caused an error
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
   model: qwen/qwen3-next-80b-a3b-thinking
-  temperature: 1.3765153208599754
+  temperature: 0.5 # Had to modify this because the original value caused an error
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash

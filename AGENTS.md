@@ -20,6 +20,11 @@
 - Modules and functions use `snake_case`, classes use `PascalCase`, constants stay in `UPPER_CASE`.
 - Mirror existing formatting, keep new files ASCII, and comment only when behavior is unclear.
 
+## Visualization Guidelines
+- Align plots with the University of Bayreuth identity: Bayreuth Green `#009260`, Dark Gray `#48535A`, Medium Gray `#7F8990`, Light Gray `#EBEBE4`.
+- Use concise layouts (<=12" wide) and horizontal comparisons when contrasting switcher vs loyalist cohorts.
+- Reuse the shared styling helpers defined in `hypothesis_testing/hypothesis_1/hypothesis1_descriptive_analysis.ipynb` when adding new figures.
+
 ## Testing Guidelines
 - Primary framework is `unittest`; async helpers already embed required pytest markers.
 - Name tests `test_*`, cover success and failure paths, and validate new YAML via `ExperimentConfiguration`.
