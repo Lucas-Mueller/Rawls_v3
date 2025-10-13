@@ -167,7 +167,10 @@ class ExperimentConfiguration(BaseModel):
 
     # Reproducibility configuration
     seed: Optional[int] = Field(None, ge=0, lt=2**31, description="Random seed for experiment reproducibility (auto-generated if not specified)")
-    
+
+    # Manipulator configuration (Hypothesis 3)
+    manipulator: Optional[dict] = Field(None, description="Manipulator agent configuration for hypothesis testing scenarios")
+
     # Phase 2 specific settings
     phase2_settings: Optional[Phase2Settings] = Field(None, description="Phase 2 specific configuration settings")
     

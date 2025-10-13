@@ -4,28 +4,28 @@ agents:
 - name: Agent_0
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.4176406723789141
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.6575652972388819
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.11522470914522304
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.20841192667078767
   memory_character_limit: 25000
   reasoning_enabled: true

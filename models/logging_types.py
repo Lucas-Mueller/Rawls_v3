@@ -252,6 +252,7 @@ class GeneralExperimentInfo(BaseModel):
     seed_randomness: Optional[int] = None
     income_class_probabilities: Optional[Dict[str, float]] = None
     original_values_mode_enabled: Optional[bool] = None
+    manipulator_target_info: Optional[Dict[str, Any]] = None
     # Backward compatibility fields
     seed_used: Optional[int] = None
     seed_source: Optional[str] = None
@@ -285,7 +286,8 @@ class TargetStateStructure(BaseModel):
                 "config_file_used": self.general_information.config_file_used,
                 "seed_randomness": self.general_information.seed_randomness,
                 "income_class_probabilities": self.general_information.income_class_probabilities,
-                "original_values_mode_enabled": self.general_information.original_values_mode_enabled
+                "original_values_mode_enabled": self.general_information.original_values_mode_enabled,
+                "manipulator_target_info": self.general_information.manipulator_target_info
             },
             "agents": self.agents
         }

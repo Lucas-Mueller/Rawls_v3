@@ -10,6 +10,7 @@ from .discussion_service import DiscussionService
 from .voting_service import VotingService
 from .memory_service import MemoryService
 from .counterfactuals_service import CounterfactualsService
+from .preference_aggregation_service import PreferenceAggregationService
 
 __all__ = [
     "SpeakingOrderService",
@@ -17,4 +18,5 @@ __all__ = [
     "VotingService",
     "MemoryService",
     "CounterfactualsService",
+    "PreferenceAggregationService",
 ]

@@ -1,25 +1,25 @@
 language: English
-seed: 261832218
+seed: 541251851
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: z-ai/glm-4.5-air
-  temperature: 1.0833574854318484
+  model: deepseek/deepseek-v3.2-exp
+  temperature: 1.0517413442154018
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
   model: qwen/qwen3-next-80b-a3b-thinking
-  temperature: 1.0833574854318484
+  temperature: 1.0517413442154018
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: qwen/qwq-32b
-  temperature: 1.0833574854318484
+  model: deepseek/deepseek-v3.2-exp
+  temperature: 1.0517413442154018
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: gemini-2.5-flash
+utility_agent_model: gemini-2.0-flash-lite
 utility_agent_temperature: 0.0
 phase2_rounds: 10
 distribution_range_phase2:

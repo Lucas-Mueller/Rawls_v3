@@ -256,7 +256,8 @@ class AgentCentricLogger:
         public_conversation: str,
         config_file: str,
         income_class_probabilities: Optional[Dict[str, float]] = None,
-        original_values_mode_enabled: Optional[bool] = None
+        original_values_mode_enabled: Optional[bool] = None,
+        manipulator_target_info: Optional[Dict[str, Any]] = None
     ):
         """Set general experiment information."""
         self.general_info = GeneralExperimentInfo(
@@ -268,7 +269,8 @@ class AgentCentricLogger:
             config_file_used=config_file,
             seed_randomness=None,  # Will be set later via set_seed_info
             income_class_probabilities=income_class_probabilities,
-            original_values_mode_enabled=original_values_mode_enabled
+            original_values_mode_enabled=original_values_mode_enabled,
+            manipulator_target_info=manipulator_target_info
         )
     
     def initialize_voting_history(self):

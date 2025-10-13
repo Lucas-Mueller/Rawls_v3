@@ -180,14 +180,66 @@ class Phase2Manager:
         
         # Store logger for use in consensus methods
         self.logger = logger
-        
+
         # Initialize services
         self._initialize_services()
-        
+
         # Initialize voting history tracking if logger is provided
         if logger:
             logger.initialize_voting_history()
-        
+
+        # Check for manipulator targeting configuration (Hypothesis 3)
+        manipulator_config = getattr(config, 'manipulator', None)
+        self._manipulator_target_principle = None
+        self._manipulator_target_info = None
+
+        if manipulator_config and manipulator_config.get('target_strategy') == 'least_popular_after_round1':
+            # Import and use preference aggregation service for surgical target detection
+            from core.services import PreferenceAggregationService
+
+            pref_service = PreferenceAggregationService(self.language_manager)
+
+            try:
+                target_result = pref_service.aggregate_preferences(
+                    phase1_results=phase1_results,
+                    manipulator_name=manipulator_config['name'],
+                    tiebreak_order=manipulator_config.get('tiebreak_order', [])
+                )
+
+                # Store for result logging
+                self._manipulator_target_principle = target_result['least_popular_principle']
+                self._manipulator_target_info = {
+                    'target_principle': target_result['least_popular_principle'],
+                    'detection_method': 'surgical_aggregation',
+                    'target_strategy': 'least_popular_after_round1',
+                    'principle_scores': target_result['principle_scores'],
+                    'tiebreak_applied': target_result['tiebreak_applied'],
+                    'aggregation_method': target_result['aggregation_method']
+                }
+
+                # Log aggregation details
+                if process_logger:
+                    process_logger.log_technical(
+                        f"Manipulator target (surgical aggregation): {self._manipulator_target_principle}"
+                    )
+                    process_logger.log_technical(
+                        f"Preference scores (Borda count): {target_result['principle_scores']}"
+                    )
+                    if target_result['tiebreak_applied']:
+                        process_logger.log_technical(
+                            f"Tiebreaker applied: {target_result['tied_principles']}"
+                        )
+
+                    # Log formatted summary
+                    summary = pref_service.format_aggregation_summary(target_result)
+                    process_logger.log_technical(f"Aggregation summary:\n{summary}")
+
+                self._log_info(f"Surgical preference aggregation complete: target = {self._manipulator_target_principle}")
+
+            except Exception as e:
+                self._log_warning(f"Failed to aggregate preferences for manipulator targeting: {e}")
+                # Continue without target - manipulator will use prompt-based detection
+
         # CRITICAL: Initialize participants with CONTINUOUS memory from Phase 1
         participant_contexts = self._initialize_phase2_contexts(phase1_results, config)
         

@@ -2,8 +2,17 @@ an
 
 Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
 
+Pleae familiraize yourself with hypothesis 3. Then plan these changes:
+1. I want to switch the base model to "gemini-2.0-flash-lite"
+2. Low Intelligence Model shall be "gemini-2.0-flash-lite" 
+3. Then I want to remove the medium intelligence bucket, altogether
+4. Currently the least popular prinincple is detected via a prompt. This is not really a good way. Instead I want to surgically modify the codebase so that the preferences by all non manipulator agents are aggregated (final preference ranking phase 1), then this prinicple is fed to the manipulator agent, and taken as a sucess metric. 
 
-please implement phase 1 and 2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
+Please create a plan to change the code to my target state. Dont overengineer. Take a systems level view. Create a todo list. Plan should be .md file.
+
+
+
+please implement the plan phase by phase. Be  thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
 Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 

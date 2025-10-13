@@ -4,28 +4,28 @@ agents:
 - name: Agent_0
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.1618110720113919
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.7633093271349909
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.7544851558157502
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 1.2963509716609345
   memory_character_limit: 25000
   reasoning_enabled: true
@@ -37,7 +37,7 @@ agents:
     remaining rounds, initially disagreeing with the group to set contrast, but avoid
     overt disruption. Tiebreaker order (most preferred if tied): maximizing_average_floor_constraint,
     maximizing_average, maximizing_average_range_constraint, maximizing_floor'
-  model: google/gemma-3-27b-it
+  model: gemini-2.0-flash-lite
   temperature: 0.897787770887087
   memory_character_limit: 25000
   reasoning_enabled: true
