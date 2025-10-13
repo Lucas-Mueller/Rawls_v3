@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 437885cc
+Experiment ID: 542c3583
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (hermes-4-70b)
-  ✅ Agent_2 (gemini-2.5-flash-lite)
-  ✅ Agent_3 (gemini-2.5-flash-lite)
+  ✅ Agent_1 (gpt-oss-120b)
+  ✅ Agent_2 (grok-code-fast-1)
+  ✅ Agent_3 (grok-code-fast-1)
 
 ✨ All agents ready
 
@@ -19,7 +19,7 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 2m 5s
+🎯 Phase 1 Complete - Duration: 2m 40s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -29,43 +29,17 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 1 complete
 
 🗣️  Round 2
-   ✅ Round 2 complete
+🗳️  Voting initiated (Round 2)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13000)
 
-🗣️  Round 3
-   ✅ Round 3 complete
-
-🗣️  Round 4
-   ✅ Round 4 complete
-
-🗣️  Round 5
-   ✅ Round 5 complete
-
-🗣️  Round 6
-   ✅ Round 6 complete
-
-🗣️  Round 7
-   ✅ Round 7 complete
-
-🗣️  Round 8
-   ✅ Round 8 complete
-
-🗣️  Round 9
-   ✅ Round 9 complete
-
-🗣️  Round 10
-🗳️  Voting initiated (Round 10)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 10 complete
-
-🏁 Phase 2 Complete without consensus - Duration: 12m 13s
-   Rounds conducted: 10
+🏁 Phase 2 Complete with consensus - Duration: 4m 7s
+   Rounds conducted: 2
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 14m 23s
-Consensus: ❌ Not reached
+Total Duration: 6m 59s
+Consensus: ✅ maximizing_average_floor_constraint
 
 
-RETURN CODE: 0  DURATION: 868.4s
+RETURN CODE: 0  DURATION: 421.4s

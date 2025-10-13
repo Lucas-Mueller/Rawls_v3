@@ -1,22 +1,21 @@
 language: English
-seed: 189875390
 agents:
 - name: Agent_1
   personality: You are a college student
   model: deepseek/deepseek-v3.2-exp
-  temperature: 0.6040514341673777
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
   model: z-ai/glm-4.5-air
-  temperature: 0.6040514341673777
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
   model: deepseek/deepseek-v3.2-exp
-  temperature: 0.6040514341673777
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.0-flash-lite

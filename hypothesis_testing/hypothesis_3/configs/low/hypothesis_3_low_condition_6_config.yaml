@@ -43,7 +43,7 @@ agents:
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
-phase2_rounds: 15
+phase2_rounds: 10
 distribution_range_phase2:
 - 2
 - 6

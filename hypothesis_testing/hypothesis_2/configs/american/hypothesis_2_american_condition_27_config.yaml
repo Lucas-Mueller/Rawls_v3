@@ -1,22 +1,21 @@
 language: English
-seed: 635474220
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: openai/gpt-oss-120b
-  temperature: 1.345457090438085
+  model: x-ai/grok-code-fast-1
+  temperature: 0.1584736606759214
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
   model: nousresearch/hermes-4-70b
-  temperature: 1.345457090438085
+  temperature: 0.1584736606759214
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
   model: openai/gpt-oss-120b
-  temperature: 1.345457090438085
+  temperature: 0.1584736606759214
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.0-flash-lite

@@ -1,22 +1,21 @@
 language: English
-seed: 247459325
 agents:
 - name: Agent_1
   personality: You are a college student
   model: x-ai/grok-code-fast-1
-  temperature: 1.4578956100043476
+  temperature: 0.7534272147758795
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: x-ai/grok-code-fast-1
-  temperature: 1.4578956100043476
+  model: nousresearch/hermes-4-70b
+  temperature: 0.7534272147758795
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: x-ai/grok-code-fast-1
-  temperature: 1.4578956100043476
+  model: nousresearch/hermes-4-70b
+  temperature: 0.7534272147758795
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.0-flash-lite

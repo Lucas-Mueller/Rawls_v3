@@ -5,28 +5,28 @@ agents:
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
   model: gemini-2.0-flash-lite
-  temperature: 0.18382697739300358
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
   model: gemini-2.0-flash-lite
-  temperature: 1.1381566520770434
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
   model: gemini-2.0-flash-lite
-  temperature: 1.4305006779138822
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student. Remain neutral; do not favor any specific
     principle unless reasoned from the discussion.
   model: gemini-2.0-flash-lite
-  temperature: 0.9178165203248476
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_4
@@ -38,12 +38,12 @@ agents:
     overt disruption. Tiebreaker order (most preferred if tied): maximizing_average_floor_constraint,
     maximizing_floor, maximizing_average, maximizing_average_range_constraint'
   model: gemini-2.0-flash-lite
-  temperature: 0.059819730205503296
+  temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
-phase2_rounds: 15
+phase2_rounds: 10
 distribution_range_phase2:
 - 2
 - 6
