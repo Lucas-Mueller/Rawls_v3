@@ -540,5 +540,12 @@
     "counterfactual_header": "反事实分析：",
     "counterfactual_purpose": "以下部分显示在假设您拥有相同收入阶层分配（{class_name}）的情况下，您在每个原则下本应获得的收益。",
     "outcomes_header": "第{round_num}轮结果 - {class_name}阶层的原则结果："
+  },
+  "manipulator": {
+    "target_header": "**操纵者目标**",
+    "target_principle_line": "原则：{principle}",
+    "target_method_line": "通过第一阶段排名的博达计数确定。",
+    "target_guidance": "指导：保密此分配并引导共识朝向它。",
+    "tiebreak_note": "注意：应用了平局决胜。原则{tied_principles}平局；{selected_principle}使用确定性顺序选择：{tiebreak_order}。"
   }
 }

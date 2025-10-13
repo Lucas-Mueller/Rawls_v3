@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: ed82dcd9
+Experiment ID: 20a2b9ed
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (glm-4.5-air)
+  ✅ Agent_1 (qwen3-next-80b-a3b-thinking)
   ✅ Agent_2 (glm-4.5-air)
-  ✅ Agent_3 (glm-4.5-air)
+  ✅ Agent_3 (qwen3-next-80b-a3b-thinking)
 
 ✨ All agents ready
 
@@ -19,19 +19,19 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 3m 9s
+🎯 Phase 1 Complete - Duration: 9m 50s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 1 complete
 
 🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
    ✅ Round 2 complete
 
 🗣️  Round 3
@@ -82,14 +82,14 @@ Beginning group discussion (max 10 rounds)...
 
    ✅ Round 10 complete
 
-🏁 Phase 2 Complete without consensus - Duration: 29m 24s
+🏁 Phase 2 Complete without consensus - Duration: 43m 53s
    Rounds conducted: 10
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 32m 39s
+Total Duration: 53m 49s
 Consensus: ❌ Not reached
 
 
-RETURN CODE: 0  DURATION: 1961.1s
+RETURN CODE: 0  DURATION: 3230.8s

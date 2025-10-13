@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: f1f2c325
+Experiment ID: a0106b53
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (qwen3-30b-a3b-instruct-2507)
-  ✅ Agent_2 (deepseek-v3.2-exp)
-  ✅ Agent_3 (qwen3-next-80b-a3b-thinking)
+  ✅ Agent_1 (glm-4.5-air)
+  ✅ Agent_2 (glm-4.5-air)
+  ✅ Agent_3 (deepseek-v3.2-exp)
 
 ✨ All agents ready
 
@@ -18,37 +18,6 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 3 participants...
 
+❌ Experiment failed: Phase 1 execution failed: Expecting value: line 1757 column 1 (char 9658)
 
-🎯 Phase 1 Complete - Duration: 4m 50s
-
-💬 PHASE 2: Group Discussion
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Beginning group discussion (max 10 rounds)...
-
-🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 1 complete
-
-🗣️  Round 2
-🗳️  Voting initiated (Round 2)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 2 complete
-
-🗣️  Round 3
-🗳️  Voting initiated (Round 3)
-🎉 Consensus Reached! Principle: maximizing_floor
-
-🏁 Phase 2 Complete with consensus - Duration: 7m 47s
-   Rounds conducted: 3
-
-════════════════════════════════════════════════════════════
-✅ EXPERIMENT COMPLETED
-════════════════════════════════════════════════════════════
-Total Duration: 12m 57s
-Consensus: ✅ maximizing_floor
-
-
-RETURN CODE: 0  DURATION: 779.0s
+RETURN CODE: 1  DURATION: 481.5s

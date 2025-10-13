@@ -540,5 +540,12 @@
     "counterfactual_header": "ANÁLISIS CONTRAFACTUAL:",
     "counterfactual_purpose": "La sección a continuación muestra lo que habría ganado bajo cada principio, asumiendo que tuvo la misma asignación de clase de ingresos ({class_name}).",
     "outcomes_header": "Resultados de la Ronda {round_num} - Resultados de Principios para la Clase {class_name}:"
+  },
+  "manipulator": {
+    "target_header": "**OBJETIVO DEL MANIPULADOR**",
+    "target_principle_line": "Principio: {principle}",
+    "target_method_line": "Determinado mediante conteo de Borda en las clasificaciones de la Fase 1.",
+    "target_guidance": "Orientación: Mantén esta asignación confidencial y dirige el consenso hacia ella.",
+    "tiebreak_note": "Nota: Desempate aplicado. Los principios {tied_principles} estaban empatados; {selected_principle} seleccionado usando orden determinista: {tiebreak_order}."
   }
 }

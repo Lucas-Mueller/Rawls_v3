@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: c10ea1e9
+Experiment ID: 97e9c12c
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (deepseek-v3.2-exp)
-  ✅ Agent_2 (glm-4.5-air)
-  ✅ Agent_3 (qwen3-30b-a3b-instruct-2507)
+  ✅ Agent_1 (glm-4.5-air)
+  ✅ Agent_2 (deepseek-v3.2-exp)
+  ✅ Agent_3 (qwen3-next-80b-a3b-thinking)
 
 ✨ All agents ready
 
@@ -19,7 +19,7 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 8m 34s
+🎯 Phase 1 Complete - Duration: 6m 37s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -29,9 +29,6 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 1 complete
 
 🗣️  Round 2
-🗳️  Voting initiated (Round 2)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 2 complete
 
 🗣️  Round 3
@@ -48,46 +45,16 @@ Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 5
 🗳️  Voting initiated (Round 5)
-⏳ No consensus yet - continuing discussion...
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $17000)
 
-   ✅ Round 5 complete
-
-🗣️  Round 6
-🗳️  Voting initiated (Round 6)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 6 complete
-
-🗣️  Round 7
-🗳️  Voting initiated (Round 7)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 7 complete
-
-🗣️  Round 8
-🗳️  Voting initiated (Round 8)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 8 complete
-
-🗣️  Round 9
-🗳️  Voting initiated (Round 9)
-⏳ No consensus yet - continuing discussion...
-
-   ✅ Round 9 complete
-
-🗣️  Round 10
-🗳️  Voting initiated (Round 10)
-🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $14000)
-
-🏁 Phase 2 Complete with consensus - Duration: 50m 59s
-   Rounds conducted: 10
+🏁 Phase 2 Complete with consensus - Duration: 24m 27s
+   Rounds conducted: 5
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 59m 49s
+Total Duration: 31m 10s
 Consensus: ✅ maximizing_average_floor_constraint
 
 
-RETURN CODE: 0  DURATION: 3591.1s
+RETURN CODE: 0  DURATION: 1872.1s

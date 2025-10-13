@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 628163e5
+Experiment ID: 5de9c2fd
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (glm-4.5-air)
-  ✅ Agent_2 (deepseek-v3.2-exp)
-  ✅ Agent_3 (qwq-32b)
+  ✅ Agent_1 (deepseek-v3.2-exp)
+  ✅ Agent_2 (glm-4.5-air)
+  ✅ Agent_3 (qwen3-next-80b-a3b-thinking)
 
 ✨ All agents ready
 
@@ -19,7 +19,7 @@ Max Phase 2 rounds: 10
 Running parallel familiarization for 3 participants...
 
 
-🎯 Phase 1 Complete - Duration: 11m 28s
+🎯 Phase 1 Complete - Duration: 9m 22s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -29,17 +29,9 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 1 complete
 
 🗣️  Round 2
-🗳️  Voting initiated (Round 2)
-🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $14000)
+   ✅ Round 2 complete
 
-🏁 Phase 2 Complete with consensus - Duration: 13m 38s
-   Rounds conducted: 2
+🗣️  Round 3
+❌ Experiment failed: Phase 2 execution failed: Agent Agent_1 memory update failed: Error code: 404 - {'error': {'message': 'Provider returned error', 'code': 404, 'metadata': {'raw': "Path '/v1/completions' not found. Ping http://.../-/routes for available routes.", 'provider_name': 'GMICloud'}}, 'user_id': 'user_2x01OHGIKmuCBHUlfjGarb443gH'}
 
-════════════════════════════════════════════════════════════
-✅ EXPERIMENT COMPLETED
-════════════════════════════════════════════════════════════
-Total Duration: 25m 25s
-Consensus: ✅ maximizing_average_floor_constraint
-
-
-RETURN CODE: 0  DURATION: 1526.5s
+RETURN CODE: 1  DURATION: 1261.3s

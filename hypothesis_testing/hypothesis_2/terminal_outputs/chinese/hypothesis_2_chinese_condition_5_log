@@ -2,15 +2,15 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 0f0ba9c9
+Experiment ID: b88d77cc
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (qwq-32b)
+  ✅ Agent_1 (qwen3-next-80b-a3b-thinking)
   ✅ Agent_2 (deepseek-v3.2-exp)
-  ✅ Agent_3 (glm-4.5-air)
+  ✅ Agent_3 (deepseek-v3.2-exp)
 
 ✨ All agents ready
 
@@ -18,10 +18,8 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 3 participants...
 
-2025-10-09 22:22:56,700 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
-2025-10-09 22:23:24,096 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: No valid JSON found in response
 
-🎯 Phase 1 Complete - Duration: 10m 17s
+🎯 Phase 1 Complete - Duration: 9m 9s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -37,9 +35,6 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 3 complete
 
 🗣️  Round 4
-🗳️  Voting initiated (Round 4)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 4 complete
 
 🗣️  Round 5
@@ -52,9 +47,6 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 6 complete
 
 🗣️  Round 7
-🗳️  Voting initiated (Round 7)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 7 complete
 
 🗣️  Round 8
@@ -71,18 +63,16 @@ Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 10
 🗳️  Voting initiated (Round 10)
-⏳ No consensus yet - continuing discussion...
+🎉 Consensus Reached! Principle: maximizing_average
 
-   ✅ Round 10 complete
-
-🏁 Phase 2 Complete without consensus - Duration: 1h 17m
+🏁 Phase 2 Complete with consensus - Duration: 35m 9s
    Rounds conducted: 10
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 1h 28m
-Consensus: ❌ Not reached
+Total Duration: 44m 25s
+Consensus: ✅ maximizing_average
 
 
-RETURN CODE: 0  DURATION: 5287.2s
+RETURN CODE: 0  DURATION: 2666.9s

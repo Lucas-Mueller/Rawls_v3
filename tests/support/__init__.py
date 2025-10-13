@@ -21,6 +21,7 @@ from .language_matrix import (
 from .config_factory import (
     load_base_configuration,
     build_experiment_configuration,
+    build_minimal_test_configuration,
     build_agent_configuration,
     clone_config_with_language,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "parametrize_languages",
     "load_base_configuration",
     "build_experiment_configuration",
+    "build_minimal_test_configuration",
     "build_agent_configuration",
     "clone_config_with_language",
     "capture_process_flow_output",

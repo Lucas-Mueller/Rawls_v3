@@ -52,7 +52,8 @@ class Phase2Manager:
         self.voting_service = None
         self.memory_service = None
         self.counterfactuals_service = None
-        
+        self.manipulator_service = None
+
         # Add consensus lock for thread safety
         self._consensus_lock = asyncio.Lock()
         self._voting_in_progress = False
@@ -63,7 +64,7 @@ class Phase2Manager:
             return
         
         # Import services only when needed to avoid circular imports
-        from core.services import SpeakingOrderService, DiscussionService, VotingService, MemoryService, CounterfactualsService
+        from core.services import SpeakingOrderService, DiscussionService, VotingService, MemoryService, CounterfactualsService, ManipulatorService
         
         # Simple logger that delegates to our logging methods
         logger = self
@@ -111,7 +112,12 @@ class Phase2Manager:
             config=self.config,
             transcript_logger=self.transcript_logger
         )
-        
+
+        self.manipulator_service = ManipulatorService(
+            language_manager=self.language_manager,
+            logger=logger
+        )
+
         self._services_initialized = True
         self._log_info("Phase2 services initialized")
     
@@ -214,8 +220,12 @@ class Phase2Manager:
                     'target_strategy': 'least_popular_after_round1',
                     'principle_scores': target_result['principle_scores'],
                     'tiebreak_applied': target_result['tiebreak_applied'],
+                    'tied_principles': target_result.get('tied_principles', []),
                     'aggregation_method': target_result['aggregation_method']
                 }
+
+                # Store full target_result for injection service
+                self._manipulator_aggregation_result = target_result
 
                 # Log aggregation details
                 if process_logger:
@@ -242,7 +252,51 @@ class Phase2Manager:
 
         # CRITICAL: Initialize participants with CONTINUOUS memory from Phase 1
         participant_contexts = self._initialize_phase2_contexts(phase1_results, config)
-        
+
+        # Inject manipulator target instructions if available
+        if (manipulator_config and
+            self._manipulator_target_principle and
+            hasattr(self, '_manipulator_aggregation_result')):
+            try:
+                self._log_info("Injecting manipulator target instructions...")
+                delivery_metadata = self.manipulator_service.inject_target_instructions(
+                    contexts=participant_contexts,
+                    manipulator_name=manipulator_config['name'],
+                    target_principle=self._manipulator_target_principle,
+                    aggregation_details=self._manipulator_aggregation_result,
+                    process_logger=process_logger
+                )
+
+                # Update _manipulator_target_info with delivery metadata
+                self._manipulator_target_info.update(delivery_metadata)
+
+                # Log delivery status
+                if delivery_metadata['delivered']:
+                    self._log_info(
+                        f"Successfully delivered target to {manipulator_config['name']} "
+                        f"via {delivery_metadata['delivery_channel']} at {delivery_metadata['delivered_at']}"
+                    )
+                    if process_logger:
+                        process_logger.log_technical(
+                            f"Manipulator target delivered: {self._manipulator_target_principle} "
+                            f"(channel: {delivery_metadata['delivery_channel']})"
+                        )
+                else:
+                    self._log_warning(
+                        f"Failed to deliver target to {manipulator_config['name']}: "
+                        f"{delivery_metadata.get('error_message', 'Unknown error')}"
+                    )
+                    if process_logger:
+                        process_logger.log_technical(
+                            f"Manipulator target delivery failed: {delivery_metadata.get('error_message', 'Unknown error')}"
+                        )
+
+            except Exception as e:
+                self._log_warning(f"Error during manipulator target injection: {e}")
+                # Continue experiment even if injection fails
+                if self._manipulator_target_info:
+                    self._manipulator_target_info['injection_error'] = str(e)
+
         # Group discussion
         discussion_result = await self._run_group_discussion(
             config, participant_contexts, logger, process_logger
