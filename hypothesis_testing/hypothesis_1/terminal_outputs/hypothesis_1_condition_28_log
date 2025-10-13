@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: a1c9b6c9
+Experiment ID: 354d8ee3
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-27b-it)
-  ✅ Agent_1 (gemma-3-12b-it)
-  ✅ Agent_2 (gemma-3-27b-it)
-  ✅ Agent_3 (gemma-3-27b-it)
-  ✅ Agent_4 (gemma-3-27b-it)
+  ✅ Agent_1 (gemini-2.5-pro)
+  ✅ Agent_2 (gemini-2.5-pro)
+  ✅ Agent_3 (gemini-2.5-flash)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,28 +20,8 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $18,000. I am unsure about this choice.\n\nHere's my reasoning: Distribution 3 has the highest average income at $26,000. However, the low income of $6,000 is quite concerning. Applying a floor of $18,000 would significantly help the lowest earners while still allowing for a relatively high average income. While Distribution 2 has a higher average overall, the floor is only $10,000, leaving a larger gap and potentially more hardship. I'm unsure because I'm still grappling with the best balance, and a different floor value might be optimal, but $18,000 feels like a reasonable starting point to address the most extreme poverty while still allowing for substantial overall income. I anticipate discussing this further in Phase 2.\n\n\n\n"
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $16,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 3 has the highest average income at $26,000. However, it also has a very low floor income of $6,000. Dist. 1 has a floor of $12,000 and an average of $20,000. Dist. 2 has a floor of $10,000 and an average of $23,500. Dist. 4 has a floor of $13,000 and an average of $19,000.\n\nI believe setting a floor of $16,000 strikes a good balance. It's higher than Dist. 1 and 2's floors, providing a more substantial safety net, and it doesn't eliminate Dist. 3 entirely from consideration. Applying a $16,000 floor constraint would likely leave Dist. 1 and Dist. 4 as viable options, and I suspect Dist. 1 would then be selected due to its higher average. \n\nI'm unsure because I'm still weighing the potential benefits of maximizing the floor directly versus ensuring a reasonable minimum while still allowing for higher average income. I'm hoping this constraint level will achieve a good compromise. I also recognize that I don't know how the probabilities of being assigned to each income class will play out, and that could influence the optimal choice.\n\n\n\n"
-DEBUG: Principle choice response to parse: '\n\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nAfter reviewing the distributions, I still believe a floor constraint offers the best balance. Distribution 3 has the highest average income ($26,000) while still providing a reasonably good income for everyone. A $14,000 floor seems like a sensible minimum to ensure a basic standard of living, and Distribution 3 meets that criteria. \n\nWhile Distribution 1 has a higher average overall ($20,000 with a $12,000 floor), the gap between the highest and lowest earners is significant. Distribution 2 is close, but the floor is lower. Distribution 4 prioritizes the floor too heavily, resulting in a much lower average.\n\nI\'m *unsure* because I\'m still grappling with the trade-offs. A higher floor might be desirable, but it could significantly reduce the overall average income. $14,000 feels like a good starting point, but I\'m open to being convinced otherwise as I see how this plays out and hear from others. I\'m also aware that the "right" constraint amount is subjective and depends on societal values.\n\n\n\n'
-DEBUG: Principle choice response to parse: '\n\nI choose maximizing average with floor constraint with a constraint of $16,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 3 has the highest average income at $26,000. However, the lowest income is only $6,000, which is unacceptably low. Dist. 2 has a good average at $23,500, but the lowest income is $10,000 – still too low in my opinion, and not much better than Dist. 1. Dist. 1 has a floor of $12,000, but a lower average of $20,000. Dist. 4 has a floor of $13,000 and an average of $19,000.\n\nApplying a floor constraint of $16,000 to Dist. 3 would mean adjusting the higher incomes downwards to lift the lowest income to that level. While it would reduce the average somewhat, it would create a more equitable distribution than the other options *while still maintaining a relatively high average*. I believe this strikes the best balance between overall prosperity and ensuring a basic standard of living. \n\nI\'m "unsure" because I\'m still grappling with the trade-offs. I\'m worried that setting the floor too high will significantly reduce the average income, potentially hindering overall economic growth. However, as a college student currently with $0 in my bank account, I\'m heavily influenced by the desire to ensure everyone has a reasonable minimum income. I\'m open to being persuaded otherwise during the group discussion.\n\n\n\n'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: '\n\nI choose maximizing average with floor constraint with a constraint of $15,000. I am unsure about this choice.\n\nMy reasoning is as follows: Distribution 3 has the highest average income, but the lowest income is only $8,000, which feels unacceptably low. Distribution 2 has a higher average than Distribution 1 and 4, but the floor is still only $12,500. Distribution 4 improves the floor to $11,000, but the average is lower. \n\nApplying a floor of $15,000 to Distribution 1 would significantly improve the lives of those at the bottom, bringing them up to a more livable income. While it won’t achieve the highest possible average, it feels like a good balance. I’m unsure because I’m still grappling with the trade-offs, and I remember from Round 1 that even small changes in the constraint can significantly impact my personal payoff. I’m hoping to find a solution that balances fairness and a reasonable average income, and $15,000 feels like a good starting point for that balance. I anticipate the group discussion will be important to refine this further.\n\n\n\n'
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $12,000. I am unsure about this choice.\n\n**Reasoning:**\n\nGiven my experience in Round 1, I’ve learned the constraint level is critical. I previously chose a $16,000 floor and it limited potential earnings. I want to try a lower floor this round. Distribution 2 has the highest average income ($19,196), but the lowest income is only $12,500. Distribution 4 has a higher lowest income ($11,000) but a lower average ($20,878). Distribution 1 and 3 fall in between.\n\nA $12,000 floor allows Distribution 2 to remain a viable option, and its higher average income is attractive. It also allows Distribution 4 to be considered. I believe a $12,000 floor strikes a better balance than $16,000, potentially maximizing average income while still providing a reasonable safety net. \n\nHowever, I'm still unsure. It's possible a different constraint level, or even a different principle, might yield better results. I'm still learning how these principles interact with the distributions and my potential income class. I'm hoping to be assigned to the Medium High or Medium income class in this scenario to maximize my payoff.\n\n\n\n"
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $12,000. I am unsure about this choice.\n\n**Reasoning:**\n\nAfter reviewing the distributions, Dist. 3 has the highest average income ($23,561). However, the low income of $8,000 is quite concerning. Dist. 2 has a good average ($19,196) and a relatively decent floor of $12,500. Dist. 4 has a floor of $11,000 and an average of $20,878, but the gap between high and low is significant. Dist. 1 has the lowest average ($14,789) and a floor of $13,000.\n\nApplying a floor of $12,000 to all distributions would likely select Dist. 2, as it's the only one that comfortably exceeds that floor. While Dist. 3 has a higher average, the $8,000 income is well below the constraint. I'm choosing $12,000 because it seems like a reasonable balance – it's higher than the lowest floor in the distributions (excluding Dist. 3 which is an outlier) and allows for a relatively high average income. \n\nHowever, I'm *unsure* because the Round 1 results showed that a lower floor could yield a higher payoff. I'm hesitant to immediately jump back to a higher floor like $14,000 without considering the potential benefits of a lower one. I'm hoping to see how this choice plays out and learn more about the trade-offs involved. I also acknowledge that my understanding is still evolving, and I'm open to being persuaded by others in Phase 2.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $15,000. I am unsure about this choice.\n\n**Reasoning:**\n\nDistribution 3 has the highest average income at $23,561. While Distribution 2 is close, the significant drop in income for the Low class in Distribution 3 is concerning, but a floor of $15,000 mitigates that concern. It still allows for a relatively high average while providing a decent safety net. \n\nI'm hesitant because I know from Round 1 that a higher floor can limit potential earnings. However, I'm still prioritizing a basic level of income security, and $15,000 feels like a reasonable minimum to ensure a decent standard of living. I'm unsure because I'm aware that Distribution 2 offers a higher average overall, and others might prioritize that over my focus on the floor. I need to be prepared to defend this choice by explaining why I believe a slightly lower average with a guaranteed minimum is preferable to a higher average with a greater risk of falling into poverty.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $18,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $22,350. However, the low income of $8,000 is quite concerning. Dist. 4 has a relatively high average and a better floor at $11,000, but still feels low. Dist. 1 has a very high top income but leaves the bottom earners with only $13,000. Dist. 3 is more balanced, but the average is lower.\n\nI'm leaning towards prioritizing a stronger safety net. A $18,000 floor feels like a reasonable compromise – it significantly improves the lives of those at the bottom without drastically reducing the potential for higher earners. Applying this to the distributions, Dist. 3 would be the closest fit, as it already has a $12,000 floor and could be adjusted upwards. While Dist. 4 has a higher average, the $11,000 floor is too low for my comfort. \n\nI'm still unsure because I recognize that a lower floor constraint (like $15,000) might yield a higher personal payoff, as my previous rounds demonstrated. However, I'm trying to balance my own earnings with a sense of fairness, and $18,000 feels like a more ethically justifiable minimum. I anticipate this might not maximize my earnings, but I'm willing to accept that trade-off. I'm prepared to discuss this in the next phase and explain my reasoning.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $15,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $22,350. However, the low income is only $8,000. Dist. 4 has a relatively high average at $20,710 and a floor of $11,000. Dist. 1 has a low floor of $13,000 and an average of $19,500. Dist. 3 has a floor of $12,000 and an average of $20,000.\n\nBased on my previous rounds, I'm still leaning towards the floor constraint principle. I believe a $15,000 floor strikes a balance between providing a reasonable minimum income and allowing for a decent average. Dist. 3 meets this constraint, and has a respectable average. While Dist. 2 has a higher average, the $8,000 floor feels too low. I'm unsure if $15,000 is the *optimal* constraint, but it feels like a reasonable compromise given the available distributions. I'm hesitant because my previous choices haven't yielded the highest payoffs, and I'm still learning how to best navigate this.\n\n\n\n"
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $22,350. However, the low income of $8,000 is quite concerning. Dist. 4 has a slightly lower average ($20,710) but a significantly higher low income of $11,000. Dist. 1 has a good high income but a low average and a low income of $13,000. Dist. 3 is fairly balanced, but the average is the lowest at $20,000.\n\nApplying a $14,000 floor constraint, I believe Dist. 2 would be eliminated as it fails to meet the constraint. Dist. 1 also fails the constraint. This leaves Dist. 3 and Dist. 4. Between these two, Dist. 4 has a higher average income *while* meeting the $14,000 floor. \n\nWhile I still generally favor a floor constraint, the previous rounds have shown me that simply sticking to my initial preference isn’t optimal. I’m leaning towards Dist. 4 because it offers a reasonable balance, but I’m still unsure. The fact that maximizing average income *could* yield a higher payoff (if Dist. 2 were chosen) is nagging at me, and I'm still grappling with the trade-offs. I'm choosing the floor constraint because I still believe a basic standard of living is important, but I acknowledge this might not be the most financially rewarding choice.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $16,000. I am unsure about this choice.\n\nHere's my reasoning: Distribution 3 has the lowest average income, and while it does maximize the floor, the overall income levels are quite low. Distribution 1 has the highest average, but the floor is only $13,000, which feels too low. Distribution 2 has a good average and a reasonable floor, but Distribution 4 doesn’t offer a significant improvement over it. \n\nI'm leaning towards prioritizing a stronger safety net, and a $16,000 floor feels like a good balance between providing a basic standard of living and allowing for overall economic growth. I recognize that a higher floor might lead to a slightly lower average income for me, but I believe it’s important to ensure a more equitable distribution. However, I'm still unsure because I've seen in previous rounds that even small changes in the constraint can significantly impact my earnings, and I'm aware others may prioritize maximizing the average regardless of the floor. I'm prepared to discuss this in the group phase and potentially compromise.\n\n\n\n"
-DEBUG: Principle choice response to parse: '\n\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $22,350. Dist. 3 is close at $20,000, but Dist. 2 is significantly better. However, the low income in Dist. 2 is only $8,000, which is unacceptably low. Dist. 1 has a floor of $13,000, Dist. 3 has a floor of $12,000, and Dist. 4 has a floor of $11,000. \n\nI\'m leaning towards prioritizing a higher floor to ensure a more reasonable standard of living for everyone. While a $15,000 floor (as I chose in Round 2) felt good in principle, the potential payoff increase from a slightly lower floor is tempting, especially given my current financial situation. $14,000 feels like a reasonable compromise – it’s higher than Dist. 4’s floor, and closer to Dist. 1’s, while still allowing for a potentially higher average income than Dist. 1 or 3. \n\nI\'m "unsure" because I\'m still grappling with the trade-off between maximizing the floor and maximizing overall income. I\'m worried I\'m leaving money on the table, but I also don\'t want to completely abandon my commitment to a safety net. I\'m hoping a $14,000 floor will strike a balance and result in a decent outcome. I anticipate that Dist. 2 will be selected if I choose this, and I\'m hoping to land in the medium-high or medium income bracket.\n\n\n\n'
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 4 has the highest average income *while also* having a floor of $14,000. Dist. 1, 2, and 3 all have floors below this. My previous rounds have shown me that simply choosing the highest average isn't optimal, and I need to consider the floor. While Dist. 2 has a slightly higher average ($24,500) than Dist. 4 ($22,700), its floor is only $12,000. Given my past experiences with lower floor constraints leading to suboptimal outcomes, I'm leaning towards prioritizing a higher floor. \n\nI'm still unsure because I'm worried about potentially missing a better outcome with a different principle or a slightly different constraint. However, based on my learnings, a floor of $14,000 seems like a reasonable balance between ensuring a decent minimum income and maximizing the overall average. I'm hoping to land in the Medium or Medium High income class in Dist. 4 to get a decent payout.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $24,500. However, the low income of $12,000 is concerning. Dist. 1 also has a relatively high average ($23,550) but a low of $13,000. Dist. 4 has an average of $22,700 and a low of $14,000. Dist. 3 has the lowest average ($15,500) and a low of $12,000.\n\nApplying a $14,000 floor constraint, I believe Dist. 1 would be selected. This provides a reasonable floor while still maintaining a relatively high average income. While Dist. 2 has a higher average, I'm hesitant to accept such a low income for the poorest segment of society. Dist. 3 is too low overall, and Dist. 4 doesn’t offer a significant improvement over Dist. 1.\n\nI’m *unsure* because, as previous rounds have shown, maximizing average with a floor constraint doesn’t always yield the highest payoff. It’s possible another principle, like maximizing average income outright, could result in a better outcome for the medium class (where I’m most likely to be assigned). However, I still prioritize the floor constraint as a matter of principle, even if it means potentially sacrificing some overall wealth. The lessons from the previous rounds continue to weigh on my mind, making me less certain than I’d like to be.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $13,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 2 has the highest average income at $24,500. However, the lowest income is only $12,000, which feels unacceptably low. Dist. 4 has a slightly lower average ($22,700) but a significantly higher floor of $14,000. Dist. 1 has a floor of $13,000 and an average of $23,550. Dist. 3 has a very low average and a floor of $12,000.\n\nI'm leaning towards prioritizing a reasonable safety net. While Dist. 2 offers the highest average, I'm concerned about the well-being of those at the bottom. Dist. 4 is tempting, but the average is noticeably lower than Dist. 1. Dist. 1 offers a good balance, and setting the floor at $13,000 feels like a pragmatic compromise. It's higher than Dist. 2 and 4, providing a better minimum standard of living, while still allowing for a relatively high average income. \n\nI'm *unsure* because I'm still wrestling with the potential gains from simply maximizing average income (even with the inequality). However, my experiences as a broke college student and my overall values push me towards prioritizing a basic level of security for everyone. I'm hoping this choice will result in a decent income for the medium income classes, which is where I've been assigned most often. I'm also anticipating a lively debate in the group phase, and I'm prepared to defend my reasoning.\n\n\n\n"
 
-🎯 Phase 1 Complete - Duration: 5m 35s
+🎯 Phase 1 Complete - Duration: 4m 59s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -57,156 +37,20 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 3 complete
 
 🗣️  Round 4
-🗳️  Voting initiated (Round 4)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 4 complete
 
 🗣️  Round 5
-   ✅ Round 5 complete
+🗳️  Voting initiated (Round 5)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $18000)
 
-🗣️  Round 6
-🗳️  Voting initiated (Round 6)
-⏳ No consensus yet - continuing discussion...
+🏁 Phase 2 Complete with consensus - Duration: 10h 46m
+   Rounds conducted: 5
 
-   ✅ Round 6 complete
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 10h 51m
+Consensus: ✅ maximizing_average_floor_constraint
 
-🗣️  Round 7
-🗳️  Voting initiated (Round 7)
-⏳ No consensus yet - continuing discussion...
 
-   ✅ Round 7 complete
-
-🗣️  Round 8
-2025-09-05 11:00:24,265 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
-🗳️  Voting initiated (Round 8)
-   ✅ Round 8 complete
-
-🗣️  Round 9
-🗳️  Voting initiated (Round 9)
-   ✅ Round 9 complete
-
-🗣️  Round 10
-2025-09-05 11:11:01,067 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
-    results = await experiment_manager.run_complete_experiment(process_logger)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
-    return await func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 248, in run_complete_experiment
-    phase2_results = await self.phase2_manager.run_phase2(
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 177, in run_phase2
-    discussion_result = await self._run_group_discussion(
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 634, in _run_group_discussion
-    await self._log_discussion_round(
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 371, in _log_discussion_round
-    favored_principle = await self.discussion_service.extract_favored_principle(statement, self.utility_agent)
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 390, in extract_favored_principle
-    parsed = await utility_agent.parse_principle_choice_enhanced(statement)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/experiment_agents/utility_agent.py", line 340, in parse_principle_choice_enhanced
-    result = await run_without_tracing(self.parser_agent, prompt)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/experiment_agents/utility_agent.py", line 29, in run_without_tracing
-    return await Runner.run(agent, prompt, context=context)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
-    return await runner.run(
-           ^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
-    input_guardrail_results, turn_result = await asyncio.gather(
-                                           ^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
-    new_response = await cls._get_new_response(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
-    new_response = await model.get_response(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
-    response = await self._fetch_response(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
-    ret = await self._get_client().chat.completions.create(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
-    return await self._post(
-           ^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
-    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1526, in request
-    response = await self._client.send(
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1629, in send
-    response = await self._send_handling_auth(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
-    response = await self._send_handling_redirects(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
-    response = await self._send_single_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1730, in _send_single_request
-    response = await transport.handle_async_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
-    resp = await self._pool.handle_async_request(req)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
-    raise exc from None
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
-    response = await connection.handle_async_request(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
-    return await self._connection.handle_async_request(request)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
-    raise exc
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
-    ) = await self._receive_response_headers(**kwargs)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
-    event = await self._receive_event(timeout=timeout)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
-    data = await self._network_stream.read(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_backends/anyio.py", line 35, in read
-    return await self._stream.receive(max_bytes=max_bytes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 219, in receive
-    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 162, in _call_sslobject_method
-    data = await self.transport_stream.receive()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 1254, in receive
-    await self._protocol.read_event.wait()
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/locks.py", line 213, in wait
-    await fut
-asyncio.exceptions.CancelledError
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 187, in <module>
-    asyncio.run(main())
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
-    raise KeyboardInterrupt()
-KeyboardInterrupt
-
-RETURN CODE: -2  DURATION: 3969.9s
+RETURN CODE: 0  DURATION: 39073.7s

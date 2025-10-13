@@ -12,10 +12,12 @@ from agents import Agent, trace
 
 from models import ExperimentResults, ParticipantContext
 from config import ExperimentConfiguration
+from config.models import TranscriptLoggingConfig
 from experiment_agents import create_participant_agent, UtilityAgent, ParticipantAgent
 from experiment_agents.participant_agent import create_participant_agents_with_dynamic_temperature
 from core import Phase1Manager, Phase2Manager
 from utils.logging.agent_centric_logger import AgentCentricLogger
+from utils.logging import TranscriptLogger
 from utils.error_handling import (
     ExperimentError, ExperimentLogicError, SystemError, AgentCommunicationError,
     ErrorSeverity, ExperimentErrorCategory, get_global_error_handler,
@@ -84,6 +86,13 @@ class FrohlichExperimentManager:
         self.phase1_manager = None
         self.phase2_manager = None
         self.agent_logger = AgentCentricLogger()
+        transcript_config = config.transcript_logging or TranscriptLoggingConfig()
+        self.transcript_logger = TranscriptLogger(
+            config=transcript_config,
+            experiment_id=self.experiment_id,
+            config_path=config_file_path
+        )
+        self._last_transcript_path: Optional[str] = None
         self._initialization_complete = False
         
     async def async_init(self):
@@ -123,8 +132,24 @@ class FrohlichExperimentManager:
             await self.utility_agent.async_init()
             
             # Initialize phase managers with experiment-scoped instances
-            self.phase1_manager = Phase1Manager(self.participants, self.utility_agent, self.language_manager, self.error_handler, self.seed_manager)
-            self.phase2_manager = Phase2Manager(self.participants, self.utility_agent, self.config, self.language_manager, self.error_handler, self.seed_manager, self.agent_logger)
+            self.phase1_manager = Phase1Manager(
+                self.participants,
+                self.utility_agent,
+                self.language_manager,
+                self.error_handler,
+                self.seed_manager,
+                transcript_logger=self.transcript_logger
+            )
+            self.phase2_manager = Phase2Manager(
+                self.participants,
+                self.utility_agent,
+                self.config,
+                self.language_manager,
+                self.error_handler,
+                self.seed_manager,
+                self.agent_logger,
+                transcript_logger=self.transcript_logger
+            )
             
             self._initialization_complete = True
             logger.info(f"✅ Experiment manager initialized with {len(self.participants)} participants")
@@ -151,6 +176,7 @@ class FrohlichExperimentManager:
         
         # Ensure experiment manager is initialized
         start_init_time = time.time()
+        self._last_transcript_path = None
         
         # Initialize agent creation with ProcessFlowLogger
         if process_logger:
@@ -345,7 +371,22 @@ class FrohlichExperimentManager:
                         process_logger.log_technical(f"Experiment completed with {total_errors} recoverable errors")
                     else:
                         logger.info(f"Experiment completed with {total_errors} recoverable errors")
-                
+
+                if self.transcript_logger and self.transcript_logger.is_enabled():
+                    try:
+                        transcript_path = self.transcript_logger.save_transcript()
+                        self._last_transcript_path = transcript_path
+                        if process_logger:
+                            process_logger.log_technical(f"Transcript saved to: {transcript_path}")
+                        else:
+                            logger.info(f"Transcript saved to: {transcript_path}")
+                    except Exception as transcript_error:
+                        warning_message = f"Failed to save transcript: {transcript_error}"
+                        if process_logger:
+                            process_logger.log_warning(warning_message)
+                        else:
+                            logger.warning(warning_message)
+
                 return results
                 
             except ExperimentError:
@@ -366,6 +407,10 @@ class FrohlichExperimentManager:
     def get_trace_id(self) -> Optional[str]:
         """Get the trace ID from the current experiment, if available."""
         return getattr(self, '_trace_id', None)
+
+    def get_last_transcript_path(self) -> Optional[str]:
+        """Return the path of the most recently saved transcript, if available."""
+        return self._last_transcript_path
             
     async def _create_participants(self) -> List[ParticipantAgent]:
         """Create participant agents from configuration with dynamic temperature detection."""

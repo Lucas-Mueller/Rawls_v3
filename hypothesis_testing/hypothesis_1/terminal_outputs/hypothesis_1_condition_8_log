@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: bb517040
+Experiment ID: bebfa54c
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-12b-it)
-  ✅ Agent_1 (gemma-3-12b-it)
-  ✅ Agent_2 (gemma-3-12b-it)
-  ✅ Agent_3 (gemini-2.5-flash-lite)
-  ✅ Agent_4 (gemma-3-12b-it)
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_3 (gemini-2.5-pro)
+  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,28 +20,8 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a range constraint with a constraint of $10,000. I am unsure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a range constraint with a constraint of $17,000. I am relatively sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a range constraint with a constraint of $10,000. I am relatively sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
 
-🎯 Phase 1 Complete - Duration: 5m 2s
+🎯 Phase 1 Complete - Duration: 6m 41s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -57,48 +37,17 @@ Beginning group discussion (max 10 rounds)...
    ✅ Round 3 complete
 
 🗣️  Round 4
-Traceback (most recent call last):
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
-    results = await experiment_manager.run_complete_experiment(process_logger)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
-    return await func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 248, in run_complete_experiment
-    phase2_results = await self.phase2_manager.run_phase2(
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 177, in run_phase2
-    discussion_result = await self._run_group_discussion(
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 621, in _run_group_discussion
-    statement, internal_reasoning, is_fallback = await self._process_participant_statement(
-                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase2_manager.py", line 330, in _process_participant_statement
-    statement, internal_reasoning = await self.discussion_service.get_participant_statement_with_retry(
-                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/services/discussion_service.py", line 297, in get_participant_statement_with_retry
-    reasoning_result = await asyncio.wait_for(
-                       ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py", line 476, in wait_for
-    await waiter
-asyncio.exceptions.CancelledError
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
 
-During handling of the above exception, another exception occurred:
+🏁 Phase 2 Complete with consensus - Duration: 22m 21s
+   Rounds conducted: 4
 
-Traceback (most recent call last):
-  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 187, in <module>
-    asyncio.run(main())
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
-    raise KeyboardInterrupt()
-KeyboardInterrupt
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 30m 56s
+Consensus: ✅ maximizing_average_floor_constraint
 
-RETURN CODE: -2  DURATION: 1911.5s
+
+RETURN CODE: 0  DURATION: 1857.8s

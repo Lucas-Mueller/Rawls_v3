@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: d9d20b6d
+Experiment ID: 93a015dc
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-12b-it)
-  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_1 (gemini-2.5-pro)
   ✅ Agent_2 (gemini-2.5-flash)
-  ✅ Agent_3 (gemma-3-12b-it)
-  ✅ Agent_4 (gemini-2.5-pro)
+  ✅ Agent_3 (gemini-2.5-flash-lite)
+  ✅ Agent_4 (gemini-2.5-flash)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,27 +20,31 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing floor income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing the floor income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Floor Income. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $15,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am very sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $14,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000.\nI am sure about this choice.'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am very sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a floor constraint with a constraint of $13,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $10,000.\nI am very sure about this choice.'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing the floor income. I am very sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $13,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $10,000.\nI am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $13,000.\nI am very sure about this choice.'
-2025-09-05 09:50:51,014 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Invalid ranking structure: got 0 rankings, expected 4
-❌ Experiment failed: Phase 1 execution failed: Could not parse principle ranking from response
 
-RETURN CODE: 1  DURATION: 309.9s
+🎯 Phase 1 Complete - Duration: 5m 51s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+🗳️  Voting initiated (Round 1)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
+
+🏁 Phase 2 Complete with consensus - Duration: 9m 35s
+   Rounds conducted: 2
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 15m 33s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 934.4s

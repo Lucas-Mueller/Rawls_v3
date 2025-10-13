@@ -169,7 +169,7 @@ Access alternative model providers via OpenRouter:
 
    agents:
      - name: "Bob"
-       model: "google/gemini-2.5-flash"              # Google
+       model: "gemini-2.5-flash"              # Google
      - name: "Carol"
        model: "anthropic/claude-3-5-sonnet-20241022" # Anthropic
      - name: "Diego"
@@ -177,7 +177,7 @@ Access alternative model providers via OpenRouter:
      - name: "Elena"
        model: "mistralai/mistral-large"              # Mistral
 
-   utility_agent_model: "google/gemini-2.5-flash"
+   utility_agent_model: "gemini-2.5-flash"
 
 **Environment Setup:**
 
@@ -196,7 +196,7 @@ Combine different model providers in a single experiment:
      - name: "Alice"
        model: "gpt-4.1-mini"                    # OpenAI
      - name: "Bob"  
-       model: "google/gemini-2.5-flash"        # OpenRouter
+       model: "gemini-2.5-flash"        # OpenRouter
      - name: "Carol"
        model: "anthropic/claude-3-5-sonnet"    # OpenRouter
 
@@ -387,7 +387,7 @@ Optimize system performance:
    # Use faster models
    agents:
      - model: "gpt-4.1-mini"            # Fast OpenAI model
-     - model: "google/gemini-2.5-flash" # Fast OpenRouter model
+     - model: "gemini-2.5-flash" # Fast OpenRouter model
 
 Parallel Execution Tips
 ~~~~~~~~~~~~~~~~~~~~~~~

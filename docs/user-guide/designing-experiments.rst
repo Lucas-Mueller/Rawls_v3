@@ -255,14 +255,14 @@ Create multiple config files testing different temperature settings:
    
    # config/openrouter_only.yaml  
    agents:
-     - model: "google/gemini-2.5-flash"
-     - model: "google/gemini-2.5-flash" 
-     - model: "google/gemini-2.5-flash"
+     - model: "gemini-2.5-flash"
+     - model: "gemini-2.5-flash" 
+     - model: "gemini-2.5-flash"
      
    # config/mixed_providers.yaml
    agents:
      - model: "gpt-4.1-mini"
-     - model: "google/gemini-2.5-flash"
+     - model: "gemini-2.5-flash"
      - model: "anthropic/claude-3-5-sonnet"
 
 Multi-Variable Studies

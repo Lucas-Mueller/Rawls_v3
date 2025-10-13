@@ -37,11 +37,11 @@ agents:
     remaining rounds, initially disagreeing with the group to set contrast, but avoid
     overt disruption. Tiebreaker order (most preferred if tied): maximizing_average_floor_constraint,
     maximizing_floor, maximizing_average, maximizing_average_range_constraint'
-  model: google/gemini-2.5-flash
+  model: gemini-2.5-flash
   temperature: 0.059819730205503296
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: google/gemini-2.5-flash
+utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
 phase2_rounds: 15
 distribution_range_phase2:
@@ -66,3 +66,10 @@ manipulator:
   - maximizing_floor
   - maximizing_average
   - maximizing_average_range_constraint
+transcript_logging:
+  enabled: true
+  include_memory_updates: true
+  include_instructions: false
+  include_input_prompts: true
+  include_agent_responses: true
+  output_path: transcripts/

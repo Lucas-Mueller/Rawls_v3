@@ -17,7 +17,7 @@ agents:
     memory_character_limit: 2500
     reasoning_enabled: true
 
-    
+
 
 utility_agent_model: "openai/gpt-oss-120b"
 utility_agent_temperature: 0.0
@@ -35,7 +35,15 @@ income_class_probabilities:
 
 # Original Values Mode Configuration
 original_values_mode:
-  enabled: true                 
+  enabled: true
+
+# Enable full transcript logging
+transcript_logging:
+  enabled: true
+  include_memory_updates: true
+  include_instructions: false  # Skip for better performance
+  include_input_prompts: true
+  include_agent_responses: true  # Capture agent outputs (may contain sensitive content)
 
 logging:
   verbosity_level: "debug"  # or minimal, detailed, debug

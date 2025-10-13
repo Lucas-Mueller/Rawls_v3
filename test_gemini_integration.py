@@ -42,7 +42,7 @@ def test_provider_detection():
         ("gpt-4o-mini", "openai", False),
         ("o1-preview", "openai", False),
         ("o3-mini", "openai", False),
-        ("google/gemini-2.5-flash", "openrouter", False),  # Explicit OpenRouter
+        ("google/gemini-2.5-flash", "gemini", False),  # Now routes to native Gemini API
         ("openai/gpt-4o", "openrouter", False),
         ("anthropic/claude-3", "openrouter", False),
         ("unknown-model", None, True),  # Should raise error
@@ -99,7 +99,7 @@ def test_model_config_creation():
 
     if os.getenv("OPENROUTER_API_KEY"):
         try:
-            config = create_model_config("google/gemini-2.5-flash")
+            config = create_model_config("anthropic/claude-3-haiku")
             print(f"✅ Created OpenRouter config: {type(config).__name__}")
         except Exception as e:
             print(f"❌ Failed to create OpenRouter config: {e}")

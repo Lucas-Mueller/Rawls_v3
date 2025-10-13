@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 8b20f7aa
+Experiment ID: c3bf5de5
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-12b-it)
-  ✅ Agent_1 (gemma-3-12b-it)
-  ✅ Agent_2 (gemma-3-12b-it)
-  ✅ Agent_3 (gemini-2.5-pro)
-  ✅ Agent_4 (gemma-3-27b-it)
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_3 (gemini-2.5-flash)
+  ✅ Agent_4 (gemini-2.5-flash)
+  ✅ Agent_5 (gemini-2.5-flash-lite)
 
 ✨ All agents ready
 
@@ -20,12 +20,34 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $15,000. I am unsure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing floor income. I am sure about this choice."
-DEBUG: Principle choice response to parse: '\nI choose maximizing average with floor constraint with a constraint of $15,000. I am unsure about this choice.\n\n**Reasoning:**\n\nWhile I still lean towards prioritizing a balance between overall income and a safety net, seeing the distributions laid out makes me consider a more practical approach. Distribution 3 has the highest average income ($26,000) and, with a floor of $15,000, still allows for a relatively equitable outcome. It avoids the extremely low income of Distribution 4 while still offering a significant increase over Distributions 1 and 2. \n\nI\'m hesitant to choose maximizing floor income directly because Distribution 4, while helping the lowest earners the most, drastically reduces income for others. I\'m also unsure about setting the floor *too* high - a $20,000 floor might significantly reduce the average and limit potential growth. $15,000 feels like a reasonable starting point to guarantee a basic standard of living without overly hindering overall prosperity.\n\nI remain "unsure" because I suspect the impact of this constraint will be clearer once the income class assignment is revealed. I\'m anticipating that the group discussion phase will provide further insight into optimal constraint levels.\n\n\n\n'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice."
-2025-09-05 09:39:11,215 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Invalid ranking structure: got 0 rankings, expected 4
-❌ Experiment failed: Phase 1 execution failed: Could not parse principle ranking from response
 
-RETURN CODE: 1  DURATION: 122.9s
+🎯 Phase 1 Complete - Duration: 5m 17s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $12000)
+
+🏁 Phase 2 Complete with consensus - Duration: 13m 44s
+   Rounds conducted: 4
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 19m 23s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1164.0s

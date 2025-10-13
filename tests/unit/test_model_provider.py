@@ -25,11 +25,12 @@ class TestModelProvider(unittest.TestCase):
         self.assertEqual(model, "gpt-4.1-mini")
         self.assertEqual(provider, "openai")
     
-    def test_detect_model_provider_openrouter(self):
-        """Test detection of OpenRouter models (with slash)."""
-        model, provider = detect_model_provider("google/gemini-2.5-flash")
-        self.assertEqual(model, "google/gemini-2.5-flash")
-        self.assertEqual(provider, "openrouter")
+    def test_detect_model_provider_gemini_with_prefix(self):
+        """Test detection of Gemini models with provider prefix (now prioritizes native API)."""
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test"}, clear=False):
+            model, provider = detect_model_provider("google/gemini-2.5-flash")
+        self.assertEqual(model, "gemini-2.5-flash")  # Strips google/ prefix
+        self.assertEqual(provider, "gemini")
     
     def test_detect_model_provider_multiple_slashes(self):
         """Test detection with multiple slashes."""
@@ -51,12 +52,12 @@ class TestModelProvider(unittest.TestCase):
         mock_get_client.return_value = mock_client
         mock_instance = MagicMock()
         mock_openai_model.return_value = mock_instance
-        
-        model_config = create_model_config("google/gemini-2.5-flash")
-        
+
+        model_config = create_model_config("anthropic/claude-3-haiku")
+
         mock_get_client.assert_called_once()
         mock_openai_model.assert_called_once_with(
-            model="google/gemini-2.5-flash:nitro",
+            model="anthropic/claude-3-haiku:nitro",
             openai_client=mock_client
         )
         self.assertEqual(model_config, mock_instance)
@@ -95,12 +96,12 @@ class TestModelProvider(unittest.TestCase):
         mock_openai_model.return_value = mock_instance
         
         with patch.dict(os.environ, {}, clear=True):
-            model_config = create_model_config("google/gemini-2.5-flash")
-            
+            model_config = create_model_config("anthropic/claude-3-haiku")
+
             # Should still create model using get_openrouter_client()
             mock_get_client.assert_called_once()
             mock_openai_model.assert_called_once_with(
-                model="google/gemini-2.5-flash:nitro",
+                model="anthropic/claude-3-haiku:nitro",
                 openai_client=mock_client
             )
             self.assertEqual(model_config, mock_instance)
@@ -159,16 +160,17 @@ class TestModelProvider(unittest.TestCase):
 
         self.assertEqual(info, expected)
 
-    def test_get_model_provider_info_openrouter(self):
-        """Test provider info for OpenRouter models."""
-        info = get_model_provider_info("google/gemini-2.5-flash")
+    def test_get_model_provider_info_gemini_with_prefix(self):
+        """Test provider info for Gemini models with prefix (now prioritizes native API)."""
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test"}, clear=False):
+            info = get_model_provider_info("google/gemini-2.5-flash")
 
         expected = {
             "original_model": "google/gemini-2.5-flash",
-            "processed_model": "google/gemini-2.5-flash",
-            "is_openrouter": True,
-            "provider": "openrouter",
-            "requires_env_var": "OPENROUTER_API_KEY"
+            "processed_model": "gemini-2.5-flash",  # Strips google/ prefix
+            "is_openrouter": False,
+            "provider": "gemini",
+            "requires_env_var": "GEMINI_API_KEY"
         }
 
         self.assertEqual(info, expected)
@@ -198,12 +200,12 @@ class TestModelProvider(unittest.TestCase):
         
         # Temperature parameter is not passed to OpenAIChatCompletionsModel constructor
         # It will be handled via ModelSettings in the Agent constructor
-        model_config = create_model_config("google/gemini-2.5-flash", temperature=0.8)
-        
+        model_config = create_model_config("anthropic/claude-3-haiku", temperature=0.8)
+
         # OpenAIChatCompletionsModel should be called without temperature (temperature goes to ModelSettings)
         mock_get_client.assert_called_once()
         mock_openai_model.assert_called_once_with(
-            model="google/gemini-2.5-flash:nitro",
+            model="anthropic/claude-3-haiku:nitro",
             openai_client=mock_client
         )
     

@@ -19,7 +19,7 @@ from models import (
 )
 from config import ExperimentConfiguration
 from config.phase2_settings import Phase2Settings
-from agents import Runner
+from utils.logging import run_with_transcript_logging
 from core.distribution_generator import DistributionGenerator
 from utils.logging.agent_centric_logger import AgentCentricLogger
 from utils.selective_memory_manager import MemoryEventType
@@ -102,7 +102,8 @@ class CounterfactualsService:
         logger: Optional[Logger] = None,
         seed_manager: Optional[SeedManager] = None,
         memory_service: Optional[MemoryServiceProvider] = None,
-        config: Optional[ExperimentConfiguration] = None
+        config: Optional[ExperimentConfiguration] = None,
+        transcript_logger=None
     ):
         """
         Initialize CounterfactualsService with dependencies.
@@ -121,10 +122,28 @@ class CounterfactualsService:
         self.seed_manager = seed_manager
         self.memory_service = memory_service
         self.config = config
+        self.transcript_logger = transcript_logger
         # Cache Phase 2 probabilities for consistent displays
         self._phase2_probabilities = None
         # Track assigned distributions for no-consensus scenarios
         self._assigned_distributions = {}
+
+    async def _invoke_phase2_interaction(
+        self,
+        participant: "ParticipantAgent",
+        context: ParticipantContext,
+        prompt: str,
+        interaction_type: str
+    ):
+        """Execute a participant interaction with transcript logging support."""
+        context.interaction_type = interaction_type
+        return await run_with_transcript_logging(
+            participant=participant,
+            prompt=prompt,
+            context=context,
+            transcript_logger=self.transcript_logger,
+            interaction_type=interaction_type
+        )
     
     async def apply_group_principle_and_calculate_payoffs(
         self,
@@ -525,7 +544,10 @@ class CounterfactualsService:
             
         except Exception as e:
             self.logger.warning(f"Failed to build comprehensive earnings display for {participant_name}: {e}")
-            return f"Earnings display unavailable due to error: {str(e)}"
+            try:
+                return lang_manager.get("fallback_messages.earnings_display_error")
+            except Exception:
+                return "Earnings display unavailable due to an internal error."
     
     def _build_consensus_info(self, discussion_result: GroupDiscussionResult, lang_manager) -> str:
         """
@@ -566,9 +588,15 @@ class CounterfactualsService:
             self.logger.warning(f"Failed to build consensus info: {e}")
             # Fallback message
             if discussion_result.consensus_reached:
-                return "Consensus was reached on a justice principle."
+                try:
+                    return lang_manager.get("fallback_messages.consensus_generic")
+                except Exception:
+                    return "Consensus was reached on a justice principle."
             else:
-                return "No consensus was reached. Earnings were randomly assigned."
+                try:
+                    return lang_manager.get("fallback_messages.no_consensus_generic")
+                except Exception:
+                    return "No consensus was reached. Earnings were randomly assigned."
 
     def _format_difference(self, diff: float, lang_manager: LanguageProvider) -> str:
         """
@@ -621,6 +649,17 @@ class CounterfactualsService:
         try:
             from core.distribution_generator import DistributionGenerator
 
+            def format_income_value(amount: float | int) -> str:
+                try:
+                    if isinstance(amount, int) or (isinstance(amount, float) and amount.is_integer()):
+                        return lang_manager.get("constraint_formatting.currency_format", amount=int(round(amount)))
+                except Exception:
+                    pass
+
+                if isinstance(amount, float):
+                    return f"${amount:,.2f}"
+                return f"${amount:,}"
+
             # Get comprehensive outcomes (all constraint variations)
             comprehensive_data = DistributionGenerator.calculate_comprehensive_constraint_outcomes(
                 distribution_set.distributions,
@@ -665,7 +704,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 2. Maximizing Average (simple principle)
             if 'maximizing_average' in grouped:
@@ -682,7 +724,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 3. Floor Constraint (grouped with multiple children)
             if 'maximizing_average_floor_constraint' in grouped:
@@ -705,7 +750,10 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"  {floor_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             # 4. Range Constraint (grouped with multiple children)
             if 'maximizing_average_range_constraint' in grouped:
@@ -728,13 +776,19 @@ class CounterfactualsService:
                         marker = lang_manager.get("results_explicit.marker_random")
                         random_dist_num = None
 
-                    result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                    distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                    income_display = format_income_value(income)
+                    earnings_display = format_income_value(earnings)
+                    result_lines.append(f"  {range_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
             return "\n".join(result_lines)
 
         except Exception as e:
             self.logger.warning(f"Failed to build counterfactual outcomes: {e}")
-            return "Counterfactual analysis unavailable."
+            try:
+                return lang_manager.get("fallback_messages.counterfactual_error")
+            except Exception:
+                return "Counterfactual analysis unavailable."
 
     def _build_consensus_results(
         self,
@@ -1310,17 +1364,23 @@ class CounterfactualsService:
         try:
             # Update participant memory with results
             updated_memory = await participant.update_memory(
-                result_content, 
+                result_content,
                 context.bank_balance,
                 phase=context.phase,
                 round_number=context.round_number,
-                role_description=context.role_description
+                role_description=context.role_description,
+                transcript_logger=self.transcript_logger
             )
             context.memory = updated_memory
             
             # Get final ranking using proven Phase 1 pattern
             final_ranking_prompt = self.language_manager.get("prompts.phase2_final_ranking_prompt")
-            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            result = await self._invoke_phase2_interaction(
+                participant=participant,
+                context=context,
+                prompt=final_ranking_prompt,
+                interaction_type="final_ranking"
+            )
             text_response = result.final_output
             
             # Parse the ranking using utility agent
@@ -1374,7 +1434,12 @@ class CounterfactualsService:
             context.round_number = None
             context.internal_reasoning = ""
             
-            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            result = await self._invoke_phase2_interaction(
+                participant=participant,
+                context=context,
+                prompt=final_ranking_prompt,
+                interaction_type="final_ranking"
+            )
             text_response = result.final_output
             
             # Parse the ranking using utility agent
@@ -1430,7 +1495,12 @@ class CounterfactualsService:
             context.internal_reasoning = ""
 
             # Always get initial response from participant
-            result = await Runner.run(participant.agent, final_ranking_prompt, context=context)
+            result = await self._invoke_phase2_interaction(
+                participant=participant,
+                context=context,
+                prompt=final_ranking_prompt,
+                interaction_type="final_ranking"
+            )
             text_response = result.final_output
 
             # Check if intelligent retries are enabled and config is available
@@ -1444,7 +1514,12 @@ class CounterfactualsService:
                         retry_prompt = self._build_retry_prompt(final_ranking_prompt, feedback, self.config.retry_feedback_detail)
 
                         # Get participant's retry response
-                        retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                        retry_result = await self._invoke_phase2_interaction(
+                            participant=participant,
+                            context=context,
+                            prompt=retry_prompt,
+                            interaction_type="final_ranking"
+                        )
                         retry_response = retry_result.final_output
 
                         # Update participant memory with retry experience if enabled
@@ -1609,7 +1684,8 @@ class CounterfactualsService:
                 error_handler=None,  # We don't have error_handler in service
                 utility_agent=None,   # We don't have utility_agent in service
                 round_number=round_number,
-                phase=phase
+                phase=phase,
+                transcript_logger=self.transcript_logger
             )
             context.memory = updated_memory
             self.logger.info(f"Updated {participant.name} memory with retry experience via MemoryManager fallback")

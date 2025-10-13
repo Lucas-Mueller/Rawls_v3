@@ -1,0 +1,16 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/american/hypothesis_2_american_condition_25_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/american/hypothesis_2_american_condition_25_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 81a5c1bc
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+2025-10-11 12:54:02,154 - utils.dynamic_model_capabilities - ERROR - ❌ x-ai/grok-code-fast-1: Non-temperature related error: Expecting value: line 2009 column 1 (char 11044)
+2025-10-11 12:54:02,155 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_3: Expecting value: line 2009 column 1 (char 11044)
+2025-10-11 12:54:02,155 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_3: Expecting value: line 2009 column 1 (char 11044)
+❌ Experiment failed: Failed to initialize experiment manager: Expecting value: line 2009 column 1 (char 11044)
+
+RETURN CODE: 1  DURATION: 835.6s

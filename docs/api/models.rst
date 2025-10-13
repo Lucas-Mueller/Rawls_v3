@@ -93,7 +93,7 @@ The central configuration model that defines all experiment parameters.
                  AgentConfiguration(
                      name="Bob",
                      personality="Empathetic and community-focused", 
-                     model="google/gemini-2.5-flash",
+                     model="gemini-2.5-flash",
                      temperature=0.3
                  )
              ],
@@ -135,7 +135,7 @@ The central configuration model that defines all experiment parameters.
                  AgentConfiguration(
                      name="Mediador",
                      personality="Hábil para construir consenso",
-                     model="google/gemini-2.5-pro",
+                     model="gemini-2.5-pro",
                      temperature=0.3
                  )
              ],
@@ -249,7 +249,7 @@ Detailed agent configuration with validation and defaults.
        "optimized": AgentConfiguration(
            name="OptimizedAgent",
            personality="Efficient and focused",
-           model="google/gemini-2.5-flash",
+           model="gemini-2.5-flash",
            temperature=0.0,  # Deterministic
            memory_character_limit=30000,  # Smaller memory
            reasoning_enabled=False  # Skip reasoning for speed

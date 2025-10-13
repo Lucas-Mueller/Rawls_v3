@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: cab82f59
+Experiment ID: ad610b67
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-27b-it)
-  ✅ Agent_1 (gemma-3-12b-it)
-  ✅ Agent_2 (gemini-2.5-flash)
-  ✅ Agent_3 (gemini-2.5-pro)
-  ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_1 (gemini-2.5-flash-lite)
+  ✅ Agent_2 (gemini-2.5-pro)
+  ✅ Agent_3 (gemini-2.5-flash)
+  ✅ Agent_4 (gemini-2.5-flash)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,26 +20,123 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $15,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $12,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $14,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $12,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $12,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $12,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $15,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: "I choose maximizing average with floor constraint with a constraint of $14,000. I am unsure about this choice.\n\n**Reasoning:**\n\nLooking at the distributions, Dist. 3 has the highest average income at $26,000. However, its lowest income is only $6,000, which is quite low. Dist. 1 has a floor of $12,000, and Dist. 2 has a floor of $10,000. Dist. 4 has a floor of $13,000.\n\nI believe a floor of $14,000 strikes a reasonable balance. It's higher than Dist. 2 and 4, providing a better minimum standard of living, and while it eliminates Dist. 3, it still allows for Dist. 1 to be considered. Dist. 1 has a good average of $20,000 and a relatively decent floor. \n\nI'm unsure because I'm still weighing the trade-offs. A higher floor might be more equitable, but could significantly lower the average income. I'm hoping $14,000 will allow for a good average while still providing a meaningful safety net. I anticipate this will be a point of discussion in Phase 2.\n\n\n\n"
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a floor constraint with a constraint of $14,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000.\nI am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,000. I am unsure about this choice.\n\nMy reasoning is as follows: After the last round, I realized a higher floor doesn’t *guarantee* a better outcome for lower income classes. Distribution 3 has the highest average income, but the low income is significantly lower than the other distributions. Distribution 1 has a relatively high average and a decent floor. Distribution 2 is also strong, but the low income is quite low. Distribution 4 is a compromise, but doesn’t excel in any area.\n\nI’m lowering the floor constraint to $12,000 from $14,000. My previous choice didn’t yield a good result, and I want to see if a slightly lower floor allows for a higher average income that still benefits the medium-low and low income classes. I suspect that maximizing average income without any constraint could yield a higher payoff, but I still believe a floor is important. I’m still unsure because I’m trying to balance the potential for higher overall income with the need to protect those at the bottom. I’m hoping $12,000 strikes that balance better than $14,000 did.\n\n\n\n'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with a floor constraint with a constraint of $16,000. I am sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose maximizing average income. I am unsure about this choice.\n\n\n\n**Reasoning:**\n\nGiven my learnings from the previous rounds, I\'m shifting away from prioritizing a floor constraint. Distribution 2 has the highest average income at $22,350. While the low income is only $8,000, the overall higher average *could* translate to a better payoff for the medium-low class (where I\'ve been assigned the last two rounds) than a distribution with a higher floor but lower overall average. \n\nI\'m "unsure" because I\'m still grappling with the trade-offs. My initial instinct was to protect the lowest earners, but the data from rounds 1 and 2 clearly showed that maximizing average income can sometimes benefit all income classes, including the lower ones. I\'m willing to test this hypothesis and see if maximizing average income yields a better outcome this round. I\'m also anticipating that Phase 2 will involve a lot of discussion about the fairness of different distributions, and I want to gather more data on the potential benefits of maximizing average income before committing to a specific principle.\n\n\n\n'
-DEBUG: Principle choice response to parse: " Here's my response:\n\nI choose maximizing average with floor constraint with a constraint of $18,000. I am very sure about this choice."
-DEBUG: Principle choice response to parse: 'I choose maximizing average income. I am very sure about this choice.\n\n\n\n'
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $9,000.\nI am very sure about this choice.'
-DEBUG: Principle choice response to parse: ''
-2025-09-05 10:29:02,762 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
-❌ Experiment failed: Phase 1 execution failed: Could not parse principle choice from response after 3 attempts: No valid JSON found in response
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 653, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
+    results = await experiment_manager.run_complete_experiment(process_logger)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 243, in run_complete_experiment
+    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger, process_logger)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 87, in run_phase1
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 524, in _run_single_participant_phase1
+    result, round_content = await self._step_1_3_principle_application(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 687, in _step_1_3_principle_application
+    result = await self._invoke_phase1_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 195, in _invoke_phase1_interaction
+    return await run_with_transcript_logging(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/logging/transcript_logger.py", line 160, in run_with_transcript_logging
+    result = await Runner.run(participant.agent, prompt, context=context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
+    return await runner.run(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
+    input_guardrail_results, turn_result = await asyncio.gather(
+                                           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
+    new_response = await cls._get_new_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
+    new_response = await model.get_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
+    response = await self._fetch_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
+    ret = await self._get_client().chat.completions.create(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1526, in request
+    response = await self._client.send(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpcore/_backends/anyio.py", line 35, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 219, in receive
+    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/streams/tls.py", line 162, in _call_sslobject_method
+    data = await self.transport_stream.receive()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 1254, in receive
+    await self._protocol.read_event.wait()
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/locks.py", line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError
 
-RETURN CODE: 1  DURATION: 252.6s
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 191, in <module>
+    asyncio.run(main())
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+RETURN CODE: -2  DURATION: 211.0s

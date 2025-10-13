@@ -16,6 +16,7 @@ from config import ExperimentConfiguration, AgentConfiguration
 from experiment_agents import update_participant_context, UtilityAgent, ParticipantAgent
 from core.distribution_generator import DistributionGenerator
 from utils.logging.agent_centric_logger import AgentCentricLogger, MemoryStateCapture
+from utils.logging import TranscriptLogger, run_with_transcript_logging
 from utils.seed_manager import SeedManager
 from utils.parsing_errors import ParsingError, detect_parsing_failure_type, create_parsing_error
 from utils.selective_memory_manager import MemoryEventType
@@ -26,7 +27,15 @@ logger = logging.getLogger(__name__)
 class Phase1Manager:
     """Manages Phase 1 execution for all participants."""
     
-    def __init__(self, participants: List[ParticipantAgent], utility_agent: UtilityAgent, language_manager, error_handler=None, seed_manager=None):
+    def __init__(
+        self,
+        participants: List[ParticipantAgent],
+        utility_agent: UtilityAgent,
+        language_manager,
+        error_handler=None,
+        seed_manager=None,
+        transcript_logger: Optional[TranscriptLogger] = None
+    ):
         self.participants = participants
         self.utility_agent = utility_agent
         self.language_manager = language_manager
@@ -36,6 +45,7 @@ class Phase1Manager:
         self._participant_rngs: Dict[str, random.Random] = {}
         self.memory_service = None
         self._memory_service_initialized = False
+        self.transcript_logger = transcript_logger
     
     async def run_phase1(self, config: ExperimentConfiguration, logger: AgentCentricLogger = None, process_logger=None) -> List[Phase1Results]:
         """Execute complete Phase 1 for all participants in parallel."""
@@ -149,7 +159,8 @@ class Phase1Manager:
             utility_agent=self.utility_agent,
             settings=settings,
             logger=self,
-            config=config
+            config=config,
+            transcript_logger=self.transcript_logger
         )
 
         self._memory_service_initialized = True
@@ -169,6 +180,27 @@ class Phase1Manager:
             rngs[agent_cfg.name] = random.Random(derived_seed)
 
         self._participant_rngs = rngs
+
+    async def _invoke_phase1_interaction(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        prompt: str,
+        interaction_type: str
+    ) -> Any:
+        """Route Phase 1 participant prompts through transcript-aware runner."""
+        previous_interaction = context.interaction_type
+        context.interaction_type = interaction_type
+        try:
+            return await run_with_transcript_logging(
+                participant=participant,
+                prompt=prompt,
+                context=context,
+                transcript_logger=self.transcript_logger,
+                interaction_type=interaction_type
+            )
+        finally:
+            context.interaction_type = previous_interaction
 
     async def _execute_ranking_with_retry(
         self,
@@ -196,7 +228,12 @@ class Phase1Manager:
             Tuple of (parsed_ranking, round_content_for_memory)
         """
         # Always get initial response from participant
-        result = await Runner.run(participant.agent, prompt, context=context)
+        result = await self._invoke_phase1_interaction(
+            participant,
+            context,
+            prompt,
+            task_name
+        )
         text_response = result.final_output
 
         # Check if intelligent retries are enabled
@@ -210,7 +247,12 @@ class Phase1Manager:
                     retry_prompt = self._build_retry_prompt(prompt, feedback, config.retry_feedback_detail)
 
                     # Get participant's retry response
-                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_result = await self._invoke_phase1_interaction(
+                        participant,
+                        context,
+                        retry_prompt,
+                        task_name
+                    )
                     retry_response = retry_result.final_output
 
                     # Update participant memory with retry experience if enabled
@@ -610,7 +652,12 @@ class Phase1Manager:
         explanation_prompt = self._build_detailed_explanation_prompt(config)
         
         # This is informational only - no structured response needed
-        result = await Runner.run(participant.agent, explanation_prompt, context=context)
+        result = await self._invoke_phase1_interaction(
+            participant,
+            context,
+            explanation_prompt,
+            "explanation"
+        )
         
         # Create round content for memory
         language_manager = self.language_manager
@@ -637,7 +684,12 @@ class Phase1Manager:
         application_prompt = self._build_application_prompt(distribution_set, round_num, config)
         
         # Always use text responses, parse with enhanced utility agent
-        result = await Runner.run(participant.agent, application_prompt, context=context)
+        result = await self._invoke_phase1_interaction(
+            participant,
+            context,
+            application_prompt,
+            "demonstration"
+        )
         text_response = result.final_output
         
         # Parse using enhanced utility agent with retry logic
@@ -652,7 +704,12 @@ class Phase1Manager:
                     retry_prompt = self._build_retry_prompt(application_prompt, feedback, config.retry_feedback_detail)
 
                     # Get participant's retry response
-                    retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+                    retry_result = await self._invoke_phase1_interaction(
+                        participant,
+                        context,
+                        retry_prompt,
+                        "demonstration"
+                    )
                     retry_response = retry_result.final_output
 
                     # Update participant memory with retry experience if enabled
@@ -693,7 +750,12 @@ class Phase1Manager:
                 participant.name, parsed_choice
             )
             
-            retry_result = await Runner.run(participant.agent, retry_prompt, context=context)
+            retry_result = await self._invoke_phase1_interaction(
+                participant,
+                context,
+                retry_prompt,
+                "constraint_retry"
+            )
             retry_text = retry_result.final_output
             
             # Update memory with constraint re-prompt experience
@@ -843,6 +905,17 @@ class Phase1Manager:
         result_lines = []
         lang_manager = self.language_manager
 
+        def format_income_value(amount: float | int) -> str:
+            try:
+                if isinstance(amount, int) or (isinstance(amount, float) and amount.is_integer()):
+                    return lang_manager.get("constraint_formatting.currency_format", amount=int(round(amount)))
+            except Exception:
+                pass
+
+            if isinstance(amount, float):
+                return f"${amount:,.2f}"
+            return f"${amount:,}"
+
         # 1. Maximizing Floor (simple principle)
         if 'maximizing_floor' in grouped:
             for outcome in grouped['maximizing_floor']:
@@ -855,7 +928,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_floor':
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 2. Maximizing Average (simple principle)
         if 'maximizing_average' in grouped:
@@ -869,7 +945,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average':
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"- {principle_name} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"- {principle_name} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 3. Floor Constraint (grouped with multiple children)
         if 'maximizing_average_floor_constraint' in grouped:
@@ -889,7 +968,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average_floor_constraint' and chosen_constraint == constraint_amt:
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"  {floor_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"  {floor_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         # 4. Range Constraint (grouped with multiple children)
         if 'maximizing_average_range_constraint' in grouped:
@@ -909,7 +991,10 @@ class Phase1Manager:
                 if chosen_principle == 'maximizing_average_range_constraint' and chosen_constraint == constraint_amt:
                     marker = lang_manager.get("comprehensive_earnings.markers.assigned_principle")
 
-                result_lines.append(f"  {range_label} → Distribution {dist_num} → ${income:,} → ${earnings:.2f}{marker}")
+                distribution_label = lang_manager.get("distributions.distribution_label", number=dist_num)
+                income_display = format_income_value(income)
+                earnings_display = format_income_value(earnings)
+                result_lines.append(f"  {range_label} → {distribution_label} → {income_display} → {earnings_display}{marker}")
 
         return "\n".join(result_lines)
 
@@ -1004,29 +1089,14 @@ class Phase1Manager:
         result_parts.append(distributions_header)
         result_parts.append("")
 
-        # Build distributions table
-        table_lines = []
-        table_lines.append("| Income Class | Dist. 1 | Dist. 2 | Dist. 3 | Dist. 4 |")
-        table_lines.append("|--------------|---------|---------|---------|---------|")
-
-        class_order = [IncomeClass.HIGH, IncomeClass.MEDIUM_HIGH, IncomeClass.MEDIUM, IncomeClass.MEDIUM_LOW, IncomeClass.LOW]
-        for cls in class_order:
-            cls_label = lang_manager.get(f"common.income_classes.{cls.value}")
-            row = [cls_label]
-            for dist in distribution_set.distributions:
-                income = dist.get_income_by_class(cls)
-                row.append(f"${income:,}")
-            table_lines.append("| " + " | ".join(row) + " |")
-
-        # Add average row
-        average_label = lang_manager.get("common.average_label", default="Average")
-        avg_row = [average_label]
-        for dist in distribution_set.distributions:
-            avg_income = dist.get_average_income(probabilities)
-            avg_row.append(f"${avg_income:,.0f}")
-        table_lines.append("| " + " | ".join(avg_row) + " |")
-
-        result_parts.extend(table_lines)
+        # Use comprehensive distributions table (skip the generic header, keep only table)
+        # The comprehensive_data['distributions_table'] includes its own header line and blank line,
+        # so we extract just the table portion (skip first 2 lines)
+        comprehensive_table = comprehensive_data['distributions_table']
+        table_lines = comprehensive_table.split('\n')
+        # Skip first 2 lines (generic header + blank line), keep the actual table
+        table_only = '\n'.join(table_lines[2:])
+        result_parts.append(table_only)
         result_parts.append("")
 
         # 6. Causal narrative

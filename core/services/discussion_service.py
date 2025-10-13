@@ -8,7 +8,7 @@ with multilingual support and language-aware validation.
 import asyncio
 import re
 from typing import List, Optional, Protocol, Tuple, Any, Callable, Awaitable
-from agents import Runner
+from utils.logging import run_with_transcript_logging
 from config.phase2_settings import Phase2Settings
 from models import GroupDiscussionState
 from utils.statement_validation_errors import StatementValidationFailureType
@@ -59,7 +59,7 @@ class DiscussionService:
     """
     
     def __init__(self, language_manager: LanguageProvider, settings: Optional[Phase2Settings] = None,
-                 logger: Optional[Logger] = None):
+                 logger: Optional[Logger] = None, transcript_logger=None):
         """
         Initialize discussion service.
         
@@ -71,6 +71,7 @@ class DiscussionService:
         self.language_manager = language_manager
         self.settings = settings or Phase2Settings.get_default()
         self.logger = logger
+        self.transcript_logger = transcript_logger
         
         # Discussion history management settings - now configurable through Phase2Settings
         # Use the configurable public_history_max_length from settings
@@ -84,7 +85,29 @@ class DiscussionService:
         """Log warning message if logger is available."""
         if self.logger:
             self.logger.log_warning(message)
-    
+
+    async def _invoke_discussion_interaction(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        prompt: str,
+        interaction_type: str,
+        timeout_seconds: Optional[float] = None
+    ):
+        """Execute a participant interaction with transcript logging and optional timeout."""
+        context.interaction_type = interaction_type
+        coroutine = run_with_transcript_logging(
+            participant=participant,
+            prompt=prompt,
+            context=context,
+            transcript_logger=self.transcript_logger,
+            interaction_type=interaction_type
+        )
+
+        if timeout_seconds is not None:
+            return await asyncio.wait_for(coroutine, timeout_seconds)
+        return await coroutine
+
     def _get_localized_message(self, key: str, **kwargs) -> str:
         """Get localized message with fallback handling."""
         try:
@@ -177,10 +200,29 @@ class DiscussionService:
         
         if len(participant_names) == 1:
             participant_list = participant_names[0]
+        elif len(participant_names) == 2:
+            try:
+                participant_list = self._get_localized_message(
+                    "common.list_formatting.two_items",
+                    first=participant_names[0],
+                    second=participant_names[1]
+                )
+            except Exception:
+                participant_list = f"{participant_names[0]} and {participant_names[1]}"
         else:
-            # Format as "A, B, and C" or "A and B"
-            participant_list = ", ".join(participant_names[:-1]) + f" and {participant_names[-1]}"
-        
+            try:
+                participant_list = self._get_localized_message(
+                    "common.list_formatting.three_plus_items",
+                    items=", ".join(participant_names[:-1]),
+                    last=participant_names[-1]
+                )
+            except Exception:
+                try:
+                    conjunction = self._get_localized_message("common.list_formatting.conjunction")
+                except Exception:
+                    conjunction = "and"
+                participant_list = ", ".join(participant_names[:-1]) + f" {conjunction} {participant_names[-1]}"
+
         return self._get_localized_message(
             "system_messages.discussion.group_composition", 
             participants=participant_list
@@ -284,17 +326,20 @@ class DiscussionService:
             template = fallback_templates.get(template_key, fallback_templates["too_short"])
 
         # Build feedback message with language-specific phrases (exact A1/A2 pattern)
-        attempt_phrase = {
-            "english": f"Attempt {attempt_number}",
-            "spanish": f"Intento {attempt_number}",
-            "mandarin": f"第{attempt_number}次尝试"
-        }.get(language.lower(), f"Attempt {attempt_number}")
+        try:
+            attempt_phrase = self._get_localized_message(
+                "statement_validation_feedback.attempt_label",
+                attempt_number=attempt_number
+            )
+        except Exception:
+            attempt_phrase = f"Attempt {attempt_number}"
 
-        validation_issue_phrase = {
-            "english": "Statement Issue",
-            "spanish": "Problema de Declaración",
-            "mandarin": "陈述问题"
-        }.get(language.lower(), "Statement Issue")
+        try:
+            validation_issue_phrase = self._get_localized_message(
+                "statement_validation_feedback.issue_heading"
+            )
+        except Exception:
+            validation_issue_phrase = "Statement Issue"
 
         feedback_parts = [
             f"⚠️ {validation_issue_phrase} ({attempt_phrase}):",
@@ -308,11 +353,12 @@ class DiscussionService:
 
         # Add statement preview for context
         if original_statement and len(original_statement.strip()) > 0:
-            statement_preview_phrase = {
-                "english": "Your statement",
-                "spanish": "Tu declaración",
-                "mandarin": "您的陈述"
-            }.get(language.lower(), "Your statement")
+            try:
+                statement_preview_phrase = self._get_localized_message(
+                    "statement_validation_feedback.preview_label"
+                )
+            except Exception:
+                statement_preview_phrase = "Your statement"
 
             preview = original_statement[:50] + "..." if len(original_statement) > 50 else original_statement
             feedback_parts.extend([
@@ -415,11 +461,13 @@ class DiscussionService:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
                             discussion_state, context.round_number, max_rounds
                         )
-                        context.interaction_type = "internal_reasoning"  # Fix type
-                        
-                        reasoning_result = await asyncio.wait_for(
-                            Runner.run(participant.agent, reasoning_prompt, context=context),
-                            timeout=self.settings.reasoning_timeout_seconds
+
+                        reasoning_result = await self._invoke_discussion_interaction(
+                            participant=participant,
+                            context=context,
+                            prompt=reasoning_prompt,
+                            interaction_type="internal_reasoning",
+                            timeout_seconds=self.settings.reasoning_timeout_seconds
                         )
                         internal_reasoning = reasoning_result.final_output or ""
                     except Exception:
@@ -439,12 +487,13 @@ class DiscussionService:
                 )
                 
                 # Set interaction type for statement retrieval
-                context.interaction_type = "statement"
-                
                 # Step 3: Execute with timeout to get public statement
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, discussion_prompt, context=context),
-                    timeout=timeout_seconds
+                result = await self._invoke_discussion_interaction(
+                    participant=participant,
+                    context=context,
+                    prompt=discussion_prompt,
+                    interaction_type="statement",
+                    timeout_seconds=timeout_seconds
                 )
                 
                 statement = result.final_output
@@ -531,11 +580,13 @@ class DiscussionService:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
                             discussion_state, context.round_number, max_rounds
                         )
-                        context.interaction_type = "internal_reasoning"
 
-                        reasoning_result = await asyncio.wait_for(
-                            Runner.run(participant.agent, reasoning_prompt, context=context),
-                            timeout=self.settings.reasoning_timeout_seconds
+                        reasoning_result = await self._invoke_discussion_interaction(
+                            participant=participant,
+                            context=context,
+                            prompt=reasoning_prompt,
+                            interaction_type="internal_reasoning",
+                            timeout_seconds=self.settings.reasoning_timeout_seconds
                         )
                         internal_reasoning = reasoning_result.final_output or ""
                     except Exception:
@@ -554,12 +605,13 @@ class DiscussionService:
                     internal_reasoning=internal_reasoning
                 )
 
-                context.interaction_type = "statement"
-
                 # Execute with timeout (existing logic)
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, discussion_prompt, context=context),
-                    timeout=timeout_seconds
+                result = await self._invoke_discussion_interaction(
+                    participant=participant,
+                    context=context,
+                    prompt=discussion_prompt,
+                    interaction_type="statement",
+                    timeout_seconds=timeout_seconds
                 )
 
                 statement = result.final_output

@@ -853,7 +853,7 @@ Multi-Provider Support
          
          # Auto-detect provider based on model name
          openai_provider = get_model_provider("gpt-4.1-mini")
-         openrouter_provider = get_model_provider("google/gemini-2.5-flash")
+         openrouter_provider = get_model_provider("gemini-2.5-flash")
          claude_provider = get_model_provider("anthropic/claude-3-5-sonnet")
          
          # Use providers for agent interactions
@@ -906,7 +906,7 @@ Multi-Provider Support
              },
              
              "efficient_gemini": {
-                 "model": "google/gemini-2.5-flash",
+                 "model": "gemini-2.5-flash",
                  "temperature": 0.2,
                  "max_tokens": 2000,
                  "timeout": 20.0,

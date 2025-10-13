@@ -160,6 +160,13 @@ Critically discuses the feedback
 Use a structured approach. 
 
 
+Please review this plan
+
+TRANSCRIPT_RESPONSE_LOGGING_EXPANSION_PLAN.md
+
+using the reviewing subagent. Send him the plan then engange iwth the feedbakc. Adapt the
+plan if you agree with the or parts of the feedback. Critically discuses with the agent feedback you dont buy into. Use a structured approach. Create ToDO list 
+
 
 
 I now want you to carefully analyze issue A3. Pleae carefully analyze it! Be open minded. Empliy a 
@@ -429,3 +436,31 @@ That  choice  of income  distribution  will  conform  to no  particular characte
 Return your complete updated memory incorporating insights from the recent activity. Include both important information from your previous memory and new learnings. Structure the memory as it fits you best. 
 
 Important: Your memory is given to you in every interaction and gives you your knowledge on yourself, the previous interactions and the experiment. Do not include your name, personality or bank account since they are given to you in every interaction. Structure your memory as it fits you best. You are given your previous memory and recent activity of the experiment.
+
+
+
+
+
+
+
+ Can you please add after the block with important this sentence " You cannot ask the experimenter any questions
+  nor can you get any additional data." also check if this sentence is grammtical 
+
+
+
+Can you please change this
+
+"Phase 1: You will individually learn about and apply four different principles of justice to income
+  distributions. You will be asked to rank these principles by preference and apply them to specific scenarios.
+   Your choices will affect your earnings.
+
+  Phase 2: You will join a group discussion to reach consensus on which principle of justice the group should
+  adopt. The group's chosen principle will then be applied to determine everyone's final earnings." 
+
+
+to this 
+"Phase 1: You will individually learn about and apply four different principles of justice to income distributions. You will be asked to rank these principles by preference and apply them to specific scenarios. Your choices will affect your earnings.
+
+Phase 2: You will join a group discussion to reach consensus on which principle of justice the group should adopt. The group's chosen principle will then be applied to determine everyone's final earnings. You cannot get any more data points nor can you communicate with anybody except your fellow particpants."
+
+for all languagse

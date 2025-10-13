@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: d5fc3393
+Experiment ID: ebf40a85
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemma-3-27b-it)
-  ✅ Agent_1 (gemini-2.5-flash-lite)
-  ✅ Agent_2 (gemma-3-12b-it)
-  ✅ Agent_3 (gemini-2.5-flash-lite)
-  ✅ Agent_4 (gemini-2.5-pro)
+  ✅ Agent_1 (gemini-2.5-pro)
+  ✅ Agent_2 (gemini-2.5-pro)
+  ✅ Agent_3 (gemini-2.5-pro)
+  ✅ Agent_4 (gemini-2.5-flash)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,7 +20,34 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-2025-09-05 10:42:19,196 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Invalid ranking structure: got 0 rankings, expected 4
-❌ Experiment failed: Phase 1 execution failed: Could not parse principle ranking from response
 
-RETURN CODE: 1  DURATION: 16.9s
+🎯 Phase 1 Complete - Duration: 5m 35s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+🗳️  Voting initiated (Round 2)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 2 complete
+
+🗣️  Round 3
+🗳️  Voting initiated (Round 3)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $1000)
+
+🏁 Phase 2 Complete with consensus - Duration: 20m 53s
+   Rounds conducted: 3
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 26m 40s
+Consensus: ✅ maximizing_average_floor_constraint
+
+
+RETURN CODE: 0  DURATION: 1603.1s

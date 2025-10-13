@@ -1,12 +1,6 @@
 language: English
 seed: 350184188
 agents:
-- name: Agent_0
-  personality: You are a college student
-  model: minimax/minimax-m1
-  temperature: 1.1609429746023316
-  memory_character_limit: 25000
-  reasoning_enabled: true
 - name: Agent_1
   personality: You are a college student
   model: qwen/qwen3-30b-a3b-instruct-2507
@@ -15,17 +9,17 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: minimax/minimax-m1
+  model: qwen/qwq-32b
   temperature: 1.1609429746023316
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: z-ai/glm-4.5
+  model: qwen/qwen3-30b-a3b-instruct-2507
   temperature: 1.1609429746023316
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: google/gemini-2.5-flash
+utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
 phase2_rounds: 10
 distribution_range_phase2:

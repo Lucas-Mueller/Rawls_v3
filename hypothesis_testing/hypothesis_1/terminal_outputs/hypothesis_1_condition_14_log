@@ -2,17 +2,17 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 2da7eb50
+Experiment ID: 424c29ca
 Participants: 5
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-  ✅ Agent_0 (gemini-2.5-flash-lite)
-  ✅ Agent_1 (gemma-3-27b-it)
-  ✅ Agent_2 (gemini-2.5-flash)
+  ✅ Agent_1 (gemini-2.5-flash)
+  ✅ Agent_2 (gemini-2.5-pro)
   ✅ Agent_3 (gemini-2.5-flash-lite)
   ✅ Agent_4 (gemini-2.5-flash-lite)
+  ✅ Agent_5 (gemini-2.5-flash)
 
 ✨ All agents ready
 
@@ -20,48 +20,51 @@ Max Phase 2 rounds: 10
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Running parallel familiarization for 5 participants...
 
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $11,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $10,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $11,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $12,500. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $14,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose maximizing average with floor constraint with a constraint of $13,000. I am sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $12,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: 'I choose Maximizing Average with Floor Constraint with a constraint of $13,000. I am very sure about this choice.'
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $13,000. I am sure about this choice.\n\nMy reasoning is as follows: Distribution 3 has the highest average income at $26,000. However, its lowest income is only $6,000, which is unacceptably low. Distribution 1 has a floor of $12,000, but a lower average of $20,000. Distribution 2 has a floor of $10,000 and an average of $23,500. Distribution 4 has a floor of $13,000 and an average of $19,000. \n\nApplying a floor of $13,000 effectively eliminates Distribution 2 and 3 as viable options. Distribution 4 is better than Distribution 1 in terms of the floor, but its average income is significantly lower. Therefore, maximizing the average *with* a $13,000 floor seems like a good balance between ensuring a basic standard of living and maximizing overall prosperity. I believe $13,000 is a reasonable floor – enough to cover basic needs without being excessively high and hindering overall economic growth. I'm confident this is the best approach given the options.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $14,000. I am sure about this choice.\n\nMy previous round's outcome ($1.90 payoff for a $19,000 income) showed me the potential downside of prioritizing the floor *too* strongly. While I still believe a strong floor is important, I need to balance that with the potential for higher earnings. Distribution 4 has a floor of $11,000, which is significantly lower than my preferred $13,000 from last round, and therefore isn’t appealing. Distribution 3 has a floor of $8,000 which is unacceptable. Distribution 1 has a floor of $13,000, but a much lower average income than Distribution 2. \n\nRaising the floor to $14,000 will likely reduce the average income compared to simply maximizing average income, but it's a reasonable compromise. It’s a small increase from my previous floor of $13,000, and I believe it represents a more robust safety net while still allowing for a relatively high average income. I anticipate this will be a point of discussion in the next phase, and I'm prepared to justify why a slightly higher floor is preferable to simply maximizing the average, especially given my experience in Round 1. I am confident this provides a good balance and is a defensible position.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\nI choose maximizing average with floor constraint with a constraint of $13,000. I am sure about this choice.\n\nGiven my previous rounds, and considering the distributions, I believe sticking with a $13,000 floor offers the best balance. Distribution 1 with this constraint would likely yield a reasonable average income. While Distribution 2 has a higher average, the significantly lower floor feels unacceptable. Distribution 3 and 4 both have lower averages and lower floors. I’ve learned that increasing the floor too much drastically reduces earnings, and I want to avoid repeating that mistake. $13,000 still provides a basic safety net while allowing for a relatively high average income, and I'm prepared to defend this position in the next phase, referencing the previous rounds' outcomes and the importance of a minimum standard of living.\n\n\n\n"
-DEBUG: Principle choice response to parse: "\n\nI choose maximizing average with floor constraint with a constraint of $13,000. I am sure about this choice.\n\nMy previous rounds have consistently shown me that sticking to this principle, with a floor of $13,000, yields reasonable results. While maximizing average income (Dist. 3) *looks* tempting, the low income at the bottom is unacceptable to me. Distribution 1 offers a decent average *and* a floor of $13,000, aligning with my preference for balancing equity and overall wealth. Dist. 2 has a slightly higher average, but only increases the floor by $1,000, and I've already demonstrated a willingness to sacrifice some earnings for a more substantial floor. Dist. 4 is a non-starter due to the low floor of $14,000. I'm confident in my reasoning and prepared to defend this choice in the next phase, armed with the data from the previous rounds.\n\n\n\n"
+2025-10-07 18:20:44,379 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:20:51,445 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:25:27,146 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 1 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
 
-🎯 Phase 1 Complete - Duration: 4m 45s
+🎯 Phase 1 Complete - Duration: 13m 22s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 10 rounds)...
 
 🗣️  Round 1
+2025-10-07 18:34:01,310 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:34:15,419 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:34:38,676 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:35:36,213 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:35:52,103 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
    ✅ Round 1 complete
 
 🗣️  Round 2
-🗳️  Voting initiated (Round 2)
-🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $13000)
+   ✅ Round 2 complete
 
-🏁 Phase 2 Complete with consensus - Duration: 3m 28s
-   Rounds conducted: 2
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+🗳️  Voting initiated (Round 4)
+🎉 Consensus Reached! Principle: maximizing_average_floor_constraint (constraint: $3500)
+
+2025-10-07 18:52:18,673 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:18,676 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:21,763 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:22,072 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:25,373 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:25,373 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking after 3 attempts with feedback. Failure types: ['no_numbered_list', 'no_numbered_list', 'no_numbered_list']
+2025-10-07 18:52:25,728 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+2025-10-07 18:52:25,729 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking after 3 attempts with feedback. Failure types: ['no_numbered_list', 'no_numbered_list', 'no_numbered_list']
+2025-10-07 18:52:28,269 - experiment_agents.utility_agent - ERROR - Failed to parse principle ranking: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+🏁 Phase 2 Complete with consensus - Duration: 19m 16s
+   Rounds conducted: 4
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 8m 19s
+Total Duration: 33m 8s
 Consensus: ✅ maximizing_average_floor_constraint
 
 
-RETURN CODE: 0  DURATION: 501.1s
+RETURN CODE: 0  DURATION: 1990.0s

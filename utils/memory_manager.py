@@ -56,7 +56,8 @@ class MemoryManager:
         interaction_type: str = None,
         round_number: int = None,
         phase: str = None,
-        include_experiment_explanation: bool = True
+        include_experiment_explanation: bool = True,
+        transcript_logger=None
     ) -> str:
         """
         Prompt agent to update their memory based on round content with context-aware template selection.
@@ -121,7 +122,12 @@ class MemoryManager:
                 if len(context.memory) > 0.8 * context.memory_character_limit:
                     logger.info(f"Memory approaching limit for {agent.name}, attempting compression...")
                     memory_to_use = await MemoryManager._compress_memory_if_needed(
-                        agent, context.memory, context.bank_balance, context.memory_character_limit, language_manager
+                        agent,
+                        context.memory,
+                        context.bank_balance,
+                        context.memory_character_limit,
+                        language_manager,
+                        transcript_logger=transcript_logger
                     )
 
                 # Create memory update prompt
@@ -143,7 +149,8 @@ class MemoryManager:
                     context.bank_balance,
                     phase=effective_phase_enum,
                     round_number=agent_round_number,
-                    stage=context.stage
+                    stage=context.stage,
+                    transcript_logger=transcript_logger
                 )
 
                 # Defensively remove any trailing "--- Memory End ---" marker from agent output
@@ -373,7 +380,8 @@ class MemoryManager:
         current_memory: str, 
         bank_balance: float,
         memory_limit: int,
-        language_manager=None
+        language_manager=None,
+        transcript_logger=None
     ) -> str:
         """
         Compress memory when approaching the character limit.
@@ -398,7 +406,11 @@ class MemoryManager:
         )
         
         try:
-            compressed_memory = await agent.update_memory(compression_prompt, bank_balance)
+            compressed_memory = await agent.update_memory(
+                compression_prompt,
+                bank_balance,
+                transcript_logger=transcript_logger
+            )
             
             # Validate that compression was successful
             if len(compressed_memory) < len(current_memory):

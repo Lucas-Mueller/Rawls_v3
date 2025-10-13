@@ -7,7 +7,7 @@ validation with multilingual support and comprehensive error handling.
 
 import asyncio
 from typing import List, Optional, Protocol, Dict, Any
-from agents import Runner
+from utils.logging import run_with_transcript_logging
 from models import (
     ParticipantContext, GroupDiscussionState, VoteResult,
     PrincipleChoice
@@ -53,7 +53,7 @@ class VotingService:
     def __init__(self, language_manager: LanguageProvider, utility_agent: UtilityProvider,
                  settings: Optional[Phase2Settings] = None, logger: Optional[Logger] = None,
                  memory_service: Optional[object] = None, agent_logger: Optional[object] = None,
-                 phase2_rounds: int = 10):
+                 phase2_rounds: int = 10, transcript_logger=None):
         """
         Initialize voting service.
 
@@ -76,6 +76,7 @@ class VotingService:
         self.agent_logger = agent_logger
         # Store phase2_rounds from ExperimentConfiguration
         self.phase2_rounds = phase2_rounds
+        self.transcript_logger = transcript_logger
     
     def _log_info(self, message: str) -> None:
         """Log info message if logger is available."""
@@ -86,7 +87,29 @@ class VotingService:
         """Log warning message if logger is available."""
         if self.logger:
             self.logger.log_warning(message)
-    
+
+    async def _invoke_voting_interaction(
+        self,
+        participant: ParticipantAgent,
+        context: ParticipantContext,
+        prompt: str,
+        interaction_type: str,
+        timeout_seconds: Optional[float] = None
+    ):
+        """Execute a voting interaction with transcript logging and optional timeout."""
+        context.interaction_type = interaction_type
+        coroutine = run_with_transcript_logging(
+            participant=participant,
+            prompt=prompt,
+            context=context,
+            transcript_logger=self.transcript_logger,
+            interaction_type=interaction_type
+        )
+
+        if timeout_seconds is not None:
+            return await asyncio.wait_for(coroutine, timeout_seconds)
+        return await coroutine
+
     def _get_localized_message(self, key: str, **kwargs) -> str:
         """Get localized message with fallback handling."""
         try:
@@ -147,8 +170,6 @@ class VotingService:
         for attempt in range(max_retries):
             try:
                 # Set interaction type for vote prompting
-                context.interaction_type = "vote_prompt"
-                
                 # Add attempt information to logging for retries
                 if attempt > 0:
                     self._log_info(f"Vote prompt retry {attempt + 1}/{max_retries} for {participant.name}")
@@ -157,9 +178,12 @@ class VotingService:
                 else:
                     retry_prompt = vote_prompt
                 
-                result = await asyncio.wait_for(
-                    Runner.run(participant.agent, retry_prompt, context=context),
-                    timeout=vote_prompt_timeout
+                result = await self._invoke_voting_interaction(
+                    participant=participant,
+                    context=context,
+                    prompt=retry_prompt,
+                    interaction_type="vote_prompt",
+                    timeout_seconds=vote_prompt_timeout
                 )
                 response = result.final_output.strip()
                 
@@ -284,11 +308,12 @@ class VotingService:
                 try:
                     confirmation_timeout = self.settings.confirmation_timeout_seconds
                     # Note: public_history provided via context.formatted_context_header (set by Phase2Manager)
-                    context.interaction_type = "vote_confirmation"
-                    
-                    result = await asyncio.wait_for(
-                        Runner.run(participant.agent, confirmation_prompt, context=context),
-                        timeout=confirmation_timeout
+                    result = await self._invoke_voting_interaction(
+                        participant=participant,
+                        context=context,
+                        prompt=confirmation_prompt,
+                        interaction_type="vote_confirmation",
+                        timeout_seconds=confirmation_timeout
                     )
                     response = result.final_output.strip()
                     
@@ -417,7 +442,8 @@ class VotingService:
             error_handler=error_handler,
             utility_agent=utility_agent,
             memory_service=self.memory_service,
-            phase2_rounds=self.phase2_rounds
+            phase2_rounds=self.phase2_rounds,
+            transcript_logger=self.transcript_logger
         )
         
         # Conduct structured two-stage voting process

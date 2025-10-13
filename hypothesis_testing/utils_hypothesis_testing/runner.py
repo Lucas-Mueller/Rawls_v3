@@ -34,10 +34,20 @@ def list_config_files(config_dir: str | Path) -> List[Path]:
 
     Returns absolute Paths.
     """
+    import re
+
     base = Path(config_dir)
     if not base.exists():
         return []
-    files = sorted([p for p in base.iterdir() if p.suffix in {".yml", ".yaml"}], key=lambda p: p.name)
+
+    def sort_key(p: Path) -> tuple[int, str]:
+        """Extract numeric condition number for proper sorting."""
+        match = re.search(r'condition_(\d+)_config', p.name)
+        if match:
+            return int(match.group(1)), p.name
+        return 0, p.name  # fallback
+
+    files = sorted([p for p in base.iterdir() if p.suffix in {".yml", ".yaml"}], key=sort_key)
     return [p.resolve() for p in files]
 
 

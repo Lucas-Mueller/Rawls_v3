@@ -1,31 +1,25 @@
 language: English
 seed: 1950533397
 agents:
-- name: Agent_0
-  personality: You are a college student
-  model: x-ai/grok-3-mini
-  temperature: 1.3765153208599754
-  memory_character_limit: 25000
-  reasoning_enabled: true
 - name: Agent_1
-  personality: You are a college student
-  model: google/gemini-2.5-flash
-  temperature: 1.3765153208599754
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_2
-  personality: You are a college student
-  model: openai/gpt-oss-120b
-  temperature: 1.3765153208599754
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_3
   personality: You are a college student
   model: openai/gpt-oss-20b
   temperature: 1.3765153208599754
   memory_character_limit: 25000
   reasoning_enabled: true
-utility_agent_model: google/gemini-2.5-flash
+- name: Agent_2
+  personality: You are a college student
+  model: x-ai/grok-code-fast-1
+  temperature: 1.0 # Had to modify this because the original value caused an error
+  memory_character_limit: 25000
+  reasoning_enabled: true
+- name: Agent_3
+  personality: You are a college student
+  model: openai/gpt-oss-120b
+  temperature: 1.3765153208599754
+  memory_character_limit: 25000
+  reasoning_enabled: true
+utility_agent_model: gemini-2.5-flash
 utility_agent_temperature: 0.0
 phase2_rounds: 10
 distribution_range_phase2:
@@ -39,3 +33,7 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
+logging:
+  verbosity_level: "debug"  # or minimal, detailed, debug
+  use_colors: true
+  show_progress_bars: true
