@@ -14,6 +14,17 @@ from .statistics import (
     bootstrap_cramers_v,
     cramers_v,
 )
+from .visualizations import (
+    plot_floor_constraint_distribution,
+    plot_income_composition,
+    plot_income_preference_bars,
+    plot_long_term_margin,
+    plot_long_term_stability,
+    plot_preference_stability,
+    plot_rounds_to_outcome,
+    plot_transition_heatmaps,
+    plot_voting_attempts_summary,
+)
 
 __all__ = [
     "list_config_files",
@@ -22,4 +33,13 @@ __all__ = [
     "cramers_v",
     "bias_corrected_cramers_v",
     "bootstrap_cramers_v",
+    "plot_income_preference_bars",
+    "plot_income_composition",
+    "plot_rounds_to_outcome",
+    "plot_floor_constraint_distribution",
+    "plot_voting_attempts_summary",
+    "plot_preference_stability",
+    "plot_transition_heatmaps",
+    "plot_long_term_stability",
+    "plot_long_term_margin",
 ]

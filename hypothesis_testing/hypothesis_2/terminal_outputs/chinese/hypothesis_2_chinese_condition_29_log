@@ -1,0 +1,83 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_29_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_29_config_results.json
+[TECH] Loading configuration from: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_29_config.yaml
+2025-10-14 09:22:56,255 - utils.seed_manager - INFO - Generated seed 51049252 from configuration hash
+2025-10-14 09:22:56,255 - utils.language_manager - INFO - Language set to: English
+[TECH] Language set to: English
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 1e56554f
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
+Configuration file: hypothesis_2_chinese_condition_29_config.yaml
+Started at: 09:22:56
+
+[DEBUG] ✅ FORMAL VOTING: Using structured consensus building with confirmation and secret ballot
+[DEBUG]    • Voting initiated via end-of-round prompts only
+[DEBUG]    • Voting requires confirmation from all participants
+[DEBUG]    • Consensus reached via unanimous secret ballot
+[TECH] Tracing policy: participant-only spans; utility agents untraced
+🤖 Initializing Agents...
+2025-10-14 09:22:56,255 - experiment_agents.participant_agent - INFO - Creating 3 participant agents with dynamic temperature detection...
+2025-10-14 09:22:56,255 - experiment_agents.participant_agent - INFO - Creating agent: Agent_1 (model: qwen/qwen3-next-80b-a3b-thinking, temp: 0.22915455494332182)
+2025-10-14 09:22:56,255 - experiment_agents.participant_agent - INFO - Creating agent Agent_1 with dynamic temperature detection
+2025-10-14 09:22:56,273 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 09:22:57,003 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:22:57,629 - utils.dynamic_model_capabilities - INFO - ✅ qwen/qwen3-next-80b-a3b-thinking supports temperature (discovered during creation)
+2025-10-14 09:22:57,629 - experiment_agents.participant_agent - INFO - ✅ Agent_1: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 09:22:57,629 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_1
+2025-10-14 09:22:57,629 - experiment_agents.participant_agent - INFO - Creating agent: Agent_2 (model: deepseek/deepseek-v3.2-exp, temp: 0.22915455494332182)
+2025-10-14 09:22:57,629 - experiment_agents.participant_agent - INFO - Creating agent Agent_2 with dynamic temperature detection
+2025-10-14 09:22:58,283 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:22:58,314 - utils.dynamic_model_capabilities - INFO - ✅ deepseek/deepseek-v3.2-exp supports temperature (discovered during creation)
+2025-10-14 09:22:58,315 - experiment_agents.participant_agent - INFO - ✅ Agent_2: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 09:22:58,315 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_2
+2025-10-14 09:22:58,315 - experiment_agents.participant_agent - INFO - Creating agent: Agent_3 (model: z-ai/glm-4.5-air, temp: 0.22915455494332182)
+2025-10-14 09:22:58,315 - experiment_agents.participant_agent - INFO - Creating agent Agent_3 with dynamic temperature detection
+2025-10-14 09:22:59,004 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:22:59,377 - utils.dynamic_model_capabilities - INFO - ✅ z-ai/glm-4.5-air supports temperature (discovered during creation)
+2025-10-14 09:22:59,378 - experiment_agents.participant_agent - INFO - ✅ Agent_3: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 09:22:59,378 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_3
+2025-10-14 09:22:59,378 - experiment_agents.participant_agent - INFO - ✅ Successfully created 3 participant agents
+2025-10-14 09:22:59,378 - experiment_agents.utility_agent - INFO - Creating utility agents with model: gemini-2.0-flash-lite (tracing disabled)
+2025-10-14 09:22:59,415 - utils.gemini_client - INFO - Successfully initialized Gemini client with OpenAI-compatible endpoint
+2025-10-14 09:22:59,842 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:22:59,845 - utils.dynamic_model_capabilities - INFO - ✅ gemini-2.0-flash-lite supports temperature (discovered during creation)
+2025-10-14 09:23:00,292 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:00,294 - experiment_agents.utility_agent - INFO - ✅ Utility agents initialized successfully
+2025-10-14 09:23:00,294 - core.experiment_manager - INFO - ✅ Experiment manager initialized with 3 participants
+  ✅ Agent_1 (qwen3-next-80b-a3b-thinking) [0.0s]
+  ✅ Agent_2 (deepseek-v3.2-exp) [0.0s]
+  ✅ Agent_3 (glm-4.5-air) [0.0s]
+
+✨ All agents ready in 4.0s
+
+2025-10-14 09:23:00,294 - utils.seed_manager - INFO - Generated seed 51049252 from configuration hash
+2025-10-14 09:23:00,294 - utils.seed_manager - INFO - Experiment random seed set to: 51049252
+[TECH] Experiment seed: 51049252 (generated)
+[TECH] Tracing experiment: Frohlich Experiment - 1e56554f-cd84-4e30-a4b3-a2aebcf3e5ab
+[TECH] Trace ID: trace_fc48a3f2c7f1495fa8f0738d3712b89f
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+[TECH] Phase 1 executing with language: English
+  Agent_1: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Agent_2: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Agent_3: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+2025-10-14 09:23:00,787 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:01,027 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:01,104 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:01,450 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:23:02,612 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:03,252 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:06,884 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:23:07,234 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:23:07,831 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:08,743 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_2: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+2025-10-14 09:23:15,396 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_3: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+2025-10-14 09:23:16,451 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:17,898 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
