@@ -2,7 +2,7 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 2d115198
+Experiment ID: 0072eda2
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
@@ -20,4 +20,4 @@ Running parallel familiarization for 3 participants...
 
 ❌ Experiment failed: Phase 1 execution failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
 
-RETURN CODE: 1  DURATION: 330.8s
+RETURN CODE: 1  DURATION: 20.5s

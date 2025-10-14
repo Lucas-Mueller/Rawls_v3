@@ -2,15 +2,22 @@ CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmu
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: fc8dcfa7
+Experiment ID: 47298546
 Participants: 3
 Language: English
 Max Phase 2 rounds: 10
 
 🤖 Initializing Agents...
-2025-10-14 11:13:57,090 - utils.dynamic_model_capabilities - ERROR - ❌ gemini-2.5-pro: Non-temperature related error: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-2025-10-14 11:13:57,091 - experiment_agents.participant_agent - ERROR - ❌ Failed to initialize agent Agent_2: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-2025-10-14 11:13:57,091 - experiment_agents.participant_agent - ERROR - Failed to create agent Agent_2: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
-❌ Experiment failed: Failed to initialize experiment manager: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+  ✅ Agent_0 (gemini-2.0-flash-lite)
+  ✅ Agent_1 (gemini-2.0-flash-lite)
+  ✅ Agent_2 (gemini-2.5-pro)
 
-RETURN CODE: 1  DURATION: 18.0s
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+❌ Experiment failed: Phase 1 execution failed: Error code: 503 - [{'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}]
+
+RETURN CODE: 1  DURATION: 144.2s
