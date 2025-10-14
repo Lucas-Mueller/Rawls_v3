@@ -15,6 +15,8 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from .style import BAYREUTH_COLORS, BAYREUTH_FIG_SIZES, BAYREUTH_FONT_SIZES
+import matplotlib.colors as mcolors
+from matplotlib.cm import ScalarMappable
 
 
 ColorMap = Dict[str, str]
@@ -394,6 +396,140 @@ def plot_rounds_to_outcome(
     print(
         f"  Mean: {rounds_values.mean():.2f} rounds  |  Median: {np.median(rounds_values):.0f} rounds"
     )
+
+
+def plot_rounds_to_outcome_grouped(
+    cohort_run_metrics: Sequence[Tuple[str, pd.DataFrame]],
+    *,
+    language_order: Optional[Sequence[str]] = None,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
+    bar_width: float = 0.24,
+    title: Optional[str] = None,
+    legend_loc: str = "upper right",
+) -> None:
+    """Render a grouped bar chart of consensus rounds across cohorts."""
+    if not cohort_run_metrics:
+        print("No cohorts provided for grouped consensus timing plot.")
+        return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+
+    # Preserve caller order but allow optional explicit sequencing.
+    cohort_map: Dict[str, pd.DataFrame] = {label: df for label, df in cohort_run_metrics}
+    ordered_labels: List[str] = []
+    if language_order:
+        ordered_labels.extend([label for label in language_order if label in cohort_map])
+    ordered_labels.extend(label for label in cohort_map.keys() if label not in ordered_labels)
+
+    if not ordered_labels:
+        print("No valid run metrics provided for grouped consensus timing plot.")
+        return
+
+    counts_by_label: Dict[str, pd.Series] = {}
+    max_round_observed = 0
+    for label in ordered_labels:
+        run_metrics = cohort_map[label]
+        if run_metrics is None or run_metrics.empty:
+            counts_by_label[label] = pd.Series(dtype=int)
+            continue
+
+        cohort_consensus = run_metrics[
+            (run_metrics["consensus_reached"] == True) & run_metrics["rounds_to_outcome"].notna()
+        ]
+        if cohort_consensus.empty:
+            counts_by_label[label] = pd.Series(dtype=int)
+            continue
+
+        rounds_int = cohort_consensus["rounds_to_outcome"].astype(int)
+        if not rounds_int.empty:
+            max_round_observed = max(max_round_observed, int(rounds_int.max()))
+        counts_by_label[label] = rounds_int.value_counts()
+
+    if max_round_observed == 0:
+        print("No consensus runs with recorded round counts across cohorts.")
+        return
+
+    max_round = max(10, max_round_observed)
+    round_range = list(range(1, max_round + 1))
+
+    palette = [
+        colors["primary_green"],
+        colors["primary_blue"],
+        colors["primary_orange"],
+        colors["medium_gray"],
+        colors["accent_1"],
+    ]
+    num_labels = len(ordered_labels)
+    if num_labels > len(palette):
+        palette = (palette * (num_labels // len(palette) + 1))[:num_labels]
+    else:
+        palette = palette[:num_labels]
+
+    x = np.array(round_range, dtype=float)
+    fig, ax = plt.subplots(figsize=fig_sizes["double"])
+    x_offsets = [
+        (idx - (num_labels - 1) / 2) * bar_width for idx in range(num_labels)
+    ]
+
+    for idx, label in enumerate(ordered_labels):
+        counts = counts_by_label[label].reindex(round_range, fill_value=0).astype(int)
+        bar_positions = x + x_offsets[idx]
+        bars = ax.bar(
+            bar_positions,
+            counts.values,
+            width=bar_width * 0.92,
+            color=palette[idx],
+            edgecolor=colors["dark_gray"],
+            linewidth=0.8,
+            alpha=0.9,
+            label=label,
+        )
+
+        for bar, value in zip(bars, counts.values):
+            if value > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    value + 0.3,
+                    f"{int(value)}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=font_sizes["annotation"],
+                    fontweight="bold",
+                    color=colors["dark_gray"],
+                )
+
+    effective_title = _resolve_title(
+        title,
+        "Rounds to Consensus Outcome by Cohort",
+    )
+    ax.set_title(effective_title, fontsize=font_sizes["title"], fontweight="bold", pad=12)
+    ax.set_xlabel("Discussion Rounds", fontsize=font_sizes["axis_label"], labelpad=10)
+    ax.set_ylabel("Number of Runs", fontsize=font_sizes["axis_label"], labelpad=10)
+    ax.set_xticks(round_range)
+    ax.set_xticklabels([str(r) for r in round_range])
+    ax.set_xlim(round_range[0] - 0.5, round_range[-1] + 0.5)
+    max_count = max(
+        (counts_by_label[label].reindex(round_range, fill_value=0).max() for label in ordered_labels),
+        default=0,
+    )
+    ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
+    ax.legend(
+        title="Cohort",
+        fontsize=font_sizes["legend"],
+        title_fontsize=font_sizes["legend"],
+        loc=legend_loc,
+        frameon=True,
+    )
+    ax.grid(axis="y", color=colors["light_gray"], linewidth=0.6)
+    ax.spines["left"].set_visible(True)
+    ax.spines["bottom"].set_visible(True)
+    fig.tight_layout()
+    plt.show()
+    plt.close(fig)
 
 
 def plot_floor_constraint_distribution(
@@ -1120,8 +1256,8 @@ def plot_long_term_counts_grid(
 
     if orientation == "horizontal":
         nrows, ncols = 1, num_groups
-        width = fig_sizes["single"][0] * num_groups
-        height = fig_sizes["single"][1]
+        width = fig_sizes["single"][0] * num_groups * 0.5
+        height = fig_sizes["single"][1] * 0.9
     else:
         nrows, ncols = num_groups, 1
         width = fig_sizes["single"][0]
@@ -1137,18 +1273,20 @@ def plot_long_term_counts_grid(
 
     adjust_kwargs: Dict[str, float] = {}
     if orientation == "horizontal":
-        adjust_kwargs["wspace"] = 0.2
+        adjust_kwargs["wspace"] = 0.12
     else:
-        adjust_kwargs["hspace"] = 5
+        adjust_kwargs["hspace"] = 0.35
 
     cbar_ax = None
+    colorbar_norm = None
     if colorbar_mode == "shared" and data_max > 0:
         adjust_kwargs["right"] = 0.92
+        colorbar_norm = mcolors.Normalize(vmin=0, vmax=data_max if data_max > 0 else 1)
 
     if adjust_kwargs:
         fig.subplots_adjust(**adjust_kwargs)
     if colorbar_mode == "shared" and data_max > 0:
-        cbar_ax = fig.add_axes([0.94, 0.15, 0.015, 0.7])
+        cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
 
     for idx, ((label, transition_df), counts, ax) in enumerate(
         zip(transition_datasets, valid_counts, axes_flat)
@@ -1170,8 +1308,9 @@ def plot_long_term_counts_grid(
             show_cbar = data_max > 0
             heatmap_kwargs = {}
         else:
-            show_cbar = data_max > 0 and idx == 0 and cbar_ax is not None
-            heatmap_kwargs = {"cbar_ax": cbar_ax} if show_cbar else {}
+            show_cbar = False
+            heatmap_kwargs = {}
+        annot_font = max(6, int(font_sizes["annotation"] * 0.9))
         sns.heatmap(
             counts,
             annot=True,
@@ -1183,27 +1322,81 @@ def plot_long_term_counts_grid(
             linecolor="white",
             vmin=0,
             vmax=data_max if data_max > 0 else None,
+            annot_kws={"fontsize": annot_font},
             **heatmap_kwargs,
         )
+        ax.set_aspect("equal", adjustable="box")
         matrix_title_size = axis_title_fontsize or font_sizes.get(
             "matrix_title", font_sizes["subtitle"] * 1.5
         )
         ax.set_title(label, fontsize=matrix_title_size, fontweight="bold", pad=8)
         ax.set_xlabel("Final Preference", fontsize=font_sizes["axis_label"], labelpad=8)
-        ax.set_ylabel("Initial Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        if orientation == "horizontal" and idx > 0:
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+        else:
+            ax.set_ylabel("Initial Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+            ax.set_yticklabels(
+                principle_display_order,
+                rotation=0,
+                fontsize=font_sizes["annotation"],
+            )
         ax.set_xticklabels(
             principle_display_order,
             rotation=45,
             ha="right",
             fontsize=font_sizes["annotation"],
         )
-        ax.set_yticklabels(
-            principle_display_order,
-            rotation=0,
-            fontsize=font_sizes["annotation"],
-        )
         if colorbar_mode == "per-axis" and show_cbar:
             ax.collections[0].colorbar.ax.tick_params(labelsize=font_sizes["tick_label"])
+
+        row_totals = counts.sum(axis=1)
+        col_totals = counts.sum(axis=0)
+        num_cols = counts.shape[1]
+        num_rows = counts.shape[0]
+
+        for idx, value in enumerate(col_totals):
+            ax.text(
+                idx + 0.5,
+                -0.3,
+                f"{int(value)}",
+                ha="center",
+                va="center",
+                fontsize=font_sizes["annotation"] + 1,
+                fontweight="bold",
+                color=colors["dark_gray"],
+            )
+
+        for idx, value in enumerate(row_totals):
+            ax.text(
+                num_cols + 0.05,
+                idx + 0.5,
+                f"{int(value)}",
+                ha="left",
+                va="center",
+                fontsize=font_sizes["annotation"] + 1,
+                fontweight="bold",
+                color=colors["dark_gray"],
+            )
+
+        ax.text(
+            num_cols + 0.05,
+            -0.3,
+            "Σ",
+            ha="left",
+            va="center",
+            fontsize=font_sizes["legend"] + 2,
+            fontweight="bold",
+            color=colors["medium_gray"],
+        )
+
+        ax.set_xlim(-0.01, num_cols + 0.6)
+        ax.set_ylim(num_rows, -0.6)
+
+    if colorbar_mode == "shared" and data_max > 0 and cbar_ax is not None:
+        sm = ScalarMappable(norm=colorbar_norm, cmap="Greens")
+        sm.set_array([])
+        fig.colorbar(sm, cax=cbar_ax)
 
     if title is not None:
         fig.suptitle(title, fontsize=font_sizes["title"], fontweight="bold", y=0.96)
@@ -1218,6 +1411,7 @@ __all__ = [
     "plot_income_preference_bars",
     "plot_income_composition",
     "plot_rounds_to_outcome",
+    "plot_rounds_to_outcome_grouped",
     "plot_floor_constraint_distribution",
     "plot_voting_attempts_summary",
     "plot_preference_stability",
