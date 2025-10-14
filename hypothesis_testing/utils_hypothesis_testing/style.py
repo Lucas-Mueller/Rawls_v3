@@ -79,7 +79,7 @@ def apply_bayreuth_theme() -> None:
     """Apply rcParams and seaborn defaults for the Bayreuth identity."""
     plt.rcParams.update(
         {
-            "figure.dpi": 150,
+            "figure.dpi": 300,
             "savefig.dpi": 300,
             "figure.facecolor": BAYREUTH_COLORS["background"],
             "axes.facecolor": BAYREUTH_COLORS["background"],

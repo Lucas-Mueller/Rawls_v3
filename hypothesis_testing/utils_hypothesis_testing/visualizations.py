@@ -14,11 +14,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
-from .style import (
-    BAYREUTH_COLORS,
-    BAYREUTH_FIG_SIZES,
-    BAYREUTH_FONT_SIZES,
-)
+from .style import BAYREUTH_COLORS, BAYREUTH_FIG_SIZES, BAYREUTH_FONT_SIZES
 
 
 ColorMap = Dict[str, str]
@@ -943,6 +939,281 @@ def plot_long_term_margin(
     plt.close(fig)
 
 
+def plot_long_term_stability_grid(
+    transition_datasets: Sequence[Tuple[str, pd.DataFrame]],
+    *,
+    principle_order: Sequence[str],
+    principle_display_order: Sequence[str],
+    format_principle_label: FormatLabelFunc,
+    title: Optional[str] = None,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
+) -> None:
+    """Render counts/percentage heatmaps for multiple cohorts in a stacked layout."""
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+
+    if not transition_datasets:
+        print("No cohorts provided for comparison.")
+        return
+
+    width, base_height = fig_sizes["double"]
+    num_groups = len(transition_datasets)
+    fig, axes = plt.subplots(
+        nrows=num_groups,
+        ncols=2,
+        figsize=(width, base_height * num_groups),
+        squeeze=False,
+    )
+
+    for row_index, (label, transition_df) in enumerate(transition_datasets):
+        ax_counts, ax_percent = axes[row_index]
+
+        if transition_df is None or transition_df.empty:
+            ax_counts.axis("off")
+            ax_percent.axis("off")
+            ax_counts.text(
+                0.5,
+                0.5,
+                f"No transition data for {label}.",
+                ha="center",
+                va="center",
+                fontsize=font_sizes["subtitle"],
+                color=colors["dark_gray"],
+            )
+            continue
+
+        counts = pd.crosstab(transition_df["wave1"], transition_df["wave4"], margins=False)
+        counts.index = counts.index.map(format_principle_label)
+        counts.columns = counts.columns.map(format_principle_label)
+        counts = counts.reindex(
+            index=principle_display_order,
+            columns=principle_display_order,
+            fill_value=0,
+        )
+        percent = counts.div(counts.sum(axis=1).replace(0, np.nan), axis=0).fillna(0) * 100
+
+        sns.heatmap(
+            counts,
+            annot=True,
+            fmt="d",
+            cmap="Greens",
+            ax=ax_counts,
+            cbar=True,
+            linewidths=1.2,
+            linecolor="white",
+            vmin=0,
+            cbar_kws={"shrink": 0.9},
+        )
+        ax_counts.set_title(
+            f"{label}",
+            fontsize=font_sizes["subtitle"],
+            fontweight="bold",
+            pad=8,
+        )
+        ax_counts.set_xlabel("Final Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        ax_counts.set_ylabel("Initial Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        ax_counts.set_xticklabels(
+            principle_display_order,
+            rotation=45,
+            ha="right",
+            fontsize=font_sizes["annotation"],
+        )
+        ax_counts.set_yticklabels(
+            principle_display_order,
+            rotation=0,
+            fontsize=font_sizes["annotation"],
+        )
+
+        sns.heatmap(
+            percent,
+            annot=True,
+            fmt=".1f",
+            cmap="Greens",
+            ax=ax_percent,
+            cbar=True,
+            linewidths=1.2,
+            linecolor="white",
+            vmin=0,
+            vmax=100,
+            cbar_kws={"shrink": 0.9},
+        )
+        ax_percent.set_title(
+            "Percentages",
+            fontsize=font_sizes["subtitle"],
+            fontweight="bold",
+            pad=8,
+        )
+        for text in ax_percent.texts:
+            text.set_text(text.get_text() + "%")
+        ax_percent.set_xlabel("Final Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        ax_percent.set_ylabel("")
+        ax_percent.set_xticklabels(
+            principle_display_order,
+            rotation=45,
+            ha="right",
+            fontsize=font_sizes["annotation"],
+        )
+        ax_percent.set_yticklabels(
+            [],
+            rotation=0,
+            fontsize=font_sizes["annotation"],
+        )
+
+    if title is not None:
+        fig.suptitle(title, fontsize=font_sizes["title"], fontweight="bold", y=0.92)
+        fig.tight_layout(rect=[0, 0, 1, 0.90])
+    else:
+        fig.tight_layout()
+    plt.show()
+    plt.close(fig)
+
+
+def plot_long_term_counts_grid(
+    transition_datasets: Sequence[Tuple[str, pd.DataFrame]],
+    *,
+    principle_display_order: Sequence[str],
+    format_principle_label: FormatLabelFunc,
+    orientation: str = "horizontal",
+    title: Optional[str] = None,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
+    colorbar_mode: str = "per-axis",
+    axis_title_fontsize: Optional[float] = None,
+) -> None:
+    """Render counts-only stability heatmaps for multiple cohorts."""
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+
+    if not transition_datasets:
+        print("No cohorts provided for comparison.")
+        return
+
+    valid_counts: List[pd.DataFrame] = []
+    for label, transition_df in transition_datasets:
+        if transition_df is None or transition_df.empty:
+            valid_counts.append(pd.DataFrame())
+            continue
+        counts = pd.crosstab(transition_df["wave1"], transition_df["wave4"], margins=False)
+        counts.index = counts.index.map(format_principle_label)
+        counts.columns = counts.columns.map(format_principle_label)
+        counts = counts.reindex(
+            index=principle_display_order,
+            columns=principle_display_order,
+            fill_value=0,
+        )
+        valid_counts.append(counts)
+
+    data_max = max((df.values.max() if not df.empty else 0 for df in valid_counts), default=0)
+
+    num_groups = len(transition_datasets)
+    orientation = orientation.lower()
+    if orientation not in {"horizontal", "vertical"}:
+        raise ValueError("orientation must be 'horizontal' or 'vertical'")
+    colorbar_mode = colorbar_mode.lower()
+    if colorbar_mode not in {"shared", "per-axis"}:
+        raise ValueError("colorbar_mode must be 'shared' or 'per-axis'")
+
+    if orientation == "horizontal":
+        nrows, ncols = 1, num_groups
+        width = fig_sizes["single"][0] * num_groups
+        height = fig_sizes["single"][1]
+    else:
+        nrows, ncols = num_groups, 1
+        width = fig_sizes["single"][0]
+        height = fig_sizes["single"][1] * num_groups
+
+    fig, axes = plt.subplots(
+        nrows=nrows,
+        ncols=ncols,
+        figsize=(width, height),
+        squeeze=False,
+    )
+    axes_flat = axes.flatten()
+
+    adjust_kwargs: Dict[str, float] = {}
+    if orientation == "horizontal":
+        adjust_kwargs["wspace"] = 0.2
+    else:
+        adjust_kwargs["hspace"] = 5
+
+    cbar_ax = None
+    if colorbar_mode == "shared" and data_max > 0:
+        adjust_kwargs["right"] = 0.92
+
+    if adjust_kwargs:
+        fig.subplots_adjust(**adjust_kwargs)
+    if colorbar_mode == "shared" and data_max > 0:
+        cbar_ax = fig.add_axes([0.94, 0.15, 0.015, 0.7])
+
+    for idx, ((label, transition_df), counts, ax) in enumerate(
+        zip(transition_datasets, valid_counts, axes_flat)
+    ):
+        if counts.empty:
+            ax.axis("off")
+            ax.text(
+                0.5,
+                0.5,
+                f"No transition data for {label}.",
+                ha="center",
+                va="center",
+                fontsize=font_sizes["subtitle"],
+                color=colors["dark_gray"],
+            )
+            continue
+
+        if colorbar_mode == "per-axis":
+            show_cbar = data_max > 0
+            heatmap_kwargs = {}
+        else:
+            show_cbar = data_max > 0 and idx == 0 and cbar_ax is not None
+            heatmap_kwargs = {"cbar_ax": cbar_ax} if show_cbar else {}
+        sns.heatmap(
+            counts,
+            annot=True,
+            fmt="d",
+            cmap="Greens",
+            ax=ax,
+            cbar=show_cbar,
+            linewidths=1.2,
+            linecolor="white",
+            vmin=0,
+            vmax=data_max if data_max > 0 else None,
+            **heatmap_kwargs,
+        )
+        matrix_title_size = axis_title_fontsize or font_sizes.get(
+            "matrix_title", font_sizes["subtitle"] * 1.5
+        )
+        ax.set_title(label, fontsize=matrix_title_size, fontweight="bold", pad=8)
+        ax.set_xlabel("Final Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        ax.set_ylabel("Initial Preference", fontsize=font_sizes["axis_label"], labelpad=8)
+        ax.set_xticklabels(
+            principle_display_order,
+            rotation=45,
+            ha="right",
+            fontsize=font_sizes["annotation"],
+        )
+        ax.set_yticklabels(
+            principle_display_order,
+            rotation=0,
+            fontsize=font_sizes["annotation"],
+        )
+        if colorbar_mode == "per-axis" and show_cbar:
+            ax.collections[0].colorbar.ax.tick_params(labelsize=font_sizes["tick_label"])
+
+    if title is not None:
+        fig.suptitle(title, fontsize=font_sizes["title"], fontweight="bold", y=0.96)
+        fig.tight_layout(rect=[0, 0, 0.93 if colorbar_mode == "shared" else 1, 0.92])
+    else:
+        fig.tight_layout(rect=[0, 0, 0.93 if colorbar_mode == "shared" else 1, 1])
+    plt.show()
+    plt.close(fig)
+
+
 __all__ = [
     "plot_income_preference_bars",
     "plot_income_composition",
@@ -953,4 +1224,6 @@ __all__ = [
     "plot_transition_heatmaps",
     "plot_long_term_stability",
     "plot_long_term_margin",
+    "plot_long_term_counts_grid",
+    "plot_long_term_stability_grid",
 ]
