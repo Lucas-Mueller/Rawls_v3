@@ -1,1 +1,246 @@
 CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_29_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_29_config_results.json
+[TECH] Loading configuration from: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/configs/chinese/hypothesis_2_chinese_condition_29_config.yaml
+2025-10-14 13:40:02,665 - utils.seed_manager - INFO - Generated seed 51049252 from configuration hash
+2025-10-14 13:40:02,665 - utils.language_manager - INFO - Language set to: English
+[TECH] Language set to: English
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 0aa61d2e
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
+Configuration file: hypothesis_2_chinese_condition_29_config.yaml
+Started at: 13:40:02
+
+[DEBUG] ✅ FORMAL VOTING: Using structured consensus building with confirmation and secret ballot
+[DEBUG]    • Voting initiated via end-of-round prompts only
+[DEBUG]    • Voting requires confirmation from all participants
+[DEBUG]    • Consensus reached via unanimous secret ballot
+[TECH] Tracing policy: participant-only spans; utility agents untraced
+🤖 Initializing Agents...
+2025-10-14 13:40:02,666 - experiment_agents.participant_agent - INFO - Creating 3 participant agents with dynamic temperature detection...
+2025-10-14 13:40:02,666 - experiment_agents.participant_agent - INFO - Creating agent: Agent_1 (model: qwen/qwen3-next-80b-a3b-thinking, temp: 0.22915455494332182)
+2025-10-14 13:40:02,666 - experiment_agents.participant_agent - INFO - Creating agent Agent_1 with dynamic temperature detection
+2025-10-14 13:40:02,698 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 13:40:03,859 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:04,407 - utils.dynamic_model_capabilities - INFO - ✅ qwen/qwen3-next-80b-a3b-thinking supports temperature (discovered during creation)
+2025-10-14 13:40:04,408 - experiment_agents.participant_agent - INFO - ✅ Agent_1: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 13:40:04,408 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_1
+2025-10-14 13:40:04,408 - experiment_agents.participant_agent - INFO - Creating agent: Agent_2 (model: deepseek/deepseek-v3.2-exp, temp: 0.22915455494332182)
+2025-10-14 13:40:04,408 - experiment_agents.participant_agent - INFO - Creating agent Agent_2 with dynamic temperature detection
+2025-10-14 13:40:05,633 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:05,640 - utils.dynamic_model_capabilities - INFO - ✅ deepseek/deepseek-v3.2-exp supports temperature (discovered during creation)
+2025-10-14 13:40:05,640 - experiment_agents.participant_agent - INFO - ✅ Agent_2: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 13:40:05,640 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_2
+2025-10-14 13:40:05,640 - experiment_agents.participant_agent - INFO - Creating agent: Agent_3 (model: z-ai/glm-4.5-air, temp: 0.22915455494332182)
+2025-10-14 13:40:05,640 - experiment_agents.participant_agent - INFO - Creating agent Agent_3 with dynamic temperature detection
+2025-10-14 13:40:08,245 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:08,791 - utils.dynamic_model_capabilities - INFO - ✅ z-ai/glm-4.5-air supports temperature (discovered during creation)
+2025-10-14 13:40:08,791 - experiment_agents.participant_agent - INFO - ✅ Agent_3: Temperature 0.22915455494332182 active (method: successful_creation)
+2025-10-14 13:40:08,791 - experiment_agents.participant_agent - INFO - ✅ Successfully initialized agent Agent_3
+2025-10-14 13:40:08,791 - experiment_agents.participant_agent - INFO - ✅ Successfully created 3 participant agents
+2025-10-14 13:40:08,791 - experiment_agents.utility_agent - INFO - Creating utility agents with model: gemini-2.0-flash-lite (tracing disabled)
+2025-10-14 13:40:08,824 - utils.gemini_client - INFO - Successfully initialized Gemini client with OpenAI-compatible endpoint
+2025-10-14 13:40:09,296 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:09,301 - utils.dynamic_model_capabilities - INFO - ✅ gemini-2.0-flash-lite supports temperature (discovered during creation)
+2025-10-14 13:40:09,824 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:09,828 - experiment_agents.utility_agent - INFO - ✅ Utility agents initialized successfully
+2025-10-14 13:40:09,828 - core.experiment_manager - INFO - ✅ Experiment manager initialized with 3 participants
+  ✅ Agent_1 (qwen3-next-80b-a3b-thinking) [0.0s]
+  ✅ Agent_2 (deepseek-v3.2-exp) [0.0s]
+  ✅ Agent_3 (glm-4.5-air) [0.0s]
+
+✨ All agents ready in 7.2s
+
+2025-10-14 13:40:09,828 - utils.seed_manager - INFO - Generated seed 51049252 from configuration hash
+2025-10-14 13:40:09,828 - utils.seed_manager - INFO - Experiment random seed set to: 51049252
+[TECH] Experiment seed: 51049252 (generated)
+[TECH] Tracing experiment: Frohlich Experiment - 0aa61d2e-a1be-4a90-8986-a0f92c7e5bb3
+[TECH] Trace ID: trace_20f36afbfc034ae79ff7db1f9e271cb3
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+[TECH] Phase 1 executing with language: English
+  Agent_1: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Agent_2: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+  Agent_3: Initial ranking [██░░░░░░░░░░░░░░░░░░] 10.0%
+2025-10-14 13:40:10,359 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:10,867 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:11,199 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:13,298 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:14,053 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:15,390 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:19,584 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:20,409 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:20,937 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_2: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+2025-10-14 13:40:22,498 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:26,422 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:27,257 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:32,165 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:32,464 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:32,970 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_2: Post-explanation ranking [████████░░░░░░░░░░░░] 40.0%
+2025-10-14 13:40:36,950 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:37,755 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:39,058 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+  Agent_1: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+2025-10-14 13:40:39,754 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:39,857 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:43,372 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_3: Learning principles [█████░░░░░░░░░░░░░░░] 25.0%
+2025-10-14 13:40:47,222 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:48,951 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:51,705 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_2: Application round 1 [██████████░░░░░░░░░░] 50.0%
+2025-10-14 13:40:54,017 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:54,584 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:54,884 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:40:55,112 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:40:55,779 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_2: Application round 2 [████████████░░░░░░░░] 60.0%
+2025-10-14 13:41:11,469 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:12,537 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:12,577 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:13,432 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:15,810 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_1: Post-explanation ranking [████████░░░░░░░░░░░░] 40.0%
+2025-10-14 13:41:22,321 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:26,613 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_2: Application round 3 [██████████████░░░░░░] 70.0%
+2025-10-14 13:41:30,078 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:31,425 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+  Agent_3: Post-explanation ranking [████████░░░░░░░░░░░░] 40.0%
+2025-10-14 13:41:32,068 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:32,083 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:41:32,394 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:41:32,624 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:41,522 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:42,171 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:42,990 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_2: Application round 4 [████████████████░░░░] 80.0%
+2025-10-14 13:41:52,311 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:53,438 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:41:53,631 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:41:54,285 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_1: Application round 1 [██████████░░░░░░░░░░] 50.0%
+2025-10-14 13:42:06,404 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:06,833 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:07,184 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:09,358 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_2: Final ranking [██████████████████░░] 90.0%
+2025-10-14 13:42:13,609 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:14,878 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:42:15,205 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:15,996 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+  Agent_3: Application round 1 [██████████░░░░░░░░░░] 50.0%
+2025-10-14 13:42:21,132 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:25,442 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:42:33,656 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:34,192 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:36,045 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_2: Completed [████████████████████] 100.0%
+2025-10-14 13:42:43,116 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:43,910 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:42:46,681 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_3: Application round 2 [████████████░░░░░░░░] 60.0%
+2025-10-14 13:42:57,930 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:43:02,335 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_1: Application round 2 [████████████░░░░░░░░] 60.0%
+2025-10-14 13:43:11,152 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:43:12,976 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:43:42,630 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:43:43,214 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:43:44,024 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+  Agent_1: Application round 3 [██████████████░░░░░░] 70.0%
+2025-10-14 13:44:34,280 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:44:35,464 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 13:44:56,506 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:44:57,218 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 13:45:01,510 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+❌ Experiment failed: Phase 1 execution failed: Expecting value: line 739 column 1 (char 4059)
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 243, in run_complete_experiment
+    phase1_results = await self.phase1_manager.run_phase1(self.config, self.agent_logger, process_logger)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 87, in run_phase1
+    return await asyncio.gather(*tasks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 524, in _run_single_participant_phase1
+    result, round_content = await self._step_1_3_principle_application(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 687, in _step_1_3_principle_application
+    result = await self._invoke_phase1_interaction(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/phase1_manager.py", line 195, in _invoke_phase1_interaction
+    return await run_with_transcript_logging(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/logging/transcript_logger.py", line 160, in run_with_transcript_logging
+    result = await Runner.run(participant.agent, prompt, context=context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 206, in run
+    return await runner.run(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 412, in run
+    input_guardrail_results, turn_result = await asyncio.gather(
+                                           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 960, in _run_single_turn
+    new_response = await cls._get_new_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/run.py", line 1121, in _get_new_response
+    new_response = await model.get_response(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 65, in get_response
+    response = await self._fetch_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/agents/models/openai_chatcompletions.py", line 273, in _fetch_response
+    ret = await self._get_client().chat.completions.create(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 2454, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1791, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1596, in request
+    return await self._process_response(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1685, in _process_response
+    return await api_response.parse()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_response.py", line 430, in parse
+    parsed = self._parse(to=to)
+             ^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/openai/_response.py", line 265, in _parse
+    data = response.json()
+           ^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/lib/python3.11/site-packages/httpx/_models.py", line 832, in json
+    return jsonlib.loads(self.content, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 739 column 1 (char 4059)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py", line 136, in main
+    results = await experiment_manager.run_complete_experiment(process_logger)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/utils/error_handling.py", line 402, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lucasmuller/Desktop/Githubg/Rawls_v3/core/experiment_manager.py", line 245, in run_complete_experiment
+    raise ExperimentLogicError(
+utils.error_handling.ExperimentLogicError: Phase 1 execution failed: Expecting value: line 739 column 1 (char 4059)
+2025-10-14 13:45:33,121 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+
+RETURN CODE: 1  DURATION: 331.7s

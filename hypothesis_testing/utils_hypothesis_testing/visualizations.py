@@ -6,7 +6,7 @@ callers to override figure titles when needed.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +28,19 @@ FormatLabelFunc = Callable[[str], str]
 def _resolve_title(custom_title: Optional[str], default: str) -> str:
     """Return the caller-specified title if present, otherwise fall back."""
     return custom_title if custom_title is not None else default
+
+
+def _scale_font_sizes(font_sizes: FontSizeMap, scale: float) -> FontSizeMap:
+    """Return a scaled copy of the font size map."""
+    if scale == 1.0:
+        return dict(font_sizes)
+    scaled: FontSizeMap = {}
+    for key, value in font_sizes.items():
+        if isinstance(value, (int, float)):
+            scaled[key] = max(1, int(round(value * scale)))
+        else:
+            scaled[key] = value
+    return scaled
 
 
 def plot_income_preference_bars(
@@ -408,6 +421,7 @@ def plot_rounds_to_outcome_grouped(
     bar_width: float = 0.24,
     title: Optional[str] = None,
     legend_loc: str = "upper right",
+    font_scale: float = 1.0,
 ) -> None:
     """Render a grouped bar chart of consensus rounds across cohorts."""
     if not cohort_run_metrics:
@@ -415,7 +429,8 @@ def plot_rounds_to_outcome_grouped(
         return
 
     colors = colors or BAYREUTH_COLORS
-    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    base_fonts = font_sizes or BAYREUTH_FONT_SIZES
+    font_sizes = _scale_font_sizes(base_fonts, font_scale)
     fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     # Preserve caller order but allow optional explicit sequencing.
@@ -518,7 +533,150 @@ def plot_rounds_to_outcome_grouped(
     )
     ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
     ax.legend(
-        title="Cohort",
+        title="Language",
+        fontsize=font_sizes["legend"],
+        title_fontsize=font_sizes["legend"],
+        loc=legend_loc,
+        frameon=True,
+    )
+    ax.grid(axis="y", color=colors["light_gray"], linewidth=0.6)
+    ax.spines["left"].set_visible(True)
+    ax.spines["bottom"].set_visible(True)
+    fig.tight_layout()
+    plt.show()
+    plt.close(fig)
+
+
+def plot_floor_constraint_distribution_grouped(
+    cohort_vote_rounds: Sequence[Tuple[str, pd.DataFrame]],
+    *,
+    language_order: Optional[Sequence[str]] = None,
+    target_principle_label: str = "Max Floor",
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
+    bar_width: float = 0.24,
+    title: Optional[str] = None,
+    legend_loc: str = "upper right",
+    font_scale: float = 1.0,
+) -> None:
+    """Render grouped constraint amounts for a target principle across cohorts."""
+    if not cohort_vote_rounds:
+        print("No cohorts provided for grouped constraint plot.")
+        return
+
+    colors = colors or BAYREUTH_COLORS
+    base_fonts = font_sizes or BAYREUTH_FONT_SIZES
+    font_sizes = _scale_font_sizes(base_fonts, font_scale)
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+
+    cohort_map: Dict[str, pd.DataFrame] = {label: df for label, df in cohort_vote_rounds}
+    ordered_labels: List[str] = []
+    if language_order:
+        ordered_labels.extend([label for label in language_order if label in cohort_map])
+    ordered_labels.extend(label for label in cohort_map.keys() if label not in ordered_labels)
+
+    if not ordered_labels:
+        print("No valid vote round data provided for grouped constraint plot.")
+        return
+
+    counts_by_label: Dict[str, pd.Series] = {}
+    unique_amounts: Set[float] = set()
+
+    for label in ordered_labels:
+        vote_rounds = cohort_map[label]
+        if vote_rounds is None or vote_rounds.empty:
+            counts_by_label[label] = pd.Series(dtype=int)
+            continue
+
+        consensus_rounds = vote_rounds[
+            (vote_rounds["consensus_reached"] == True)
+            & vote_rounds["agreed_constraint"].notna()
+            & (vote_rounds["agreed_principle_label"] == target_principle_label)
+        ]
+        if consensus_rounds.empty:
+            counts_by_label[label] = pd.Series(dtype=int)
+            continue
+
+        amounts = consensus_rounds["agreed_constraint"].astype(float)
+        unique_amounts.update(amounts.tolist())
+        counts_by_label[label] = amounts.value_counts()
+
+    if not unique_amounts:
+        print(
+            f"No consensus rounds with {target_principle_label} constraints found across cohorts."
+        )
+        return
+
+    sorted_amounts = sorted(unique_amounts)
+    x = np.arange(len(sorted_amounts), dtype=float)
+
+    palette = [
+        colors["primary_green"],
+        colors["primary_blue"],
+        colors["primary_orange"],
+        colors["medium_gray"],
+        colors["accent_1"],
+    ]
+    num_labels = len(ordered_labels)
+    if num_labels > len(palette):
+        palette = (palette * (num_labels // len(palette) + 1))[:num_labels]
+    else:
+        palette = palette[:num_labels]
+
+    fig, ax = plt.subplots(figsize=fig_sizes["double"])
+    x_offsets = [
+        (idx - (num_labels - 1) / 2) * bar_width for idx in range(num_labels)
+    ]
+
+    def format_constraint(amount: float) -> str:
+        amount_k = amount / 1000
+        if abs(amount_k - round(amount_k)) < 1e-6:
+            return f"${int(round(amount_k))}k"
+        return f"${amount_k:.1f}k"
+
+    max_count = 0
+    for idx, label in enumerate(ordered_labels):
+        counts = counts_by_label[label].reindex(sorted_amounts, fill_value=0).astype(int)
+        bar_positions = x + x_offsets[idx]
+        bars = ax.bar(
+            bar_positions,
+            counts.values,
+            width=bar_width * 0.92,
+            color=palette[idx],
+            edgecolor=colors["dark_gray"],
+            linewidth=0.8,
+            alpha=0.9,
+            label=label,
+        )
+
+        max_count = max(max_count, counts.values.max() if len(counts.values) else 0)
+        for bar, value in zip(bars, counts.values):
+            if value > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    value + 0.3,
+                    f"{int(value)}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=font_sizes["annotation"],
+                    fontweight="bold",
+                    color=colors["dark_gray"],
+                )
+
+    effective_title = _resolve_title(
+        title,
+        f"{target_principle_label} Constraint Amounts by Language",
+    )
+    ax.set_title(effective_title, fontsize=font_sizes["title"], fontweight="bold", pad=12)
+    ax.set_xlabel("Constraint Amount", fontsize=font_sizes["axis_label"], labelpad=10)
+    ax.set_ylabel("Number of Runs", fontsize=font_sizes["axis_label"], labelpad=10)
+    ax.set_xticks(x)
+    ax.set_xticklabels([format_constraint(amount) for amount in sorted_amounts])
+    ax.set_xlim(x[0] - 0.5, x[-1] + 0.5)
+    ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
+    ax.legend(
+        title="Language",
         fontsize=font_sizes["legend"],
         title_fontsize=font_sizes["legend"],
         loc=legend_loc,
@@ -1412,6 +1570,7 @@ __all__ = [
     "plot_income_composition",
     "plot_rounds_to_outcome",
     "plot_rounds_to_outcome_grouped",
+    "plot_floor_constraint_distribution_grouped",
     "plot_floor_constraint_distribution",
     "plot_voting_attempts_summary",
     "plot_preference_stability",
