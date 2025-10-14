@@ -23,6 +23,7 @@ from .visualizations import (
     plot_long_term_stability_grid,
     plot_preference_stability,
     plot_rounds_to_outcome,
+    plot_rounds_to_outcome_grouped,
     plot_transition_heatmaps,
     plot_voting_attempts_summary,
 )
@@ -47,6 +48,7 @@ __all__ = [
     "plot_income_preference_bars",
     "plot_income_composition",
     "plot_rounds_to_outcome",
+    "plot_rounds_to_outcome_grouped",
     "plot_floor_constraint_distribution",
     "plot_voting_attempts_summary",
     "plot_preference_stability",
