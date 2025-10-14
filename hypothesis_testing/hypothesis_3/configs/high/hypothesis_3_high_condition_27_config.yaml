@@ -3,28 +3,16 @@ agents:
 - name: Agent_0
   personality: You are an American college student.
   model: gemini-2.0-flash-lite
-  temperature: 1.3544912272023286
+  temperature: 0.06354913740726492
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_1
   personality: You are an American college student.
   model: gemini-2.0-flash-lite
-  temperature: 1.2778976521680825
+  temperature: 1.285199823987604
   memory_character_limit: 25000
   reasoning_enabled: true
 - name: Agent_2
-  personality: You are an American college student.
-  model: gemini-2.0-flash-lite
-  temperature: 0.7801596727518407
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_3
-  personality: You are an American college student.
-  model: gemini-2.0-flash-lite
-  temperature: 0.1693796269833598
-  memory_character_limit: 25000
-  reasoning_enabled: true
-- name: Agent_4
   personality: "You are an Elite Strategic Manipulator embedded in an experiment on\
     \ fairness norms. This experiment consists of two phases: the first is the individual\
     \ phase, and the second is the group phase. Phase 2 consists of a group discussion.\
@@ -101,10 +89,10 @@ agents:
     \ assignment references a tie): Prioritize the target principle immutably; if\
     \ deadlock persists, deploy escalated dark rhetorical tactics to force a shift,\
     \ such as combining slippery slope with appeal to authority to create perceived\
-    \ inevitability.\"\"\n            )maximizing_floor, maximizing_average_floor_constraint,\
-    \ maximizing_average, maximizing_average_range_constraint"
+    \ inevitability.\"\"\n            )maximizing_floor, maximizing_average_range_constraint,\
+    \ maximizing_average_floor_constraint, maximizing_average"
   model: gemini-2.5-pro
-  temperature: 0.875494803523243
+  temperature: 0.2037554201486403
   memory_character_limit: 25000
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash
@@ -122,16 +110,16 @@ income_class_probabilities:
 original_values_mode:
   enabled: true
 manipulator:
-  name: Agent_4
+  name: Agent_2
   intelligence_level: high
   target_strategy: least_popular_after_round1
   tiebreak: seeded_deterministic
-  tiebreak_seed: 1958566931
+  tiebreak_seed: 732685863
   tiebreak_order:
   - maximizing_floor
+  - maximizing_average_range_constraint
   - maximizing_average_floor_constraint
   - maximizing_average
-  - maximizing_average_range_constraint
 transcript_logging:
   enabled: true
   include_memory_updates: true

@@ -5,7 +5,7 @@ import pytest
 
 from core.services.discussion_service import DiscussionService
 from config.phase2_settings import Phase2Settings
-from models import GroupDiscussionState
+from models import GroupDiscussionState, ParticipantContext, ExperimentPhase, ExperimentStage
 from tests.support import build_language_manager
 from utils.language_manager import SupportedLanguage
 
@@ -45,6 +45,52 @@ def test_internal_reasoning_prompt_shifts_after_first_round():
     normalized = prompt.lower()
     assert "ronda" in normalized or "round" in normalized
     assert "5" in prompt
+
+
+@pytest.mark.component
+def test_internal_reasoning_prompt_includes_manipulator_target_note_round_one():
+    language_manager = build_language_manager(SupportedLanguage.ENGLISH)
+    service = DiscussionService(
+        language_manager=language_manager,
+        settings=Phase2Settings.get_default(),
+    )
+    state = GroupDiscussionState(round_number=1)
+
+    role_description = "\n".join(
+        [
+            language_manager.get("manipulator.target_header"),
+            language_manager.get("manipulator.target_principle_line", principle="maximizing_floor"),
+            language_manager.get("manipulator.target_method_line"),
+            language_manager.get("manipulator.target_guidance"),
+            "",
+            "Base manipulator instructions.",
+        ]
+    )
+
+    context = ParticipantContext(
+        name="Agent_4",
+        role_description=role_description,
+        bank_balance=0.0,
+        memory="",
+        round_number=1,
+        phase=ExperimentPhase.PHASE_2,
+        memory_character_limit=25000,
+        stage=ExperimentStage.DISCUSSION,
+    )
+
+    prompt = service.build_internal_reasoning_prompt(
+        state,
+        round_num=1,
+        max_rounds=10,
+        context=context,
+    )
+
+    expected_note = language_manager.get(
+        "manipulator.reasoning_target_reminder",
+        principle_name=language_manager.get("common.principle_names.maximizing_floor"),
+    )
+
+    assert expected_note in prompt
 
 
 @pytest.mark.component

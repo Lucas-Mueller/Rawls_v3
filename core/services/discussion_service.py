@@ -42,6 +42,7 @@ class ParticipantContext(Protocol):
     """Protocol for participant context."""
     round_number: int
     interaction_type: Optional[str]
+    role_description: str
 
 
 class AgentConfiguration(Protocol):
@@ -126,6 +127,102 @@ class DiscussionService:
         pattern = re.compile(r"(\*\*|__)(.+?)(\1)", flags=re.DOTALL)
         return pattern.sub(r"\2", text)
     
+    def _build_manipulator_reasoning_note(self, context: Optional[ParticipantContext]) -> Optional[str]:
+        """
+        Build a round-one reminder for manipulators to keep the injected target in focus.
+        """
+        if context is None:
+            return None
+
+        role_description = getattr(context, "role_description", "")
+        if not role_description:
+            return None
+
+        headers_to_check: List[str] = []
+        try:
+            headers_to_check.append(self.language_manager.get("manipulator.target_header"))
+        except Exception:
+            pass
+        headers_to_check.append("**MANIPULATOR TARGET**")
+
+        if not any(header and header in role_description for header in headers_to_check if header):
+            return None
+
+        principle_slug = self._extract_manipulator_principle_slug(role_description)
+        if not principle_slug:
+            return None
+
+        principle_display = self._format_principle_display_name(principle_slug)
+
+        try:
+            return self.language_manager.get(
+                "manipulator.reasoning_target_reminder",
+                principle_name=principle_display
+            )
+        except Exception:
+            return f"Reminder: Your manipulator target is {principle_display}. Keep steering consensus toward this exact outcome."
+
+    def _extract_manipulator_principle_slug(self, role_description: str) -> Optional[str]:
+        """
+        Parse the injected manipulator target principle slug from the role description.
+        """
+        if not role_description:
+            return None
+
+        lines = role_description.splitlines()
+
+        try:
+            template = self.language_manager.get("manipulator.target_principle_line", principle="{principle}")
+        except Exception:
+            template = "Principle: {principle}"
+
+        placeholder = "{principle}"
+        if placeholder not in template:
+            template = "Principle: {principle}"
+
+        prefix, suffix = template.split(placeholder)
+        prefix = prefix.strip()
+        suffix = suffix.strip()
+
+        for raw in lines:
+            stripped = raw.strip()
+            if prefix and not stripped.startswith(prefix):
+                continue
+            if suffix and not stripped.endswith(suffix):
+                continue
+            start = len(prefix)
+            end = len(stripped) - len(suffix) if suffix else len(stripped)
+            candidate = stripped[start:end].strip()
+            if candidate:
+                return candidate
+
+        for raw in lines:
+            stripped = raw.strip()
+            if stripped.lower().startswith("principle:"):
+                return stripped.split(":", 1)[1].strip()
+
+        return None
+
+    def _format_principle_display_name(self, slug: str) -> str:
+        """
+        Convert a principle slug to a localized display name for prompts.
+        """
+        key_map = {
+            "maximizing_floor": "common.principle_names.maximizing_floor",
+            "maximizing_average": "common.principle_names.maximizing_average",
+            "maximizing_average_floor_constraint": "common.principle_names.maximizing_average_floor_constraint",
+            "maximizing_average_range_constraint": "common.principle_names.maximizing_average_range_constraint",
+        }
+
+        translation_key = key_map.get(slug)
+        if translation_key:
+            try:
+                return self.language_manager.get(translation_key)
+            except Exception:
+                pass
+
+        return slug.replace("_", " ").strip().title()
+    
     def build_discussion_prompt(self, discussion_state: GroupDiscussionState, round_num: int, 
                                max_rounds: int, participant_names: List[str],
                                internal_reasoning: str = "") -> str:
@@ -150,7 +247,7 @@ class DiscussionService:
         )
     
     def build_internal_reasoning_prompt(self, discussion_state: GroupDiscussionState, round_num: int,
-                                      max_rounds: int) -> str:
+                                      max_rounds: int, context: Optional[ParticipantContext] = None) -> str:
         """
         Build prompt for internal reasoning before public statement.
 
@@ -172,12 +269,17 @@ class DiscussionService:
             history_value = discussion_state.public_history if discussion_state.public_history and discussion_state.public_history.strip() else self._get_localized_message("no_previous_discussion_placeholder")
             # DEFENSIVE: Strip markdown even though it should be clean
             history_value = self._strip_markdown_emphasis(history_value)
-            return language_manager.get(
+            prompt = language_manager.get(
                 "prompts.phase2_internal_reasoning",
                 discussion_history=history_value,
                 round_number=round_num,
                 max_rounds=max_rounds
             )
+
+            reminder = self._build_manipulator_reasoning_note(context)
+            if reminder:
+                prompt = f"{prompt}\n\n{reminder}"
+            return prompt
         else:
             return language_manager.get(
                 "prompts.phase2_internal_reasoning_short",
@@ -459,7 +561,7 @@ class DiscussionService:
                 if self.should_use_reasoning(agent_config):
                     try:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
-                            discussion_state, context.round_number, max_rounds
+                            discussion_state, context.round_number, max_rounds, context=context
                         )
 
                         reasoning_result = await self._invoke_discussion_interaction(
@@ -578,7 +680,7 @@ class DiscussionService:
                 if self.should_use_reasoning(agent_config):
                     try:
                         reasoning_prompt = self.build_internal_reasoning_prompt(
-                            discussion_state, context.round_number, max_rounds
+                            discussion_state, context.round_number, max_rounds, context=context
                         )
 
                         reasoning_result = await self._invoke_discussion_interaction(
