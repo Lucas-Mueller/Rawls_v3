@@ -25,6 +25,16 @@ from .visualizations import (
     plot_transition_heatmaps,
     plot_voting_attempts_summary,
 )
+from .style import (
+    BAYREUTH_COLORS,
+    BAYREUTH_FIG_SIZES,
+    BAYREUTH_FONT_SIZES,
+    PRINCIPLE_COLORS,
+    PRINCIPLE_DISPLAY_NAMES,
+    apply_bayreuth_theme,
+    format_principle_label,
+    format_principle_labels,
+)
 
 __all__ = [
     "list_config_files",
@@ -42,4 +52,12 @@ __all__ = [
     "plot_transition_heatmaps",
     "plot_long_term_stability",
     "plot_long_term_margin",
+    "BAYREUTH_COLORS",
+    "BAYREUTH_FIG_SIZES",
+    "BAYREUTH_FONT_SIZES",
+    "PRINCIPLE_COLORS",
+    "PRINCIPLE_DISPLAY_NAMES",
+    "apply_bayreuth_theme",
+    "format_principle_label",
+    "format_principle_labels",
 ]

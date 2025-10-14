@@ -542,3 +542,165 @@ Beginning group discussion (max 10 rounds)...
 2025-10-14 09:22:30,617 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
    ✅ Agent_2 responded (1740 chars) [52.5s]
 2025-10-14 09:22:45,685 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:22:46,401 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:22:46,577 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:06,916 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:23:07,260 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:03,347 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:03,864 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:19,159 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+🗳️  Voting initiated (Round 9)
+2025-10-14 09:24:19,673 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:20,038 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:20,058 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:22,238 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:25,661 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:35,805 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_1
+2025-10-14 09:24:36,483 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:36,783 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:36,822 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_1 principle_selection: '1' -> 1 (attempt 1)
+2025-10-14 09:24:36,824 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_1: principle 1, amount None
+2025-10-14 09:24:36,824 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_2
+2025-10-14 09:24:37,878 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:37,924 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_2 principle_selection: '1' -> 1 (attempt 1)
+2025-10-14 09:24:37,925 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_2: principle 1, amount None
+2025-10-14 09:24:37,925 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_3
+2025-10-14 09:24:40,332 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:24:42,083 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:56,695 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_3 principle_selection: '3' -> 3 (attempt 1)
+2025-10-14 09:24:57,853 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:24:58,723 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:25:28,123 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_3 amount_specification: '$13,000' -> 13000 (attempt 1)
+2025-10-14 09:25:28,123 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_3: principle 3, amount 13000
+2025-10-14 09:25:28,124 - core.two_stage_voting_manager - INFO - Two-stage voting completed successfully for all participants
+2025-10-14 09:25:28,124 - core.two_stage_voting_manager - INFO - No consensus reached: 2 different vote combinations
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 9 complete - 4m 59s
+
+🗣️  Round 10 (10/10)
+   Speaking order: Agent_1 → Agent_3 → Agent_2
+   💭 Agent_1 is thinking...
+2025-10-14 09:25:28,877 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:25:29,992 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:26:10,158 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:26:10,683 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+   ✅ Agent_1 responded (1320 chars) [52.8s]
+2025-10-14 09:26:21,581 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+   💭 Agent_3 is thinking...
+2025-10-14 09:26:23,768 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:26:25,960 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:27:22,408 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:27:22,472 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+   ✅ Agent_3 responded (1578 chars) [1m 19s]
+2025-10-14 09:27:42,715 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+   💭 Agent_2 is thinking...
+2025-10-14 09:27:43,225 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:27:44,202 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:28:28,044 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:28:29,521 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+   ✅ Agent_2 responded (1389 chars) [59.5s]
+2025-10-14 09:28:42,875 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:28:43,957 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:28:45,255 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:29:18,888 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:29:21,382 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:03,631 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:06,665 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:17,713 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+🗳️  Voting initiated (Round 10)
+2025-10-14 09:31:18,882 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:19,363 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:19,726 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:28,988 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:44,967 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_1
+2025-10-14 09:31:45,662 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:45,917 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:46,064 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_1 principle_selection: '1' -> 1 (attempt 1)
+2025-10-14 09:31:46,066 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_1: principle 1, amount None
+2025-10-14 09:31:46,066 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_2
+2025-10-14 09:31:47,133 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:47,210 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_2 principle_selection: '1' -> 1 (attempt 1)
+2025-10-14 09:31:47,210 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_2: principle 1, amount None
+2025-10-14 09:31:47,210 - core.two_stage_voting_manager - INFO - Starting two-stage voting for Agent_3
+2025-10-14 09:31:48,340 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:51,203 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:31:52,377 - core.two_stage_voting_manager - INFO - Two-stage voting success - Agent_3 principle_selection: '1' -> 1 (attempt 1)
+2025-10-14 09:31:52,377 - core.two_stage_voting_manager - INFO - Completed two-stage voting for Agent_3: principle 1, amount None
+2025-10-14 09:31:52,379 - core.two_stage_voting_manager - INFO - Two-stage voting completed successfully for all participants
+2025-10-14 09:31:52,379 - core.two_stage_voting_manager - INFO - Consensus reached: maximizing_floor with constraint None
+🎉 Consensus Reached! Principle: maximizing_floor
+
+2025-10-14 09:31:52,398 - utils.language_manager - INFO - Language set to: English
+2025-10-14 09:31:52,401 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 09:31:53,058 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:31:56,739 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:32:47,615 - utils.language_manager - INFO - Language set to: English
+2025-10-14 09:32:47,617 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 09:32:48,035 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:32:49,055 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:33:29,939 - utils.language_manager - INFO - Language set to: English
+2025-10-14 09:33:29,941 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 09:33:31,019 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:33:34,178 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:34:06,626 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:34:06,628 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:34:06,639 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:34:09,376 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:34:10,302 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:34:18,229 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 09:34:20,838 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 09:34:24,010 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+🏁 Phase 2 Complete with consensus - Duration: 54m 3s
+   Rounds conducted: 10
+   Final earnings:
+     Agent_1: $7.02
+     Agent_2: $7.02
+     Agent_3: $7.02
+
+[TECH] Experiment 63a9d176-bfe0-44cf-9b1b-9e75de0847c4 completed successfully in 3755.04 seconds
+2025-10-14 09:34:24,879 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+[TECH] Consensus validation successful - discussion aligns with recorded consensus
+[TECH] Transcript saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/transcript_63a9d176-bfe0-44cf-9b1b-9e75de0847c4.json
+2025-10-14 09:34:24,930 - core.experiment_manager - INFO - Results saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_12_config_results.json
+2025-10-14 09:34:24,930 - core.experiment_manager - INFO - Seed used: 441434976 (generated)
+[TECH] Results saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_12_config_results.json
+[DEBUG] Trace: https://platform.openai.com/logs/trace?trace_id=trace_15c8e39c11af4a7b95411cf4325f42c6
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 1h 2m
+Consensus: ✅ maximizing_floor
+Transcript saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/transcript_63a9d176-bfe0-44cf-9b1b-9e75de0847c4.json
+Errors: None
+Results saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_12_config_results.json
+🔗 Trace: https://platform.openai.com/logs/trace?trace_id=trace_15c8e39c11af4a7b95411cf4325f42c6
+
+
+Frohlich Experiment Results (ID: 63a9d176-bfe0-44cf-9b1b-9e75de0847c4)
+Completed in 3755.04 seconds
+
+PHASE 1 RESULTS:
+  Agent_1: $16.30 (Initial pref: maximizing_floor, Final pref: maximizing_floor)
+  Agent_2: $8.00 (Initial pref: maximizing_floor, Final pref: maximizing_floor)
+  Agent_3: $8.80 (Initial pref: maximizing_average_floor_constraint, Final pref: maximizing_average_floor_constraint)
+  Average Phase 1 earnings: $11.03
+
+PHASE 2 RESULTS:
+  Consensus reached on: maximizing_floor
+  Rounds to consensus: 10
+  Phase 2 earnings:
+    Agent_1: $7.02
+    Agent_2: $7.02
+    Agent_3: $7.02
+  Average Phase 2 earnings: $7.02
+
+TOTAL EARNINGS:
+  Agent_1: $23.32
+  Agent_3: $15.82
+  Agent_2: $15.02
+
+HIGHEST EARNER: Agent_1 with $23.32
+2025-10-14 09:34:25,432 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+
+RETURN CODE: 0  DURATION: 3766.0s

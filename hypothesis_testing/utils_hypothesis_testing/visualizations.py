@@ -14,6 +14,12 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
+from .style import (
+    BAYREUTH_COLORS,
+    BAYREUTH_FIG_SIZES,
+    BAYREUTH_FONT_SIZES,
+)
+
 
 ColorMap = Dict[str, str]
 FontSizeMap = Dict[str, int]
@@ -31,9 +37,9 @@ def plot_income_preference_bars(
     count_long: pd.DataFrame,
     percent_long: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
@@ -42,6 +48,10 @@ def plot_income_preference_bars(
     """
     if summary_df.empty:
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     category_order = summary_df["Income Class"].tolist()
     palette = [colors["switched"], colors["stayed"]]
@@ -156,15 +166,19 @@ def plot_income_composition(
     count_long: pd.DataFrame,
     composition_percent_long: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
     """Plot switcher composition by income class with absolute and relative panels."""
     if count_long.empty:
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     palette = [colors["switched"], colors["stayed"]]
     category_order = list(dict.fromkeys(count_long["Income Class"]))
@@ -315,9 +329,9 @@ def plot_income_composition(
 def plot_rounds_to_outcome(
     run_metrics: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
@@ -328,6 +342,10 @@ def plot_rounds_to_outcome(
     if consensus_rounds.empty:
         print(f"No consensus runs with recorded round counts for {title_suffix}.")
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     rounds_int = consensus_rounds["rounds_to_outcome"].astype(int)
     max_observed = int(rounds_int.max())
@@ -385,9 +403,9 @@ def plot_rounds_to_outcome(
 def plot_floor_constraint_distribution(
     vote_rounds: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
@@ -398,6 +416,10 @@ def plot_floor_constraint_distribution(
     if parameter_votes.empty:
         print(f"No successful votes with numeric constraints found for {title_suffix}.")
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     amounts = parameter_votes["agreed_constraint"].values
     bin_width = 1000
@@ -452,9 +474,9 @@ def plot_floor_constraint_distribution(
 def plot_voting_attempts_summary(
     run_metrics: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
@@ -462,6 +484,10 @@ def plot_voting_attempts_summary(
     if run_metrics.empty:
         print(f"No voting metrics available for {title_suffix}.")
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     metrics = run_metrics.copy()
     metrics["success_rate"] = metrics.apply(
@@ -531,9 +557,9 @@ def plot_voting_attempts_summary(
 def plot_preference_stability(
     transition_df: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     title_suffix: str,
     title: Optional[str] = None,
 ) -> None:
@@ -541,6 +567,10 @@ def plot_preference_stability(
     if transition_df.empty:
         print(f"No transition data available for {title_suffix}.")
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     transitions = [
         ("wave1", "wave2", "W1→W2"),
@@ -590,9 +620,9 @@ def plot_preference_stability(
 def plot_transition_heatmaps(
     transition_df: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     principle_display_order: Sequence[str],
     format_principle_label: FormatLabelFunc,
     title_suffix: str,
@@ -601,6 +631,10 @@ def plot_transition_heatmaps(
     """Plot heatmaps for principle transitions between waves."""
     if transition_df.empty:
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     fig, axes = plt.subplots(1, 3, figsize=fig_sizes["triple"])
     transitions = [
@@ -692,9 +726,9 @@ def plot_transition_heatmaps(
 def plot_long_term_stability(
     transition_df: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     principle_order: Sequence[str],
     principle_display_order: Sequence[str],
     format_principle_label: FormatLabelFunc,
@@ -704,6 +738,10 @@ def plot_long_term_stability(
     """Visualise wave1 → wave4 stability counts and percentages."""
     if transition_df.empty:
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     counts = pd.crosstab(transition_df["wave1"], transition_df["wave4"], margins=False)
     counts.index = counts.index.map(format_principle_label)
@@ -796,9 +834,9 @@ def plot_long_term_stability(
 def plot_long_term_margin(
     transition_df: pd.DataFrame,
     *,
-    colors: ColorMap,
-    font_sizes: FontSizeMap,
-    fig_sizes: FigureSizeMap,
+    colors: Optional[ColorMap] = None,
+    font_sizes: Optional[FontSizeMap] = None,
+    fig_sizes: Optional[FigureSizeMap] = None,
     principle_display_order: Sequence[str],
     format_principle_label: FormatLabelFunc,
     title_suffix: str,
@@ -807,6 +845,10 @@ def plot_long_term_margin(
     """Plot counts heatmap with margin totals for long-term stability."""
     if transition_df.empty:
         return
+
+    colors = colors or BAYREUTH_COLORS
+    font_sizes = font_sizes or BAYREUTH_FONT_SIZES
+    fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
 
     counts = pd.crosstab(transition_df["wave1"], transition_df["wave4"], margins=False)
     counts.index = counts.index.map(format_principle_label)
