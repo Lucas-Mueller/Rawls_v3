@@ -6,7 +6,7 @@ callers to override figure titles when needed.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -422,8 +422,13 @@ def plot_rounds_to_outcome_grouped(
     title: Optional[str] = None,
     legend_loc: str = "upper right",
     font_scale: float = 1.0,
+    annotation_fontsize: Optional[float] = None,
 ) -> None:
-    """Render a grouped bar chart of consensus rounds across cohorts."""
+    """
+    Render a grouped bar chart of consensus rounds across cohorts.
+
+    Use `annotation_fontsize` to override the count-label size per bar (default follows Bayreuth scale).
+    """
     if not cohort_run_metrics:
         print("No cohorts provided for grouped consensus timing plot.")
         return
@@ -432,6 +437,9 @@ def plot_rounds_to_outcome_grouped(
     base_fonts = font_sizes or BAYREUTH_FONT_SIZES
     font_sizes = _scale_font_sizes(base_fonts, font_scale)
     fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+    effective_annotation_size = (
+        max(1, int(round(annotation_fontsize))) if annotation_fontsize is not None else font_sizes["annotation"]
+    )
 
     # Preserve caller order but allow optional explicit sequencing.
     cohort_map: Dict[str, pd.DataFrame] = {label: df for label, df in cohort_run_metrics}
@@ -512,7 +520,7 @@ def plot_rounds_to_outcome_grouped(
                     f"{int(value)}",
                     ha="center",
                     va="bottom",
-                    fontsize=font_sizes["annotation"],
+                    fontsize=effective_annotation_size,
                     fontweight="bold",
                     color=colors["dark_gray"],
                 )
@@ -552,6 +560,7 @@ def plot_floor_constraint_distribution_grouped(
     *,
     language_order: Optional[Sequence[str]] = None,
     target_principle_label: str = "Max Floor",
+    bin_width: int = 4000,
     colors: Optional[ColorMap] = None,
     font_sizes: Optional[FontSizeMap] = None,
     fig_sizes: Optional[FigureSizeMap] = None,
@@ -559,8 +568,16 @@ def plot_floor_constraint_distribution_grouped(
     title: Optional[str] = None,
     legend_loc: str = "upper right",
     font_scale: float = 1.0,
+    show_title: bool = True,
+    annotation_fontsize: Optional[float] = None,
 ) -> None:
-    """Render grouped constraint amounts for a target principle across cohorts."""
+    """
+    Render grouped constraint amounts for a target principle across cohorts.
+
+    Amounts are binned on a continuous axis using fixed-width buckets (default 4k).
+    Set `show_title=False` to suppress the chart title when embedding alongside others.
+    Use `annotation_fontsize` to override the count labels.
+    """
     if not cohort_vote_rounds:
         print("No cohorts provided for grouped constraint plot.")
         return
@@ -569,6 +586,9 @@ def plot_floor_constraint_distribution_grouped(
     base_fonts = font_sizes or BAYREUTH_FONT_SIZES
     font_sizes = _scale_font_sizes(base_fonts, font_scale)
     fig_sizes = fig_sizes or BAYREUTH_FIG_SIZES
+    effective_annotation_size = (
+        max(1, int(round(annotation_fontsize))) if annotation_fontsize is not None else font_sizes["annotation"]
+    )
 
     cohort_map: Dict[str, pd.DataFrame] = {label: df for label, df in cohort_vote_rounds}
     ordered_labels: List[str] = []
@@ -580,13 +600,13 @@ def plot_floor_constraint_distribution_grouped(
         print("No valid vote round data provided for grouped constraint plot.")
         return
 
-    counts_by_label: Dict[str, pd.Series] = {}
-    unique_amounts: Set[float] = set()
+    raw_amounts_by_label: Dict[str, pd.Series] = {}
+    max_amount_observed = 0.0
 
     for label in ordered_labels:
         vote_rounds = cohort_map[label]
         if vote_rounds is None or vote_rounds.empty:
-            counts_by_label[label] = pd.Series(dtype=int)
+            raw_amounts_by_label[label] = pd.Series(dtype=float)
             continue
 
         consensus_rounds = vote_rounds[
@@ -595,21 +615,54 @@ def plot_floor_constraint_distribution_grouped(
             & (vote_rounds["agreed_principle_label"] == target_principle_label)
         ]
         if consensus_rounds.empty:
-            counts_by_label[label] = pd.Series(dtype=int)
+            raw_amounts_by_label[label] = pd.Series(dtype=float)
             continue
 
         amounts = consensus_rounds["agreed_constraint"].astype(float)
-        unique_amounts.update(amounts.tolist())
-        counts_by_label[label] = amounts.value_counts()
+        if not amounts.empty:
+            max_amount_observed = max(max_amount_observed, float(amounts.max()))
+        raw_amounts_by_label[label] = amounts
 
-    if not unique_amounts:
+    if max_amount_observed <= 0:
         print(
             f"No consensus rounds with {target_principle_label} constraints found across cohorts."
         )
         return
 
-    sorted_amounts = sorted(unique_amounts)
-    x = np.arange(len(sorted_amounts), dtype=float)
+    if bin_width <= 0:
+        raise ValueError("bin_width must be a positive integer.")
+
+    max_edge = int(np.ceil(max_amount_observed / bin_width) * bin_width)
+    bin_edges = np.arange(0, max_edge + bin_width, bin_width, dtype=float)
+    if len(bin_edges) < 2:
+        bin_edges = np.array([0.0, float(bin_width)], dtype=float)
+    num_bins = len(bin_edges) - 1
+    bin_indices = list(range(num_bins))
+
+    def _format_bin_label(lower: float, upper: float) -> str:
+        lower_k = lower / 1000
+        upper_k = upper / 1000
+        return f"${lower_k:.0f}k–${upper_k:.0f}k"
+
+    bin_labels = [_format_bin_label(bin_edges[i], bin_edges[i + 1]) for i in range(num_bins)]
+
+    counts_by_label: Dict[str, pd.Series] = {}
+    for label in ordered_labels:
+        amounts = raw_amounts_by_label[label]
+        if amounts.empty:
+            counts_by_label[label] = pd.Series(0, index=bin_indices, dtype=int)
+            continue
+        bucketed = pd.cut(
+            amounts,
+            bins=bin_edges,
+            right=True,
+            include_lowest=True,
+            labels=bin_indices,
+        )
+        counts = bucketed.value_counts().reindex(bin_indices, fill_value=0).sort_index()
+        counts_by_label[label] = counts.astype(int)
+
+    x = np.arange(num_bins, dtype=float)
 
     palette = [
         colors["primary_green"],
@@ -637,7 +690,7 @@ def plot_floor_constraint_distribution_grouped(
 
     max_count = 0
     for idx, label in enumerate(ordered_labels):
-        counts = counts_by_label[label].reindex(sorted_amounts, fill_value=0).astype(int)
+        counts = counts_by_label[label]
         bar_positions = x + x_offsets[idx]
         bars = ax.bar(
             bar_positions,
@@ -659,20 +712,27 @@ def plot_floor_constraint_distribution_grouped(
                     f"{int(value)}",
                     ha="center",
                     va="bottom",
-                    fontsize=font_sizes["annotation"],
+                    fontsize=effective_annotation_size,
                     fontweight="bold",
                     color=colors["dark_gray"],
                 )
 
-    effective_title = _resolve_title(
-        title,
-        f"{target_principle_label} Constraint Amounts by Language",
-    )
-    ax.set_title(effective_title, fontsize=font_sizes["title"], fontweight="bold", pad=12)
+    if show_title:
+        effective_title = _resolve_title(
+            title,
+            f"{target_principle_label} Constraint Amounts by Language",
+        )
+        if effective_title:
+            ax.set_title(
+                effective_title,
+                fontsize=font_sizes["title"],
+                fontweight="bold",
+                pad=12,
+            )
     ax.set_xlabel("Constraint Amount", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_ylabel("Number of Runs", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_xticks(x)
-    ax.set_xticklabels([format_constraint(amount) for amount in sorted_amounts])
+    ax.set_xticklabels(bin_labels)
     ax.set_xlim(x[0] - 0.5, x[-1] + 0.5)
     ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
     ax.legend(

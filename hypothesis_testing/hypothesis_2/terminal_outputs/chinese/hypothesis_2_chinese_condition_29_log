@@ -667,3 +667,88 @@ json.decoder.JSONDecodeError: Expecting value: line 1939 column 1 (char 10659)
 2025-10-14 15:48:12,545 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
 2025-10-14 15:48:47,298 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
 2025-10-14 15:48:48,829 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:49:32,844 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:49:35,461 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:50:19,265 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:50:21,566 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+🗳️  Voting initiated (Round 10)
+2025-10-14 15:50:22,247 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:50:22,671 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:50:22,834 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:50:38,713 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:50:39,448 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 10 complete - 5m 18s
+
+2025-10-14 15:50:56,483 - utils.language_manager - INFO - Language set to: English
+2025-10-14 15:50:56,484 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 15:50:57,390 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:50:59,895 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:51:19,751 - utils.language_manager - INFO - Language set to: English
+2025-10-14 15:51:19,753 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 15:51:20,096 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:51:21,254 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:52:05,085 - utils.language_manager - INFO - Language set to: English
+2025-10-14 15:52:05,087 - utils.language_manager - INFO - Loaded translations for English
+2025-10-14 15:52:06,223 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:52:07,577 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:53:07,536 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:53:07,706 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:53:08,585 - httpx - INFO - HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:53:09,206 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:53:12,790 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:53:12,900 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+2025-10-14 15:53:14,987 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+2025-10-14 15:53:23,840 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+🏁 Phase 2 Complete without consensus - Duration: 1h 10m
+   Rounds conducted: 10
+   Final earnings:
+     Agent_1: $5.17
+     Agent_2: $3.26
+     Agent_3: $4.35
+
+[TECH] Experiment 3e33d002-30fe-4b17-ad12-3ff335756f4a completed successfully in 4803.47 seconds
+[TECH] Transcript saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/transcript_3e33d002-30fe-4b17-ad12-3ff335756f4a.json
+2025-10-14 15:53:23,912 - core.experiment_manager - INFO - Results saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_29_config_results.json
+2025-10-14 15:53:23,912 - core.experiment_manager - INFO - Seed used: 51049252 (generated)
+[TECH] Results saved to: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_29_config_results.json
+[DEBUG] Trace: https://platform.openai.com/logs/trace?trace_id=trace_123e8e41bf734d8b8055ea0f4860f289
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 1h 20m
+Consensus: ❌ Not reached
+Transcript saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/transcript_3e33d002-30fe-4b17-ad12-3ff335756f4a.json
+Errors: None
+Results saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_2/results/chinese/hypothesis_2_chinese_condition_29_config_results.json
+🔗 Trace: https://platform.openai.com/logs/trace?trace_id=trace_123e8e41bf734d8b8055ea0f4860f289
+
+
+Frohlich Experiment Results (ID: 3e33d002-30fe-4b17-ad12-3ff335756f4a)
+Completed in 4803.47 seconds
+
+PHASE 1 RESULTS:
+  Agent_1: $8.40 (Initial pref: maximizing_floor, Final pref: maximizing_average)
+  Agent_2: $7.10 (Initial pref: maximizing_floor, Final pref: maximizing_floor)
+  Agent_3: $10.00 (Initial pref: maximizing_average_floor_constraint, Final pref: maximizing_average_floor_constraint)
+  Average Phase 1 earnings: $8.50
+
+PHASE 2 RESULTS:
+  No consensus reached after 10 rounds
+  Payoffs randomly assigned
+  Phase 2 earnings:
+    Agent_1: $5.17
+    Agent_2: $3.26
+    Agent_3: $4.35
+  Average Phase 2 earnings: $4.26
+
+TOTAL EARNINGS:
+  Agent_3: $14.35
+  Agent_1: $13.57
+  Agent_2: $10.36
+
+HIGHEST EARNER: Agent_3 with $14.35
+2025-10-14 15:53:24,452 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/traces/ingest "HTTP/1.1 204 No Content"
+
+RETURN CODE: 0  DURATION: 4811.3s

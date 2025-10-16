@@ -5,7 +5,7 @@ seed: 42
 agents:
   - name: "Sophie"
     personality: "You are an american college student."
-    model: "x-ai/grok-code-fast-1"
+    model: "gemini"
     memory_character_limit: 25000
     reasoning_enabled: true
     temperature: 0
