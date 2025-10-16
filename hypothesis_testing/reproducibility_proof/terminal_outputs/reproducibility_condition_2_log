@@ -1,15 +1,15 @@
-CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducability_proof/configs/reproducibility_condition_1_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducability_proof/results/reproducibility_condition_1_config_results.json
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducibility_proof_gemini/configs/reproducibility_condition_2_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducibility_proof_gemini/results/reproducibility_condition_2_config_results.json
 ════════════════════════════════════════════════════════════
 🧪 FROHLICH EXPERIMENT STARTING
 ════════════════════════════════════════════════════════════
-Experiment ID: 8e98cc5c
+Experiment ID: 7476f52e
 Participants: 2
 Language: English
 Max Phase 2 rounds: 5
 
 🤖 Initializing Agents...
-  ✅ Agent_1 (gemma3:1b)
-  ✅ Agent_2 (gemma3:1b)
+  ✅ Agent_1 (gemini-2.5-flash-lite)
+  ✅ Agent_2 (gemini-2.5-flash-lite)
 
 ✨ All agents ready
 
@@ -18,51 +18,36 @@ Max Phase 2 rounds: 5
 Running parallel familiarization for 2 participants...
 
 
-🎯 Phase 1 Complete - Duration: 6m 52s
+🎯 Phase 1 Complete - Duration: 41.1s
 
 💬 PHASE 2: Group Discussion
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Beginning group discussion (max 5 rounds)...
 
 🗣️  Round 1
-🗳️  Voting initiated (Round 1)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 1 complete
 
 🗣️  Round 2
-🗳️  Voting initiated (Round 2)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 2 complete
 
 🗣️  Round 3
-🗳️  Voting initiated (Round 3)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 3 complete
 
 🗣️  Round 4
-🗳️  Voting initiated (Round 4)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 4 complete
 
 🗣️  Round 5
-2025-10-07 17:35:26,922 - experiment_agents.utility_agent - ERROR - Failed to parse principle choice after 3 attempts: No valid JSON found in response
-🗳️  Voting initiated (Round 5)
-⏳ No consensus yet - continuing discussion...
-
    ✅ Round 5 complete
 
-🏁 Phase 2 Complete without consensus - Duration: 1h 4m
+🏁 Phase 2 Complete without consensus - Duration: 1m 52s
    Rounds conducted: 5
 
 ════════════════════════════════════════════════════════════
 ✅ EXPERIMENT COMPLETED
 ════════════════════════════════════════════════════════════
-Total Duration: 1h 11m
+Total Duration: 2m 36s
 Consensus: ❌ Not reached
+Transcript saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducibility_proof_gemini/transcripts/reproducibility_condition_2_transcript.json
 
 
-RETURN CODE: 0  DURATION: 4316.6s
+RETURN CODE: 0  DURATION: 157.5s

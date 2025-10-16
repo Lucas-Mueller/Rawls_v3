@@ -1,4 +1,31 @@
-an
+Please create a new data analysis notebook for hypothesis 3, that uses the same style as the one for hypothesis 6 (hypothesis_testing/hypothesis_6/hypothesis6_descriptive_analysis.ipynb)
+
+
+This notebook should have a table that shoould have these columns
+Least popular Principle, Attempted Manipulations, Sucessful Manipulation, Share of Sucessful Manpipulation. 
+
+The rows should be the 4 justice principles. 
+This table should exist twice, once for low iq and one for high iq
+
+
+Pleae review the preference of the pariticipant agents (excluding the manipulator agent). 
+What was the average rank of the target principle at the od phase 1?
+What was the average rank of the target principle at the od phase 2?
+Sepearte between the sucessfull and unsucessful manipulations. 
+Seperate between the smart and less smart manipulaot. 
+
+Please create a graphic that shows the final preferences of each participant agent (not manipularot agent) by the end of phase 1. Then co
+
+
+This notebook should have a graphic on the sucess rate of the manipulator (specific for hypothesis 3 check hypothesis_testing/hypothesis_3/Hypothesis_3_main.ipynb . 
+
+This 
+
+
+Crat
+
+
+
 
 Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
 

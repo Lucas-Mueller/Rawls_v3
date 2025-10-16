@@ -14,7 +14,7 @@ agents:
   reasoning_enabled: true
 - name: Agent_3
   personality: You are a college student
-  model: qwen/qwen3-next-80b-a3b-thinking
+  model: z-ai/glm-4.5-air
   temperature: 0.0
   memory_character_limit: 25000
   reasoning_enabled: true

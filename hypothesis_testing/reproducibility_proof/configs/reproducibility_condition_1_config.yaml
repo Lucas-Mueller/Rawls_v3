@@ -3,15 +3,15 @@ seed: 42
 agents:
 - name: Agent_1
   personality: You are an American college student
-  model: ollama/gemma3:1b
+  model: gemini-2.5-flash-lite
   temperature: 0
-  memory_character_limit: 5000
+  memory_character_limit: 20000
   reasoning_enabled: true
 - name: Agent_2
   personality: You are an American college student
-  model: ollama/gemma3:1b
+  model: gemini-2.5-flash-lite
   temperature: 0
-  memory_character_limit: 5000
+  memory_character_limit: 20000
   reasoning_enabled: true
 utility_agent_model: gemini-2.5-flash-lite
 utility_agent_temperature: 0.0
@@ -27,3 +27,10 @@ income_class_probabilities:
   low: 0.1
 original_values_mode:
   enabled: true
+transcript_logging:
+  enabled: true
+  include_memory_updates: true
+  include_instructions: false
+  include_input_prompts: true
+  include_agent_responses: true
+  output_path: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducibility_proof_gemini/transcripts/reproducibility_condition_1_transcript.json
