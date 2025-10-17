@@ -570,6 +570,8 @@ def plot_floor_constraint_distribution_grouped(
     font_scale: float = 1.0,
     show_title: bool = True,
     annotation_fontsize: Optional[float] = None,
+    group_label: str = "Language",
+    use_amount_scale_xticks: bool = False,
 ) -> None:
     """
     Render grouped constraint amounts for a target principle across cohorts.
@@ -577,6 +579,7 @@ def plot_floor_constraint_distribution_grouped(
     Amounts are binned on a continuous axis using fixed-width buckets (default 4k).
     Set `show_title=False` to suppress the chart title when embedding alongside others.
     Use `annotation_fontsize` to override the count labels.
+    Toggle `use_amount_scale_xticks` to show ticks as dollar-scaled values instead of range labels.
     """
     if not cohort_vote_rounds:
         print("No cohorts provided for grouped constraint plot.")
@@ -720,7 +723,7 @@ def plot_floor_constraint_distribution_grouped(
     if show_title:
         effective_title = _resolve_title(
             title,
-            f"{target_principle_label} Constraint Amounts by Language",
+            f"{target_principle_label} Constraint Amounts by {group_label}",
         )
         if effective_title:
             ax.set_title(
@@ -732,11 +735,15 @@ def plot_floor_constraint_distribution_grouped(
     ax.set_xlabel("Constraint Amount", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_ylabel("Number of Runs", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_xticks(x)
-    ax.set_xticklabels(bin_labels)
+    if use_amount_scale_xticks:
+        scale_labels = [f"${int(round(bin_edges[i + 1] / 1000))}k" for i in range(num_bins)]
+        ax.set_xticklabels(scale_labels)
+    else:
+        ax.set_xticklabels(bin_labels)
     ax.set_xlim(x[0] - 0.5, x[-1] + 0.5)
     ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
     ax.legend(
-        title="Language",
+        title=group_label,
         fontsize=font_sizes["legend"],
         title_fontsize=font_sizes["legend"],
         loc=legend_loc,

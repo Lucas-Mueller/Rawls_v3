@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict, Iterable, List
 
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import seaborn as sns
 
 ColorMap = Dict[str, str]
@@ -50,7 +52,20 @@ BAYREUTH_FONT_SIZES: FontSizeMap = {
     "annotation": 9,
 }
 
-FONT_FAMILY = "DejaVu Sans"
+FONT_FAMILY = "Latin Modern Roman"
+
+
+def _register_latin_modern_fonts() -> None:
+    """Register Latin Modern Roman fonts from local directory."""
+    font_dir = Path(__file__).parent / "fonts"
+    if not font_dir.exists():
+        return  # Fonts directory doesn't exist; use system default
+
+    for font_file in font_dir.glob("*.otf"):
+        try:
+            fm.fontManager.addfont(str(font_file))
+        except Exception:
+            pass  # Silently skip fonts that fail to load
 
 BAYREUTH_FIG_SIZES: FigureSizeMap = {
     "single": (9, 5),
@@ -77,6 +92,7 @@ def _palette_hex() -> List[str]:
 
 def apply_bayreuth_theme() -> None:
     """Apply rcParams and seaborn defaults for the Bayreuth identity."""
+    _register_latin_modern_fonts()
     plt.rcParams.update(
         {
             "figure.dpi": 300,
