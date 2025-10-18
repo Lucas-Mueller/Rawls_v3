@@ -423,11 +423,15 @@ def plot_rounds_to_outcome_grouped(
     legend_loc: str = "upper right",
     font_scale: float = 1.0,
     annotation_fontsize: Optional[float] = None,
+    show_title: bool = True,
+    group_label: str = "Language",
 ) -> None:
     """
     Render a grouped bar chart of consensus rounds across cohorts.
 
     Use `annotation_fontsize` to override the count-label size per bar (default follows Bayreuth scale).
+    Set `show_title=False` to suppress the chart title when embedding alongside others.
+    Use `group_label` to customize the legend title (default "Language").
     """
     if not cohort_run_metrics:
         print("No cohorts provided for grouped consensus timing plot.")
@@ -525,11 +529,13 @@ def plot_rounds_to_outcome_grouped(
                     color=colors["dark_gray"],
                 )
 
-    effective_title = _resolve_title(
-        title,
-        "Rounds to Consensus Outcome by Cohort",
-    )
-    ax.set_title(effective_title, fontsize=font_sizes["title"], fontweight="bold", pad=12)
+    if show_title:
+        effective_title = _resolve_title(
+            title,
+            "Rounds to Consensus Outcome by Cohort",
+        )
+        ax.set_title(effective_title, fontsize=font_sizes["title"], fontweight="bold", pad=12)
+
     ax.set_xlabel("Discussion Rounds", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_ylabel("Number of Runs", fontsize=font_sizes["axis_label"], labelpad=10)
     ax.set_xticks(round_range)
@@ -541,7 +547,7 @@ def plot_rounds_to_outcome_grouped(
     )
     ax.set_ylim(0, max_count + 2.5 if max_count > 0 else 1)
     ax.legend(
-        title="Language",
+        title=group_label,
         fontsize=font_sizes["legend"],
         title_fontsize=font_sizes["legend"],
         loc=legend_loc,
@@ -567,11 +573,12 @@ def plot_floor_constraint_distribution_grouped(
     bar_width: float = 0.24,
     title: Optional[str] = None,
     legend_loc: str = "upper right",
-    font_scale: float = 1.0,
+    font_scale: float = 1.25,
     show_title: bool = True,
     annotation_fontsize: Optional[float] = None,
     group_label: str = "Language",
     use_amount_scale_xticks: bool = False,
+    min_bin_value: int = 0,
 ) -> None:
     """
     Render grouped constraint amounts for a target principle across cohorts.
@@ -580,6 +587,7 @@ def plot_floor_constraint_distribution_grouped(
     Set `show_title=False` to suppress the chart title when embedding alongside others.
     Use `annotation_fontsize` to override the count labels.
     Toggle `use_amount_scale_xticks` to show ticks as dollar-scaled values instead of range labels.
+    Set `min_bin_value` to adjust the starting point of the x-axis (default 0).
     """
     if not cohort_vote_rounds:
         print("No cohorts provided for grouped constraint plot.")
@@ -636,9 +644,9 @@ def plot_floor_constraint_distribution_grouped(
         raise ValueError("bin_width must be a positive integer.")
 
     max_edge = int(np.ceil(max_amount_observed / bin_width) * bin_width)
-    bin_edges = np.arange(0, max_edge + bin_width, bin_width, dtype=float)
+    bin_edges = np.arange(float(min_bin_value), max_edge + bin_width, bin_width, dtype=float)
     if len(bin_edges) < 2:
-        bin_edges = np.array([0.0, float(bin_width)], dtype=float)
+        bin_edges = np.array([float(min_bin_value), float(min_bin_value + bin_width)], dtype=float)
     num_bins = len(bin_edges) - 1
     bin_indices = list(range(num_bins))
 

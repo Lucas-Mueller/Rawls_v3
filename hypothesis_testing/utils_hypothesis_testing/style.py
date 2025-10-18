@@ -43,6 +43,13 @@ PRINCIPLE_DISPLAY_NAMES: Dict[str, str] = {
     "None": "None",
 }
 
+PRINCIPLE_ORDER: List[str] = [
+    "Max Floor",
+    "Max Avg Income",
+    "Max Avg + Floor",
+    "Max Avg + Range",
+]
+
 BAYREUTH_FONT_SIZES: FontSizeMap = {
     "title": 14,
     "subtitle": 12,
@@ -143,6 +150,7 @@ __all__ = [
     "BAYREUTH_COLORS",
     "PRINCIPLE_COLORS",
     "PRINCIPLE_DISPLAY_NAMES",
+    "PRINCIPLE_ORDER",
     "BAYREUTH_FONT_SIZES",
     "BAYREUTH_FIG_SIZES",
     "FONT_FAMILY",
