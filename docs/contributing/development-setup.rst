@@ -105,24 +105,17 @@ Verification
 
    .. code-block:: bash
 
-      # Run the test suite
-      python run_tests.py
+      # Run the preset suite
+      pytest --mode=ci
       
-      # Expected output:
-      # ============================================================
-      # FROHLICH EXPERIMENT TEST RUNNER
-      # ============================================================
-      # Testing imports...
-      # ✓ All core imports successful
-      # ✓ Basic functionality test passed
-      # ✓ Configuration loading test passed
-      # 
-      # Running unit tests...
-      # Running integration tests...
-      # 
-      # ============================================================
-      # ALL TESTS PASSED ✓
-      # ============================================================
+      # Expected output (truncated):
+      # ============================= test session starts ==============================
+      # collected 420 items
+      #
+      # tests/unit/test_*.py ............
+      # tests/component/test_*.py sssssss
+      # ...
+      # ========================= 410 passed, 10 skipped in 900.00s ====================
 
 9. **Test Basic Functionality**:
 
@@ -246,8 +239,8 @@ Daily Development
 
       # Edit code
       # Run tests frequently
-      python run_tests.py unit component
-      
+      pytest --mode=dev
+     
       # Test specific modules
       python -m unittest tests.unit.test_your_module -v
 
@@ -272,24 +265,24 @@ Running Tests
 
 .. code-block:: bash
 
-   python run_tests.py unit component
+   pytest --mode=dev
 
 **Specific Test Categories**:
 
 .. code-block:: bash
 
    # Unit-only logic
-   python run_tests.py unit
+   pytest --mode=ultra_fast
 
    # Component + live multilingual flows
-   python run_tests.py component
-   python run_tests.py integration
+   pytest tests/component -m "component and live"
+   pytest tests/integration -m "integration and live"
 
    # Contract/golden artefact checks
-   python run_tests.py contracts
+   pytest tests/contracts
 
    # Skip live suites even when credentials are present
-   RUN_LIVE_TESTS=0 python run_tests.py integration
+   RUN_LIVE_TESTS=0 pytest tests/integration -m "integration and live"
 
 Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environment or ``.env`` file to enable live runs; without them the runner will automatically skip suites that call real LLMs and explain how to re-enable coverage.
 
@@ -429,9 +422,10 @@ Debugging Tools
            },
            {
                "name": "Run Tests",
-               "type": "python", 
+               "type": "python",
                "request": "launch",
-               "program": "run_tests.py",
+               "module": "pytest",
+               "args": ["--mode=dev"],
                "console": "integratedTerminal"
            }
        ]
@@ -448,10 +442,10 @@ Development Performance
 .. code-block:: bash
 
    # Run subset of tests during development
-   python -m unittest tests.unit -v
+   pytest tests/unit -v
    
    # Skip slow integration tests
-   python run_tests.py unit
+   pytest --mode=ultra_fast
 
 **Memory Usage**:
 
@@ -486,7 +480,7 @@ Container-Based Development
    
    COPY . .
    
-   CMD ["python", "run_tests.py"]
+   CMD ["pytest", "--mode=ci"]
 
 **Docker Compose for Development**:
 
@@ -503,7 +497,7 @@ Container-Based Development
        environment:
          - OPENAI_API_KEY=${OPENAI_API_KEY}
          - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-       command: python run_tests.py
+       command: pytest --mode=ci
 
 **Running in Docker**:
 

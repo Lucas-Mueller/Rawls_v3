@@ -11,6 +11,7 @@ from models import ParticipantContext, ExperimentPhase
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_memory_service_vote_updates(language, prompt_harness_three_agents):

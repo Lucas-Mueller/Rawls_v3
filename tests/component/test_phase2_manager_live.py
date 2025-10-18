@@ -13,6 +13,7 @@ from utils.logging.process_flow_logger import create_process_logger
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_phase2_manager_runs_with_live_agents(language, prompt_harness_three_agents):

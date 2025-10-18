@@ -8,16 +8,16 @@ The Frohlich Experiment framework includes an intelligent test acceleration syst
 
 ```bash
 # Ultra-fast development feedback (7 seconds)
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Daily development workflow (5 minutes)
-python run_tests.py --mode dev
+pytest --mode=dev
 
 # CI/CD pipeline (15 minutes)
-python run_tests.py --mode ci
+pytest --mode=ci
 
 # Complete validation (30-45 minutes)
-python run_tests.py --mode full
+pytest --mode=full
 ```
 
 ## Performance Improvements
@@ -46,7 +46,7 @@ python run_tests.py --mode full
 - Rapid iteration cycles
 
 ```bash
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 ```
 
 ### 2. Development Mode (`--mode dev`)
@@ -64,7 +64,7 @@ python run_tests.py --mode ultra_fast
 - Local integration testing
 
 ```bash
-python run_tests.py --mode dev
+pytest --mode=dev
 ```
 
 ### 3. CI Mode (`--mode ci`)
@@ -83,7 +83,7 @@ python run_tests.py --mode dev
 - Branch merge validation
 
 ```bash
-python run_tests.py --mode ci
+pytest --mode=ci
 ```
 
 ### 4. Full Mode (`--mode full`)
@@ -102,41 +102,7 @@ python run_tests.py --mode ci
 - Comprehensive quality assurance
 
 ```bash
-python run_tests.py --mode full
-```
-
-## Advanced Options
-
-### Configuration Override
-
-Override the default configuration for any mode:
-
-```bash
-python run_tests.py --mode dev --config config/custom.yaml
-```
-
-### Language Control
-
-Control the number of languages tested (1, 2, or 3):
-
-```bash
-python run_tests.py --mode ci --languages 2
-```
-
-### Performance Reporting
-
-Get detailed performance analysis:
-
-```bash
-python run_tests.py --mode dev --performance-report
-```
-
-### Dry Run
-
-Preview the execution plan without running tests:
-
-```bash
-python run_tests.py --mode full --dry-run
+pytest --mode=full
 ```
 
 ## Fast Test Suite
@@ -172,33 +138,33 @@ Control test execution behavior with environment variables:
 
 ```bash
 # Enable development mode (default)
-DEVELOPMENT_MODE=1 python run_tests.py
+DEVELOPMENT_MODE=1 pytest --mode=dev
 
 # Force comprehensive testing in development
-FULL_INTEGRATION_TESTS=1 python run_tests.py
+FULL_INTEGRATION_TESTS=1 pytest --mode=ci
 
 # Skip expensive tests even with API keys
-SKIP_EXPENSIVE_TESTS=1 python run_tests.py
+SKIP_EXPENSIVE_TESTS=1 pytest --mode=ci
 ```
 
 ### Configuration Override
 
 ```bash
 # Use ultra-fast config globally
-TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml python run_tests.py
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
 
 # Control multilingual testing
-LIVE_LANGUAGES=1 python run_tests.py  # Single language only
+LIVE_LANGUAGES=1 pytest --mode=ci
 ```
 
 ### Legacy Environment Variables
 
 ```bash
 # Force enable/disable live tests
-RUN_LIVE_TESTS=1 python run_tests.py
+RUN_LIVE_TESTS=1 pytest --mode=full
 
 # Language coverage reporting
-LANGUAGE_REPORT_PATH=/path/to/report.json python run_tests.py
+LANGUAGE_REPORT_PATH=/path/to/report.json pytest --mode=full
 ```
 
 ## Configuration Files
@@ -268,58 +234,59 @@ setup = create_multilingual_test_setup(
 )
 ```
 
-## Backward Compatibility
-
-All existing test execution patterns remain fully supported:
+## Pytest Execution Reference
 
 ```bash
-# Legacy test execution (still works)
-python run_tests.py unit
-python run_tests.py unit component
-python run_tests.py --coverage
+# Layered presets
+pytest --mode=ultra_fast
+pytest --mode=dev
+pytest --mode=ci
+pytest --mode=full
 
-# Traditional test types
-python run_tests.py component
-python run_tests.py integration
-python run_tests.py contracts
-python run_tests.py live
+# Marker-based selection
+pytest -m "unit"
+pytest -m "component and not live"
+pytest -m "integration and live"
+
+# Coverage
+pytest --mode=ci --cov=. --cov-report=term-missing
 ```
 
 ## Development Workflows
 
 ### Recommended Daily Workflow
 
-1. **Active development**: `python run_tests.py --mode ultra_fast` (7 seconds)
-2. **Feature validation**: `python run_tests.py --mode dev` (5 minutes)
-3. **Pre-commit**: `python run_tests.py --mode ci` (15 minutes)
-4. **Pre-release**: `python run_tests.py --mode full` (30-45 minutes)
+1. **Active development**: `pytest --mode=ultra_fast` (7 seconds)
+2. **Feature validation**: `pytest --mode=dev` (5 minutes)
+3. **Pre-commit**: `pytest --mode=ci` (15 minutes)
+4. **Pre-release**: `pytest --mode=full` (30-45 minutes)
 
 ### TDD Workflow
 
-For test-driven development, use ultra-fast mode for rapid iteration:
+For test-driven development, loop on the ultra-fast preset:
 
 ```bash
 # Write test, run ultra-fast validation
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Implement feature, validate quickly
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Final validation before commit
-python run_tests.py --mode dev
+pytest --mode=dev
 ```
 
 ### CI/CD Integration
 
-Configure your CI pipeline to use appropriate modes:
+Configure your CI pipeline to call pytest directly:
 
 ```yaml
 # Example CI configuration
 test_fast:
-  script: python run_tests.py --mode ci
+  script: pytest --mode=ci
 
 test_comprehensive:
-  script: python run_tests.py --mode full
+  script: pytest --mode=full
   only: [main, release/*]
 ```
 
@@ -329,24 +296,24 @@ test_comprehensive:
 
 1. **Configuration not found**: Ensure `config/test_ultra_fast.yaml` exists
 2. **API key missing**: Set `OPENAI_API_KEY` for component/integration tests
-3. **Environment conflicts**: Use `--dry-run` to preview execution plan
+3. **Unexpected skips**: Check `--mode` preset and marker filters
 
 ### Performance Issues
 
 If tests are slower than expected:
 
-1. Check API key availability (may enable more comprehensive testing)
-2. Verify environment variables aren't forcing expensive tests
-3. Use `--performance-report` to analyze execution time
+1. Confirm environment variables (`FULL_INTEGRATION_TESTS`, `SKIP_EXPENSIVE_TESTS`) are set as intended
+2. Use `pytest -vv --durations=10` to profile slow tests
+3. Limit live coverage with `pytest --mode=dev -m "not live"`
 
 ### Getting Help
 
 ```bash
-# Show all available options
-python run_tests.py --help
+# Show pytest help with custom options
+pytest --help
 
-# Preview execution without running
-python run_tests.py --mode <mode> --dry-run
+# Inspect collected tests
+pytest --mode=ci --collect-only
 ```
 
 ## Implementation Details
@@ -357,14 +324,13 @@ The test acceleration system consists of three main components:
 
 1. **Configuration Optimization**: Ultra-fast configurations with minimal API usage
 2. **Strategic Mocking**: Service boundary testing without API calls
-3. **Enhanced Test Runner**: Intelligent mode-based execution
+3. **Pytest Presets**: Mode-based execution implemented via a custom pytest option
 
 ### Technical Features
 
-- **Mode-based execution planning**: Predefined test combinations for different scenarios
-- **Environment orchestration**: Safe configuration override without conflicts
-- **Performance tracking**: Real-time metrics and analysis
-- **Backward compatibility**: Full support for legacy test patterns
+- **Mode-based execution planning**: Predefined test combinations exposed through `pytest --mode`
+- **Environment orchestration**: Safe configuration override using well-scoped environment variables
+- **Lightweight wrapper**: `run_tests.py` forwards to pytest for backwards compatibility
 - **Mock framework**: Comprehensive mocking with multilingual support
 
 ### Files Modified/Added

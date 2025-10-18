@@ -113,59 +113,43 @@ The framework includes an **intelligent test acceleration system** that provides
 # DEVELOPMENT WORKFLOWS (Ultra-fast feedback)
 
 # Ultra-fast mode: Unit tests only (~7 seconds, 0 API calls)
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Development mode: Unit + component tests (~5 minutes, minimal API calls)
-python run_tests.py --mode dev
+pytest --mode=dev
 
 # CI/CD mode: Comprehensive validation (~15 minutes, moderate API calls)
-python run_tests.py --mode ci
+pytest --mode=ci
 
 # Full mode: Complete validation (~30-45 minutes, all API calls)
-python run_tests.py --mode full
+pytest --mode=full
 ```
 
-#### **Advanced Test Runner Options**
+#### **Targeted Test Execution**
 ```bash
-# Custom configuration override
-python run_tests.py --mode dev --config config/test_ultra_fast.yaml
-
-# Control multilingual testing (1, 2, or 3 languages)
-python run_tests.py --mode ci --languages 2
-
-# Performance analysis and reporting
-python run_tests.py --mode dev --performance-report
-
-# Dry run to preview execution plan
-python run_tests.py --mode full --dry-run
-
-# Get help with available modes and options
-python run_tests.py --help
-```
-
-#### **Legacy Test Execution (Backward Compatible)**
-```bash
-# Run all tests (sequential: unit -> component -> integration -> contracts -> live)
-python run_tests.py
-
-# Specific test types
-python run_tests.py unit                    # Fast unit tests
-python run_tests.py component               # Component tests with language coverage enforcement
-python run_tests.py integration             # Heavier multilingual flows
-python run_tests.py contracts               # Contract/regression tests (golden snapshots)
-python run_tests.py live                    # Live tests requiring API keys
-
-# Multiple test types in sequence
-python run_tests.py unit component          # Fast feedback loop
-python run_tests.py integration contracts   # Comprehensive validation
-
-# Control live test execution
-RUN_LIVE_TESTS=0 python run_tests.py integration  # Force-skip live suites
-RUN_LIVE_TESTS=1 python run_tests.py live         # Force-enable live tests
+# Scope by directory or marker
+pytest tests/unit tests/fast                       # Deterministic, no API calls
+pytest tests/component -m "component and not live" # Offline component checks
+pytest tests/integration -m "integration and live" # Live integration smoke (requires API keys)
+pytest tests/contracts tests/golden                 # Snapshot/golden suites
 
 # With coverage reporting
-python run_tests.py --coverage
-python run_tests.py unit --coverage         # Coverage for specific test type
+pytest --mode=ci --cov=. --cov-report=term-missing
+```
+
+#### **Environment-Based Test Control**
+```bash
+# Development mode (skips expensive tests by default)
+DEVELOPMENT_MODE=1 pytest --mode=dev
+
+# Force comprehensive testing in development
+FULL_INTEGRATION_TESTS=1 pytest --mode=ci
+
+# Skip expensive tests even with API keys
+SKIP_EXPENSIVE_TESTS=1 pytest --mode=ci -m "not expensive"
+
+# Use custom configuration globally (consumed by fixtures)
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
 ```
 
 #### **Fast Test Suite (Phase 2 Strategic Mocking)**
@@ -183,16 +167,16 @@ python -m pytest tests/fast/test_data_flows.py
 #### **Environment-Based Test Control**
 ```bash
 # Development mode (skips expensive tests by default)
-DEVELOPMENT_MODE=1 python run_tests.py
+DEVELOPMENT_MODE=1 pytest --mode=dev
 
 # Force comprehensive testing in development
-FULL_INTEGRATION_TESTS=1 python run_tests.py
+FULL_INTEGRATION_TESTS=1 pytest --mode=ci
 
 # Skip expensive tests even with API keys
-SKIP_EXPENSIVE_TESTS=1 python run_tests.py
+SKIP_EXPENSIVE_TESTS=1 pytest --mode=ci
 
 # Use custom configuration globally
-TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml python run_tests.py
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
 ```
 
 #### **Advanced pytest commands**
@@ -289,7 +273,7 @@ The project does not have dedicated linting commands configured. When working on
 - Follow existing code style and patterns (PEP 8, four-space indents, explicit type hints)
 - Use `snake_case` for modules/functions, `PascalCase` for classes, `UPPER_CASE` for constants
 - Run the test suite to ensure changes don't break functionality
-- Use the import test in `run_tests.py` to verify module integrity
+- Run `pytest --mode=ci` to verify module import integrity before pushing
 - See `AGENTS.md` for detailed repository guidelines and commit conventions
 
 #### Testing Requirements for API Access
@@ -422,11 +406,10 @@ The enhanced test runner provides mode-based execution optimized for different d
 - **Environment control**: Development-friendly test execution with configurable behavior
 
 ### **Test Execution Patterns (Updated)**
-- **Daily development**: `python run_tests.py --mode ultra_fast` (7 seconds)
-- **Pre-commit**: `python run_tests.py --mode dev` (5 minutes)
-- **CI/CD pipeline**: `python run_tests.py --mode ci` (15 minutes)
-- **Release validation**: `python run_tests.py --mode full` (30-45 minutes)
-- **Legacy support**: All existing patterns remain compatible
+- **Daily development**: `pytest --mode=ultra_fast` (7 seconds)
+- **Pre-commit**: `pytest --mode=dev` (5 minutes)
+- **CI/CD pipeline**: `pytest --mode=ci` (15 minutes)
+- **Release validation**: `pytest --mode=full` (30-45 minutes)
 - **Service boundary testing**: `python -m pytest tests/fast/` (0.04 seconds)
 - **Import validation**: Automatic module import testing across all layers
 

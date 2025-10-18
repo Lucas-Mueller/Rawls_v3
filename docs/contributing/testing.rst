@@ -38,37 +38,17 @@ Basic Test Execution
 
 .. code-block:: bash
 
-   python run_tests.py
-
-**Expected Output:**
-
-.. code-block:: text
-
-   ============================================================
-   FROHLICH EXPERIMENT TEST RUNNER
-   ============================================================
-   Testing imports...
-   ✓ All core imports successful
-   ✓ Basic functionality test passed
-   ✓ Configuration loading test passed
-
-   Running unit tests...
-   
-   Running integration tests...
-
-   ============================================================
-   ALL TESTS PASSED ✓
-   ============================================================
+   pytest --mode=ci
 
 **Run Specific Test Categories:**
 
 .. code-block:: bash
 
    # Unit tests only
-   python run_tests.py unit
+   pytest --mode=ultra_fast
    
    # Integration tests only
-   python run_tests.py integration
+   pytest tests/integration -m "integration"
 
 Individual Test Execution
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,7 +90,7 @@ Test Coverage Analysis
 .. code-block:: bash
 
    # Generate coverage report
-   coverage run run_tests.py
+   coverage run -m pytest --mode=ci
    coverage report -m
    
    # Generate HTML coverage report

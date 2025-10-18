@@ -29,7 +29,7 @@ Phase 1 currently mixes weighted and unweighted logic when applying justice prin
    - Where possible, confirm deterministic behavior by seeding `random.Random` instances.
 
 4. **Regression Validation**
-   - Run `python run_tests.py unit` to verify the updated distribution generator logic.
+   - Run `pytest tests/unit/test_distribution_generator.py` to verify the updated distribution generator logic.
    - Optionally execute a short Phase 1 dry run (`python main.py`) to inspect log outputs for weighted rounds.
 
 Following this plan keeps the solution lean, leverages existing utilities, and avoids introducing fallback branches that version control already makes unnecessary.

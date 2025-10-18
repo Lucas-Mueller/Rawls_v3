@@ -6,7 +6,7 @@ updates must be deliberate.
 
 ## When to Run
 - Local sanity check: `pytest tests/contracts`
-- Via runner: `python run_tests.py contracts`
+- Mode preset: `pytest --mode=full -m contracts`
 - CI: included in nightly/full matrix jobs when credentials are available
 
 ## Updating Golden Artefacts
@@ -24,7 +24,7 @@ API output, mark it with `@pytest.mark.live` and document any required keys.
 ## Review Checklist
 - [ ] Contract change explained in PR description
 - [ ] Golden diff reviewed for accidental redactions or secrets
-- [ ] Tests pass locally (`python run_tests.py contracts`)
+- [ ] Tests pass locally (`pytest tests/contracts`)
 - [ ] Follow-up component/integration tests adjusted if behaviour changed
 
 Keeping contracts small and purpose-built ensures reviewers can reason about

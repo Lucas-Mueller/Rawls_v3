@@ -21,6 +21,7 @@ def _build_mixed_language_harness() -> PromptHarness:
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_phase2_mixed_language_discussion(openai_api_key):

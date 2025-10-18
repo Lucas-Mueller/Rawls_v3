@@ -7,12 +7,12 @@
 - `models/` defines dataclasses and enums for principles, results, and logging; extend existing types instead of replacing them.
 - `utils/` and `knowledge_base/` provide shared helpers and prompt assets; scope changes and document them.
 - Tests live in `tests/unit/` and `tests/integration/`; research notes and plans live under `docs/` and `reports/`.
-- Entrypoints are `main.py` for experiments and `run_tests.py` for suites.
+- Entrypoints are `main.py` for experiments and `pytest` (with optional `--mode` presets) for suites.
 
 ## Build, Test, and Development Commands
 - `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt` bootstraps the environment.
 - `python main.py` runs the baseline experiment; pass `python main.py config/custom.yaml results/out.json` to target custom flows.
-- `python run_tests.py` executes the full test matrix; append `unit` or `integration` to scope.
+- `pytest --mode=ci` executes the full test matrix; adjust the `--mode` preset (`ultra_fast`, `dev`, `ci`, `full`) or target directories directly for narrower scopes.
 - `python -m unittest tests.unit.test_memory_manager -v` isolates a single module for focused debugging.
 
 ## Coding Style & Naming Conventions
@@ -26,9 +26,9 @@
 - Reuse the shared styling helpers defined in `hypothesis_testing/hypothesis_1/hypothesis1_descriptive_analysis.ipynb` when adding new figures.
 
 ## Testing Guidelines
-- Primary framework is `unittest`; async helpers already embed required pytest markers.
+- Primary framework is `pytest`; async helpers expose the necessary markers.
 - Name tests `test_*`, cover success and failure paths, and validate new YAML via `ExperimentConfiguration`.
-- Run `python run_tests.py` after substantial changes and before proposing merges.
+- Run `pytest --mode=dev` after substantial changes and before proposing merges.
 
 ## Commit & Pull Request Guidelines
 - Write imperative commit subjects scoped by area (e.g., `core: add phase2 retry telemetry`).

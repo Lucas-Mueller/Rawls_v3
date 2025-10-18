@@ -12,6 +12,7 @@ from utils.logging.process_flow_logger import create_process_logger
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_counterfactuals_service_outputs(language, prompt_harness_three_agents):

@@ -13,6 +13,13 @@ import pytest
 from dotenv import load_dotenv
 from tests.support import PromptHarness, build_experiment_configuration
 
+MODE_MARKERS = {
+    "ultra_fast": {"unit", "fast"},
+    "dev": {"unit", "component"},
+    "ci": {"unit", "component", "integration"},
+    "full": {"unit", "component", "integration", "contracts", "live"},
+}
+
 LANGUAGE_REPORT_ENV = "LANGUAGE_REPORT_PATH"
 PRIMARY_LANGUAGE_ENV = "LIVE_PRIMARY_LANGUAGE"
 ALL_LANGUAGES_ENV = "LIVE_LANGUAGES"
@@ -37,6 +44,16 @@ def _language_entry_factory() -> Dict[str, Any]:
 
 LANGUAGE_ITEM_CONTEXT: Dict[str, Tuple[str, str]] = {}
 LANGUAGE_COVERAGE: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(lambda: defaultdict(_language_entry_factory))
+
+
+def pytest_addoption(parser):
+    """Register CLI options for suite selection."""
+    group = parser.getgroup("suite selection")
+    group.addoption(
+        "--mode",
+        choices=tuple(MODE_MARKERS.keys()),
+        help="Preset test selection (ultra_fast, dev, ci, full).",
+    )
 
 
 def pytest_configure(config):
@@ -125,6 +142,8 @@ def pytest_collection_modifyitems(session, config, items):
     base = Path(config.rootpath)
     skip_expensive = _skip_expensive_tests()
     development_mode = _is_development_mode()
+    requested_mode = config.getoption("mode")
+    enabled_markers = MODE_MARKERS.get(requested_mode, set())
 
     for item in items:
         try:
@@ -143,12 +162,23 @@ def pytest_collection_modifyitems(session, config, items):
         # Add layer-based markers automatically
         if layer == "component" and "component" not in marker_names:
             item.add_marker("component")
+            marker_names.add("component")
         elif layer == "integration" and "integration" not in marker_names:
             item.add_marker("integration")
+            marker_names.add("integration")
         elif layer == "unit" and "unit" not in marker_names:
             item.add_marker("unit")
+            marker_names.add("unit")
         elif layer == "contracts" and "contracts" not in marker_names:
             item.add_marker("contracts")
+            marker_names.add("contracts")
+        elif layer == "fast" and "fast" not in marker_names:
+            item.add_marker("fast")
+            marker_names.add("fast")
+        else:
+            if "unit" not in marker_names:
+                item.add_marker("unit")
+                marker_names.add("unit")
 
         # Auto-mark expensive tests based on layer and existing markers
         if layer in ["component", "integration"] and "live" in marker_names:
@@ -163,6 +193,11 @@ def pytest_collection_modifyitems(session, config, items):
         if (development_mode and not _is_full_integration_enabled() and
             layer == "integration" and "live" in marker_names):
             item.add_marker(pytest.mark.skip(reason="Integration test skipped in development mode"))
+
+        if requested_mode and not enabled_markers.intersection(marker_names):
+            item.add_marker(
+                pytest.mark.skip(reason=f"Excluded by --mode={requested_mode} preset")
+            )
 
         if "language" not in fixturenames or not hasattr(item, "callspec"):
             continue

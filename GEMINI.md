@@ -71,10 +71,11 @@ python main.py --config /path/to/your/config.yaml
 
 ### Running Tests
 
-To run the tests, you can use the `run_tests.py` script:
+To run the tests, invoke pytest directly:
 
 ```bash
-python run_tests.py [test_type]
+pytest --mode=dev              # Typical development workflow
+pytest tests/unit tests/fast   # Deterministic subset
 ```
 
 The `test_type` argument can be one of the following:

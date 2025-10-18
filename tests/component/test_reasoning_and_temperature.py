@@ -11,6 +11,7 @@ from tests.support.prompt_catalog import get_prompt, PRINCIPLE_CHOICE_SIMPLE
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 @parametrize_languages()
@@ -30,6 +31,7 @@ async def test_agent_reasoning_toggle(language, prompt_harness):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 @parametrize_languages()

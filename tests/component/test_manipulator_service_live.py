@@ -76,6 +76,7 @@ def _create_mock_phase1_results_with_rankings(harness, agent_count=3):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_manipulator_target_injection_english(openai_api_key):
@@ -163,6 +164,7 @@ async def test_manipulator_target_injection_english(openai_api_key):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_manipulator_target_injection_spanish(openai_api_key):
@@ -247,6 +249,7 @@ async def test_manipulator_target_injection_spanish(openai_api_key):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_manipulator_target_injection_mandarin(openai_api_key):
@@ -328,6 +331,7 @@ async def test_manipulator_target_injection_mandarin(openai_api_key):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_manipulator_target_with_tiebreak(openai_api_key):

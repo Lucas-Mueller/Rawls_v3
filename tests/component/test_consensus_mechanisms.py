@@ -19,6 +19,7 @@ def _consensus_harness() -> PromptHarness:
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 @parametrize_languages()

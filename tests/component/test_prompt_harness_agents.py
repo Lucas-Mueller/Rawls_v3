@@ -11,6 +11,7 @@ from tests.support import (
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_prompt_harness_provisions_agents(language, prompt_harness, openai_api_key):

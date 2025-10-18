@@ -25,19 +25,16 @@ The framework includes an intelligent test acceleration system that provides ult
 # ULTRA-FAST DEVELOPMENT WORKFLOWS
 
 # Ultra-fast mode: Unit tests only (~7 seconds, 0 API calls)
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Development mode: Unit + component tests (~5 minutes, minimal API calls)
-python run_tests.py --mode dev
+pytest --mode=dev
 
 # CI/CD mode: Comprehensive validation (~15 minutes, moderate API calls)
-python run_tests.py --mode ci
+pytest --mode=ci
 
 # Full mode: Complete validation (~30-45 minutes, all API calls)
-python run_tests.py --mode full
-
-# Get help with all available options
-python run_tests.py --help
+pytest --mode=full
 ```
 
 ### **Performance Improvements Achieved**
@@ -45,12 +42,12 @@ python run_tests.py --help
 - **Development workflow**: 95% improvement (5min vs 90-120 minutes)
 - **CI/CD pipeline**: 85% improvement (15min vs 90-120 minutes)
 
-### **Legacy Test Execution (Still Supported)**
+### **Targeted Test Execution**
 ```bash
-python run_tests.py unit component   # fast feedback (unit + component)
-python run_tests.py integration      # heavier multilingual flows
-python run_tests.py contracts        # snapshot/golden checks
-RUN_LIVE_TESTS=0 python run_tests.py integration  # force-skip live suites
+pytest tests/unit tests/fast          # deterministic fast feedback
+pytest tests/component -m "component and not live"  # offline component coverage
+pytest tests/integration -m "integration and live"  # integration suite (requires API keys)
+pytest tests/snapshots                # contract/golden checks (post-migration location)
 ```
 
 Set `OPENAI_API_KEY` in your environment (or `.env`) to enable live component/integration runs; without it, the runner skips suites that require LLM access and explains how to re-enable them.

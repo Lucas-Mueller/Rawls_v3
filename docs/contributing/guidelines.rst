@@ -73,7 +73,7 @@ Setting Up Development Environment
 
    .. code-block:: bash
 
-      python run_tests.py
+      pytest --mode=ci
 
 5. **Set Up Pre-commit Hooks** (if configured):
 
@@ -265,7 +265,7 @@ Pull Request Guidelines
 
    .. code-block:: bash
 
-      python run_tests.py
+      pytest --mode=ci
 
 2. **Check Code Style**:
 

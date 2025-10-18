@@ -176,7 +176,7 @@ Common Commands
    python main.py config.yaml results/output.json
 
    # Run tests to verify system health
-   python run_tests.py unit component
+   pytest --mode=dev
 
    # View available config examples
    ls config/

@@ -10,6 +10,7 @@ from tests.support import parametrize_languages
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_voting_service_prompt_flow(language, prompt_harness_three_agents):
