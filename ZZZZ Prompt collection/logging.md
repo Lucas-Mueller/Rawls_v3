@@ -39,7 +39,7 @@ Please create a plan to change the code to my target state. Dont overengineer. T
 
 
 
-please implement the plan phase by phase. Be  thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
+please implement the next phase. Be  thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
 Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 

@@ -4,17 +4,17 @@ This note captures the current (pre-migration) behaviour of the Frohlich testing
 
 ## Invocation Patterns
 - Primary command: `pytest` executed from repo root. `run_tests.py` now forwards `--mode` and `--coverage` flags directly to pytest for backward compatibility.
-- Expensive suites require the following environment state when invoked via pytest:
-  - `OPENAI_API_KEY` (and optionally `OPENROUTER_API_KEY`, `GEMINI_API_KEY`) for live component/integration layers.
-  - `LIVE_LANGUAGES`, `DEVELOPMENT_MODE`, `SKIP_EXPENSIVE_TESTS`, `TEST_CONFIG_OVERRIDE` control multilingual breadth and config overrides.
+- Expensive suites require the following setup when invoked via pytest:
+  - `OPENAI_API_KEY` (and optionally `OPENROUTER_API_KEY`, `GEMINI_API_KEY`) to enable live component/integration layers.
+  - CLI toggles such as `--languages`, `--run-live`, and `--skip-expensive` now control multilingual breadth and expensive suites (environment overrides are optional).
 
 ## Runtime Characteristics (local baseline, Apple M3 Pro, Oct 2024)
 | Suite | Command | Runtime | Notes |
 | --- | --- | --- | --- |
-| Unit + fast | `pytest tests/unit tests/fast` | ~3.5 min | Deterministic, heavy mocking. |
+| Unit + fast | `pytest tests/unit/test_fast_*` | ~3.5 min | Deterministic, heavy mocking. |
 | Component (English only) | `pytest tests/component -m "component and live"` | ~13 min | ~150 OpenAI calls. |
 | Integration CLI smoke | `pytest tests/integration/test_cli_live.py` | ~4 min | Spawns full experiment via subprocess. |
-| Contracts/Golden | `pytest tests/contracts tests/golden` | ~2 min | Snapshot assertions only. |
+| Snapshots | `pytest tests/snapshots` | ~2 min | Snapshot assertions only. |
 
 > Runtimes include existing network latency; expect variance based on OpenAI backlog and rate limits.
 
@@ -23,8 +23,8 @@ This note captures the current (pre-migration) behaviour of the Frohlich testing
 - These marks allow contributors to exclude them via `-m "not live and not slow"` until the migration introduces explicit CLI switches.
 
 ## Known Pain Points
-- Mixed `unittest`/pytest usage (`tests/test_base.py`, multiple unit modules) complicates async handling.
-- Environment-variable driven behaviour frequently surprises newcomers; pytest options will replace these controls in Phase 4.
-- Root-level scripts (`test_parallel_execution.py`, `test_gemini_integration.py`, `test_semantic_mapping_fix.py`) are not part of pytest discovery and will be migrated or deleted in Phase 3.
+- Fast tests now live alongside the main unit suite (`tests/unit/test_fast_*`), so contributors must rely on naming conventions or markers to select them quickly.
+- Snapshot suites under `tests/snapshots/` still rely on handcrafted expectations instead of a shared snapshot plugin, making updates manual.
+- Live and multilingual coverage now offer explicit pytest toggles (`--run-live`, `--languages`), but legacy environment variables remain for backward compatibility and can still cause surprises.
 
 Maintaining this baseline during the transformation ensures we can measure improvements in runtime, cost, and contributor ergonomics as each phase completes.

@@ -4,7 +4,7 @@
 - Spanish prompts lag the English canonical structure by 36 keys, including all new counterfactual, consensus, and retry feedback strings; Mandarin shows the same drift, signalling the non-English packs were not resynced after the latest English refresh (`translations/english_prompts.json:339`, `translations/spanish_prompts.json:138`).
 - Runtime paths already rely on the missing top-level keys, so Spanish runs either raise `KeyError` or fall back to generic English text in multiple services (`core/services/counterfactuals_service.py:585`, `core/services/discussion_service.py:303`, `core/phase2_manager.py:921`, `utils/memory_content.py:387`).
 - Spanish normalization inside the utility agent only recognizes a single phrasing per principle and does not tolerate accent stripping or common synonyms, unlike the more defensive English heuristics (`experiment_agents/utility_agent.py:220`, `experiment_agents/utility_agent.py:236`).
-- Test scaffolding and configs exist for Spanish, but they do not cover the new result and retry branches, so regressions went unnoticed (`config/test_retry_spanish_concise.yaml:12`, `tests/golden/test_memory_service_consistency.py`).
+- Test scaffolding and configs exist for Spanish, but they do not cover the new result and retry branches, so regressions went unnoticed (`config/test_retry_spanish_concise.yaml:12`, `tests/snapshots/golden/test_memory_service_consistency.py`).
 
 ## Translation Coverage And Structure
 The English file now hosts both top-level and nested prompt entries for new features, while Spanish and Mandarin only kept the legacy nested forms. A diff of fully qualified keys shows 36 paths missing from each non-English pack, notably:
@@ -34,7 +34,7 @@ The remaining reported “missing” keys (`context_stage_prompts.*`) exist in S
 
 ## Configuration And Testing Parity
 - Spanish retry config (`config/test_retry_spanish_concise.yaml:12`) exercises the concise feedback path, whereas English (`config/test_retry_english_detailed.yaml:12`) and Mandarin (`config/test_retry_mandarin_max.yaml:12`) cover detailed guidance and higher retry budgets. No suite asserts that the Spanish retry feedback strings actually exist, leaving the missing labels unnoticed.
-- Golden tests under `tests/golden/` snapshot Spanish prompts for discussions, voting, and memory formatting, but they predate the counterfactual/feedback additions and therefore never touch the absent keys. The same is true for Mandarin, so the regression propagated across both translations.
+- Golden tests under `tests/snapshots/golden/` snapshot Spanish prompts for discussions, voting, and memory formatting, but they predate the counterfactual/feedback additions and therefore never touch the absent keys. The same is true for Mandarin, so the regression propagated across both translations.
 
 ## Additional Observations
 - Spanish prompts consistently use the formal register (“usted”) while English mixes direct imperatives. Mandarin remains neutral. If future UX decisions shift voice, the difference should be called out explicitly in docs (`docs/spanish_test_patterns.md` vs `docs/chinese_test_patterns.md`).

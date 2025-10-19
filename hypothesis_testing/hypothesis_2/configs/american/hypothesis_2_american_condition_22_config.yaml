@@ -8,7 +8,7 @@ agents:
   reasoning_enabled: true
 - name: Agent_2
   personality: You are a college student
-  model: nousresearch/hermes-4-70b
+  model: x-ai/grok-4-fast
   temperature: 0.5585782966268191
   memory_character_limit: 25000
   reasoning_enabled: true

@@ -279,10 +279,13 @@ Running Tests
    pytest tests/integration -m "integration and live"
 
    # Contract/golden artefact checks
-   pytest tests/contracts
+   pytest tests/snapshots/contracts
+
+   # Enable live suites explicitly (override environment defaults)
+   pytest --run-live --languages=en,es
 
    # Skip live suites even when credentials are present
-   RUN_LIVE_TESTS=0 pytest tests/integration -m "integration and live"
+   pytest tests/integration -m "integration and live" --no-run-live
 
 Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environment or ``.env`` file to enable live runs; without them the runner will automatically skip suites that call real LLMs and explain how to re-enable coverage.
 
@@ -385,7 +388,7 @@ Common Development Issues
 
    Tests failing due to API rate limits
    
-   Solution: Pause live suites by exporting ``RUN_LIVE_TESTS=0`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
+   Solution: Pause live suites by exporting ``NEW_ENV_PLACEHOLDER`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
 
 Debugging Tools
 ~~~~~~~~~~~~~~

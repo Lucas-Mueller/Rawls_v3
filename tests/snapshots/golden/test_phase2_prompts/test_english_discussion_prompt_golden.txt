@@ -1,0 +1,7 @@
+This is round 2 of 5. Previous discussion:
+Alice: I prefer principle A.
+Bob: I think principle B is better.
+
+Group participants: The group consists of Alice, Bob and Charlie
+
+Please provide your perspective on which justice principle the group should adopt, considering both your own situation and fairness to all group members. You may also initiate formal voting if you believe the group is ready to decide.

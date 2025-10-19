@@ -75,7 +75,7 @@ To run the tests, invoke pytest directly:
 
 ```bash
 pytest --mode=dev              # Typical development workflow
-pytest tests/unit tests/fast   # Deterministic subset
+pytest tests/unit/test_fast_*   # Deterministic subset
 ```
 
 The `test_type` argument can be one of the following:

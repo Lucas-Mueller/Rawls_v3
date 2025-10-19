@@ -14,26 +14,25 @@ Key features:
 - Performance optimization through shared fixtures and data caching
 """
 
-import pytest
-import asyncio
-from typing import Dict, List, Optional, Any, Type, Union
-from abc import ABC, abstractmethod
-from unittest.mock import MagicMock
-from pathlib import Path
 import inspect
 import warnings
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type, Union
 
-from tests.test_base import TracingDisabledTestCase, AsyncTracingDisabledTestCase
+import pytest
+from unittest.mock import MagicMock
+
 from tests.fixtures.phase2_parsing_fixtures import (
-    Phase2ParsingFixtures,
-    POSITIVE_VOTE_STATEMENTS,
-    NEGATIVE_VOTE_STATEMENTS, 
     BALLOT_STATEMENTS,
     CHINESE_BALLOT_STATEMENTS,
-    SPANISH_BALLOT_STATEMENTS,
     LANGUAGE_SPECIFIC_CONSTRAINTS,
+    NEGATIVE_VOTE_STATEMENTS,
+    POSITIVE_VOTE_STATEMENTS,
     PREFERENCE_STATEMENTS,
-    AGREEMENT_STATEMENTS
+    Phase2ParsingFixtures,
+    SPANISH_BALLOT_STATEMENTS,
+    AGREEMENT_STATEMENTS,
 )
 
 
@@ -256,7 +255,7 @@ class LanguageParityChecker:
 # Parametrized Test Base Classes
 # =============================================================================
 
-class MultilingualTestBase(TracingDisabledTestCase, ABC):
+class MultilingualTestBase(ABC):
     """
     Base class for parametrized multilingual testing with synchronous methods.
     
@@ -311,20 +310,20 @@ class MultilingualTestBase(TracingDisabledTestCase, ABC):
             min_coverage=min_coverage
         )
     
-    @abstractmethod
-    def setUp(self):
-        """Set up test with language validation."""
-        super().setUp()
-        # Validate that test data is available
+    @pytest.fixture(autouse=True)
+    def _validate_fixture_data(self):
+        """Alert when no fixture data is present for any language."""
         try:
             stats = LanguageDataLoader.get_fixture_stats()
-            if not any(stats.values()):
-                warnings.warn("No fixture data available for any language")
-        except Exception as e:
-            warnings.warn(f"Error validating fixture data: {e}")
+        except Exception as exc:
+            warnings.warn(f"Error validating fixture data: {exc}")
+            return
+
+        if not any(stats.values()):
+            warnings.warn("No fixture data available for any language")
 
 
-class AsyncMultilingualTestBase(AsyncTracingDisabledTestCase, ABC):
+class AsyncMultilingualTestBase(ABC):
     """
     Base class for parametrized multilingual testing with async support.
     
@@ -353,12 +352,11 @@ class AsyncMultilingualTestBase(AsyncTracingDisabledTestCase, ABC):
         except ValueError:
             warnings.warn(f"Falling back to English data for unsupported language: {language}")
             return LanguageDataLoader.get_language_test_data("English", data_type)
-    
     def assert_language_parity(self, test_name: str):
         """Ensure test exists for all languages."""
         LanguageParityChecker.assert_language_parity(
             test_class=self.__class__,
-            test_method_name=test_name
+            test_method_name=test_name,
         )
     
     async def async_get_language_test_data(self, language: str, data_type: str = "all") -> Dict[str, Any]:

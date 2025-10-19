@@ -14,7 +14,7 @@ from .prompt_harness import (
 )
 from .language_matrix import (
     ALL_LANGUAGES,
-    DEFAULT_LANGUAGE_MATRIX,
+    current_language_matrix,
     language_ids,
     parametrize_languages,
 )
@@ -37,6 +37,7 @@ __all__ = [
     "build_participant_agent",
     "build_participant_agents",
     "ALL_LANGUAGES",
+    "current_language_matrix",
     "DEFAULT_LANGUAGE_MATRIX",
     "language_ids",
     "parametrize_languages",
@@ -48,3 +49,11 @@ __all__ = [
     "capture_process_flow_output",
     "ProcessLogCapture",
 ]
+
+
+def __getattr__(name: str):
+    if name == "DEFAULT_LANGUAGE_MATRIX":
+        from .language_matrix import DEFAULT_LANGUAGE_MATRIX
+
+        return DEFAULT_LANGUAGE_MATRIX
+    raise AttributeError(name)

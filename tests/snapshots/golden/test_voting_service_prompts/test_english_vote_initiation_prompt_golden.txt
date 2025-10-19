@@ -1,0 +1,1 @@
+Do you want to initiate formal voting to reach a consensus on the justice principle? Respond with 1 for Yes or 0 for No.

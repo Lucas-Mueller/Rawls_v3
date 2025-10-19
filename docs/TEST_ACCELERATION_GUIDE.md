@@ -107,19 +107,19 @@ pytest --mode=full
 
 ## Fast Test Suite
 
-The framework includes an ultra-fast test suite (`tests/fast/`) that provides service boundary validation without API calls.
+The framework includes an ultra-fast test subset (`tests/unit/test_fast_*`) that provides service boundary validation without API calls.
 
 ### Running Fast Tests
 
 ```bash
 # All fast tests (43 tests in 0.04 seconds)
-python -m pytest tests/fast/ -v
+python -m pytest tests/unit/test_fast_* -v
 
 # Response parsing tests only
-python -m pytest tests/fast/test_response_parsing.py -v
+python -m pytest tests/unit/test_fast_response_parsing.py -v
 
 # Data flow tests only
-python -m pytest tests/fast/test_data_flows.py -v
+python -m pytest tests/unit/test_fast_data_flows.py -v
 ```
 
 ### What Fast Tests Cover
@@ -141,10 +141,10 @@ Control test execution behavior with environment variables:
 DEVELOPMENT_MODE=1 pytest --mode=dev
 
 # Force comprehensive testing in development
-FULL_INTEGRATION_TESTS=1 pytest --mode=ci
+pytest --mode=ci --run-live
 
-# Skip expensive tests even with API keys
-SKIP_EXPENSIVE_TESTS=1 pytest --mode=ci
+# Skip expensive tests even with API keys (CLI toggle available)
+pytest --mode=ci --skip-expensive
 ```
 
 ### Configuration Override
@@ -154,14 +154,15 @@ SKIP_EXPENSIVE_TESTS=1 pytest --mode=ci
 TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
 
 # Control multilingual testing
-LIVE_LANGUAGES=1 pytest --mode=ci
+pytest --mode=ci --languages=en,es
 ```
 
 ### Legacy Environment Variables
 
 ```bash
 # Force enable/disable live tests
-RUN_LIVE_TESTS=1 pytest --mode=full
+pytest --mode=full --run-live          # enable live suites explicitly
+pytest --mode=full --no-run-live       # force-skip live suites
 
 # Language coverage reporting
 LANGUAGE_REPORT_PATH=/path/to/report.json pytest --mode=full
@@ -247,6 +248,24 @@ pytest --mode=full
 pytest -m "unit"
 pytest -m "component and not live"
 pytest -m "integration and live"
+pytest tests/snapshots                        # Run snapshot regression suites
+
+## CLI Toggles
+
+```bash
+# Enable or disable live tests explicitly
+pytest --run-live                     # run tests marked live (overrides env)
+pytest --no-run-live                  # force-skip live tests
+
+# Control expensive suites
+pytest --skip-expensive               # skip tests marked expensive (regardless of env)
+pytest --no-skip-expensive            # ensure expensive tests run
+
+# Explicit language selection
+pytest --languages=en,es              # run English + Spanish parametrised cases
+pytest --languages=all                # force all supported languages
+pytest --primary-language=zh          # override the default primary language
+```
 
 # Coverage
 pytest --mode=ci --cov=. --cov-report=term-missing
@@ -302,7 +321,7 @@ test_comprehensive:
 
 If tests are slower than expected:
 
-1. Confirm environment variables (`FULL_INTEGRATION_TESTS`, `SKIP_EXPENSIVE_TESTS`) are set as intended
+1. Verify CLI toggles (`--run-live`, `--skip-expensive`, `--languages`) are set as intended
 2. Use `pytest -vv --durations=10` to profile slow tests
 3. Limit live coverage with `pytest --mode=dev -m "not live"`
 
@@ -340,7 +359,7 @@ The test acceleration system consists of three main components:
 - Added: `tests/support/config_factory.py`
 - Added: `tests/support/language_matrix.py`
 - Added: `tests/support/mock_utilities.py`
-- Added: `tests/fast/` directory with ultra-fast tests
+- Added: ultra-fast tests (`tests/unit/test_fast_*`)
 - Added: Validation tests for configuration integrity
 
 This system successfully transforms the development experience from 90-120 minute test cycles to ultra-fast feedback loops while maintaining comprehensive validation capabilities for releases.

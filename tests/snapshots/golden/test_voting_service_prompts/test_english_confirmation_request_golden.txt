@@ -1,0 +1,9 @@
+Sophie has requested to vote on the justice principles.
+
+Do you agree to participate in a voting session now?
+
+Respond with exactly one number:
+- Reply 1 if you want to vote now
+- Reply 0 if you want to continue discussion
+
+Your response will be visible to all participants.

@@ -20,7 +20,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
 - **Exit Criteria**
   - Shared understanding documented in `docs/` with sign-off from maintainers.
   - Slow/live markers present on all expensive suites.
-- **Status**: ✅ Completed (pytest baseline snapshot + slow/live tagging in Oct 2024)
+- **Status**: Completed (pytest baseline snapshot and slow/live tagging captured in Oct 2024)
 
 ---
 
@@ -40,7 +40,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - CI and local workflows invoke pytest directly.
   - No code path uses `unittest` discovery.
   - Modes/env defaults handled via pytest options.
-- **Status**: ✅ Completed (run_tests shim + pytest `--mode` option in Oct 2024)
+- **Status**: Completed (run_tests.py shim and pytest `--mode` option landed in Oct 2024)
 
 ---
 
@@ -53,48 +53,48 @@ This plan sequences the work required to simplify the testing stack, retire fall
   2. Port `unittest.TestCase` modules to pytest functions/classes (`tests/unit`, portions of `tests/integration`).
   3. Replace `asyncio.run` blocks with `pytest.mark.asyncio` and fixture-based event loop usage.
   4. Audit fixture scopes; convert repeated setup/teardown into fixtures in `tests/conftest.py` or dedicated factory modules.
+  5. Replace remaining synchronous wrappers that call `asyncio.run` in snapshot suites (e.g., `tests/snapshots/golden/test_memory_service_consistency.py`) with pytest-asyncio tests or helper fixtures.
 - **Ownership**: Module owners per directory with infra lead guidance.
 - **Exit Criteria**
   - No test imports `unittest`.
   - Async tests rely on pytest async features.
   - Tracing/env setup comes from fixtures, not base classes.
+- **Status**: Completed (Jan 2025) – pytest fixtures handle tracing, all tests rely on pytest-asyncio, and snapshot contracts no longer call `asyncio.run` (`tests/snapshots/golden/test_memory_service_consistency.py`).
 
 ---
 
 ## Phase 3 – Restructure Suite Layout & Remove Stray Scripts
 - **Objective**: ensure every executable test lives under `tests/` and clarify suite boundaries.
 - **Tasks**
-  1. Promote or remove top-level scripts:
-     - `test_parallel_execution.py`: either convert to `tests/integration/test_parallel_execution.py` with formal assertions, or delete if redundant.
-     - `test_gemini_integration.py`: distil coverage into unit/component pytest modules; delete script.
-     - `test_semantic_mapping_fix.py`: migrate content to documentation or targeted unit tests; delete script.
-  2. Merge `tests/contracts/` and `tests/golden/` into `tests/snapshots/` using a standard snapshot library (e.g., `pytest-regressions`).
-  3. Validate `tests/fast/` still needed; either rename to `tests/unit/fast_*.py` or fold contents into main unit suite.
+  1. ✅ Remove or relocate top-level helper scripts (parallel execution, Gemini integration, semantic mapping demos).
+  2. ✅ Introduce shared snapshot tooling for `tests/snapshots/` (via `pytest-regressions`) so regression suites are easier to refresh.
+  3. ✅ Fold the fast feedback tests into `tests/unit/test_fast_*` and retire the separate directory.
   4. Review `tests/support/`, `tests/fixtures/`, `tests/templates/` for redundancy, moving docs/templates into `docs/` if unused by pytest.
 - **Ownership**: Test content owners with infra oversight.
 - **Exit Criteria**
   - Root-level `test_*.py` scripts removed or relocated.
-  - Snapshot suites consolidated with shared fixtures.
-  - Directory structure reflects final taxonomy (`unit`, `component`, `integration`, `snapshots`, `support`).
+  - Snapshot suites consolidated with shared fixtures and supported by reusable tooling.
+- **Status**: In progress - layout is stable and pytest-regressions covers prompts, but snapshot suites still embed manual translations (`tests/snapshots/golden/test_phase2_prompts.py`) and templates/support modules need redundancy review.
 
 ---
 
 ## Phase 4 – Simplify Live & Language Controls
 - **Objective**: replace environment-variable driven behaviour with explicit pytest options and markers.
 - **Tasks**
-  1. Introduce pytest options (in `conftest.py`) for:
+  1. ✅ Introduce pytest options (in `conftest.py`) for:
      - `--languages` (comma-separated, default `en`),
-     - `--run-live` (boolean) to allow live API calls,
-     - `--skip-expensive` (boolean).
-  2. Update language parametrisation helpers (`tests/support/language_matrix.py`) to consume these options rather than env vars (`LIVE_LANGUAGES`, `DEVELOPMENT_MODE`, etc.).
-  3. Rewrite skip logic in `pytest_collection_modifyitems` to use option flags.
-  4. Document usage in `README.md` / contributor docs.
+     - `--run-live` / `--no-run-live` to toggle live API calls,
+     - `--skip-expensive` / `--no-skip-expensive` to control expensive suites.
+  2. ✅ Update language parametrisation helpers (`tests/support/language_matrix.py`) to consume these options rather than legacy env vars.
+  3. ✅ Rewrite skip logic in `pytest_collection_modifyitems` to use option flags.
+  4. ✅ Document usage in `README.md` / contributor docs.
   5. Review CI pipelines to pass appropriate flags for PR vs scheduled runs.
 - **Ownership**: Testing infra maintainer.
 - **Exit Criteria**
   - No tests read legacy env knobs.
   - Running `pytest` without flags executes fast, deterministic suites (unit + non-live component snapshots).
   - `pytest --run-live --languages=en,es,zh` re-enables live multilingual coverage.
+- **Status**: Completed (Nov 2024) - CLI options now drive execution; legacy env toggles are ignored for live/expensive/language selection.
 
 ---
 
@@ -114,13 +114,14 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Live tests run only when `--run-live` set.
   - Live suite list documented with purpose and expected runtime.
   - CI executes live suites on agreed cadence; PR pipeline runs fast subsets.
+- **Status**: In progress - live suites are catalogued with recommended nightly/weekly cadence (`testing_infrastructure_status.md`), yet mocked CI equivalents and automation for the schedule still need implementation.
 
 ---
 
 ## Phase 6 – Snapshot & Contract Modernisation
 - **Objective**: ensure regression suites are maintainable and aligned with production assets.
 - **Tasks**
-  1. Adopt a snapshot tool (e.g., `pytest-regressions`); convert manual JSON/text comparisons in `tests/contracts/` and `tests/golden/`.
+  1. Adopt a snapshot tool (e.g., `pytest-regressions`); convert manual JSON/text comparisons in `tests/snapshots/`.
   2. Create snapshot fixtures for critical outputs:
      - Phase 2 prompts,
      - Memory transcripts,
@@ -132,6 +133,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Snapshot tests share tooling and documentation.
   - No duplicated translation dictionaries in test code.
   - Snapshot update process documented and reviewed.
+- **Status**: In progress - pytest-regressions drives prompt snapshots, but memory suites still use handcrafted dictionaries (`tests/snapshots/golden/test_memory_service_consistency.py`, `tests/snapshots/golden/test_phase2_prompts.py`) and need fixture consolidation.
 
 ---
 
@@ -147,6 +149,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Coverage reports generated via pytest-cov only.
   - Language coverage decisions documented (plugin or retired).
   - CI enforces agreed coverage thresholds.
+- **Status**: Not started - pytest-cov is manual and the language coverage JSON written by `tests/conftest.py:352-379` still needs a formal plugin or retirement plan.
 
 ---
 
@@ -165,6 +168,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Documentation references only the new workflow.
   - Templates and examples match the final style.
   - Onboarding checklists updated.
+- **Status**: In progress - README.md and several guides cover `--mode` usage, but `tests/templates/` and onboarding checklists still mirror pre-pytest patterns and need refresh.
 
 ---
 
@@ -180,6 +184,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Codebase free of obsolete test utilities.
   - Consistent test naming/style enforced.
   - Retrospective notes stored under `docs/` or `reports/`.
+- **Status**: Not started - cleanup, formatting sweep, and the retrospective write-up remain to be scheduled.
 
 ---
 
@@ -197,4 +202,4 @@ This plan sequences the work required to simplify the testing stack, retire fall
 | 8 | Updated documentation & templates |
 | 9 | Final cleanup & retrospective |
 
-Executing the phases sequentially (with limited overlap where sensible) will transform the current complex infrastructure into a focused, efficient testing system that matches the desired simplicity and maintains critical coverage.***
+Executing the phases sequentially (with limited overlap where sensible) will transform the current complex infrastructure into a focused, efficient testing system that matches the desired simplicity and maintains critical coverage.

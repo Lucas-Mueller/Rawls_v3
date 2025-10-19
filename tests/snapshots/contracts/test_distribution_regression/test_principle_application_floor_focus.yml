@@ -1,0 +1,7 @@
+explanation: Chose distribution with highest floor income: $15000
+selected:
+  high: 21000
+  low: 15000
+  medium: 19000
+  medium_high: 20000
+  medium_low: 16000

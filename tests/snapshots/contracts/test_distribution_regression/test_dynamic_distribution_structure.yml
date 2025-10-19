@@ -1,0 +1,22 @@
+multiplier: 0.8209454395403778
+distributions:
+- high: 26270
+  low: 9851
+  medium: 19702
+  medium_high: 22165
+  medium_low: 10672
+- high: 22986
+  low: 10672
+  medium: 16418
+  medium_high: 18060
+  medium_low: 13956
+- high: 25449
+  low: 11493
+  medium: 17239
+  medium_high: 19702
+  medium_low: 13135
+- high: 17239
+  low: 12314
+  medium: 15597
+  medium_high: 16418
+  medium_low: 13135

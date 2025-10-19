@@ -2,7 +2,7 @@ language: English
 agents:
 - name: Agent_1
   personality: You are a college student
-  model: nousresearch/hermes-4-70b
+  model: x-ai/grok-4-fast
   temperature: 0.40519790250390475
   memory_character_limit: 25000
   reasoning_enabled: true

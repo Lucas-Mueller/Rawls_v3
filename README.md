@@ -44,10 +44,12 @@ pytest --mode=full
 
 ### **Targeted Test Execution**
 ```bash
-pytest tests/unit tests/fast          # deterministic fast feedback
+pytest tests/unit/test_fast_*         # deterministic fast feedback
 pytest tests/component -m "component and not live"  # offline component coverage
 pytest tests/integration -m "integration and live"  # integration suite (requires API keys)
 pytest tests/snapshots                # contract/golden checks (post-migration location)
+pytest --run-live --languages=en,es   # live coverage limited to English and Spanish
+pytest --skip-expensive               # skip tests marked as expensive regardless of mode
 ```
 
 Set `OPENAI_API_KEY` in your environment (or `.env`) to enable live component/integration runs; without it, the runner skips suites that require LLM access and explains how to re-enable them.

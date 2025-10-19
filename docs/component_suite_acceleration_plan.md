@@ -50,7 +50,7 @@ of the work currently performed.
 | 2 | Extract deterministic Phase2 inputs | Snapshot Phase1 results from a known-good run; expose a factory in `tests/support` | TBD, 2d |
 | 3 | Replace `test_phase2_manager_live.py` with synthetic Phase2 inputs | Use snapshot from step 2 to call `run_phase2` once; assert structural fields without live Phase1 | Depends on #2, 2d |
 | 4 | Split consensus + counterfactual assertions into contract tests | Convert existing assertions into contract fixtures; drop full loop repetition | Depends on #2, 2d |
-| 5 | Re-scope multilingual coverage | Keep English-only component runs; schedule a nightly matrix job that toggles `LIVE_LANGUAGES=1` | Coordinate with CI owner, 1d |
+| 5 | Re-scope multilingual coverage | Keep English-only component runs; schedule a nightly matrix job that runs `pytest --run-live --languages=all` | Coordinate with CI owner, 1d |
 | 6 | Add “slow profile” smoke | Extend `tests/integration/test_cli_live.py` to run once per release with full language rotation | After #5, 1d |
 
 ## Coverage Mapping

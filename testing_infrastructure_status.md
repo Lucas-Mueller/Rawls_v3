@@ -1,92 +1,75 @@
 # Testing Infrastructure Status Review
 
 ## Executive Summary
-- The project now leans on pytest with a thin compatibility shim (`run_tests.py`) yet still mixes fast mocked layers with expensive live-agent verification. Environment toggles and multilingual guarantees continue to introduce operational overhead (`tests/conftest.py:56`).
-- Test sources span nine directories plus several standalone scripts. Suite intent is clear (unit vs component vs integration vs contracts), yet execution paths, fixtures, and env flags differ per layer, raising the activation energy for contributors.
-- Many “tests” are actually interactive scripts or research notebooks in disguise (for example `test_parallel_execution.py:78` and `test_semantic_mapping_fix.py:1`), so they never run under pytest and in some cases do not parse.
-- Legacy unittest-style cases coexist with pytest idioms. Async coverage often relies on `asyncio.run` inside `unittest.TestCase`, fighting pytest’s event loop management (`tests/unit/test_memory_manager.py:20`, `tests/test_base.py:13`). This increases flake risk and obscures fixture reuse.
+- Pytest is now the sole runner; `run_tests.py` (run_tests.py:1-68) simply forwards `--mode` and `--coverage` to `python -m pytest`, while contributors interact with pytest directly.
+- Test suites are consolidated under `tests/` with markers auto-applied in `tests/conftest.py:83-181`. Unit, component, integration, and snapshot layers are separated, and snapshot suites lean on `pytest-regressions` fixtures (for example `text_regression`).
+- Live coverage remains opt-in: `--run-live` combines with `@pytest.mark.live` to guard network-heavy suites such as `tests/component/test_phase2_manager_live.py:1-109`, yet meaningful component and integration coverage still depends on OpenAI credentials.
+- Remaining friction centers on duplicated translation dictionaries in golden tests (`tests/snapshots/golden/test_phase2_prompts.py:24-118`) and the need for tighter alignment across the various docs that describe suite selection and live schedules.
 
 ## Tooling & Execution Flow
-- **Primary harness** – pytest exposes suite presets via a custom `--mode` option defined in `tests/conftest.py`. `run_tests.py` remains only as a compatibility shim that forwards `--mode` and `--coverage` flags.
-- **pytest configuration** – `pytest.ini:1-15` enables asyncio auto-mode, strict markers, and a curated marker taxonomy. Coverage is wired for `pytest-cov`, but test files themselves are omitted from coverage reports (`pytest.ini:17-25`).
+- **Primary harness** – `run_tests.py` (run_tests.py:1-68) builds the pytest command and no longer contains any unittest discovery fallback.
+- **CLI & marker wiring** – `tests/conftest.py:83-214` registers `--mode`, `--run-live`, `--skip-expensive`, and language options, disables tracing globally, and injects layer markers so discovery aligns with directory layout.
+- **pytest configuration** – `pytest.ini:1-28` enables asyncio auto mode, enforces strict markers, and excludes `tests/**` from coverage. `tests/conftest.py:260-334` handles skip logic and language bookkeeping, while `tests/conftest.py:352-379` optionally writes language coverage JSON when `LANGUAGE_REPORT_PATH` is set.
 
 ## Suite Layout & Intent
-- `tests/unit/` holds configuration parsing, seed control, service helpers, logging, and deterministic logic checks. Most files still use `unittest.TestCase`, occasionally augmented with manual async runners (`tests/unit/test_reproducibility.py:18`, `tests/unit/test_memory_manager.py:20`).
-- `tests/fast/` targets deterministic parsing and boundary logic using custom mocks (e.g., `-tests/fast/test_response_parsing.py:17-200`). These are true pytest modules and represent the fastest feedback loop.
-- `tests/component/` exercises multi-agent flows with live dependencies. Many tests parametrize across languages and require OpenAI keys (`tests/component/test_phase2_manager_live.py:13-70`, `tests/component/test_prompt_harness_agents.py:13-37`). `pytest.mark.live` and `requires_openai` guard execution but still spin up real participants/utility agents.
-- `tests/integration/` blends mocked infrastructure with subprocess execution (`tests/integration/test_cli_live.py:13-49`, `tests/integration/test_experiment_reproducibility.py:16-142`). Some rely on unittest classes, others use pytest marks.
-- `tests/contracts/` and `tests/golden/` capture regression snapshots of translations, prompts, and memory behaviours (`tests/contracts/test_translation_regression.py:1-18`, `tests/golden/test_phase2_prompts.py:1-200`).
-- Additional layers include `tests/component/test_phase2_quarantine.py:1-84` (mock-heavy), `tests/fixtures/` for reusable configs (`tests/fixtures/quarantine_test_fixtures.py:1-124`), `tests/support/` for harness utilities (`tests/support/prompt_harness.py:1-120`, `tests/support/mock_utilities.py:1-200`), `tests/golden/`, `tests/templates/README.md:1-32`, and `tests/utils/` stubs.
-- Outside the pytest tree sit hand-run scripts (`test_parallel_execution.py:1-108`, `test_gemini_integration.py:1-120`, `test_semantic_mapping_fix.py:1-116`). They provide investigative tooling but are invisible to the automated suite and, in at least one case, contain syntax errors that prevent execution (`test_parallel_execution.py:78-83`).
+- `tests/unit/` focuses on deterministic logic, configuration parsing, seed management, and memory helpers; the fast smoke suites live alongside the rest of the directory (`tests/unit/test_fast_*`).
+- `tests/component/` drives multi-agent flows through the prompt harness (`tests/component/test_reasoning_and_temperature.py:1-64`, `tests/component/test_phase2_manager_live.py:1-109`) and requires real API access for assertions.
+- `tests/integration/` verifies experiment orchestration and CLI behaviour with pytest functions (`tests/integration/test_experiment_reproducibility.py:1-120`, `tests/integration/test_cli_live.py:1-72`) instead of unittest classes.
+- `tests/snapshots/` consolidates contract and golden suites powered by `pytest-regressions`; memory coverage still embeds inline translations and synchronous wrappers (`tests/snapshots/golden/test_memory_service_consistency.py:1-205`).
+- Supporting assets live in `tests/fixtures/`, `tests/support/`, `tests/templates/`, and `tests/utils/`; `tests/test_multilingual_base.py` documents best practices for forthcoming multilingual suites.
 
 ## Fixtures, Helpers, and Language Instrumentation
-- `tests/conftest.py:42-198` auto-registers layered markers, enforces skip policies driven by `SKIP_EXPENSIVE_TESTS`, and tracks multilingual coverage. It also injects live credential gating via `openai_api_key`, which performs an actual HTTP probe (`tests/conftest.py:56-77`).
-- Prompt harness fixtures (`tests/conftest.py:80-122`) construct real agent configurations through `tests.support.config_factory` and `tests.support.prompt_harness` to spin up LLM-facing participants. These fixtures honour optional overrides from `TEST_CONFIG_OVERRIDE`.
-- Language parametrization flows through `tests/support/language_matrix.py:28-153`, which interprets `LIVE_PRIMARY_LANGUAGE`, `LIVE_LANGUAGES`, `DEVELOPMENT_MODE`, and `FULL_INTEGRATION_TESTS`. Smart decorators decide whether suites run 1, 2, or 3 locales, influencing both runtime and language coverage metrics.
-- Snapshot and regression tooling relies on bespoke data builders: `tests/support/mock_utilities.py:1-200` supplies richly instrumented mock agents, while `tests/support/process_capture.py:1-34` captures structured logging for assertions.
+- `tests/conftest.py:184-270` defines session-level fixtures for credential gating, prompt harness creation, and automatic skip/marker behaviour tied to `--mode` and expense flags.
+- Language selection flows through `tests/support/language_matrix.py:1-150`, which consumes pytest options to expose helpers like `parametrize_languages` and `smart_parametrize_languages`.
+- Prompt harness utilities (`tests/support/prompt_harness.py`, `tests/support/config_factory.py`) clone experiment configurations and coordinate seeds so live tests remain reproducible.
 
 ## Environment & External Dependencies
-- Live layers require `OPENAI_API_KEY` (and optionally `OPENROUTER_API_KEY`, `GEMINI_API_KEY`). The `openai_api_key` fixture actively calls the OpenAI Models endpoint to short-circuit tests when unavailable (`tests/conftest.py:56-75`), so running component/integration suites offline is impossible without editing fixtures.
-- Mode selection is now purely marker-based; contributors must still manage `LIVE_LANGUAGES`, `SKIP_EXPENSIVE_TESTS`, and `TEST_CONFIG_OVERRIDE` manually, which can surprise newcomers because behaviour shifts with environment state alone (`tests/conftest.py:124-166`).
-- `tests/support/config_factory.py:1-160` and derived helpers depend on actual YAML specs (`config/default_config.yaml`, `config/test_ultra_fast.yaml`). Several tests perform disk IO to write temporary configs (`tests/integration/test_cli_live.py:25-44`).
+- Live suites require `OPENAI_API_KEY` (and optionally `OPENROUTER_API_KEY`, `GEMINI_API_KEY`); `openai_api_key` performs an HTTP probe before enabling tests.
+- Default `--mode` presets skip live and expensive suites unless contributors pass `--run-live`; credentials alone no longer trigger legacy environment behaviour.
+- Integration fixtures read real YAML specs (`config/default_config.yaml`, `config/test_ultra_fast.yaml`), and some tests create temporary configs on disk (`tests/integration/test_cli_live.py:24-55`).
+
+## Live Suite Catalogue & Scheduling
+- **Historical runtimes** below draw from the Oct 2024 Apple M3 Pro baseline noted in `docs/testing_baseline.md`. A full `pytest tests/component -m "component and live"` run averaged ~13 minutes for English-only execution (~150 OpenAI calls).
+- The table summarises currently collected live suites; runtimes are coarse buckets derived from observed call counts and fixture complexity. All suites respect `--run-live` and the language selectors exposed in `tests/conftest.py`.
+
+| Module | Scope | Languages under default run | Runtime bucket (EN) | Suggested cadence |
+| --- | --- | --- | --- | --- |
+| `tests/component/test_phase1_manager_live.py` | Phase 1 orchestration smoke | primary (`en`) | Medium (~2-4 min) | Nightly (`pytest --mode=full --run-live --languages=en`) |
+| `tests/component/test_phase2_manager_live.py` | Full Phase 2 loop with three agents | primary (`en`) | Long (5-7 min) | Nightly (`--languages=en`), Weekly multilingual (`--languages=en,es,zh`) |
+| `tests/component/test_phase2_mixed_languages_live.py` | Multilingual harness validation | smart matrix (en + secondary) | Long (6-8 min) | Weekly multilingual run |
+| `tests/component/test_reasoning_and_temperature.py` | Reasoning toggles & temperature probes | smart matrix | Medium (~3-4 min) | Nightly (`--languages=en`), Weekly multilingual |
+| `tests/component/test_voting_service_live.py` | Voting workflow contract | smart matrix | Medium (~2-3 min) | Nightly (`--languages=en`) |
+| `tests/component/test_memory_service_live.py` | Memory updates via live agents | smart matrix | Medium (~2-3 min) | Nightly (`--languages=en`) |
+| `tests/component/test_manipulator_service_live.py` | Manipulator detection guardrails | smart matrix | Medium (~2-3 min) | Nightly (`--languages=en`) |
+| `tests/component/test_counterfactuals_service_live.py` | Counterfactual generation sanity checks | primary (`en`) | Short (<2 min) | Nightly |
+| `tests/component/test_language_logging_live.py` | Language logging instrumentation | smart matrix | Short (<2 min) | Nightly |
+| `tests/component/test_prompt_harness_agents.py` | Prompt harness integration | smart matrix | Medium (~2-3 min) | Nightly |
+| `tests/component/test_utility_agent_parsing_live.py` | Utility agent parsing fidelity | smart matrix | Medium (~3-4 min) | Nightly |
+| `tests/component/test_consensus_mechanisms.py` | Consensus and escalation paths | smart matrix | Medium (~3-4 min) | Nightly |
+| `tests/integration/test_cli_live.py` | CLI smoke via subprocess | primary (`en`) | Medium (~4 min) | Nightly (`pytest --mode=full --run-live --languages=en`) |
+
+- **Scheduling recommendation**
+  - **Nightly**: `pytest --mode=full --run-live --languages=en -m "live"` to cover all suites in the table using the primary language only.
+  - **Weekly (e.g., Sunday 02:00 UTC)**: `pytest --mode=full --run-live --languages=en,es,zh -m "live"` to refresh multilingual coverage.
+  - Capture runtimes in CI logs and update this table quarterly to keep estimates current.
 
 ## Coverage & Reporting Posture
-- Coverage reports omit all test modules (`pytest.ini:17-21`), so the project focuses on production code only. Coverage enforcement is driven manually via `pytest --cov`.
-- Language coverage remains a first-class metric: component and live suites can emit a JSON summary when `LANGUAGE_REPORT_PATH` is set, but enforcement now relies on contributors opting in rather than the wrapper enforcing it automatically.
+- Coverage excludes all test modules and helper scripts (`pytest.ini:17-28`); contributors opt in to reports via `pytest --cov`.
+- When `LANGUAGE_REPORT_PATH` is populated, `tests/conftest.py:352-379` writes a multilingual coverage summary, but no automated consumer currently ingests the JSON.
 
-## Pain Points & Outdated Patterns
-- **Mixed frameworks and manual async orchestration** – Many “unit” modules inherit from `unittest.TestCase` yet run under pytest, manually driving `asyncio.run` per test (`tests/unit/test_memory_manager.py:85-148`). This pattern sidesteps pytest-asyncio and can leak event loops or mask fixture errors. Base classes in `tests/test_base.py:13-66` perpetuate the unittest heritage.
-- **Live-by-default component tests** – Component coverage depends on real LLM agents (`tests/component/test_phase2_manager_live.py:13-70`, `tests/component/test_phase2_manager_live.py:34-57`). With no recorded mocks, CI cannot exercise them unless secrets are injected, dramatically limiting automated assurance.
-- **Uncollected diagnostic scripts** – Files like `test_parallel_execution.py:78-83`, `test_gemini_integration.py:28-120`, and `test_semantic_mapping_fix.py:1-116` are labelled as tests but live outside the pytest discovery tree. One is syntactically invalid, so even manual invocation fails. Their presence inflates perceived coverage while delivering none.
-- **Wrapper expectations** – Historical documentation still references legacy runner behaviours. Until the cleanup completes, contributors may reach for the shim and expect features (config overrides, performance reports) that no longer exist.
-- **Environment-driven branching** – Skip logic lives in multiple layers (`run_tests.py:318-364`, `tests/conftest.py:124-166`, `tests/support/language_matrix.py:83-141`). Understanding which tests run requires tracing env defaults, especially with `DEVELOPMENT_MODE` defaulting to “on” (`tests/support/language_matrix.py:97-141`).
-- **Fragmented test data ownership** – Golden files, fixtures, and configs are distributed across `tests/golden/`, `tests/fixtures/`, and `tests/support/`, with overlapping responsibilities. There is little documentation tying them together beyond the template README (`tests/templates/README.md:1-32`).
+## Pain Points & Outstanding Work
+- Snapshot suites now use pytest-asyncio but still embed handcrafted translation dictionaries (`tests/snapshots/golden/test_phase2_prompts.py:24-118`), creating maintenance overhead and drift risk.
+- Live suite catalogue and cadence are documented, yet CI still needs dedicated jobs that run the nightly and weekly commands.
+- Guidance on combining `--mode`, language overrides, and live toggles is spread across README.md, `docs/TEST_ACCELERATION_GUIDE.md`, and templates, making onboarding heavier than necessary.
 
 ## Adequacy & Coverage Observations
-- Deterministic logic is reasonably exercised through mocks (`tests/fast/`, many `tests/unit/` modules), but end-to-end flows that avoid live APIs are scarce. For instance, no offline component test asserts the orchestration around the prompt harness without contacting OpenAI.
-- Reproducibility/integration cases (`tests/integration/test_experiment_reproducibility.py:16-214`) stop short of running full experiments unless API keys are injected, so the critical seed semantics rely on manual inspection rather than automated enforcement.
-- Contract-style suites (`tests/contracts/`, `tests/golden/`) help detect prompt regressions, yet they manually construct translation dictionaries or mocks instead of snapshotting production language assets, increasing maintenance cost.
-- There is no single source of truth describing how to run subsets; contributors must read templates or code to understand language parametrization or fixture lifecycles.
+- Unit and fast suites provide healthy deterministic coverage (`tests/unit/test_memory_manager.py`, `tests/unit/test_fast_*`), but there is no offline component smoke test for the prompt harness.
+- Integration reproducibility tests stop short of real agent execution without credentials (`tests/integration/test_experiment_reproducibility.py:87-118`), so seed semantics rely on manual live runs.
+- Snapshot coverage is improving thanks to `pytest-regressions`, yet regression data still depends on handcrafted fixtures rather than canonical prompt assets.
 
 ## Ancillary Assets
-- Templates (`tests/templates/`) and prompt harness utilities (`tests/support/prompt_harness.py:1-120`) encode institutional knowledge but are not cross-referenced from the README or developer docs, limiting discoverability.
-- Numerous JSON transcripts (`transcripts/`, `transcript_*.json`) and reports in root suggest manual logging of prior failures, yet they are not integrated into automated regression tests.
+- Templates in `tests/templates/` and the reference module `tests/test_multilingual_base.py` encode process knowledge but are not cross-linked from README or contributor docs.
+- Historical transcripts (`transcripts/`, `transcript_*.json`) provide manual context for prior experiments but remain outside automated regression flows.
 
 ---
-This document captures the current state; future redesign should aim to decouple live dependencies, consolidate fixtures, and simplify runner semantics while preserving the multilingual guarantees that motivated the existing architecture.
-
-## Alignment With Simplicity & Focus Goals
-- **Single testing interface** – Rely on `pytest` directly. Drop `unittest` style bases (`tests/test_base.py:13`) and rewrite async tests to use `pytest.mark.asyncio`, eliminating the fallback path and manual loop juggling (`tests/unit/test_memory_manager.py:85`).
-- **Keep runner minimal** – Retain a thin compatibility wrapper at most; ensure documentation pushes contributors toward direct pytest usage so there is no ambiguity about execution flow.
-- **Keep tests under `tests/`** – Convert or retire standalone scripts:
-  - `test_parallel_execution.py:1` → either promote to `tests/integration/test_parallel_execution.py` with pytest assertions or delete (currently broken at `test_parallel_execution.py:78-83`).
-  - `test_gemini_integration.py:1` → fold critical coverage into targeted unit/component tests; otherwise remove.
-  - `test_semantic_mapping_fix.py:1` → migrate insights into documentation or a hypothesis notebook; delete as executable test.
-- **Clarify suite hierarchy** – Retain four layers but simplify names:
-  - `tests/unit/` – pure functions/mocks only, pytest style.
-  - `tests/component/` – can stay live; gate with a single `--run-live` flag rather than env sprawl.
-  - `tests/integration/` – prefer end-to-end flows that can run offline by default, flip opt-in markers when API keys are present.
-  - `tests/contracts/` & `tests/golden/` – merge into `tests/snapshots/` with pytest snapshot tooling to cut duplication.
-- **Streamline fixtures** – Collapse language management into one helper module. Remove implicit environment toggles such as `DEVELOPMENT_MODE` defaults (`tests/support/language_matrix.py:97-141`). Instead, pass desired language matrices through pytest options (`pytest_addoption`) to make behaviour explicit.
-- **Live test policy** – Allow live suites, but enforce clear opt-in via command-line markers. Provide minimal mocked equivalents so CI can run fast smoke tests without secrets.
-
-## Proposed Implementation Phases
-1. **Collapse tooling**
-   - Strip `run_tests.py` to a minimal shim or delete in favour of direct `pytest` usage documented in `README.md`.
-   - Remove the fallback branch and legacy args (`run_tests.py:300-408`).
-2. **Unify test style**
-   - Port `unittest` modules to pytest functions/classes.
-   - Delete `tests/test_base.py` once tracing enforcement is handled via fixtures (`tests/conftest.py` can set envs in `pytest_configure`).
-3. **Normalize suite layout**
-   - Migrate or delete root-level scripts.
-   - Merge `tests/contracts/` and `tests/golden/` into a snapshots suite with shared fixtures.
-   - Audit `tests/support/` for redundant factories; document remaining helpers.
-4. **Simplify environment knobs**
-   - Replace env-based skip switches with pytest options (`--skip-expensive`, `--languages=en,es`).
-   - Update fixtures to consume these options instead of env vars.
-   - Document live test expectations and required secrets in a single section of the repo README.
-5. **Rationalize coverage**
-   - Decide whether to keep language coverage JSON. If required, encapsulate it as a pytest plugin rather than ad-hoc files generated per suite.
-   - Ensure coverage configuration aligns with the simplified suite (adjust `pytest.ini` once directories change).
-
-Executing the phases in order delivers a lean, pytest-first testing stack that still honours multilingual and live execution needs while eliminating redundant fallbacks and stray scripts.*** End Patch
+This snapshot reflects the post–phase 4 state of the testing overhaul. Upcoming work will focus on rationalising live coverage, modernising snapshot data, formalising coverage reporting, and tightening contributor guidance.
