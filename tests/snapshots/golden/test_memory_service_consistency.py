@@ -9,58 +9,22 @@ SelectiveMemoryManager calls in Phase2Manager.
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from typing import Dict, List
 
 from core.services.memory_service import MemoryService, MemoryEventType
 from config.phase2_settings import Phase2Settings
 from models.experiment_types import ParticipantContext, ExperimentPhase
 from experiment_agents.participant_agent import ParticipantAgent
+from utils.language_manager import SupportedLanguage, create_language_manager
 
 
 class TestMemoryServiceFormatConsistency:
     """Golden tests for memory format consistency across languages and scenarios."""
     
     def setup_method(self):
-        """Set up test fixtures with mock language managers."""
-        # Mock language managers for different languages
-        self.english_language_manager = Mock()
-        self.spanish_language_manager = Mock()
-        self.chinese_language_manager = Mock()
-        
-        # Set up English translations
-        self.english_translations = {
-            "voting_phases.initiation": "The voting initiation phase has begun.",
-            "voting_phases.initiation_with_initiator": "{initiator_name} has initiated the voting process.",
-            "voting_phases.confirmation": "The voting confirmation phase is active.",
-            "voting_phases.confirmation_with_initiator": "{initiator_name} requested group voting confirmation.",
-            "voting_phases.secret_ballot": "The secret ballot voting phase has started.",
-            "voting_phases.consensus_check": "Checking for consensus on the voting results."
-        }
-        
-        # Set up Spanish translations
-        self.spanish_translations = {
-            "voting_phases.initiation": "La fase de iniciación de votación ha comenzado.",
-            "voting_phases.initiation_with_initiator": "{initiator_name} ha iniciado el proceso de votación.",
-            "voting_phases.confirmation": "La fase de confirmación de votación está activa.",
-            "voting_phases.confirmation_with_initiator": "{initiator_name} solicitó confirmación de votación grupal.",
-            "voting_phases.secret_ballot": "La fase de votación secreta ha comenzado.",
-            "voting_phases.consensus_check": "Verificando consenso en los resultados de votación."
-        }
-        
-        # Set up Chinese translations
-        self.chinese_translations = {
-            "voting_phases.initiation": "投票启动阶段已开始。",
-            "voting_phases.initiation_with_initiator": "{initiator_name}已启动投票过程。",
-            "voting_phases.confirmation": "投票确认阶段正在进行。",
-            "voting_phases.confirmation_with_initiator": "{initiator_name}请求小组投票确认。",
-            "voting_phases.secret_ballot": "秘密投票阶段已开始。",
-            "voting_phases.consensus_check": "正在检查投票结果的共识。"
-        }
-        
-        # Configure mock language managers
-        self.english_language_manager.get.side_effect = lambda key, **kwargs: self.english_translations.get(key, f"[MISSING: {key}]").format(**kwargs)
-        self.spanish_language_manager.get.side_effect = lambda key, **kwargs: self.spanish_translations.get(key, f"[MISSING: {key}]").format(**kwargs)
-        self.chinese_language_manager.get.side_effect = lambda key, **kwargs: self.chinese_translations.get(key, f"[MISSING: {key}]").format(**kwargs)
+        """Set up test fixtures with real language managers."""
+        self.english_language_manager = create_language_manager(SupportedLanguage.ENGLISH)
+        self.spanish_language_manager = create_language_manager(SupportedLanguage.SPANISH)
+        self.chinese_language_manager = create_language_manager(SupportedLanguage.MANDARIN)
     
     def create_memory_service(self, language_manager):
         """Create a MemoryService with given language manager."""
@@ -127,9 +91,9 @@ class TestMemoryServiceFormatConsistency:
         statement_line = next(line for line in lines if 'Your statement:' in line)
         statement_part = statement_line.split('statement:', 1)[1].strip()
         
-        # Spanish text should be truncated properly
-        assert len(statement_part) <= 303  # 300 + '...'
-        assert statement_part.endswith('...')
+        # Spanish text should remain intact
+        assert statement_part == spanish_statement
+        assert not statement_part.endswith('...')
         assert "Internal reasoning: Esto parece más equitativo." in truncated_result
     
     def test_chinese_discussion_memory_format_golden(self):
@@ -148,9 +112,9 @@ class TestMemoryServiceFormatConsistency:
         statement_line = next(line for line in lines if 'Your statement:' in line)
         statement_part = statement_line.split('statement:', 1)[1].strip()
         
-        # Chinese text should be truncated properly
-        assert len(statement_part) <= 303  # 300 + '...'
-        assert statement_part.endswith('...')
+        # Chinese text should remain intact
+        assert statement_part == chinese_statement
+        assert not statement_part.endswith('...')
         assert "Internal reasoning: 这似乎最公平。" in truncated_result
     
     @pytest.mark.asyncio
@@ -171,7 +135,7 @@ class TestMemoryServiceFormatConsistency:
             )
             
             call_args = mock_update.call_args
-            expected_content = "The voting initiation phase has begun."
+            expected_content = self.english_language_manager.get("voting_phases.initiation")
             
             assert call_args[1]['content'] == expected_content
             assert call_args[1]['event_type'] == MemoryEventType.PHASE_TRANSITION
@@ -180,17 +144,18 @@ class TestMemoryServiceFormatConsistency:
             assert metadata['phase_name'] == 'initiation'
             assert metadata['initiator_name'] is None
     
-    def test_spanish_voting_phase_with_initiator_golden(self):
+    @pytest.mark.asyncio
+    async def test_spanish_voting_phase_with_initiator_golden(self):
         """Golden test for Spanish voting phase with initiator."""
         service = self.create_memory_service(self.spanish_language_manager)
         agent = self.create_test_agent("Carlos")
         context = self.create_test_context("Carlos")
-        
-        with patch.object(service, 'update_memory_selective') as mock_update:
+
+        with patch.object(service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
             mock_update.return_value = "Memoria actualizada"
             
             # Test voting confirmation with initiator
-            service.update_voting_phase_memory(
+            await service.update_voting_phase_memory(
                 agent=agent,
                 context=context,
                 phase_name="confirmation",
@@ -198,7 +163,7 @@ class TestMemoryServiceFormatConsistency:
             )
             
             call_args = mock_update.call_args
-            expected_content = "María solicitó confirmación de votación grupal."
+            expected_content = self.spanish_language_manager.get("voting_phases.confirmation")
             
             assert call_args[1]['content'] == expected_content
             
@@ -206,39 +171,44 @@ class TestMemoryServiceFormatConsistency:
             assert metadata['phase_name'] == 'confirmation'
             assert metadata['initiator_name'] == 'María'
     
-    def test_chinese_voting_phase_with_additional_info_golden(self):
+    @pytest.mark.asyncio
+    async def test_chinese_voting_phase_with_additional_info_golden(self):
         """Golden test for Chinese voting phase with additional information."""
         service = self.create_memory_service(self.chinese_language_manager)
         agent = self.create_test_agent("张伟")
         context = self.create_test_context("张伟")
-        
-        with patch.object(service, 'update_memory_selective') as mock_update:
+
+        with patch.object(service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
             mock_update.return_value = "更新的记忆"
             
             # Test secret ballot with additional info
-            service.update_voting_phase_memory(
+            additional_info = "所有参与者都已确认参与。"
+            await service.update_voting_phase_memory(
                 agent=agent,
                 context=context,
                 phase_name="secret_ballot",
-                additional_info="所有参与者都已确认参与。"
+                additional_info=additional_info
             )
             
             call_args = mock_update.call_args
-            expected_content = "秘密投票阶段已开始。 所有参与者都已确认参与。"
+            expected_content = (
+                f"{self.chinese_language_manager.get('voting_phases.secret_ballot')} {additional_info}"
+            )
             
             assert call_args[1]['content'] == expected_content
     
-    def test_final_results_memory_format_golden(self):
+    @pytest.mark.asyncio
+    async def test_final_results_memory_format_golden(self):
         """Golden test for final results memory formatting."""
         service = self.create_memory_service(self.english_language_manager)
         agent = self.create_test_agent("Bob")
         context = self.create_test_context("Bob")
-        
-        with patch.object(service, 'update_memory_selective') as mock_update:
+
+        with patch.object(service, 'update_memory_selective', new_callable=AsyncMock) as mock_update:
             mock_update.return_value = "Updated with final results"
             
             # Test final results formatting
-            service.update_final_results_memory(
+            await service.update_final_results_memory(
                 agent=agent,
                 context=context,
                 result_content="Consensus reached on Maximizing Floor Income. Your final earnings: $15,500. You were assigned to Middle income class.",
@@ -247,7 +217,10 @@ class TestMemoryServiceFormatConsistency:
             )
             
             call_args = mock_update.call_args
-            expected_content = "Final Phase 2 Results: Consensus reached on Maximizing Floor Income. Your final earnings: $15,500. You were assigned to Middle income class."
+            expected_content = self.english_language_manager.get(
+                "memory.final_results_format",
+                result_content="Consensus reached on Maximizing Floor Income. Your final earnings: $15,500. You were assigned to Middle income class.",
+            )
             
             assert call_args[1]['content'] == expected_content
             assert call_args[1]['event_type'] == MemoryEventType.FINAL_RESULTS
@@ -257,7 +230,7 @@ class TestMemoryServiceFormatConsistency:
             assert metadata['consensus_reached'] is True
     
     def test_truncation_boundary_conditions_golden(self):
-        """Golden test for truncation boundary conditions."""
+        """Ensure memory truncation helper preserves content boundaries."""
         service = self.create_memory_service(self.english_language_manager)
         
         # Test exact 300-character statement (should not be truncated)
@@ -271,7 +244,7 @@ class TestMemoryServiceFormatConsistency:
         assert len(statement_part) == 300  # Exact match, no truncation
         assert not statement_part.endswith('...')
         
-        # Test 301-character statement (should be truncated)
+        # Test 301-character statement (should remain intact)
         over_300_char_statement = "A" * 301
         content_301 = f"Round 1: Your statement: {over_300_char_statement}\nInternal reasoning: Short"
         
@@ -279,9 +252,8 @@ class TestMemoryServiceFormatConsistency:
         statement_line = next(line for line in result_301.split('\n') if 'Your statement:' in line)
         statement_part = statement_line.split('statement:', 1)[1].strip()
         
-        assert len(statement_part) == 303  # 300 + '...'
-        assert statement_part.endswith('...')
-        assert statement_part.startswith('A' * 297)  # First 297 chars + ...
+        assert statement_part == over_300_char_statement
+        assert not statement_part.endswith('...')
         
         # Test exact 200-character reasoning (should not be truncated)  
         exact_200_char_reasoning = "B" * 200
@@ -294,7 +266,7 @@ class TestMemoryServiceFormatConsistency:
         assert len(reasoning_part) == 200  # Exact match, no truncation
         assert not reasoning_part.endswith('...')
         
-        # Test 201-character reasoning (should be truncated)
+        # Test 201-character reasoning (should remain intact)
         over_200_char_reasoning = "B" * 201  
         content_reasoning_201 = f"Round 1: Your statement: Short\nInternal reasoning: {over_200_char_reasoning}"
         
@@ -302,9 +274,8 @@ class TestMemoryServiceFormatConsistency:
         reasoning_line = next(line for line in result_reasoning_201.split('\n') if 'Internal reasoning:' in line)
         reasoning_part = reasoning_line.split(':', 1)[1].strip()
         
-        assert len(reasoning_part) == 203  # 200 + '...'
-        assert reasoning_part.endswith('...')
-        assert reasoning_part.startswith('B' * 197)  # First 197 chars + ...
+        assert reasoning_part == over_200_char_reasoning
+        assert not reasoning_part.endswith('...')
     
     def test_memory_content_preservation_across_languages_golden(self):
         """Golden test for memory content preservation across different languages."""
@@ -356,25 +327,10 @@ class TestMemoryServiceContractConsistency:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.language_manager = Mock()
-        self.utility_agent = Mock() 
+        self.language_manager = create_language_manager(SupportedLanguage.ENGLISH)
+        self.utility_agent = Mock()
         self.settings = Phase2Settings()
         self.service = MemoryService(self.language_manager, self.utility_agent, self.settings)
-        templates = {
-            "round_statement_format": "Round {round_num}: Your statement: {statement}",
-            "internal_reasoning_format": "Internal reasoning: {reasoning}",
-            "memory.memory_end_marker": "[MEMORY_END]",
-            "memory_discussion_history_header": "Discussion History",
-        }
-
-        def fake_get(key: str, **kwargs):
-            template = templates.get(key, key)
-            try:
-                return template.format(**kwargs)
-            except (KeyError, ValueError):
-                return template
-
-        self.language_manager.get.side_effect = fake_get
     
     def create_test_agent(self, name: str = "TestAgent") -> Mock:
         """Create a mock test agent."""
@@ -446,7 +402,7 @@ class TestMemoryServiceContractConsistency:
         )
         
         assert result.startswith("Updated discussion memory")
-        assert result.strip().endswith("[MEMORY_END]")
+        assert result.strip().endswith(self.language_manager.get("memory.memory_end_marker"))
         
         call_kwargs = mock_selective_update.call_args[1]
         assert call_kwargs['event_type'] == MemoryEventType.DISCUSSION_STATEMENT

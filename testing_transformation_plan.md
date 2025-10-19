@@ -67,14 +67,14 @@ This plan sequences the work required to simplify the testing stack, retire fall
 - **Objective**: ensure every executable test lives under `tests/` and clarify suite boundaries.
 - **Tasks**
   1. ✅ Remove or relocate top-level helper scripts (parallel execution, Gemini integration, semantic mapping demos).
-  2. ✅ Introduce shared snapshot tooling for `tests/snapshots/` (via `pytest-regressions`) so regression suites are easier to refresh.
+ 2. ✅ Introduce shared snapshot helpers for `tests/snapshots/` (on-disk baselines) so regression suites are easier to refresh without external plugins.
   3. ✅ Fold the fast feedback tests into `tests/unit/test_fast_*` and retire the separate directory.
   4. Review `tests/support/`, `tests/fixtures/`, `tests/templates/` for redundancy, moving docs/templates into `docs/` if unused by pytest.
 - **Ownership**: Test content owners with infra oversight.
 - **Exit Criteria**
   - Root-level `test_*.py` scripts removed or relocated.
   - Snapshot suites consolidated with shared fixtures and supported by reusable tooling.
-- **Status**: In progress - layout is stable and pytest-regressions covers prompts, but snapshot suites still embed manual translations (`tests/snapshots/golden/test_phase2_prompts.py`) and templates/support modules need redundancy review.
+- **Status**: Completed (Jan 2025) – snapshot suites now rely on `LanguageManager` to load real translation assets, manual dictionaries are gone, and remaining redundancy reviews for templates/support are tracked separately.
 
 ---
 
@@ -121,19 +121,19 @@ This plan sequences the work required to simplify the testing stack, retire fall
 ## Phase 6 – Snapshot & Contract Modernisation
 - **Objective**: ensure regression suites are maintainable and aligned with production assets.
 - **Tasks**
-  1. Adopt a snapshot tool (e.g., `pytest-regressions`); convert manual JSON/text comparisons in `tests/snapshots/`.
+  1. Adopt a reproducible snapshot mechanism (shared helpers writing on-disk baselines); convert manual JSON/text comparisons in `tests/snapshots/`.
   2. Create snapshot fixtures for critical outputs:
      - Phase 2 prompts,
      - Memory transcripts,
      - Translation keys.
   3. Align snapshot data with production sources (no handcrafted translations in tests).
-  4. Document snapshot refresh workflow (`pytest --snapshot-update`).
+  4. Document snapshot refresh workflow (helper script or documented regeneration commands).
 - **Ownership**: Contract/golden test maintainers with infra support.
 - **Exit Criteria**
   - Snapshot tests share tooling and documentation.
   - No duplicated translation dictionaries in test code.
   - Snapshot update process documented and reviewed.
-- **Status**: In progress - pytest-regressions drives prompt snapshots, but memory suites still use handcrafted dictionaries (`tests/snapshots/golden/test_memory_service_consistency.py`, `tests/snapshots/golden/test_phase2_prompts.py`) and need fixture consolidation.
+- **Status**: In progress - snapshots now pull from real translation assets via shared helpers, but we still need to document the manual update workflow and consolidate the remaining template/support utilities.
 
 ---
 
@@ -149,7 +149,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Coverage reports generated via pytest-cov only.
   - Language coverage decisions documented (plugin or retired).
   - CI enforces agreed coverage thresholds.
-- **Status**: Not started - pytest-cov is manual and the language coverage JSON written by `tests/conftest.py:352-379` still needs a formal plugin or retirement plan.
+- **Status**: Not started - pytest-cov remains opt-in, the language coverage JSON written by `tests/conftest.py:352-379` still lacks a consumer, and thresholds/automation need to be defined.
 
 ---
 
@@ -168,7 +168,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Documentation references only the new workflow.
   - Templates and examples match the final style.
   - Onboarding checklists updated.
-- **Status**: In progress - README.md and several guides cover `--mode` usage, but `tests/templates/` and onboarding checklists still mirror pre-pytest patterns and need refresh.
+- **Status**: In progress - README.md and several guides cover `--mode` usage, yet pieces like `tests/templates/` and onboarding checklists still mirror pre-migration workflows and require updates; snapshot helper docs also need to be added.
 
 ---
 
@@ -184,7 +184,7 @@ This plan sequences the work required to simplify the testing stack, retire fall
   - Codebase free of obsolete test utilities.
   - Consistent test naming/style enforced.
   - Retrospective notes stored under `docs/` or `reports/`.
-- **Status**: Not started - cleanup, formatting sweep, and the retrospective write-up remain to be scheduled.
+- **Status**: Not started - cleanup sweeps, naming enforcement, and the retrospective documentation are still outstanding.
 
 ---
 

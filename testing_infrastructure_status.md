@@ -2,9 +2,9 @@
 
 ## Executive Summary
 - Pytest is now the sole runner; `run_tests.py` (run_tests.py:1-68) simply forwards `--mode` and `--coverage` to `python -m pytest`, while contributors interact with pytest directly.
-- Test suites are consolidated under `tests/` with markers auto-applied in `tests/conftest.py:83-181`. Unit, component, integration, and snapshot layers are separated, and snapshot suites lean on `pytest-regressions` fixtures (for example `text_regression`).
+- Test suites are consolidated under `tests/` with markers auto-applied in `tests/conftest.py:83-181`. Unit, component, integration, and snapshot layers are separated, and snapshot suites now read golden baselines from disk via lightweight helpers (no external pytest plugins required).
 - Live coverage remains opt-in: `--run-live` combines with `@pytest.mark.live` to guard network-heavy suites such as `tests/component/test_phase2_manager_live.py:1-109`, yet meaningful component and integration coverage still depends on OpenAI credentials.
-- Remaining friction centers on duplicated translation dictionaries in golden tests (`tests/snapshots/golden/test_phase2_prompts.py:24-118`) and the need for tighter alignment across the various docs that describe suite selection and live schedules.
+- Remaining friction centers on keeping workflow documentation aligned across README, `docs/TEST_ACCELERATION_GUIDE.md`, and onboarding templates, plus ensuring live-suite scheduling guidance is reflected in CI automation.
 
 ## Tooling & Execution Flow
 - **Primary harness** – `run_tests.py` (run_tests.py:1-68) builds the pytest command and no longer contains any unittest discovery fallback.
@@ -15,7 +15,7 @@
 - `tests/unit/` focuses on deterministic logic, configuration parsing, seed management, and memory helpers; the fast smoke suites live alongside the rest of the directory (`tests/unit/test_fast_*`).
 - `tests/component/` drives multi-agent flows through the prompt harness (`tests/component/test_reasoning_and_temperature.py:1-64`, `tests/component/test_phase2_manager_live.py:1-109`) and requires real API access for assertions.
 - `tests/integration/` verifies experiment orchestration and CLI behaviour with pytest functions (`tests/integration/test_experiment_reproducibility.py:1-120`, `tests/integration/test_cli_live.py:1-72`) instead of unittest classes.
-- `tests/snapshots/` consolidates contract and golden suites powered by `pytest-regressions`; memory coverage still embeds inline translations and synchronous wrappers (`tests/snapshots/golden/test_memory_service_consistency.py:1-205`).
+- `tests/snapshots/` consolidates contract and golden suites using on-disk baselines; translation data now flows through real `LanguageManager` instances so snapshots track production assets.
 - Supporting assets live in `tests/fixtures/`, `tests/support/`, `tests/templates/`, and `tests/utils/`; `tests/test_multilingual_base.py` documents best practices for forthcoming multilingual suites.
 
 ## Fixtures, Helpers, and Language Instrumentation
@@ -58,14 +58,14 @@
 - When `LANGUAGE_REPORT_PATH` is populated, `tests/conftest.py:352-379` writes a multilingual coverage summary, but no automated consumer currently ingests the JSON.
 
 ## Pain Points & Outstanding Work
-- Snapshot suites now use pytest-asyncio but still embed handcrafted translation dictionaries (`tests/snapshots/golden/test_phase2_prompts.py:24-118`), creating maintenance overhead and drift risk.
+- Snapshot suites rely on LanguageManager lookups for translation content; remaining follow-up is to keep baselines regenerated when translation assets change and to document the manual snapshot helper workflow.
 - Live suite catalogue and cadence are documented, yet CI still needs dedicated jobs that run the nightly and weekly commands.
 - Guidance on combining `--mode`, language overrides, and live toggles is spread across README.md, `docs/TEST_ACCELERATION_GUIDE.md`, and templates, making onboarding heavier than necessary.
 
 ## Adequacy & Coverage Observations
 - Unit and fast suites provide healthy deterministic coverage (`tests/unit/test_memory_manager.py`, `tests/unit/test_fast_*`), but there is no offline component smoke test for the prompt harness.
 - Integration reproducibility tests stop short of real agent execution without credentials (`tests/integration/test_experiment_reproducibility.py:87-118`), so seed semantics rely on manual live runs.
-- Snapshot coverage is improving thanks to `pytest-regressions`, yet regression data still depends on handcrafted fixtures rather than canonical prompt assets.
+- Snapshot coverage now flows through on-disk baselines driven by LanguageManager outputs; remaining work is to keep fixtures synchronized with translation updates and document the regeneration process.
 
 ## Ancillary Assets
 - Templates in `tests/templates/` and the reference module `tests/test_multilingual_base.py` encode process knowledge but are not cross-linked from README or contributor docs.

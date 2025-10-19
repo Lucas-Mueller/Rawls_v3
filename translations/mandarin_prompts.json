@@ -304,6 +304,8 @@
   "context_voting_header_section": "\n投票会议 - 第 {round_number} 轮，共 {max_rounds} 轮\n\n参与者：{participants}\n",
   "context_discussion_history_section_format": "--- 讨论历史 ---\n{discussion_history}\n\n------------------",
   "memory_discussion_history_header": "=== 讨论历史 ===",
+  "round_statement_format": "第{round_num}轮：你的陈述：{statement}",
+  "internal_reasoning_format": "内部推理：{reasoning}",
   "experiment_explanation_header": "=== 实验概述 ===",
   "no_previous_discussion_placeholder": "目前没有先前的讨论。",
   "memory_outcomes": {
@@ -366,8 +368,9 @@
     "results": "投票结果阶段：投票结果已确定并已向所有参与者传达。"
   },
   "voting_results": {
-    "consensus_reached": "达成共识：{principle_name}",
-    "consensus_with_constraint": "达成共识：{principle_name}（${constraint_amount:,}）"
+  "consensus_reached": "达成共识：{principle_name}",
+  "consensus_with_constraint": "达成共识：{principle_name}（${constraint_amount:,}）",
+  "no_consensus": "未达成共识 - 返回讨论阶段。"
   },
   "voting": {
     "timeout_fallback": "响应超时。请重试。",
@@ -413,7 +416,7 @@
       "result_summary": "投票进行 - 共识：{consensus}",
       "agreed_principle": " (达成一致：{principle})",
       "all_confirmed": "全部确认",
-      "voting_declined": "投票被拒绝",
+    "voting_declined": "以下参与者拒绝投票：{declined_participants} - 返回讨论阶段。",
       "consensus_tag": "[共识]",
       "no_consensus_tag": "[无共识]"
     },

@@ -245,6 +245,8 @@
   "context_voting_header_section": "\nVoting Session - Round {round_number} of {max_rounds}\n\nParticipants: {participants}\n",
   "context_discussion_history_section_format": "--- Discussion History ---\n{discussion_history}\n\n--------------------------",
   "memory_discussion_history_header": "=== Discussion History ===",
+  "round_statement_format": "Round {round_num}: Your statement: {statement}",
+  "internal_reasoning_format": "Internal reasoning: {reasoning}",
   "experiment_explanation_header": "=== Experiment Overview ===",
   "no_previous_discussion_placeholder": "No previous discussion.",
   "memory_outcomes": {
@@ -308,8 +310,9 @@
     "results": "Voting results phase: The voting outcome has been determined and communicated to all participants."
   },
   "voting_results": {
-    "consensus_reached": "Consensus reached: {principle_name}",
-    "consensus_with_constraint": "Consensus reached: {principle_name} (${constraint_amount:,})"
+  "consensus_reached": "Consensus reached: {principle_name}",
+  "consensus_with_constraint": "Consensus reached: {principle_name} (${constraint_amount:,})",
+  "no_consensus": "No consensus reached - returning to discussion."
   },
   "voting": {
     "timeout_fallback": "Response timed out. Please try again.",
@@ -360,7 +363,7 @@
       "result_summary": "Vote conducted - Consensus: {consensus}",
       "agreed_principle": " (Agreed on: {principle})",
       "all_confirmed": "All confirmed",
-      "voting_declined": "Voting declined",
+    "voting_declined": "Voting declined by: {declined_participants} - returning to discussion.",
       "consensus_tag": "[CONSENSUS]",
       "no_consensus_tag": "[NO CONSENSUS]"
     },

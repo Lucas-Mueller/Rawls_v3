@@ -135,7 +135,7 @@ class TestDiscussionServicePromptGolden:
         assert "Round 1" in prompt, "Should mention round number"
         assert "5" in prompt, "Should mention max rounds"
         assert "Phase 2" in prompt, "Should include Phase 2 explanation"
-        assert "GROUP DISCUSSION" in prompt, "Should include discussion header"
+        assert "Group Discussion" in prompt, "Should include discussion header"
         # History is NOT in this prompt (it's in context header instead)
         assert "Alice: I think we should choose principle 1" not in prompt, (
             "History should NOT be in internal reasoning prompt (it's in context header)"

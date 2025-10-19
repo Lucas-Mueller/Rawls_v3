@@ -304,6 +304,8 @@
   "context_voting_header_section": "\nSesión de Votación - Ronda {round_number} de {max_rounds}\n\nParticipantes: {participants}\n",
   "context_discussion_history_section_format": "--- HISTORIAL DE DISCUSIÓN ---\n{discussion_history}\n\n--------------------------------",
   "memory_discussion_history_header": "=== HISTORIAL DE DISCUSIÓN ===",
+  "round_statement_format": "Ronda {round_num}: Tu declaración: {statement}",
+  "internal_reasoning_format": "Razonamiento interno: {reasoning}",
   "experiment_explanation_header": "=== DESCRIPCIÓN DEL EXPERIMENTO ===",
   "no_previous_discussion_placeholder": "No hay discusión previa.",
   "memory_outcomes": {
@@ -366,8 +368,9 @@
     "results": "Fase de resultados de votación: El resultado de la votación ha sido determinado y comunicado a todos los participantes."
   },
   "voting_results": {
-    "consensus_reached": "Consenso alcanzado: {principle_name}",
-    "consensus_with_constraint": "Consenso alcanzado: {principle_name} (${constraint_amount:,})"
+  "consensus_reached": "Consenso alcanzado: {principle_name}",
+  "consensus_with_constraint": "Consenso alcanzado: {principle_name} (${constraint_amount:,})",
+  "no_consensus": "No se alcanzó consenso - regresando a discusión."
   },
   "voting": {
     "timeout_fallback": "Se agotó el tiempo de respuesta. Por favor, inténtalo de nuevo.",
@@ -413,7 +416,7 @@
       "result_summary": "Votación realizada - Consenso: {consensus}",
       "agreed_principle": " (Acordado en: {principle})",
       "all_confirmed": "Todos confirmaron",
-      "voting_declined": "Votación rechazada",
+    "voting_declined": "Votación rechazada por: {declined_participants} - regresando a discusión.",
       "consensus_tag": "[CONSENSO]",
       "no_consensus_tag": "[SIN CONSENSO]"
     },
