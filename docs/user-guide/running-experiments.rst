@@ -319,6 +319,88 @@ Use predefined distribution sets for consistency:
 - ``c``: Extreme high-income outlier
 - ``d``: Graduated middle-class focus
 
+Memory Optimization & Performance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Configure advanced memory management and performance features:
+
+.. code-block:: yaml
+
+   # Memory guidance and optimization
+   memory_guidance_style: "structured"          # "narrative" or "structured"
+   include_experiment_explanation: true          # Include experiment context
+   include_experiment_explanation_each_turn: false  # Per-turn context (performance impact)
+   phase2_include_internal_reasoning_in_memory: true  # Include reasoning in Phase 2 memory
+
+   # Selective memory updates (reduces API calls)
+   selective_memory_updates: true               # Enable selective updates
+   memory_update_threshold: "moderate"          # "minimal", "moderate", "comprehensive"
+   batch_simple_events: false                   # Batch simple memory events
+
+   # Intelligent retry mechanism
+   enable_intelligent_retries: true             # Enable retry on parsing failures
+   max_participant_retries: 2                   # Max retries (0-5 range)
+   enable_progressive_guidance: true            # More specific guidance on retries
+   memory_update_on_retry: true                 # Update memory with retry experiences
+   retry_feedback_detail: "concise"             # "concise" or "detailed"
+
+   # Enhanced transparency (Phase 2 results)
+   phase2_enhanced_transparency:
+     enabled: true
+     detail_level: "full"                      # "basic", "enhanced", "full"
+     include_counterfactuals: true              # Show alternative outcomes
+     include_class_assignment: true             # Show income class assignments
+     include_insights: true                     # Best/worst alternative insights
+
+   # Logging and transcript configuration
+   logging:
+     verbosity_level: "standard"                # "minimal", "standard", "detailed", "debug"
+     use_colors: true                           # Colored terminal output
+     show_progress_bars: true                   # Progress bars during execution
+
+   transcript_logging:
+     enabled: true                              # Enable transcript logging
+     output_path: "custom_transcripts/"         # Custom output directory
+     include_memory_updates: false              # Include memory operations
+     include_instructions: false                # Include system instructions
+     include_input_prompts: true                # Include user prompts
+     include_agent_responses: true              # Include agent responses
+
+   # Manipulator configuration (Hypothesis 3)
+   manipulator:
+     enabled: false                             # Enable experimental manipulation
+     type: "disruptive"                         # Manipulation strategy
+     intervention_round: 5                      # When to intervene
+
+**Performance Optimization Tips:**
+
+- **For Speed**: Set ``selective_memory_updates: true`` and ``max_participant_retries: 0``
+- **For Quality**: Use ``memory_guidance_style: "structured"`` and enable enhanced transparency
+- **For Research**: Enable transcript logging and manipulator features
+- **For Large Experiments**: Use ``memory_character_limit: 25000`` to reduce memory usage
+
+Transcript Logging & Analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Enable detailed logging of agent interactions:
+
+.. code-block:: yaml
+
+   transcript_logging:
+     enabled: true
+     output_path: "experiment_transcripts/"
+     include_memory_updates: false      # Skip memory operations for cleaner logs
+     include_instructions: false        # Skip system prompts (performance impact)
+     include_input_prompts: true        # Include all agent prompts
+     include_agent_responses: true      # Include all agent responses
+
+**Transcript Features:**
+- Complete conversation history
+- Memory update operations (optional)
+- System instructions (optional, performance impact)
+- Structured JSON format for analysis
+- Automatic timestamping and organization
+
 Monitoring and Debugging
 ------------------------
 
@@ -330,14 +412,14 @@ Monitor experiment progress through console output:
 .. code-block:: text
 
    Starting Frohlich Experiment...
-   ✅ Experiment manager initialized with 3 participants
+   ? Experiment manager initialized with 3 participants
    Phase 1: Individual agent familiarization (parallel execution)
-   ✅ Alice completed principle applications
-   ✅ Bob completed principle applications  
-   ✅ Carol completed principle applications
+   ? Alice completed principle applications
+   ? Bob completed principle applications  
+   ? Carol completed principle applications
    Phase 2: Group discussion and consensus building
    Round 1: Discussion and voting...
-   ✅ Consensus reached on principle: Maximizing floor income
+   ? Consensus reached on principle: Maximizing floor income
    Experiment completed successfully!
    Results saved to: experiment_results_20250819_105130.json
 
@@ -419,28 +501,28 @@ Common Issues
 .. code-block:: text
 
    Error: Agent configuration invalid
-   → Check YAML syntax and required fields
+   ? Check YAML syntax and required fields
    
 **API Key Issues:**
 
 .. code-block:: text
 
    Error: Authentication failed  
-   → Verify API keys in environment variables
+   ? Verify API keys in environment variables
    
 **Memory Limit Exceeded:**
 
 .. code-block:: text
 
    Error: Agent memory exceeded limit
-   → Reduce memory_character_limit or enable memory cleanup
+   ? Reduce memory_character_limit or enable memory cleanup
 
 **Model Not Available:**
 
 .. code-block:: text
 
    Error: Model not supported
-   → Check model name spelling and provider availability
+   ? Check model name spelling and provider availability
 
 Getting Help
 ~~~~~~~~~~~~
@@ -450,5 +532,14 @@ Getting Help
 3. **Test Basic Setup**: Run default configuration to verify system health
 4. **Check API Status**: Verify model provider service availability
 5. **Examine Traces**: Use OpenAI platform traces for detailed debugging
+
+See Also
+--------
+
+* :doc:`designing-experiments` - Learn to design custom experimental conditions
+* :doc:`analyzing-results` - Understand how to analyze and interpret experiment results
+* :doc:`../architecture/system-overview` - Deep dive into system architecture
+* :doc:`../contributing/testing` - Testing and validation procedures
+* :doc:`../getting-started/quickstart` - Quick start guide for first experiments
 
 For additional support, refer to :doc:`../contributing/testing` for diagnostic procedures.

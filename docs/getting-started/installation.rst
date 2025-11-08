@@ -7,11 +7,12 @@ System Requirements
 * **Python**: 3.11 or higher
 * **Operating System**: macOS, Linux, or Windows
 * **Memory**: 4GB RAM minimum, 8GB recommended
-* **API Keys / Local Endpoints**: 
-  
+* **API Keys / Local Endpoints**:
+
   - OpenAI API key (required for OpenAI models)
-  - OpenRouter API key (optional, for alternative hosted providers)
-  - Running Ollama instance (optional, for local models via its OpenAI-compatible API)
+  - OpenRouter API key (optional, for 100+ alternative hosted models)
+  - GEMINI_API_KEY (optional, for native Google Gemini models)
+  - Running Ollama instance (optional, for local models via OpenAI-compatible API)
 
 Environment Setup
 -----------------

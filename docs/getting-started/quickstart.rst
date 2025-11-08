@@ -181,6 +181,45 @@ Common Commands
    # View available config examples
    ls config/
 
+Common Issues
+-------------
+
+**Manager Not Initialized Error**
+
+If you see ``RuntimeError: Manager not initialized``, you forgot to call ``async_init()``:
+
+.. code-block:: python
+
+   # ❌ Wrong - will fail
+   manager = FrohlichExperimentManager(config)
+   results = await manager.run_complete_experiment()
+
+   # ✅ Correct
+   manager = FrohlichExperimentManager(config)
+   await manager.async_init()  # Don't forget this!
+   results = await manager.run_complete_experiment()
+
+**Missing Language Manager**
+
+When creating managers programmatically, include the language_manager parameter:
+
+.. code-block:: python
+
+   from utils.language_manager import create_language_manager, SupportedLanguage
+
+   # Create language manager first
+   language_manager = create_language_manager(
+       SupportedLanguage.ENGLISH,
+       config.get_effective_seed()
+   )
+
+   manager = FrohlichExperimentManager(
+       config=config,
+       config_file_path="config.yaml",
+       language_manager=language_manager  # Required!
+   )
+   await manager.async_init()
+
 What's Next?
 ------------
 

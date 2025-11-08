@@ -45,6 +45,6 @@ The typical API usage pattern follows this structure:
    print(f"Consensus reached: {results.phase2_results.consensus_reached}")
 
 Auto-Generated Documentation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All API documentation is automatically generated from docstrings in the source code using Sphinx's autodoc extension. This ensures the documentation stays synchronized with the codebase.

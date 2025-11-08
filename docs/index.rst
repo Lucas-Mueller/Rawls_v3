@@ -35,10 +35,21 @@ Quick Links
 
 .. toctree::
    :maxdepth: 2
+   :caption: Hypothesis Testing
+   :hidden:
+
+   hypothesis-testing
+
+.. toctree::
+   :maxdepth: 2
    :caption: Architecture & Core Concepts
    :hidden:
 
    architecture/system-overview
+   architecture/services-architecture
+   cultural-adaptation
+   phase2-settings
+   error-handling
    architecture/veil-of-ignorance
    architecture/configuration
    architecture/experiment-flow

@@ -1059,7 +1059,7 @@ Experiment Orchestration
       .. code-block:: python
 
          from utils.experiment_runner import (
-             run_experiment, generate_random_config,
+             run_experiment_from_config, generate_random_config,
              ExperimentRunner, ExperimentResult
          )
          
@@ -1075,7 +1075,7 @@ Experiment Orchestration
              )
              
              # Run experiment
-             results = await run_experiment(config)
+             results = await run_experiment_from_config(config)
              
              # Save results
              timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1095,7 +1095,7 @@ Experiment Orchestration
          from utils.experiment_runner import run_experiments_parallel
          
          # Run multiple experiments in parallel
-         async def run_batch_experiments():
+         def run_batch_experiments():
              """Run multiple experiments for statistical analysis."""
              
              # Generate multiple configurations
@@ -1109,12 +1109,12 @@ Experiment Orchestration
                  )
                  configs.append(config)
              
-             # Run experiments in parallel
-             results = await run_experiments_parallel(
-                 configs,
+             # Convert configs to temporary files\n             import tempfile\n             import yaml\n             import os\n             config_files = []\n             \n             for config in configs:\n                 with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:\n                     yaml.dump(config, f)\n                     config_files.append(f.name)\n             \n             # Run experiments in parallel
+             results = run_experiments_parallel(
+                 config_files,
                  max_parallel=3,  # Limit concurrent experiments
-                 save_individual_results=True,
-                 progress_callback=print_progress
+                 output_dir=\"batch_results\",
+                 verbose=True
              )
              
              # Analyze batch results

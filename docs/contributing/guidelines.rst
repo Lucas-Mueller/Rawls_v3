@@ -18,7 +18,7 @@ Before Contributing
 4. **Join Discussions**: Participate in discussions about the project's direction and research priorities.
 
 Types of Contributions
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 **Code Contributions:**
 - Bug fixes and improvements
@@ -42,7 +42,7 @@ Types of Contributions
 - Troubleshooting guides
 
 Development Workflow
--------------------
+--------------------
 
 Setting Up Development Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

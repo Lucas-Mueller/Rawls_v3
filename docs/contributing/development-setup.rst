@@ -7,7 +7,7 @@ Prerequisites
 -------------
 
 System Requirements
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 - **Python 3.11 or higher**
 - **Git** for version control
@@ -24,7 +24,7 @@ Initial Setup
 -------------
 
 Repository Setup
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 1. **Fork the Repository** (for contributors):
    
@@ -45,7 +45,7 @@ Repository Setup
       git remote -v  # Verify remotes
 
 Environment Setup
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 4. **Create Virtual Environment**:
 
@@ -71,7 +71,7 @@ Environment Setup
       pip install -r requirements.txt
 
 API Keys Configuration
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 7. **Set Up API Keys** (choose one method):
 
@@ -99,7 +99,7 @@ API Keys Configuration
       echo 'export OPENROUTER_API_KEY="your-openrouter-key"' >> ~/.bashrc
 
 Verification
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 8. **Verify Installation**:
 
@@ -125,7 +125,7 @@ Verification
       python main.py config/default_config.yaml
 
 Development Tools
-----------------
+-----------------
 
 Recommended IDE Setup
 ~~~~~~~~~~~~~~~~~~~~~
@@ -164,7 +164,7 @@ Recommended IDE Setup
 - Set up version control integration
 
 Code Quality Tools
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 **Install Development Tools** (optional):
 
@@ -196,7 +196,7 @@ Code Quality Tools
    mypy your_file.py
 
 Git Configuration
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 **Configure Git** (first time setup):
 
@@ -214,10 +214,10 @@ Git Configuration
    pre-commit install
 
 Development Workflow
--------------------
+--------------------
 
 Daily Development
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 1. **Sync with Upstream**:
 
@@ -259,7 +259,7 @@ Daily Development
       # Create PR via GitHub interface
 
 Running Tests
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 **Fast Feedback Suite (default)**:
 
@@ -308,7 +308,7 @@ Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environme
    python main.py config/mixed_models_example.yaml
 
 Documentation Development
-------------------------
+-------------------------
 
 Building Documentation
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -340,7 +340,7 @@ Building Documentation
    make html
 
 Writing Documentation
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 **Documentation Structure**:
 
@@ -364,7 +364,7 @@ Debugging and Troubleshooting
 -----------------------------
 
 Common Development Issues
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Import Errors**:
 
@@ -391,7 +391,7 @@ Common Development Issues
    Solution: Pause live suites by exporting ``NEW_ENV_PLACEHOLDER`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
 
 Debugging Tools
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 **Python Debugger**:
 
@@ -466,7 +466,7 @@ Development Performance
    phase2_rounds: 2  # Reduced from 10
 
 Docker Development
------------------
+------------------
 
 Container-Based Development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -35,16 +35,28 @@ The experiment manager handles the complete lifecycle of an experiment:
          async def run_basic_experiment():
              # Load configuration
              config = ExperimentConfiguration.from_yaml("config/default_config.yaml")
-             
+
+             # Create language manager
+             from utils.language_manager import create_language_manager, SupportedLanguage
+             language_manager = create_language_manager(
+                 SupportedLanguage.ENGLISH,
+                 config.get_effective_seed()
+             )
+
              # Initialize experiment manager
-             manager = FrohlichExperimentManager(config)
-             
+             manager = FrohlichExperimentManager(
+                 config=config,
+                 config_file_path="config/default_config.yaml",
+                 language_manager=language_manager
+             )
+             await manager.async_init()  # Required async initialization
+
              # Run complete experiment
              results = await manager.run_complete_experiment()
-             
+
              # Save results
              manager.save_results(results, "my_experiment.json")
-             
+
              return results
 
          # Execute
@@ -55,6 +67,7 @@ The experiment manager handles the complete lifecycle of an experiment:
       .. code-block:: python
 
          from config import ExperimentConfiguration, AgentConfiguration
+         from utils.language_manager import create_language_manager, SupportedLanguage
 
          # Create custom configuration
          config = ExperimentConfiguration(
@@ -63,23 +76,34 @@ The experiment manager handles the complete lifecycle of an experiment:
                  AgentConfiguration(
                      name="Alice",
                      personality="Analytical and methodical",
-                     model="gpt-4.1-mini",
+                     model="gpt-4o-mini",
                      temperature=0.0,
                      memory_character_limit=50000,
                      reasoning_enabled=True
                  ),
                  AgentConfiguration(
-                     name="Bob", 
+                     name="Bob",
                      personality="Empathetic and community-focused",
                      model="gemini-2.5-flash",
                      temperature=0.3
                  )
              ],
              phase2_rounds=15,
-             utility_agent_model="gpt-4.1-mini"
+             utility_agent_model="gpt-4o-mini"
          )
-         
-         manager = FrohlichExperimentManager(config)
+
+         # Create language manager
+         language_manager = create_language_manager(
+             SupportedLanguage.ENGLISH,
+             config.get_effective_seed()
+         )
+
+         manager = FrohlichExperimentManager(
+             config=config,
+             config_file_path="custom_config.yaml",
+             language_manager=language_manager
+         )
+         await manager.async_init()  # Required async initialization
 
    .. tab:: Error Handling
 
@@ -88,8 +112,21 @@ The experiment manager handles the complete lifecycle of an experiment:
          async def robust_experiment():
              try:
                  config = ExperimentConfiguration.from_yaml("config.yaml")
-                 manager = FrohlichExperimentManager(config)
-                 
+
+                 # Create language manager
+                 from utils.language_manager import create_language_manager, SupportedLanguage
+                 language_manager = create_language_manager(
+                     SupportedLanguage.ENGLISH,
+                     config.get_effective_seed()
+                 )
+
+                 manager = FrohlichExperimentManager(
+                     config=config,
+                     config_file_path="config.yaml",
+                     language_manager=language_manager
+                 )
+                 await manager.async_init()  # Required async initialization
+
                  # Run with error handling
                  results = await manager.run_complete_experiment()
                  
@@ -603,12 +640,24 @@ Integration Examples
 
    async def complete_experiment_workflow():
        """Complete experiment from configuration to analysis."""
-       
+
        # 1. Load and validate configuration
        config = ExperimentConfiguration.from_yaml("config/my_experiment.yaml")
-       
-       # 2. Initialize experiment manager
-       manager = FrohlichExperimentManager(config)
+
+       # 2. Create language manager
+       from utils.language_manager import create_language_manager, SupportedLanguage
+       language_manager = create_language_manager(
+           SupportedLanguage.ENGLISH,
+           config.get_effective_seed()
+       )
+
+       # 3. Initialize experiment manager
+       manager = FrohlichExperimentManager(
+           config=config,
+           config_file_path="config/my_experiment.yaml",
+           language_manager=language_manager
+       )
+       await manager.async_init()  # Required async initialization
        
        # 3. Run experiment with error handling
        try:
@@ -641,12 +690,25 @@ Integration Examples
 
    async def run_batch_experiments(config_files):
        """Run multiple experiments in sequence."""
-       
+
        results = []
        for config_file in config_files:
            try:
                config = ExperimentConfiguration.from_yaml(config_file)
-               manager = FrohlichExperimentManager(config)
+
+               # Create language manager for each experiment
+               from utils.language_manager import create_language_manager, SupportedLanguage
+               language_manager = create_language_manager(
+                   SupportedLanguage.ENGLISH,
+                   config.get_effective_seed()
+               )
+
+               manager = FrohlichExperimentManager(
+                   config=config,
+                   config_file_path=config_file,
+                   language_manager=language_manager
+               )
+               await manager.async_init()  # Required async initialization
                
                result = await manager.run_complete_experiment()
                results.append({
