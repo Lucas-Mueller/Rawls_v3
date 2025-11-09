@@ -1,0 +1,15 @@
+La discusión ha progresado y puede que te sientas listo para pasar a la votación formal.
+
+Si eliges iniciar la votación:
+- Se pedirá a todos los participantes que confirmen su acuerdo (1=Sí, 0=No)
+- Si todos están de acuerdo, procederán a votaciones numéricas secretas (1-4)
+- El consenso requiere que todos los participantes seleccionen el mismo principio
+- Si se alcanza, ese principio determina las ganancias finales
+- Si no se alcanza, la discusión continúa
+- Puedes iniciar una votación una vez por ronda; si no se alcanza el consenso, no habrá consecuencias negativas
+
+¿Quieres iniciar este proceso de votación ahora?
+- 1 si quieres comenzar el proceso de votación
+- 0 si no quieres votar ahora
+
+Tu respuesta (1 o 0):

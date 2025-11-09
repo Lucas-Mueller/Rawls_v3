@@ -1,0 +1,10 @@
+Acabas de hacer esta declaración al grupo:
+"Creo que deberíamos adoptar el principio A."
+
+Basándote en tu declaración reciente y la discusión hasta ahora, ¿quieres iniciar la votación formal sobre los principios de justicia ahora?
+
+Por favor responde con:
+- 1 si quieres iniciar la votación ahora
+- 0 si no quieres votar ahora
+
+Tu respuesta (1 o 0):

@@ -5,25 +5,28 @@ seed: 42
 agents:
   - name: "Sophie"
     personality: "You are an american college student."
-    model: "x-ai/grok-code-fast-1"
-    memory_character_limit: 25000
+    model: "gemini-2.5-flash-lite"
+    memory_character_limit: 50000
     reasoning_enabled: true
     temperature: 0
     
   - name: "Alice" 
     personality: "You are an american college student."
-    model:  "x-ai/grok-code-fast-1"
+    model:  "gemini-2.5-flash-lite"
     temperature: 0
-    memory_character_limit: 25000
+    memory_character_limit: 50000
     reasoning_enabled: true
 
     
 
-utility_agent_model: "openai/gpt-oss-120b"
+utility_agent_model: "gemini-2.5-flash-lite"
 utility_agent_temperature: 0.0
 
-phase2_rounds: 10
+phase2_rounds: 3
 distribution_range_phase2: [4, 8]
+
+transcript_logging:
+  enabled: true
 
 # Income class assignment probabilities (used when original_values_mode is disabled)
 income_class_probabilities:
@@ -41,3 +44,4 @@ logging:
   verbosity_level: "debug"  # or minimal, detailed, debug
   use_colors: true
   show_progress_bars: true
+

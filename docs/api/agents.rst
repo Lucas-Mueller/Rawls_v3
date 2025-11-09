@@ -82,7 +82,7 @@ Agent Creation and Configuration
              reasoning_enabled=True
          )
          
-         agent = create_participant_agent(agent_config)
+         agent = await create_participant_agent(agent_config)
          
          # Agent is ready for experiment participation
          print(f"Created agent: {agent.name}")
@@ -162,7 +162,7 @@ Agents in the Frohlich Experiment maintain their own memory throughout the exper
          from utils.memory_manager import MemoryManager
          
          # Memory is automatically managed by agents
-         agent = create_participant_agent(config)
+         agent = await create_participant_agent(config)
          
          # After each experimental step, agents update their memory
          await agent.update_memory(
@@ -333,8 +333,8 @@ Agents can operate in multiple languages with full experimental support.
              language="Spanish", 
              agents=[
                  AgentConfiguration(
-                     name="AgentEspañol",
-                     personality="Eres un estudiante universitario español reflexivo",
+                     name="AgentEspa?ol",
+                     personality="Eres un estudiante universitario espa?ol reflexivo",
                      model="gemini-2.5-flash"
                  )
              ]
@@ -348,8 +348,8 @@ Agents can operate in multiple languages with full experimental support.
              language="Mandarin",
              agents=[
                  AgentConfiguration(
-                     name="中文Agent",
-                     personality="你是一个思考周密的中国大学生", 
+                     name="??Agent",
+                     personality="??????????????", 
                      model="anthropic/claude-3-5-sonnet"
                  )
              ]
@@ -397,7 +397,13 @@ Core Functionality
              temperature=0.0  # Deterministic for consistent parsing
          )
          
-         utility_agent = UtilityAgent(utility_config, language_manager)
+         utility_agent = UtilityAgent(
+            utility_model="gpt-4.1-mini",
+            temperature=0.0,
+            experiment_language="english",
+            language_manager=language_manager
+        )
+        await utility_agent.async_init()  # Required async initialization
          
          # Validate participant response
          participant_response = """
@@ -463,12 +469,18 @@ Core Functionality
 
    # Utility agent handles multi-language responses
    spanish_response = """
-   Elijo el principio de maximizar el ingreso promedio con restricción 
-   de piso. Establecería el piso en $12,000.
+   Elijo el principio de maximizar el ingreso promedio con restricci?n 
+   de piso. Establecer?a el piso en $12,000.
    """
    
    # Parse in Spanish context
-   spanish_utility = UtilityAgent(utility_config, spanish_language_manager)
+   spanish_utility = UtilityAgent(
+       utility_model="gpt-4.1-mini",
+       temperature=0.0,
+       experiment_language="spanish",
+       language_manager=spanish_language_manager
+   )
+   await spanish_utility.async_init()  # Required async initialization
    parsed_spanish = await spanish_utility.parse_response(
        response_text=spanish_response,
        parse_type="principle_with_constraint"

@@ -436,7 +436,8 @@ Integration Example
        
        # Create custom experiment manager
        manager = CustomExperimentManager(config, use_custom_agents=True)
-       
+       await manager.async_init()  # Required async initialization
+
        # Run experiment
        results = await manager.run_complete_experiment()
        
@@ -565,5 +566,14 @@ Debugging Custom Agents
            result = await super().process_decision(context)
            self.logger.info(f"Decision result: {result}")
            return result
+
+See Also
+--------
+
+* :doc:`running-experiments` - Execute experiments with your custom agents
+* :doc:`../architecture/system-overview` - Understand agent architecture and lifecycle
+* :doc:`../architecture/services-architecture` - Learn about the services-based Phase 2 system
+* :doc:`../api/agents` - Complete API reference for agent classes
+* :doc:`../contributing/guidelines` - Development best practices for contributions
 
 For more advanced customization examples and troubleshooting, see the ``custom_agents/`` directory in the repository and refer to :doc:`../architecture/system-overview` for detailed system internals.

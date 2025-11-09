@@ -11,6 +11,7 @@ from core.phase1_manager import Phase1Manager
 @parametrize_languages()
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_phase1_logging_multilingual(language, prompt_harness):

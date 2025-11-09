@@ -17,6 +17,7 @@ from utils.language_manager import SupportedLanguage
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 @parametrize_languages()
@@ -34,6 +35,7 @@ async def test_principle_choice_parsing_returns_canonical_enum(language: Support
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 async def test_constraint_amount_parsing_multilingual(openai_api_key):
@@ -73,6 +75,7 @@ async def test_constraint_amount_parsing_multilingual(openai_api_key):
 
 @pytest.mark.component
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 @pytest.mark.asyncio
 @parametrize_languages()

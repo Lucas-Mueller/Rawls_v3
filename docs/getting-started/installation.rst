@@ -7,11 +7,12 @@ System Requirements
 * **Python**: 3.11 or higher
 * **Operating System**: macOS, Linux, or Windows
 * **Memory**: 4GB RAM minimum, 8GB recommended
-* **API Keys / Local Endpoints**: 
-  
+* **API Keys / Local Endpoints**:
+
   - OpenAI API key (required for OpenAI models)
-  - OpenRouter API key (optional, for alternative hosted providers)
-  - Running Ollama instance (optional, for local models via its OpenAI-compatible API)
+  - OpenRouter API key (optional, for 100+ alternative hosted models)
+  - GEMINI_API_KEY (optional, for native Google Gemini models)
+  - Running Ollama instance (optional, for local models via OpenAI-compatible API)
 
 Environment Setup
 -----------------
@@ -99,10 +100,10 @@ Test your installation by running the test suite:
 
 .. code-block:: bash
 
-   python run_tests.py unit component   # fast feedback across unit + component
-   python run_tests.py integration      # full multilingual flows with live LLMs
-   python run_tests.py contracts        # snapshot/golden checks
-   RUN_LIVE_TESTS=0 python run_tests.py integration  # force skip live suites
+   pytest --mode=dev                          # fast feedback across unit + component
+   pytest --mode=ci -m "integration and live" # full multilingual flows with live LLMs
+   pytest tests/snapshots                    # snapshot/golden checks
+   pytest --mode=ci -m "integration and not live"  # force skip live suites
 
 If ``OPENAI_API_KEY`` is not set, the runner automatically skips suites that require live LLM calls and prints guidance for re-enabling them. Each invocation prints the import smoke test followed by the selected suites.
 

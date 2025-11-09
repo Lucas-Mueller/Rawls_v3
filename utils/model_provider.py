@@ -17,6 +17,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
+ENABLE_OPENROUTER_NITRO_SUFFIX = False  # TEMP: flip back to True to restore :nitro suffix
 
 def _append_nitro_suffix(model_string: str, is_openrouter: bool) -> str:
     """
@@ -29,7 +30,11 @@ def _append_nitro_suffix(model_string: str, is_openrouter: bool) -> str:
     Returns:
         Model string with :nitro suffix if OpenRouter, unchanged otherwise
     """
-    if is_openrouter and not model_string.endswith(":nitro"):
+    if (
+        ENABLE_OPENROUTER_NITRO_SUFFIX
+        and is_openrouter
+        and not model_string.endswith(":nitro")
+    ):
         return f"{model_string}:nitro"
     return model_string
 

@@ -1,0 +1,10 @@
+You just made this statement to the group:
+"I believe we should adopt principle A."
+
+Based on your recent statement and the discussion so far, do you want to initiate formal voting on the justice principles now?
+
+Please respond with:
+- 1 if you want to initiate voting now
+- 0 if you dont want to vote now
+
+Your response (1 or 0):

@@ -479,6 +479,11 @@ class FrohlichExperimentManager:
         if hasattr(self.config, 'original_values_mode') and self.config.original_values_mode:
             original_values_enabled = self.config.original_values_mode.enabled
 
+        # Extract manipulator target info if available (Hypothesis 3)
+        manipulator_target_info = None
+        if hasattr(self.phase2_manager, '_manipulator_target_info') and self.phase2_manager._manipulator_target_info:
+            manipulator_target_info = self.phase2_manager._manipulator_target_info
+
         # Set the general information
         self.agent_logger.set_general_information(
             consensus_reached=phase2_results.discussion_result.consensus_reached,
@@ -492,7 +497,8 @@ class FrohlichExperimentManager:
             public_conversation=public_conversation,
             config_file=Path(self.config_file_path).name,
             income_class_probabilities=probabilities_dict,
-            original_values_mode_enabled=original_values_enabled
+            original_values_mode_enabled=original_values_enabled,
+            manipulator_target_info=manipulator_target_info
         )
         
         # Update individual agent vote information for audit trail

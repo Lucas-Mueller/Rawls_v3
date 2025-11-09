@@ -113,86 +113,79 @@ The framework includes an **intelligent test acceleration system** that provides
 # DEVELOPMENT WORKFLOWS (Ultra-fast feedback)
 
 # Ultra-fast mode: Unit tests only (~7 seconds, 0 API calls)
-python run_tests.py --mode ultra_fast
+pytest --mode=ultra_fast
 
 # Development mode: Unit + component tests (~5 minutes, minimal API calls)
-python run_tests.py --mode dev
+pytest --mode=dev
 
 # CI/CD mode: Comprehensive validation (~15 minutes, moderate API calls)
-python run_tests.py --mode ci
+pytest --mode=ci
 
 # Full mode: Complete validation (~30-45 minutes, all API calls)
-python run_tests.py --mode full
+pytest --mode=full
 ```
 
-#### **Advanced Test Runner Options**
+#### **Targeted Test Execution**
 ```bash
-# Custom configuration override
-python run_tests.py --mode dev --config config/test_ultra_fast.yaml
-
-# Control multilingual testing (1, 2, or 3 languages)
-python run_tests.py --mode ci --languages 2
-
-# Performance analysis and reporting
-python run_tests.py --mode dev --performance-report
-
-# Dry run to preview execution plan
-python run_tests.py --mode full --dry-run
-
-# Get help with available modes and options
-python run_tests.py --help
-```
-
-#### **Legacy Test Execution (Backward Compatible)**
-```bash
-# Run all tests (sequential: unit -> component -> integration -> contracts -> live)
-python run_tests.py
-
-# Specific test types
-python run_tests.py unit                    # Fast unit tests
-python run_tests.py component               # Component tests with language coverage enforcement
-python run_tests.py integration             # Heavier multilingual flows
-python run_tests.py contracts               # Contract/regression tests (golden snapshots)
-python run_tests.py live                    # Live tests requiring API keys
-
-# Multiple test types in sequence
-python run_tests.py unit component          # Fast feedback loop
-python run_tests.py integration contracts   # Comprehensive validation
-
-# Control live test execution
-RUN_LIVE_TESTS=0 python run_tests.py integration  # Force-skip live suites
-RUN_LIVE_TESTS=1 python run_tests.py live         # Force-enable live tests
+# Scope by directory or marker
+pytest tests/unit/test_fast_*                      # Deterministic, no API calls
+pytest tests/component -m "component and not live" # Offline component checks
+pytest tests/integration -m "integration and live" # Live integration smoke (requires API keys)
+pytest tests/snapshots                   # Snapshot/golden suites
 
 # With coverage reporting
-python run_tests.py --coverage
-python run_tests.py unit --coverage         # Coverage for specific test type
-```
-
-#### **Fast Test Suite (Phase 2 Strategic Mocking)**
-```bash
-# Run ultra-fast service boundary tests (43 tests in ~0.04 seconds)
-python -m pytest tests/fast/ -v
-
-# Multilingual response parsing tests (0 API calls)
-python -m pytest tests/fast/test_response_parsing.py
-
-# Data flow validation tests (synthetic data)
-python -m pytest tests/fast/test_data_flows.py
+pytest --mode=ci --cov=. --cov-report=term-missing
 ```
 
 #### **Environment-Based Test Control**
 ```bash
 # Development mode (skips expensive tests by default)
-DEVELOPMENT_MODE=1 python run_tests.py
+DEVELOPMENT_MODE=1 pytest --mode=dev
 
 # Force comprehensive testing in development
-FULL_INTEGRATION_TESTS=1 python run_tests.py
+pytest --mode=ci --run-live
 
 # Skip expensive tests even with API keys
-SKIP_EXPENSIVE_TESTS=1 python run_tests.py
+pytest --mode=ci --skip-expensive
+
+# Use custom configuration globally (consumed by fixtures)
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
+```
+
+#### **CLI Toggles**
+```bash
+pytest --run-live                    # enable live suites explicitly
+pytest --no-run-live                 # force-skip live suites
+pytest --languages=en,es             # restrict parametrised suites to English + Spanish
+pytest --languages=all               # force all supported languages
+pytest --skip-expensive              # skip tests marked expensive
+```
+
+#### **Fast Test Suite (Phase 2 Strategic Mocking)**
+```bash
+# Run ultra-fast service boundary tests (43 tests in ~0.04 seconds)
+python -m pytest tests/unit/test_fast_* -v
+
+# Multilingual response parsing tests (0 API calls)
+python -m pytest tests/unit/test_fast_response_parsing.py
+
+# Data flow validation tests (synthetic data)
+python -m pytest tests/unit/test_fast_data_flows.py
+```
+
+#### **Environment-Based Test Control**
+```bash
+# Development mode (skips expensive tests by default)
+DEVELOPMENT_MODE=1 pytest --mode=dev
+
+# Force comprehensive testing in development
+pytest --mode=ci --run-live
+
+# Skip expensive tests even with API keys
+pytest --mode=ci --skip-expensive
 
 # Use custom configuration globally
-TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml python run_tests.py
+TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml pytest --mode=dev
 ```
 
 #### **Advanced pytest commands**
@@ -211,13 +204,6 @@ python -m pytest -m "unit"            # Run only unit tests
 python -m pytest -m "integration"     # Run only integration tests
 python -m pytest -m "live"            # Run only live endpoint tests
 
-# Standalone issue-specific test scripts (located in project root)
-python test_compromise_forgetting_issue.py
-python test_dynamic_tool_logging.py
-python test_keyword_fix.py
-python test_memory_optimization.py
-python test_parallel_execution.py
-python test_selective_memory_updates.py
 ```
 
 #### **Performance Improvements Achieved**
@@ -254,13 +240,10 @@ OPENAI_AGENTS_DISABLE_TRACING=1    # Disable tracing for tests
 OPENAI_DISABLE_TRACING=true
 
 # Optional: Test system environment variables
-RUN_LIVE_TESTS=1                   # Enable live tests (default: auto-detect API key)
 LANGUAGE_REPORT_PATH=/path/to/report.json  # Language coverage reporting
 
 # Test acceleration environment variables
 DEVELOPMENT_MODE=1                 # Enable development mode (default: 1)
-FULL_INTEGRATION_TESTS=1          # Force comprehensive testing in dev mode
-SKIP_EXPENSIVE_TESTS=1            # Skip expensive tests even with API keys
 TEST_CONFIG_OVERRIDE=config/test_ultra_fast.yaml  # Override configuration globally
 
 # Install R programming language support (for statistical analysis)
@@ -289,13 +272,13 @@ The project does not have dedicated linting commands configured. When working on
 - Follow existing code style and patterns (PEP 8, four-space indents, explicit type hints)
 - Use `snake_case` for modules/functions, `PascalCase` for classes, `UPPER_CASE` for constants
 - Run the test suite to ensure changes don't break functionality
-- Use the import test in `run_tests.py` to verify module integrity
+- Run `pytest --mode=ci` to verify module import integrity before pushing
 - See `AGENTS.md` for detailed repository guidelines and commit conventions
 
 #### Testing Requirements for API Access
 - **OPENAI_API_KEY** required for live tests and some component/integration tests
 - Tests automatically detect API key availability and skip/enable live tests accordingly
-- Use `RUN_LIVE_TESTS=0` to force-skip live tests even with API key present
+- Use `pytest --no-run-live` to force-skip live tests even with API key present
 - Component tests require multilingual coverage (English, Spanish, Mandarin) when live tests are enabled
 
 ## Multi-Language Support
@@ -392,7 +375,7 @@ The testing framework provides **intelligent test acceleration** with layered ex
   - End-to-end Phase 2 workflows through services
   - Service interaction and memory consistency validation
   - Heavier multilingual flows requiring API access
-- **Contract tests** (`tests/contracts/`): Regression and golden snapshot testing
+- **Snapshot tests** (`tests/snapshots/`): Regression and golden snapshot testing
   - Validates expected behaviors against baseline results
   - Snapshot comparisons for consistent outputs
 - **Live tests**: Full system validation with external API calls
@@ -400,7 +383,7 @@ The testing framework provides **intelligent test acceleration** with layered ex
   - Automatically enabled when OPENAI_API_KEY is present
 
 ### **Strategic Mocking Layer (NEW)**
-- **Fast tests** (`tests/fast/`): Ultra-fast service boundary testing
+- **Fast tests** (`tests/unit/test_fast_*`): Ultra-fast service boundary testing
   - **43 tests in 0.04 seconds** with 0 API calls
   - **Response parsing tests**: Multilingual response validation with deterministic data
   - **Data flow tests**: Service integration testing with synthetic data
@@ -422,12 +405,11 @@ The enhanced test runner provides mode-based execution optimized for different d
 - **Environment control**: Development-friendly test execution with configurable behavior
 
 ### **Test Execution Patterns (Updated)**
-- **Daily development**: `python run_tests.py --mode ultra_fast` (7 seconds)
-- **Pre-commit**: `python run_tests.py --mode dev` (5 minutes)
-- **CI/CD pipeline**: `python run_tests.py --mode ci` (15 minutes)
-- **Release validation**: `python run_tests.py --mode full` (30-45 minutes)
-- **Legacy support**: All existing patterns remain compatible
-- **Service boundary testing**: `python -m pytest tests/fast/` (0.04 seconds)
+- **Daily development**: `pytest --mode=ultra_fast` (7 seconds)
+- **Pre-commit**: `pytest --mode=dev` (5 minutes)
+- **CI/CD pipeline**: `pytest --mode=ci` (15 minutes)
+- **Release validation**: `pytest --mode=full` (30-45 minutes)
+- **Service boundary testing**: `python -m pytest tests/unit/test_fast_*` (0.04 seconds)
 - **Import validation**: Automatic module import testing across all layers
 
 ## Tracing and Observability
@@ -492,7 +474,7 @@ The `hypothesis_testing/` directory contains organized experimental conditions:
   - `smart_parametrize_languages()`: Intelligent language selection (1-3 languages)
 - `tests/support/mock_utilities.py`: Comprehensive mocking framework
   - Mock agents, services, and multilingual response patterns
-- `tests/fast/`: Ultra-fast service boundary testing (43 tests in 0.04s)
+- `tests/unit/test_fast_*`: Ultra-fast service boundary testing (43 tests in 0.04s)
   - `test_response_parsing.py`: Multilingual parsing with deterministic data
   - `test_data_flows.py`: Service integration with synthetic data
 

@@ -8,6 +8,7 @@ matplotlib
 seaborn
 tqdm
 scipy
+pytest-regressions
 statsmodels
 plotly
 diagrams

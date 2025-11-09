@@ -5,23 +5,64 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Sequence, Tuple
 
 import httpx
 import pytest
 
 from dotenv import load_dotenv
-from tests.support import PromptHarness, build_experiment_configuration
+from tests.support import PromptHarness, build_experiment_configuration, language_matrix
+from utils.language_manager import SupportedLanguage
+
+MODE_MARKERS = {
+    "ultra_fast": {"unit", "fast"},
+    "dev": {"unit", "component"},
+    "ci": {"unit", "component", "integration"},
+    "full": {"unit", "component", "integration", "contracts", "snapshots", "live"},
+}
 
 LANGUAGE_REPORT_ENV = "LANGUAGE_REPORT_PATH"
-PRIMARY_LANGUAGE_ENV = "LIVE_PRIMARY_LANGUAGE"
-ALL_LANGUAGES_ENV = "LIVE_LANGUAGES"
 # Test acceleration environment variables
-FULL_INTEGRATION_TESTS_ENV = "FULL_INTEGRATION_TESTS"
-DEVELOPMENT_MODE_ENV = "DEVELOPMENT_MODE"
 TEST_CONFIG_OVERRIDE_ENV = "TEST_CONFIG_OVERRIDE"
-SKIP_EXPENSIVE_TESTS_ENV = "SKIP_EXPENSIVE_TESTS"
-TRUTHY_VALUES = {"1", "true", "yes", "on"}
+
+RUN_LIVE_OPTION: bool | None = None
+SKIP_EXPENSIVE_OPTION: bool | None = None
+
+
+def _coerce_language_token(token: str) -> SupportedLanguage:
+    normalized = token.strip().lower()
+    alias_map = {
+        "en": SupportedLanguage.ENGLISH,
+        "english": SupportedLanguage.ENGLISH,
+        "es": SupportedLanguage.SPANISH,
+        "spanish": SupportedLanguage.SPANISH,
+        "zh": SupportedLanguage.MANDARIN,
+        "cn": SupportedLanguage.MANDARIN,
+        "mandarin": SupportedLanguage.MANDARIN,
+        "chinese": SupportedLanguage.MANDARIN,
+    }
+    if normalized in alias_map:
+        return alias_map[normalized]
+    raise pytest.UsageError(
+        f"Unknown language token '{token}'. Expected one of en, es, zh or the full language names."
+    )
+
+
+def _parse_languages_option(option: str | None) -> Sequence[SupportedLanguage] | None:
+    if option is None:
+        return None
+    tokens = [segment.strip() for segment in option.split(",") if segment.strip()]
+    if not tokens:
+        return None
+    if len(tokens) == 1 and tokens[0].lower() in {"all", "*"}:
+        return tuple(language_matrix.ALL_LANGUAGES)
+
+    languages: list[SupportedLanguage] = []
+    for token in tokens:
+        language = _coerce_language_token(token)
+        if language not in languages:
+            languages.append(language)
+    return tuple(languages)
 
 
 def _language_entry_factory() -> Dict[str, Any]:
@@ -39,12 +80,98 @@ LANGUAGE_ITEM_CONTEXT: Dict[str, Tuple[str, str]] = {}
 LANGUAGE_COVERAGE: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(lambda: defaultdict(_language_entry_factory))
 
 
+def pytest_addoption(parser):
+    """Register CLI options for suite selection."""
+    group = parser.getgroup("suite selection")
+    group.addoption(
+        "--mode",
+        choices=tuple(MODE_MARKERS.keys()),
+        help="Preset test selection (ultra_fast, dev, ci, full).",
+    )
+    group.addoption(
+        "--run-live",
+        action="store_const",
+        const=True,
+        default=None,
+        dest="run_live",
+        help="Enable tests marked as live (overrides environment settings).",
+    )
+    group.addoption(
+        "--no-run-live",
+        action="store_const",
+        const=False,
+        dest="run_live",
+        help="Force-disable live tests even if environment enables them.",
+    )
+    group.addoption(
+        "--skip-expensive",
+        action="store_const",
+        const=True,
+        default=None,
+        dest="skip_expensive",
+        help="Skip tests marked as expensive regardless of environment settings.",
+    )
+    group.addoption(
+        "--no-skip-expensive",
+        action="store_const",
+        const=False,
+        dest="skip_expensive",
+        help="Run expensive tests even if environment would skip them.",
+    )
+    group.addoption(
+        "--languages",
+        metavar="LIST",
+        help="Comma-separated languages to run (en,es,zh or 'all').",
+    )
+    group.addoption(
+        "--primary-language",
+        metavar="LANG",
+        help="Override the primary language used by parametrised tests (en, es, zh).",
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_agent_tracing():
+    """Ensure OpenAI agent tracing is disabled across the whole test session."""
+    os.environ["OPENAI_AGENTS_DISABLE_TRACING"] = "1"
+    os.environ["OPENAI_DISABLE_TRACING"] = "true"
+    try:
+        from agents import set_tracing_disabled  # type: ignore
+    except ImportError:
+        yield
+        return
+
+    set_tracing_disabled(True)
+    yield
+
+
 def pytest_configure(config):
+    global RUN_LIVE_OPTION, SKIP_EXPENSIVE_OPTION
+    RUN_LIVE_OPTION = config.getoption("run_live")
+    SKIP_EXPENSIVE_OPTION = config.getoption("skip_expensive")
+
+    languages_option = _parse_languages_option(config.getoption("languages"))
+    primary_override = None
+    primary_token = config.getoption("primary_language")
+    if primary_token:
+        primary_override = _coerce_language_token(primary_token)
+
+    if languages_option and primary_override and primary_override not in languages_option:
+        languages_option = (primary_override,) + tuple(
+            language for language in languages_option if language != primary_override
+        )
+
+    language_matrix.configure_language_options(
+        languages=languages_option,
+        primary=primary_override,
+    )
+
     for marker, description in (
         ("component", "component-level tests exercising subsystem flows"),
         ("integration", "integration tests covering full experiment"),
         ("unit", "unit tests for pure logic"),
         ("contracts", "contract snapshot tests"),
+        ("snapshots", "regression snapshots and golden outputs"),
         ("live", "tests that hit live LLM endpoints"),
         ("requires_openai", "test requires OPENAI_API_KEY for live LLM calls"),
         ("expensive", "expensive tests that may be skipped in development mode"),
@@ -124,7 +251,9 @@ def prompt_harness_three_agents(openai_api_key):
 def pytest_collection_modifyitems(session, config, items):
     base = Path(config.rootpath)
     skip_expensive = _skip_expensive_tests()
-    development_mode = _is_development_mode()
+    requested_mode = config.getoption("mode")
+    enabled_markers = MODE_MARKERS.get(requested_mode, set())
+    run_live_enabled = _resolve_run_live_flag(requested_mode)
 
     for item in items:
         try:
@@ -143,12 +272,30 @@ def pytest_collection_modifyitems(session, config, items):
         # Add layer-based markers automatically
         if layer == "component" and "component" not in marker_names:
             item.add_marker("component")
+            marker_names.add("component")
         elif layer == "integration" and "integration" not in marker_names:
             item.add_marker("integration")
+            marker_names.add("integration")
         elif layer == "unit" and "unit" not in marker_names:
             item.add_marker("unit")
-        elif layer == "contracts" and "contracts" not in marker_names:
-            item.add_marker("contracts")
+            marker_names.add("unit")
+        elif layer == "snapshots":
+            if "snapshots" not in marker_names:
+                item.add_marker("snapshots")
+                marker_names.add("snapshots")
+            snapshot_section = rel_parts[2] if len(rel_parts) > 2 else None
+            if snapshot_section == "contracts" and "contracts" not in marker_names:
+                item.add_marker("contracts")
+                marker_names.add("contracts")
+        else:
+            if rel_parts[1].startswith("test_") or path.name.startswith("test_"):
+                if "unit" not in marker_names:
+                    item.add_marker("unit")
+                    marker_names.add("unit")
+
+        if "fast" not in marker_names and path.name.startswith("test_fast_"):
+            item.add_marker("fast")
+            marker_names.add("fast")
 
         # Auto-mark expensive tests based on layer and existing markers
         if layer in ["component", "integration"] and "live" in marker_names:
@@ -160,9 +307,15 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker(pytest.mark.skip(reason="Expensive test skipped (SKIP_EXPENSIVE_TESTS=1)"))
 
         # In development mode, skip comprehensive integration tests unless explicitly enabled
-        if (development_mode and not _is_full_integration_enabled() and
-            layer == "integration" and "live" in marker_names):
-            item.add_marker(pytest.mark.skip(reason="Integration test skipped in development mode"))
+        if requested_mode and not enabled_markers.intersection(marker_names):
+            item.add_marker(
+                pytest.mark.skip(reason=f"Excluded by --mode={requested_mode} preset")
+            )
+
+        if "live" in marker_names and not run_live_enabled:
+            item.add_marker(
+                pytest.mark.skip(reason="Live test skipped (enable with --run-live)")
+            )
 
         if "language" not in fixturenames or not hasattr(item, "callspec"):
             continue
@@ -248,35 +401,35 @@ def _extract_skip_reason(report: pytest.TestReport) -> str | None:
 
 
 def _resolve_primary_language() -> str | None:
-    focus = os.getenv(PRIMARY_LANGUAGE_ENV)
-    if not focus:
+    matrix = language_matrix.current_language_matrix()
+    if not matrix:
         return None
-    return focus.strip().lower()
+    return matrix[0].value.lower()
 
 
 def _all_languages_requested() -> bool:
-    raw = os.getenv(ALL_LANGUAGES_ENV)
-    if raw is None:
-        return False
-    return raw.strip().lower() in TRUTHY_VALUES
-
-
-def _is_development_mode() -> bool:
-    """Check if we're in development mode (default True)."""
-    raw = os.getenv(DEVELOPMENT_MODE_ENV, "1")  # Default to development mode
-    return raw.strip().lower() in TRUTHY_VALUES
-
-
-def _is_full_integration_enabled() -> bool:
-    """Check if full integration tests are enabled."""
-    raw = os.getenv(FULL_INTEGRATION_TESTS_ENV, "0")  # Default to disabled
-    return raw.strip().lower() in TRUTHY_VALUES
+    matrix = language_matrix.current_language_matrix()
+    return set(matrix) == set(language_matrix.ALL_LANGUAGES)
 
 
 def _skip_expensive_tests() -> bool:
     """Check if expensive tests should be skipped."""
-    raw = os.getenv(SKIP_EXPENSIVE_TESTS_ENV, "0")  # Default to run expensive tests
-    return raw.strip().lower() in TRUTHY_VALUES
+    if SKIP_EXPENSIVE_OPTION is not None:
+        return SKIP_EXPENSIVE_OPTION
+    return False
+
+
+def _resolve_run_live_flag(requested_mode: str | None) -> bool:
+    if RUN_LIVE_OPTION is not None:
+        return RUN_LIVE_OPTION
+
+    if requested_mode and "live" in MODE_MARKERS.get(requested_mode, set()):
+        return True
+
+    if os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY"):
+        return True
+
+    return False
 
 
 def _get_test_config_override() -> str | None:

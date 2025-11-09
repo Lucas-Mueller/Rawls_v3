@@ -7,7 +7,7 @@ Prerequisites
 -------------
 
 System Requirements
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 - **Python 3.11 or higher**
 - **Git** for version control
@@ -24,7 +24,7 @@ Initial Setup
 -------------
 
 Repository Setup
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 1. **Fork the Repository** (for contributors):
    
@@ -45,7 +45,7 @@ Repository Setup
       git remote -v  # Verify remotes
 
 Environment Setup
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 4. **Create Virtual Environment**:
 
@@ -71,7 +71,7 @@ Environment Setup
       pip install -r requirements.txt
 
 API Keys Configuration
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 7. **Set Up API Keys** (choose one method):
 
@@ -99,30 +99,23 @@ API Keys Configuration
       echo 'export OPENROUTER_API_KEY="your-openrouter-key"' >> ~/.bashrc
 
 Verification
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 8. **Verify Installation**:
 
    .. code-block:: bash
 
-      # Run the test suite
-      python run_tests.py
+      # Run the preset suite
+      pytest --mode=ci
       
-      # Expected output:
-      # ============================================================
-      # FROHLICH EXPERIMENT TEST RUNNER
-      # ============================================================
-      # Testing imports...
-      # ✓ All core imports successful
-      # ✓ Basic functionality test passed
-      # ✓ Configuration loading test passed
-      # 
-      # Running unit tests...
-      # Running integration tests...
-      # 
-      # ============================================================
-      # ALL TESTS PASSED ✓
-      # ============================================================
+      # Expected output (truncated):
+      # ============================= test session starts ==============================
+      # collected 420 items
+      #
+      # tests/unit/test_*.py ............
+      # tests/component/test_*.py sssssss
+      # ...
+      # ========================= 410 passed, 10 skipped in 900.00s ====================
 
 9. **Test Basic Functionality**:
 
@@ -132,7 +125,7 @@ Verification
       python main.py config/default_config.yaml
 
 Development Tools
-----------------
+-----------------
 
 Recommended IDE Setup
 ~~~~~~~~~~~~~~~~~~~~~
@@ -171,7 +164,7 @@ Recommended IDE Setup
 - Set up version control integration
 
 Code Quality Tools
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 **Install Development Tools** (optional):
 
@@ -203,7 +196,7 @@ Code Quality Tools
    mypy your_file.py
 
 Git Configuration
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 **Configure Git** (first time setup):
 
@@ -221,10 +214,10 @@ Git Configuration
    pre-commit install
 
 Development Workflow
--------------------
+--------------------
 
 Daily Development
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 1. **Sync with Upstream**:
 
@@ -246,8 +239,8 @@ Daily Development
 
       # Edit code
       # Run tests frequently
-      python run_tests.py unit component
-      
+      pytest --mode=dev
+     
       # Test specific modules
       python -m unittest tests.unit.test_your_module -v
 
@@ -266,30 +259,33 @@ Daily Development
       # Create PR via GitHub interface
 
 Running Tests
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 **Fast Feedback Suite (default)**:
 
 .. code-block:: bash
 
-   python run_tests.py unit component
+   pytest --mode=dev
 
 **Specific Test Categories**:
 
 .. code-block:: bash
 
    # Unit-only logic
-   python run_tests.py unit
+   pytest --mode=ultra_fast
 
    # Component + live multilingual flows
-   python run_tests.py component
-   python run_tests.py integration
+   pytest tests/component -m "component and live"
+   pytest tests/integration -m "integration and live"
 
    # Contract/golden artefact checks
-   python run_tests.py contracts
+   pytest tests/snapshots/contracts
+
+   # Enable live suites explicitly (override environment defaults)
+   pytest --run-live --languages=en,es
 
    # Skip live suites even when credentials are present
-   RUN_LIVE_TESTS=0 python run_tests.py integration
+   pytest tests/integration -m "integration and live" --no-run-live
 
 Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environment or ``.env`` file to enable live runs; without them the runner will automatically skip suites that call real LLMs and explain how to re-enable coverage.
 
@@ -312,7 +308,7 @@ Set ``OPENAI_API_KEY`` (and optionally ``OPENROUTER_API_KEY``) in your environme
    python main.py config/mixed_models_example.yaml
 
 Documentation Development
-------------------------
+-------------------------
 
 Building Documentation
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -344,7 +340,7 @@ Building Documentation
    make html
 
 Writing Documentation
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 **Documentation Structure**:
 
@@ -368,7 +364,7 @@ Debugging and Troubleshooting
 -----------------------------
 
 Common Development Issues
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Import Errors**:
 
@@ -392,10 +388,10 @@ Common Development Issues
 
    Tests failing due to API rate limits
    
-   Solution: Pause live suites by exporting ``RUN_LIVE_TESTS=0`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
+   Solution: Pause live suites by exporting ``NEW_ENV_PLACEHOLDER`` or rerun once the limit resets. The runner reports which language/layer was skipped so you can resume coverage later.
 
 Debugging Tools
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 **Python Debugger**:
 
@@ -429,9 +425,10 @@ Debugging Tools
            },
            {
                "name": "Run Tests",
-               "type": "python", 
+               "type": "python",
                "request": "launch",
-               "program": "run_tests.py",
+               "module": "pytest",
+               "args": ["--mode=dev"],
                "console": "integratedTerminal"
            }
        ]
@@ -448,10 +445,10 @@ Development Performance
 .. code-block:: bash
 
    # Run subset of tests during development
-   python -m unittest tests.unit -v
+   pytest tests/unit -v
    
    # Skip slow integration tests
-   python run_tests.py unit
+   pytest --mode=ultra_fast
 
 **Memory Usage**:
 
@@ -469,7 +466,7 @@ Development Performance
    phase2_rounds: 2  # Reduced from 10
 
 Docker Development
------------------
+------------------
 
 Container-Based Development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -486,7 +483,7 @@ Container-Based Development
    
    COPY . .
    
-   CMD ["python", "run_tests.py"]
+   CMD ["pytest", "--mode=ci"]
 
 **Docker Compose for Development**:
 
@@ -503,7 +500,7 @@ Container-Based Development
        environment:
          - OPENAI_API_KEY=${OPENAI_API_KEY}
          - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-       command: python run_tests.py
+       command: pytest --mode=ci
 
 **Running in Docker**:
 

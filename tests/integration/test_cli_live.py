@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.mark.integration
 @pytest.mark.live
+@pytest.mark.slow
 @pytest.mark.requires_openai
 def test_cli_smoke_runs_minimal_experiment(tmp_path, openai_api_key):
     """Run `python main.py` with a trimmed config and ensure output is produced."""

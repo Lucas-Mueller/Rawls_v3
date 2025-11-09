@@ -1,0 +1,36 @@
+language: English
+seed: 42
+agents:
+- name: Agent_1
+  personality: You are an American college student
+  model: gemini-2.5-flash-lite
+  temperature: 0
+  memory_character_limit: 20000
+  reasoning_enabled: true
+- name: Agent_2
+  personality: You are an American college student
+  model: gemini-2.5-flash-lite
+  temperature: 0
+  memory_character_limit: 20000
+  reasoning_enabled: true
+utility_agent_model: gemini-2.5-flash-lite
+utility_agent_temperature: 0.0
+phase2_rounds: 5
+distribution_range_phase2:
+- 2
+- 6
+income_class_probabilities:
+  high: 0.05
+  medium_high: 0.1
+  medium: 0.5
+  medium_low: 0.25
+  low: 0.1
+original_values_mode:
+  enabled: true
+transcript_logging:
+  enabled: true
+  include_memory_updates: true
+  include_instructions: false
+  include_input_prompts: true
+  include_agent_responses: true
+  output_path: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/reproducibility_proof_gemini/transcripts/reproducibility_condition_2_transcript.json

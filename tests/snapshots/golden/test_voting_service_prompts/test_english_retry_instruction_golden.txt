@@ -1,0 +1,1 @@
+Please provide a clear response: 1 for Yes (initiate voting) or 0 for No (continue discussion).

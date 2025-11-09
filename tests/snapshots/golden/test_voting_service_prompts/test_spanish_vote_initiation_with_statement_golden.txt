@@ -1,0 +1,3 @@
+Basado en su declaración reciente: 'Creo que deberíamos adoptar el principio A'
+
+¿Desea iniciar una votación formal para alcanzar consenso sobre el principio de justicia? Responda con 1 para Sí o 0 para No.

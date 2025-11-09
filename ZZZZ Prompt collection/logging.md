@@ -1,9 +1,45 @@
-an
+Please create a new data analysis notebook for hypothesis 3, that uses the same style as the one for hypothesis 6 (hypothesis_testing/hypothesis_6/hypothesis6_descriptive_analysis.ipynb)
+
+
+This notebook should have a table that shoould have these columns
+Least popular Principle, Attempted Manipulations, Sucessful Manipulation, Share of Sucessful Manpipulation. 
+
+The rows should be the 4 justice principles. 
+This table should exist twice, once for low iq and one for high iq
+
+
+Pleae review the preference of the pariticipant agents (excluding the manipulator agent). 
+What was the average rank of the target principle at the od phase 1?
+What was the average rank of the target principle at the od phase 2?
+Sepearte between the sucessfull and unsucessful manipulations. 
+Seperate between the smart and less smart manipulaot. 
+
+Please create a graphic that shows the final preferences of each participant agent (not manipularot agent) by the end of phase 1. Then co
+
+
+This notebook should have a graphic on the sucess rate of the manipulator (specific for hypothesis 3 check hypothesis_testing/hypothesis_3/Hypothesis_3_main.ipynb . 
+
+This 
+
+
+Crat
+
+
+
 
 Note: These probabilities are for this example only and may be different in subsequent   rounds. They can vary significantly. 
 
+Pleae familiraize yourself with hypothesis 3. Then plan these changes:
+1. I want to switch the base model to "gemini-2.0-flash-lite"
+2. Low Intelligence Model shall be "gemini-2.0-flash-lite" 
+3. Then I want to remove the medium intelligence bucket, altogether
+4. Currently the least popular prinincple is detected via a prompt. This is not really a good way. Instead I want to surgically modify the codebase so that the preferences by all non manipulator agents are aggregated (final preference ranking phase 1), then this prinicple is fed to the manipulator agent, and taken as a sucess metric. 
 
-please implement phase 1 and 2, be thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
+Please create a plan to change the code to my target state. Dont overengineer. Take a systems level view. Create a todo list. Plan should be .md file.
+
+
+
+please implement the next phase. Be  thoughtful. Write clean, simplistic but effective code. Be detail oriented and thorough. Dont make mistakes. Dont take any shortcuts that are against the plan.
 Employ a systematic approach. Cretae a todo list.
 
 The changes needed to be made in irder to fulfill my request. 

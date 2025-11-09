@@ -138,7 +138,7 @@ Justice Principles in the System
 --------------------------------
 
 The Four Principles
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 Our system implements four distributive justice principles that agents must choose between:
 
@@ -233,7 +233,7 @@ Research Applications
 ---------------------
 
 Empirical Questions
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 The AI implementation enables novel research questions:
 
@@ -340,7 +340,7 @@ Enhanced Veil Implementations
 - Explore in-group/out-group dynamics in distributive justice
 
 Research Integration
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 **Human-AI Comparative Studies:**
 - Direct comparisons between human and AI agent experiments

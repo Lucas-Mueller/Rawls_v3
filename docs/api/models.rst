@@ -111,7 +111,13 @@ The central configuration model that defines all experiment parameters.
       .. code-block:: python
 
          from models.experiment_types import IncomeClassProbabilities
-         from config import OriginalValuesModeConfig
+         from config import (
+             OriginalValuesModeConfig,
+             Phase2TransparencyConfig,
+             LoggingConfig,
+             TranscriptLoggingConfig
+         )
+         from config.phase2_settings import Phase2Settings
 
          # Advanced configuration with all options
          advanced_config = ExperimentConfiguration(
@@ -123,36 +129,39 @@ The central configuration model that defines all experiment parameters.
                      model="gpt-4-turbo",
                      temperature=0.2,
                      memory_character_limit=100000,
-                     reasoning_enabled=True
+                     reasoning_enabled=True,
+                     language="spanish"
                  ),
                  AgentConfiguration(
                      name="Pragmático",
                      personality="Enfocado en soluciones prácticas",
                      model="anthropic/claude-3-5-sonnet",
                      temperature=0.4,
-                     memory_character_limit=75000
+                     memory_character_limit=75000,
+                     language="spanish"
                  ),
                  AgentConfiguration(
                      name="Mediador",
                      personality="Hábil para construir consenso",
                      model="gemini-2.5-pro",
-                     temperature=0.3
+                     temperature=0.3,
+                     language="spanish"
                  )
              ],
-             
+
              # Utility agent configuration
              utility_agent_model="gpt-4.1-mini",
              utility_agent_temperature=0.0,
-             
+
              # Phase 2 settings
              phase2_rounds=15,
              randomize_speaking_order=True,
              speaking_order_strategy="conversational",
-             
+
              # Distribution settings
              distribution_range_phase1=(0.8, 1.5),
              distribution_range_phase2=(0.6, 2.0),
-             
+
              # Income class probabilities
              income_class_probabilities=IncomeClassProbabilities(
                  high=0.08,
@@ -161,20 +170,69 @@ The central configuration model that defines all experiment parameters.
                  medium_low=0.25,
                  low=0.10
              ),
-             
+
              # Original values mode
              original_values_mode=OriginalValuesModeConfig(
                  enabled=True,
                  situation="sample"
              ),
-             
+
+             # Phase 2 enhanced transparency
+             phase2_enhanced_transparency=Phase2TransparencyConfig(
+                 enabled=True,
+                 detail_level="full",
+                 include_counterfactuals=True,
+                 include_class_assignment=True,
+                 include_insights=True
+             ),
+
+             # Logging configuration
+             logging=LoggingConfig(
+                 verbosity_level="standard",
+                 use_colors=True,
+                 show_progress_bars=True
+             ),
+
+             # Transcript logging
+             transcript_logging=TranscriptLoggingConfig(
+                 enabled=True,
+                 output_path="custom_transcripts/",
+                 include_memory_updates=False,
+                 include_instructions=False,
+                 include_input_prompts=True,
+                 include_agent_responses=True
+             ),
+
              # Memory optimization
              memory_guidance_style="structured",
+             include_experiment_explanation=True,
              include_experiment_explanation_each_turn=False,
              phase2_include_internal_reasoning_in_memory=True,
-             
+
+             # Selective memory updates
+             selective_memory_updates=True,
+             memory_update_threshold="moderate",
+             batch_simple_events=False,
+
+             # Intelligent retry mechanism
+             enable_intelligent_retries=True,
+             max_participant_retries=2,
+             enable_progressive_guidance=True,
+             memory_update_on_retry=True,
+             retry_feedback_detail="concise",
+
              # Reproducibility
-             seed=42
+             seed=42,
+
+             # Manipulator configuration (for Hypothesis 3)
+             manipulator={
+                 "enabled": False,
+                 "type": "disruptive",
+                 "intervention_round": 5
+             },
+
+             # Phase 2 specific settings (imported from phase2_settings.py)
+             phase2_settings=None  # Use defaults or specify Phase2Settings object
          )
 
    .. tab:: Multi-Language Setup

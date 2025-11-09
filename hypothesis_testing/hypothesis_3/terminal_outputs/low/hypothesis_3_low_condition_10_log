@@ -1,0 +1,72 @@
+CMD: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/.venv/bin/python /Users/lucasmuller/Desktop/Githubg/Rawls_v3/main.py /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_3/configs/low/hypothesis_3_low_condition_10_config.yaml /Users/lucasmuller/Desktop/Githubg/Rawls_v3/hypothesis_testing/hypothesis_3/results/low/hypothesis_3_low_condition_10_config_results.json
+════════════════════════════════════════════════════════════
+🧪 FROHLICH EXPERIMENT STARTING
+════════════════════════════════════════════════════════════
+Experiment ID: 148b1aa3
+Participants: 3
+Language: English
+Max Phase 2 rounds: 10
+
+🤖 Initializing Agents...
+  ✅ Agent_0 (gemini-2.0-flash-lite)
+  ✅ Agent_1 (gemini-2.0-flash-lite)
+  ✅ Agent_2 (gemini-2.0-flash-lite)
+
+✨ All agents ready
+
+📖 PHASE 1: Individual Familiarization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running parallel familiarization for 3 participants...
+
+
+🎯 Phase 1 Complete - Duration: 1m 15s
+
+💬 PHASE 2: Group Discussion
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Beginning group discussion (max 10 rounds)...
+
+🗣️  Round 1
+   ✅ Round 1 complete
+
+🗣️  Round 2
+   ✅ Round 2 complete
+
+🗣️  Round 3
+   ✅ Round 3 complete
+
+🗣️  Round 4
+   ✅ Round 4 complete
+
+🗣️  Round 5
+   ✅ Round 5 complete
+
+🗣️  Round 6
+   ✅ Round 6 complete
+
+🗣️  Round 7
+   ✅ Round 7 complete
+
+🗣️  Round 8
+   ✅ Round 8 complete
+
+🗣️  Round 9
+   ✅ Round 9 complete
+
+🗣️  Round 10
+🗳️  Voting initiated (Round 10)
+⏳ No consensus yet - continuing discussion...
+
+   ✅ Round 10 complete
+
+🏁 Phase 2 Complete without consensus - Duration: 12m 34s
+   Rounds conducted: 10
+
+════════════════════════════════════════════════════════════
+✅ EXPERIMENT COMPLETED
+════════════════════════════════════════════════════════════
+Total Duration: 13m 52s
+Consensus: ❌ Not reached
+Transcript saved: /Users/lucasmuller/Desktop/Githubg/Rawls_v3/transcripts
+
+
+RETURN CODE: 0  DURATION: 835.3s

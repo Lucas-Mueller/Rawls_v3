@@ -1,0 +1,15 @@
+The discussion has progressed and you may feel ready to move to formal voting.
+
+If you choose to initiate voting:
+- All participants will be asked to confirm agreement (1=Yes, 0=No)
+- If everyone agrees, you'll proceed to secret numerical ballots (1-4)
+- Consensus requires all participants to select the same principle
+- If reached, that principle determines final earnings
+- If not reached, discussion continues
+- You can initiate a vote once per round, if no consensus is reached no negative consequence will follow
+
+Do you want to initiate this voting process now?
+- 1 if you want to start the voting process
+- 0 if you dont want to vote now
+
+Your response (1 or 0):

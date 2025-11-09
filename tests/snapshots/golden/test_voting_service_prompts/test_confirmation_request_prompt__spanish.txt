@@ -1,0 +1,9 @@
+María ha solicitado votar sobre los principios de justicia.
+
+¿Está de acuerdo en participar en una sesión de votación ahora?
+
+Responda con exactamente un número:
+- Responda 1 si quiere votar ahora
+- Responda 0 si quiere continuar la discusión
+
+Su respuesta será visible para todos los participantes.

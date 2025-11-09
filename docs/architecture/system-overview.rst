@@ -24,12 +24,12 @@ High-Level Architecture
           └─────────┬────────┘     └─────────┬────────┘
                     │                        │
           ┌─────────▼────────┐     ┌─────────▼────────┐
-          │  Participant     │     │  Voting &        │
-          │  Agents (3+)     │     │  Consensus       │
-          │  - Memory Mgmt   │     │  - Random Order  │
-          │  - Model Config  │     │  - Payoff Calc   │
-          └─────────┬────────┘     └─────────┬────────┘
-                    │                        │
+          │  Participant     │     │  Services Layer  │
+          │  Agents (3+)     │     │  - Discussion     │
+          │  - Memory Mgmt   │     │  - Voting         │
+          │  - Model Config  │     │  - Memory         │
+          └─────────┬────────┘     │  - Counterfactuals│
+                    │              └─────────┬────────┘
                     └────────┬───────────────┘
                              │
                    ┌─────────▼────────┐
@@ -70,7 +70,9 @@ Phase Managers
 
 **Phase2Manager**
    - **Execution Model**: Sequential processing to capture interaction dynamics
-   - **Purpose**: Group discussion and consensus building
+   - **Architecture**: Services-first design with specialized service components
+   - **Purpose**: Group discussion and consensus building through orchestrated services
+   - **Services**: Discussion, Voting, Memory, Counterfactuals, Speaking Order, and Manipulator services
    - **Process**: Structured discussion with random speaking order, voting mechanisms, and payoff calculations
    - **Consensus**: Multi-round voting with tie-breaking mechanisms
 
@@ -206,4 +208,57 @@ Scalability
 - **Language Flexibility**: Full support for multiple human languages
 - **Batch Processing**: Utilities for running multiple experiments in parallel
 
+Memory Management Architecture
+------------------------------
+
+The Frohlich Experiment implements a sophisticated memory system that enables agents to maintain context and learn throughout experiments.
+
+.. code-block:: text
+
+   Memory Management Architecture
+   ├── Agent-Level Memory
+   │   ├── Persistent Storage: 50,000 char default limit
+   │   ├── Self-Managed Content: Agents decide what to remember
+   │   ├── Cross-Phase Continuity: Memory carries from Phase 1 to Phase 2
+   │   └── Intelligent Truncation: Preserves most relevant content
+   │
+   ├── Update Strategies
+   │   ├── Simple Events: Direct addition (quick votes, basic responses)
+   │   ├── Complex Events: Narrative/structured formatting (discussions, reasoning)
+   │   ├── Selective Updates: Skip trivial events to reduce API calls
+   │   └── Batch Processing: Group multiple simple events together
+   │
+   ├── Guidance Styles
+   │   ├── Narrative: Conversational, story-like memory entries
+   │   ├── Structured: Bullet-point, factual memory entries
+   │   └── Configurable: Per-experiment style selection
+   │
+   └── Validation & Recovery
+       ├── Length Limits: Automatic enforcement with retry
+       ├── Content Integrity: Validation of memory structure
+       └── Error Recovery: Fallback mechanisms for memory failures
+
+**Key Memory Components:**
+
+- **MemoryManager**: Central coordinator for all memory operations
+- **MemoryService**: Phase 2 memory orchestration through services
+- **Agent Memory**: Individual agent persistent storage
+- **Memory Validation**: Ensures memory integrity and limits
+
+**Memory Flow During Experiment:**
+
+1. **Phase 1**: Agents build foundational knowledge through principle applications
+2. **Phase 2**: Memory guides discussion participation and voting decisions
+3. **Post-Experiment**: Memory analysis reveals agent learning patterns
+
+This architecture provides robust memory management while maintaining performance and reliability.
+
 This architecture provides a robust foundation for researching AI ethics, distributive justice, and multi-agent cooperation while maintaining the flexibility to support diverse research questions and experimental designs.
+
+See Also
+--------
+
+- :doc:`services-architecture` - Detailed documentation of the Phase 2 services-first architecture
+- :doc:`configuration` - Configuration system and available options
+- :doc:`experiment-flow` - Detailed experiment execution flow
+- :doc:`../user-guide/running-experiments` - How to run experiments with this architecture
